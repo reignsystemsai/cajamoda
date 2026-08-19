@@ -103,6 +103,13 @@ button{
   -webkit-tap-highlight-color:transparent;
 }
 
+button:disabled{
+
+  opacity:.55;
+
+  cursor:default;
+}
+
 input,
 select,
 textarea{
@@ -119,6 +126,206 @@ img{
 
 .hidden{
   display:none!important;
+}
+
+/* ============================================================
+   LOGIN GATE
+   ============================================================ */
+
+.loginGate{
+
+  position:fixed;
+
+  z-index:500;
+
+  inset:0;
+
+  display:grid;
+
+  place-items:center;
+
+  padding:
+    calc(
+      24px +
+      var(--safe-top)
+    )
+    20px
+    calc(
+      24px +
+      var(--safe-bottom)
+    );
+
+  background:
+    rgba(255,255,255,.78);
+
+  backdrop-filter:
+    blur(24px);
+
+  -webkit-backdrop-filter:
+    blur(24px);
+}
+
+.loginCard{
+
+  width:100%;
+
+  max-width:360px;
+
+  padding:22px;
+
+  border:
+    1px solid
+    rgba(0,0,0,.08);
+
+  border-radius:22px;
+
+  background:
+    rgba(255,255,255,.94);
+
+  box-shadow:
+    0 24px 80px
+    rgba(0,0,0,.10);
+}
+
+.loginBrand{
+
+  font-size:18px;
+
+  font-weight:800;
+
+  letter-spacing:-.5px;
+}
+
+.loginLabel{
+
+  margin-top:4px;
+
+  color:#888;
+
+  font-size:6.5px;
+
+  font-weight:650;
+
+  text-transform:uppercase;
+
+  letter-spacing:.8px;
+}
+
+.loginTitle{
+
+  margin-top:27px;
+
+  font-size:28px;
+
+  line-height:1;
+
+  font-weight:800;
+
+  letter-spacing:-1px;
+}
+
+.loginText{
+
+  margin-top:8px;
+
+  color:#777;
+
+  font-size:7.5px;
+
+  line-height:1.55;
+}
+
+.loginField{
+
+  margin-top:20px;
+}
+
+.loginField label{
+
+  display:block;
+
+  margin:
+    0
+    0
+    6px
+    2px;
+
+  color:#666;
+
+  font-size:6.5px;
+
+  font-weight:650;
+}
+
+.loginField input{
+
+  width:100%;
+
+  height:48px;
+
+  padding:
+    0
+    13px;
+
+  border:
+    1px solid
+    rgba(0,0,0,.12);
+
+  border-radius:13px;
+
+  background:#fff;
+
+  font-size:9px;
+}
+
+.loginField input:focus{
+
+  border-color:
+    rgba(0,0,0,.40);
+
+  box-shadow:
+    0 0 0 3px
+    rgba(0,0,0,.03);
+}
+
+.loginButton{
+
+  width:100%;
+
+  min-height:46px;
+
+  margin-top:10px;
+
+  border-radius:13px;
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:center;
+
+  background:#080808;
+
+  color:#fff;
+
+  font-size:8px;
+
+  font-weight:750;
+}
+
+.loginError{
+
+  min-height:15px;
+
+  margin-top:9px;
+
+  color:#a12626;
+
+  text-align:center;
+
+  font-size:6.5px;
+
+  line-height:1.4;
 }
 
 /* ============================================================
@@ -1322,7 +1529,7 @@ img{
 
   position:fixed;
 
-  z-index:200;
+  z-index:700;
 
   left:50%;
 
@@ -1391,6 +1598,65 @@ img{
 </head>
 
 <body>
+
+<!-- ==========================================================
+     LOGIN
+     ========================================================== -->
+
+<div
+  id="loginGate"
+  class="loginGate"
+>
+
+  <div class="loginCard">
+
+    <div class="loginBrand">
+      Store Loader
+    </div>
+
+    <div class="loginLabel">
+      Commerce Network
+    </div>
+
+    <div class="loginTitle">
+      Bienvenida.
+    </div>
+
+    <div class="loginText">
+      Ingresa tu contraseña para administrar Carolize Boutique.
+    </div>
+
+    <div class="loginField">
+
+      <label for="loginPassword">
+        Contraseña
+      </label>
+
+      <input
+        id="loginPassword"
+        type="password"
+        autocomplete="current-password"
+        placeholder="Contraseña"
+      >
+
+    </div>
+
+    <button
+      id="loginButton"
+      class="loginButton"
+      type="button"
+    >
+      Entrar
+    </button>
+
+    <div
+      id="loginError"
+      class="loginError"
+    ></div>
+
+  </div>
+
+</div>
 
 <div class="loaderApp">
 
@@ -2063,6 +2329,14 @@ img{
         Guardar tienda
       </button>
 
+      <button
+        id="logoutButton"
+        class="secondaryButton fullButton"
+        type="button"
+      >
+        Cerrar sesión
+      </button>
+
     </div>
 
   </div>
@@ -2083,6 +2357,12 @@ img{
 (() => {
 
   "use strict";
+
+  const API_BASE =
+    "https://cajamoda-storeload-api.onrender.com";
+
+  const AUTH_STORAGE_KEY =
+    "cajamoda-store-loader-token";
 
   const $ =
     id =>
@@ -2145,6 +2425,48 @@ img{
         JSON.stringify(
           value
         )
+      );
+
+    }catch{}
+  }
+
+  function readToken(){
+
+    try{
+
+      return (
+        sessionStorage.getItem(
+          AUTH_STORAGE_KEY
+        ) ||
+        ""
+      );
+
+    }catch{
+
+      return "";
+    }
+  }
+
+  function saveToken(
+    token
+  ){
+
+    try{
+
+      sessionStorage.setItem(
+        AUTH_STORAGE_KEY,
+        token
+      );
+
+    }catch{}
+  }
+
+  function clearToken(){
+
+    try{
+
+      sessionStorage.removeItem(
+        AUTH_STORAGE_KEY
       );
 
     }catch{}
@@ -2250,9 +2572,279 @@ img{
             );
 
         },
-        1500
+        1800
       );
   }
+
+  /* ============================================================
+     API
+     ============================================================ */
+
+  let authToken =
+    readToken();
+
+  async function apiRequest(
+    path,
+    options={}
+  ){
+
+    const headers = {
+      "Content-Type":
+        "application/json",
+
+      ...(
+        options.headers ||
+        {}
+      )
+    };
+
+    if(
+      authToken
+    ){
+
+      headers.Authorization =
+        `Bearer ${authToken}`;
+    }
+
+    let response;
+
+    try{
+
+      response =
+        await fetch(
+          `${API_BASE}${path}`,
+          {
+            method:
+              options.method ||
+              "GET",
+
+            headers,
+
+            body:
+              options.body !==
+              undefined
+                ? JSON.stringify(
+                    options.body
+                  )
+                : undefined
+          }
+        );
+
+    }catch{
+
+      throw new Error(
+        "No se pudo conectar con Store Loader."
+      );
+    }
+
+    let data = {};
+
+    try{
+
+      data =
+        await response.json();
+
+    }catch{}
+
+    if(
+      !response.ok
+    ){
+
+      if(
+        response.status ===
+        401 &&
+        path !==
+        "/api/login"
+      ){
+
+        authToken =
+          "";
+
+        clearToken();
+
+        showLogin(
+          "Tu sesión terminó. Ingresa nuevamente."
+        );
+      }
+
+      throw new Error(
+        data?.error ||
+        "No se pudo completar la solicitud."
+      );
+    }
+
+    return data;
+  }
+
+  /* ============================================================
+     LOGIN
+     ============================================================ */
+
+  function showLogin(
+    message=""
+  ){
+
+    $("loginError")
+      .textContent =
+        message;
+
+    $("loginGate")
+      .classList
+      .remove(
+        "hidden"
+      );
+
+    setTimeout(
+      () => {
+
+        $("loginPassword")
+          .focus();
+
+      },
+      50
+    );
+  }
+
+  function hideLogin(){
+
+    $("loginGate")
+      .classList
+      .add(
+        "hidden"
+      );
+
+    $("loginError")
+      .textContent =
+        "";
+
+    $("loginPassword")
+      .value =
+        "";
+  }
+
+  async function login(){
+
+    const password =
+      $("loginPassword")
+        .value;
+
+    if(
+      !password
+    ){
+
+      $("loginError")
+        .textContent =
+          "Ingresa tu contraseña.";
+
+      return;
+    }
+
+    const button =
+      $("loginButton");
+
+    const originalText =
+      button.textContent;
+
+    button.disabled =
+      true;
+
+    button.textContent =
+      "Entrando...";
+
+    $("loginError")
+      .textContent =
+        "";
+
+    try{
+
+      const result =
+        await apiRequest(
+          "/api/login",
+          {
+            method:
+              "POST",
+
+            body: {
+              password
+            }
+          }
+        );
+
+      if(
+        !result?.token
+      ){
+
+        throw new Error(
+          "El servidor no devolvió una sesión."
+        );
+      }
+
+      authToken =
+        result.token;
+
+      saveToken(
+        authToken
+      );
+
+      hideLogin();
+
+      showToast(
+        "Sesión iniciada."
+      );
+
+    }catch(
+      error
+    ){
+
+      $("loginError")
+        .textContent =
+          error?.message ||
+          "No pudimos iniciar sesión.";
+
+    }finally{
+
+      button.disabled =
+        false;
+
+      button.textContent =
+        originalText;
+    }
+  }
+
+  $("loginButton")
+    .onclick =
+      login;
+
+  $("loginPassword")
+    .addEventListener(
+      "keydown",
+      event => {
+
+        if(
+          event.key ===
+          "Enter"
+        ){
+
+          login();
+        }
+      }
+    );
+
+  $("logoutButton")
+    .onclick =
+      () => {
+
+        authToken =
+          "";
+
+        clearToken();
+
+        showLogin();
+
+        showToast(
+          "Sesión cerrada."
+        );
+      };
 
   /* ============================================================
      STORE
@@ -2267,13 +2859,10 @@ img{
       "Carolize Boutique",
 
     /*
-      PLATFORM-ONLY VALUE.
+      Temporary internal prototype value.
 
-      This is temporary local prototype storage.
-
-      Later this number will come from the protected
-      platform backend and will never be editable
-      or visible to a Store Loader.
+      Later this comes from the platform backend.
+      It is never editable in Store Loader.
     */
 
     platformEarningPercent:
@@ -2286,27 +2875,24 @@ img{
       defaultStore
     );
 
-  /*
-    Preserve an older prototype percentage if one
-    was previously saved, while removing it from
-    the Store Loader interface.
-  */
-
   let store = {
+
     ...defaultStore,
+
     ...storedStore,
 
     platformEarningPercent:
       Number(
         storedStore
-          ?.platformEarningPercent ??
-
-        storedStore
-          ?.loaderSplitPercent ??
-
+          ?.platformEarningPercent ||
         0
       )
   };
+
+  /*
+    Delete the old prototype field if an earlier
+    version of Store Loader saved it.
+  */
 
   delete store
     .loaderSplitPercent;
@@ -2513,6 +3099,23 @@ img{
                 return;
               }
 
+              const maxSize =
+                8 *
+                1024 *
+                1024;
+
+              if(
+                file.size >
+                maxSize
+              ){
+
+                showToast(
+                  "Cada foto debe pesar menos de 8 MB."
+                );
+
+                return;
+              }
+
               const reader =
                 new FileReader();
 
@@ -2657,7 +3260,23 @@ img{
       );
   }
 
-  function publishProduct(){
+  function collectColors(){
+
+    return $("productColors")
+      .value
+      .split(",")
+      .map(
+        item =>
+          item.trim()
+      )
+      .filter(Boolean);
+  }
+
+  /* ============================================================
+     REAL WIX PRODUCT PUBLISH
+     ============================================================ */
+
+  async function publishProduct(){
 
     const name =
       $("productName")
@@ -2683,6 +3302,20 @@ img{
         0
       );
 
+    const category =
+      $("productCategory")
+        .value;
+
+    const sizes =
+      collectSizes();
+
+    const colors =
+      collectColors();
+
+    const photos =
+      uploadedPhotos
+        .filter(Boolean);
+
     if(
       !name
     ){
@@ -2706,69 +3339,181 @@ img{
       return;
     }
 
-    const product = {
+    if(
+      quantity <
+      0
+    ){
 
-      id:
-        createId(),
+      showToast(
+        "Agrega un inventario válido."
+      );
 
-      storeId:
-        store.id,
+      return;
+    }
 
-      name,
+    if(
+      !authToken
+    ){
 
-      description,
+      showLogin(
+        "Inicia sesión para publicar productos."
+      );
 
-      price,
+      return;
+    }
 
-      quantity,
+    const button =
+      $("publishProduct");
 
-      category:
-        $("productCategory")
-          .value,
+    const originalText =
+      button.textContent;
 
-      sizes:
-        collectSizes(),
+    button.disabled =
+      true;
 
-      colors:
-        $("productColors")
-          .value
-          .split(",")
-          .map(
-            item =>
-              item.trim()
+    button.textContent =
+      "Publicando...";
+
+    try{
+
+      const result =
+        await apiRequest(
+          "/api/products",
+          {
+            method:
+              "POST",
+
+            body: {
+
+              storeId:
+                store.id,
+
+              storeName:
+                store.name,
+
+              name,
+
+              description,
+
+              price,
+
+              quantity,
+
+              category,
+
+              sizes,
+
+              colors,
+
+              photos
+            }
+          }
+        );
+
+      const created =
+        result?.product;
+
+      if(
+        !created?.id
+      ){
+
+        throw new Error(
+          "Wix no devolvió el producto publicado."
+        );
+      }
+
+      /*
+        The permanent product now lives in Wix.
+
+        Store Loader keeps only lightweight local metadata
+        for this prototype dashboard. We intentionally do
+        not save large base64 photos into localStorage.
+      */
+
+      const product = {
+
+        id:
+          created.id,
+
+        wixProductId:
+          created.id,
+
+        source:
+          "wix",
+
+        storeId:
+          store.id,
+
+        name,
+
+        description,
+
+        price,
+
+        quantity,
+
+        category,
+
+        sizes,
+
+        colors,
+
+        photos:
+          [],
+
+        wixMediaIds:
+          Array.isArray(
+            created.photos
           )
-          .filter(Boolean),
+            ? created.photos
+            : [],
 
-      photos:
-        uploadedPhotos
-          .filter(Boolean),
+        status:
+          "published",
 
-      status:
-        "published",
+        createdAt:
+          new Date()
+            .toISOString()
+      };
 
-      createdAt:
-        new Date()
-          .toISOString()
-    };
+      products.unshift(
+        product
+      );
 
-    products.unshift(
-      product
-    );
+      saveJson(
+        "store-loader-products",
+        products
+      );
 
-    saveJson(
-      "store-loader-products",
-      products
-    );
+      resetProductForm();
 
-    renderAll();
+      renderAll();
 
-    showPanel(
-      "products"
-    );
+      showPanel(
+        "products"
+      );
 
-    showToast(
-      "Producto publicado."
-    );
+      showToast(
+        "Producto publicado en Wix."
+      );
+
+    }catch(
+      error
+    ){
+
+      showToast(
+        error?.message ||
+        "No pudimos publicar el producto."
+      );
+
+    }finally{
+
+      button.disabled =
+        false;
+
+      button.textContent =
+        originalText;
+    }
   }
 
   $("publishProduct")
@@ -2826,7 +3571,12 @@ img{
                       `
                       :`
                         <div class="productThumbPlaceholder">
-                          STORE
+                          ${
+                            product.source ===
+                            "wix"
+                              ?"WIX"
+                              :"STORE"
+                          }
                         </div>
                       `
                   }
@@ -3600,6 +4350,17 @@ img{
   renderPhotoInputs();
 
   renderAll();
+
+  if(
+    authToken
+  ){
+
+    hideLogin();
+
+  }else{
+
+    showLogin();
+  }
 
 })();
 

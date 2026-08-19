@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="es">
+
 <head>
+
 <meta charset="utf-8">
 
 <meta
@@ -8,13 +10,28 @@
   content="width=device-width,initial-scale=1,viewport-fit=cover"
 >
 
-<meta name="theme-color" content="#ffffff">
-<meta name="color-scheme" content="light">
+<meta
+  name="theme-color"
+  content="#ffffff"
+>
+
+<meta
+  name="color-scheme"
+  content="light"
+>
 
 <title>Producto | CajaModa Colombia</title>
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link
+  rel="preconnect"
+  href="https://fonts.googleapis.com"
+>
+
+<link
+  rel="preconnect"
+  href="https://fonts.gstatic.com"
+  crossorigin
+>
 
 <link
   href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
@@ -25,7 +42,7 @@
 
 /* ============================================================
    CAJAMODA PRODUCT PAGE
-   FULL SCREEN PRODUCT FREEZE
+   FULL SCREEN PRODUCT EXPERIENCE
    ============================================================ */
 
 :root{
@@ -180,9 +197,9 @@ svg{
 
   margin:0 auto;
 
-  background:#fff;
-
   overflow:hidden;
+
+  background:#fff;
 }
 
 @media(min-width:700px){
@@ -223,15 +240,13 @@ svg{
 
   background:#fff;
 
+  /*
+    Vertical page movement remains natural.
+    Horizontal motion is available for product swiping.
+  */
+
   touch-action:pan-y;
 }
-
-/*
-  The product photo now owns the entire screen.
-  No logo area.
-  No white header.
-  No top-left button.
-*/
 
 .mainPhoto{
 
@@ -250,32 +265,174 @@ svg{
   background:#fff;
 
   transition:
-    opacity .18s ease,
+    opacity .17s ease,
     transform .22s ease;
 }
 
 .mainPhoto.changing{
 
-  opacity:.80;
+  opacity:.76;
 
   transform:
     scale(.985);
 }
 
 /* ============================================================
-   THUMBNAILS
-   4 ADDITIONAL PHOTOS
+   PRODUCT CATEGORY NAVIGATION
+   OVER PHOTO — NO SEPARATE WHITE HEADER
+   ============================================================ */
+
+.productCategoryNav{
+
+  position:absolute;
+
+  z-index:30;
+
+  top:
+    calc(
+      10px +
+      var(--safe-top)
+    );
+
+  left:12px;
+
+  right:12px;
+
+  height:42px;
+
+  display:flex;
+
+  align-items:center;
+
+  gap:20px;
+
+  padding:
+    0 14px;
+
+  overflow-x:auto;
+
+  overflow-y:hidden;
+
+  border-radius:15px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.76),
+      rgba(255,255,255,.42)
+    );
+
+  border:
+    1px solid
+    rgba(255,255,255,.94);
+
+  box-shadow:
+    0 8px 25px
+    rgba(0,0,0,.07);
+
+  backdrop-filter:
+    blur(24px)
+    saturate(160%);
+
+  -webkit-backdrop-filter:
+    blur(24px)
+    saturate(160%);
+
+  scrollbar-width:none;
+
+  -webkit-overflow-scrolling:touch;
+}
+
+.productCategoryNav::-webkit-scrollbar{
+  display:none;
+}
+
+.productCategoryButton{
+
+  position:relative;
+
+  flex:0 0 auto;
+
+  height:100%;
+
+  display:flex;
+
+  align-items:center;
+
+  white-space:nowrap;
+
+  color:
+    rgba(0,0,0,.56);
+
+  font-size:7px;
+
+  font-weight:600;
+
+  letter-spacing:.05px;
+
+  text-transform:uppercase;
+
+  transition:
+    color .16s ease,
+    transform .16s ease;
+}
+
+.productCategoryButton.active{
+
+  color:#080808;
+
+  font-weight:800;
+}
+
+.productCategoryButton.active::after{
+
+  content:"";
+
+  position:absolute;
+
+  left:0;
+
+  right:0;
+
+  bottom:3px;
+
+  height:2px;
+
+  border-radius:999px;
+
+  background:#080808;
+}
+
+.productCategoryButton:active{
+
+  transform:
+    scale(.94);
+}
+
+@media(hover:hover){
+
+  .productCategoryButton:hover{
+
+    color:#080808;
+
+    transform:
+      translateY(-1px);
+  }
+}
+
+/* ============================================================
+   4 ADDITIONAL PRODUCT PHOTOS
    ============================================================ */
 
 .thumbnailRail{
 
   position:absolute;
 
-  z-index:10;
+  z-index:15;
 
   top:
     calc(
-      72px +
+      67px +
       var(--safe-top)
     );
 
@@ -305,7 +462,7 @@ svg{
   overflow:hidden;
 
   background:
-    rgba(255,255,255,.72);
+    rgba(255,255,255,.74);
 
   border:
     1px solid
@@ -313,17 +470,17 @@ svg{
 
   box-shadow:
     0 6px 17px
-    rgba(0,0,0,.07);
+    rgba(0,0,0,.08);
 
   backdrop-filter:
-    blur(12px);
+    blur(13px);
 
   -webkit-backdrop-filter:
-    blur(12px);
+    blur(13px);
 
   transition:
-    transform .17s ease,
-    border-color .17s ease;
+    transform .16s ease,
+    border-color .16s ease;
 }
 
 .thumbnail img{
@@ -343,9 +500,9 @@ svg{
 
   box-shadow:
     0 0 0 1px
-    rgba(0,0,0,.30),
+    rgba(0,0,0,.26),
     0 6px 17px
-    rgba(0,0,0,.07);
+    rgba(0,0,0,.08);
 }
 
 .thumbnailPlaceholder{
@@ -354,22 +511,28 @@ svg{
 
   height:100%;
 
-  border-radius:7px;
-
   display:grid;
 
   place-items:center;
 
+  border-radius:7px;
+
   background:
     linear-gradient(
       145deg,
-      rgba(255,255,255,.92),
-      rgba(240,240,240,.85)
+      rgba(255,255,255,.94),
+      rgba(240,240,240,.86)
     );
 
   color:#999;
 
   font-size:6px;
+}
+
+.thumbnail:active{
+
+  transform:
+    scale(.94);
 }
 
 @media(hover:hover){
@@ -383,26 +546,35 @@ svg{
 }
 
 /* ============================================================
-   TOP BAG
+   RIGHT CONTROL STACK
+   NUMBER > HEART > SHARE > BAG
    ============================================================ */
 
-.topBag{
+.rightControls{
 
   position:absolute;
 
-  z-index:14;
+  z-index:20;
+
+  right:14px;
 
   top:
     calc(
-      15px +
+      352px +
       var(--safe-top)
     );
 
-  right:13px;
+  display:flex;
+
+  flex-direction:column;
+
+  align-items:center;
+
+  gap:9px;
 }
 
 /* ============================================================
-   GLASS CIRCLE
+   GENERAL ROUND GLASS BUTTON
    ============================================================ */
 
 .circleControl{
@@ -420,7 +592,7 @@ svg{
   place-items:center;
 
   background:
-    rgba(255,255,255,.70);
+    rgba(255,255,255,.72);
 
   border:
     1px solid
@@ -432,7 +604,7 @@ svg{
     rgba(0,0,0,.025),
 
     0 8px 22px
-    rgba(0,0,0,.08);
+    rgba(0,0,0,.085);
 
   backdrop-filter:
     blur(20px)
@@ -443,8 +615,8 @@ svg{
     saturate(155%);
 
   transition:
-    transform .17s ease,
-    box-shadow .17s ease;
+    transform .16s ease,
+    box-shadow .16s ease;
 }
 
 .circleControl svg{
@@ -459,7 +631,7 @@ svg{
 .circleControl:active{
 
   transform:
-    scale(.91);
+    scale(.90);
 }
 
 @media(hover:hover){
@@ -477,8 +649,108 @@ svg{
 }
 
 /* ============================================================
-   BAG COUNT
+   PRODUCT NUMBER
    ============================================================ */
+
+.productNumber{
+
+  width:38px;
+
+  height:38px;
+
+  border-radius:50%;
+
+  display:grid;
+
+  place-items:center;
+
+  background:
+    rgba(255,255,255,.73);
+
+  border:
+    1px solid
+    rgba(255,255,255,.96);
+
+  box-shadow:
+
+    0 0 0 1px
+    rgba(0,0,0,.025),
+
+    0 7px 18px
+    rgba(0,0,0,.075);
+
+  backdrop-filter:
+    blur(18px);
+
+  -webkit-backdrop-filter:
+    blur(18px);
+
+  font-size:11px;
+
+  font-weight:700;
+}
+
+/* ============================================================
+   FAVORITE
+   ============================================================ */
+
+.favoriteButton{
+  color:#111;
+}
+
+.favoriteButton.active{
+
+  color:#e61937;
+
+  background:
+    rgba(255,235,239,.85);
+
+  box-shadow:
+
+    0 0 0 1px
+    rgba(230,25,55,.08),
+
+    0 9px 24px
+    rgba(230,25,55,.16);
+}
+
+.favoriteButton.active svg{
+
+  fill:currentColor;
+
+  stroke:currentColor;
+}
+
+/* ============================================================
+   SHARE
+   ============================================================ */
+
+.shareButton svg{
+
+  width:21px;
+
+  height:21px;
+
+  stroke-width:1.45;
+}
+
+/* ============================================================
+   BAG NOW UNDER SHARE
+   ============================================================ */
+
+.photoBag{
+
+  position:relative;
+}
+
+.photoBag svg{
+
+  width:20px;
+
+  height:20px;
+
+  stroke-width:1.5;
+}
 
 .bagBadge{
 
@@ -522,133 +794,10 @@ svg{
 @keyframes bagBump{
 
   50%{
+
     transform:
       scale(1.30);
   }
-}
-
-/* ============================================================
-   RIGHT CONTROLS
-   THUMBNAILS AND NUMBER NO LONGER OVERLAP
-   ============================================================ */
-
-.rightControls{
-
-  position:absolute;
-
-  z-index:13;
-
-  /*
-    Four thumbnails occupy:
-    4 x 59 = 236px
-    + three 7px gaps = 21px
-
-    Starting around 72px means the controls safely begin
-    after the thumbnail stack.
-  */
-
-  top:
-    calc(
-      351px +
-      var(--safe-top)
-    );
-
-  right:15px;
-
-  display:flex;
-
-  flex-direction:column;
-
-  align-items:center;
-
-  gap:9px;
-}
-
-/* ============================================================
-   PRODUCT NUMBER
-   ============================================================ */
-
-.productNumber{
-
-  width:38px;
-
-  height:38px;
-
-  border-radius:50%;
-
-  display:grid;
-
-  place-items:center;
-
-  background:
-    rgba(255,255,255,.72);
-
-  border:
-    1px solid
-    rgba(255,255,255,.96);
-
-  box-shadow:
-
-    0 0 0 1px
-    rgba(0,0,0,.025),
-
-    0 7px 18px
-    rgba(0,0,0,.07);
-
-  backdrop-filter:
-    blur(18px);
-
-  -webkit-backdrop-filter:
-    blur(18px);
-
-  font-size:11px;
-
-  font-weight:700;
-}
-
-/* ============================================================
-   FAVORITE
-   ============================================================ */
-
-.favoriteButton{
-
-  color:#111;
-}
-
-.favoriteButton.active{
-
-  color:#e61937;
-
-  background:
-    rgba(255,235,239,.84);
-
-  box-shadow:
-
-    0 0 0 1px
-    rgba(230,25,55,.08),
-
-    0 9px 24px
-    rgba(230,25,55,.16);
-}
-
-.favoriteButton.active svg{
-
-  fill:currentColor;
-
-  stroke:currentColor;
-}
-
-/* ============================================================
-   SHARE - PAPER PLANE
-   ============================================================ */
-
-.shareButton svg{
-
-  width:21px;
-
-  height:21px;
-
-  stroke-width:1.45;
 }
 
 /* ============================================================
@@ -659,14 +808,14 @@ svg{
 
   position:absolute;
 
-  z-index:16;
+  z-index:22;
 
   left:19px;
 
   bottom:
     calc(
       var(--nav-h) +
-      39px +
+      40px +
       var(--safe-bottom)
     );
 
@@ -690,11 +839,11 @@ svg{
   gap:14px;
 
   background:
-    rgba(255,255,255,.53);
+    rgba(255,255,255,.55);
 
   border:
     1px solid
-    rgba(255,255,255,.94);
+    rgba(255,255,255,.95);
 
   box-shadow:
 
@@ -702,7 +851,7 @@ svg{
     rgba(0,0,0,.035),
 
     0 9px 28px
-    rgba(0,0,0,.09);
+    rgba(0,0,0,.095);
 
   backdrop-filter:
     blur(22px)
@@ -749,12 +898,12 @@ svg{
       translateY(-2px);
 
     background:
-      rgba(255,255,255,.69);
+      rgba(255,255,255,.70);
   }
 }
 
 /* ============================================================
-   BOTTOM NAV
+   BOTTOM NAVIGATION
    ============================================================ */
 
 .bottomNav{
@@ -799,16 +948,15 @@ svg{
   align-items:center;
 
   background:
-
     linear-gradient(
       145deg,
-      rgba(255,255,255,.66),
-      rgba(255,255,255,.27)
+      rgba(255,255,255,.67),
+      rgba(255,255,255,.28)
     );
 
   border:
     1px solid
-    rgba(255,255,255,.94);
+    rgba(255,255,255,.95);
 
   box-shadow:
 
@@ -866,10 +1014,6 @@ svg{
 
   font-size:6.7px;
 }
-
-/*
-  No permanent selector.
-*/
 
 .navButton.active{
 
@@ -988,11 +1132,6 @@ svg{
   pointer-events:auto;
 }
 
-/*
-  We do not blur the product image itself.
-  The glass sheet performs the background blur.
-*/
-
 .detailsBackdrop{
 
   position:absolute;
@@ -1004,7 +1143,7 @@ svg{
 }
 
 /* ============================================================
-   CLEAR GLASS DETAIL SHEET
+   CLEAR GLASS DETAILS
    ============================================================ */
 
 .detailsSheet{
@@ -1033,11 +1172,10 @@ svg{
   overflow:hidden;
 
   background:
-
     linear-gradient(
       145deg,
-      rgba(255,255,255,.69),
-      rgba(255,255,255,.39)
+      rgba(255,255,255,.70),
+      rgba(255,255,255,.40)
     );
 
   border:
@@ -1102,6 +1240,8 @@ svg{
 
 .dragHandle{
 
+  display:block;
+
   width:32px;
 
   height:3px;
@@ -1116,8 +1256,8 @@ svg{
 }
 
 /* ============================================================
-   MINIMAL TOP
-   BAG + PRICE
+   DETAILS TOP
+   TITLE / PRICE / BAG
    ============================================================ */
 
 .detailsTop{
@@ -1229,7 +1369,6 @@ svg{
 
 /* ============================================================
    DESCRIPTION
-   NOW ABOVE COLOR + SIZE
    ============================================================ */
 
 .descriptionBlock{
@@ -1283,7 +1422,7 @@ svg{
 }
 
 /* ============================================================
-   COLOR
+   COLORS
    ============================================================ */
 
 .colorRow{
@@ -1410,7 +1549,7 @@ svg{
 }
 
 /* ============================================================
-   PURCHASE ACTIONS
+   PURCHASE
    ============================================================ */
 
 .purchaseActions{
@@ -1469,19 +1608,7 @@ svg{
 }
 
 /* ============================================================
-   REVIEWS
-   ============================================================ */
-
-/*
-  Reviews are intentionally NOT rendered yet.
-
-  We will add them only when they are connected to
-  real shared storage/authentication so customers
-  can genuinely publish and read reviews.
-*/
-
-/* ============================================================
-   SOCIAL SHARE
+   SHARE OVERLAY
    ============================================================ */
 
 .shareOverlay{
@@ -1528,7 +1655,7 @@ svg{
   padding:13px;
 
   background:
-    rgba(255,255,255,.77);
+    rgba(255,255,255,.78);
 
   border:
     1px solid
@@ -1855,6 +1982,7 @@ svg{
 }
 
 </style>
+
 </head>
 
 <body>
@@ -1864,21 +1992,14 @@ svg{
   class="productApp"
 >
 
-  <!-- ========================================================
-       FULL SCREEN PRODUCT PHOTO
-       ======================================================== -->
-
   <main
     id="photoStage"
     class="photoStage"
   >
 
-    <!--
-      NO BACK BUTTON.
-      NO LOGO.
-      NO TOP LEFT CONTROL.
-      THE PRODUCT PHOTO OWNS THE FULL SCREEN.
-    -->
+    <!-- ======================================================
+         FULL SCREEN PRODUCT PHOTO
+         ====================================================== -->
 
     <img
       id="mainPhoto"
@@ -1888,7 +2009,17 @@ svg{
     >
 
     <!-- ======================================================
-         4 ADDITIONAL PHOTOS
+         CATEGORY QUICK NAVIGATION
+         ====================================================== -->
+
+    <nav
+      id="productCategoryNav"
+      class="productCategoryNav"
+      aria-label="Categorías"
+    ></nav>
+
+    <!-- ======================================================
+         PRODUCT PHOTO THUMBNAILS
          ====================================================== -->
 
     <div
@@ -1897,35 +2028,8 @@ svg{
     ></div>
 
     <!-- ======================================================
-         TOP BAG
-         ====================================================== -->
-
-    <button
-      id="topBag"
-      class="circleControl topBag"
-      aria-label="Abrir bolsa"
-    >
-
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-      >
-        <path d="M6.3 8.4h11.4l1 11H5.3l1-11Z"/>
-        <path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>
-      </svg>
-
-      <span
-        id="topBagBadge"
-        class="bagBadge"
-      >
-        0
-      </span>
-
-    </button>
-
-    <!-- ======================================================
-         PRODUCT NUMBER + FAVORITE + SHARE
+         RIGHT SIDE CONTROLS
+         NUMBER > HEART > SHARE > BAG
          ====================================================== -->
 
     <div class="rightControls">
@@ -1960,8 +2064,6 @@ svg{
         aria-label="Compartir producto"
       >
 
-        <!-- modern social/send icon -->
-
         <svg
           viewBox="0 0 24 24"
           fill="none"
@@ -1973,10 +2075,34 @@ svg{
 
       </button>
 
+      <button
+        id="photoBag"
+        class="circleControl photoBag"
+        aria-label="Abrir bolsa"
+      >
+
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+        >
+          <path d="M6.3 8.4h11.4l1 11H5.3l1-11Z"/>
+          <path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>
+        </svg>
+
+        <span
+          id="photoBagBadge"
+          class="bagBadge"
+        >
+          0
+        </span>
+
+      </button>
+
     </div>
 
     <!-- ======================================================
-         CLOSED DETAILS CAPSULE
+         CLOSED PRICE CAPSULE
          ====================================================== -->
 
     <button
@@ -2007,8 +2133,8 @@ svg{
 </div>
 
 <!-- ==========================================================
-     PRODUCT DETAILS
-     BAG > PRICE > DESCRIPTION > COLOR > SIZE
+     DETAILS
+     PRICE > DESCRIPTION > COLOR > SIZE
      ========================================================== -->
 
 <div
@@ -2034,10 +2160,6 @@ svg{
         aria-label="Cerrar detalles"
       ></button>
 
-      <!-- ====================================================
-           MINIMAL PRODUCT HEADER
-           ==================================================== -->
-
       <header class="detailsTop">
 
         <div>
@@ -2054,7 +2176,9 @@ svg{
             class="detailsPrice"
           >
             $0
-            <small>COP</small>
+            <small>
+              COP
+            </small>
           </div>
 
         </div>
@@ -2085,9 +2209,7 @@ svg{
 
       </header>
 
-      <!-- ====================================================
-           DESCRIPTION FIRST
-           ==================================================== -->
+      <!-- DESCRIPTION -->
 
       <section class="descriptionBlock">
 
@@ -2104,9 +2226,7 @@ svg{
 
       </section>
 
-      <!-- ====================================================
-           COLOR
-           ==================================================== -->
+      <!-- COLOR -->
 
       <section class="optionSection">
 
@@ -2147,10 +2267,7 @@ svg{
 
       </section>
 
-      <!-- ====================================================
-           SIZE
-           CLICKING A SIZE IMMEDIATELY PUTS ITEM IN BAG
-           ==================================================== -->
+      <!-- SIZE -->
 
       <section class="optionSection">
 
@@ -2208,9 +2325,7 @@ svg{
 
       </section>
 
-      <!-- ====================================================
-           REAL PURCHASE ACTIONS
-           ==================================================== -->
+      <!-- PURCHASE -->
 
       <section class="purchaseActions">
 
@@ -2249,7 +2364,7 @@ svg{
 </div>
 
 <!-- ==========================================================
-     SHARE MENU
+     SHARE
      ========================================================== -->
 
 <div
@@ -2424,7 +2539,7 @@ svg{
 </div>
 
 <!-- ==========================================================
-     BOTTOM NAV
+     BOTTOM NAVIGATION
      ========================================================== -->
 
 <nav
@@ -2557,7 +2672,7 @@ svg{
   "use strict";
 
   /* ============================================================
-     CONFIG
+     CONFIGURATION
      ============================================================ */
 
   const CONFIG = {
@@ -2579,17 +2694,33 @@ svg{
       "MODAPOP_WIX"
     ],
 
-    sizes:[
-      "XS",
-      "S",
-      "M",
-      "L",
-      "XL"
-    ],
-
     maxProductNumber:
       100
   };
+
+  const CATEGORIES = [
+
+    {
+      id:"late",
+      name:"Noches Largas"
+    },
+
+    {
+      id:"chill",
+      name:"Días Tranquilos"
+    },
+
+    {
+      id:"quick",
+      name:"Rápido y Fácil"
+    },
+
+    {
+      id:"sun",
+      name:"Baño de Sol"
+    }
+
+  ];
 
   /* ============================================================
      DOM
@@ -2613,47 +2744,7 @@ svg{
       ];
 
   /* ============================================================
-     STATE
-     ============================================================ */
-
-  const savedFavorites =
-    readJson(
-      "cajamoda-favorites",
-      []
-    );
-
-  const state = {
-
-    catalog:[],
-
-    product:null,
-
-    categoryId:null,
-
-    categoryProducts:[],
-
-    productIndex:0,
-
-    imageIndex:0,
-
-    selectedSize:null,
-
-    selectedColor:
-      "Negro",
-
-    favorites:
-      new Set(
-        Array.isArray(
-          savedFavorites
-        )
-          ?savedFavorites
-            .map(String)
-          :[]
-      )
-  };
-
-  /* ============================================================
-     STORAGE
+     STORAGE HELPERS
      ============================================================ */
 
   function readJson(
@@ -2702,8 +2793,74 @@ svg{
   }
 
   /* ============================================================
+     STATE
+     ============================================================ */
+
+  const savedFavorites =
+    readJson(
+      "cajamoda-favorites",
+      []
+    );
+
+  const state = {
+
+    catalog:[],
+
+    product:null,
+
+    categoryId:"late",
+
+    categoryProducts:[],
+
+    productIndex:0,
+
+    imageIndex:0,
+
+    selectedSize:null,
+
+    selectedColor:"Negro",
+
+    favorites:
+      new Set(
+        Array.isArray(
+          savedFavorites
+        )
+          ?savedFavorites
+            .map(String)
+          :[]
+      )
+  };
+
+  /* ============================================================
      HELPERS
      ============================================================ */
+
+  function normalizeText(
+    value
+  ){
+
+    return String(
+      value ||
+      ""
+    )
+      .normalize(
+        "NFD"
+      )
+      .replace(
+        /[\u0300-\u036f]/g,
+        ""
+      )
+      .toLowerCase()
+      .replace(
+        /[^a-z0-9]+/g,
+        " "
+      )
+      .replace(
+        /\s+/g,
+        " "
+      )
+      .trim();
+  }
 
   function escapeHtml(
     value
@@ -2735,6 +2892,17 @@ svg{
       );
   }
 
+  function safeText(
+    value,
+    fallback=""
+  ){
+
+    return String(
+      value ||
+      fallback
+    );
+  }
+
   function money(
     value
   ){
@@ -2760,23 +2928,14 @@ svg{
       );
   }
 
-  function safeText(
-    value,
-    fallback=""
-  ){
-
-    return String(
-      value ||
-      fallback
-    );
-  }
-
   function createId(){
 
     if(
-      crypto?.randomUUID
+      window.crypto?.randomUUID
     ){
-      return crypto.randomUUID();
+
+      return window.crypto
+        .randomUUID();
     }
 
     return (
@@ -2832,6 +2991,7 @@ svg{
 
       window.parent.postMessage(
         {
+
           source:
             CONFIG.bridgeSource,
 
@@ -2873,13 +3033,170 @@ svg{
           state.product?.id ||
           null,
 
+        categoryId:
+          state.categoryId,
+
         ...payload
       }
     );
   }
 
   /* ============================================================
-     PRODUCT MEDIA
+     DETERMINE PRODUCT CATEGORY
+     ============================================================ */
+
+  function getProductCategory(
+    product
+  ){
+
+    if(
+      !product
+    ){
+      return null;
+    }
+
+    const explicit =
+      normalizeText(
+        [
+          product.category,
+          product.vibeId,
+          product.vibe,
+          product.productType,
+          product.type
+        ]
+          .filter(Boolean)
+          .join(" ")
+      );
+
+    if(
+      explicit === "late" ||
+      explicit.includes(
+        "noches largas"
+      ) ||
+      explicit.includes(
+        "long nights"
+      )
+    ){
+      return "late";
+    }
+
+    if(
+      explicit === "chill" ||
+      explicit.includes(
+        "dias tranquilos"
+      ) ||
+      explicit.includes(
+        "quiet days"
+      )
+    ){
+      return "chill";
+    }
+
+    if(
+      explicit === "quick" ||
+      explicit.includes(
+        "rapido y facil"
+      ) ||
+      explicit.includes(
+        "quick and easy"
+      )
+    ){
+      return "quick";
+    }
+
+    if(
+      explicit === "sun" ||
+      explicit.includes(
+        "bano de sol"
+      ) ||
+      explicit.includes(
+        "sunbathing"
+      )
+    ){
+      return "sun";
+    }
+
+    const searchable =
+      normalizeText(
+        [
+          product.name,
+          product.description,
+          product.productType,
+          product.type,
+          product.collectionName
+        ]
+          .filter(Boolean)
+          .join(" ")
+      );
+
+    if(
+      searchable.includes(
+        "vestido"
+      ) ||
+      searchable.includes(
+        "dress"
+      ) ||
+      searchable.includes(
+        "noche"
+      )
+    ){
+      return "late";
+    }
+
+    if(
+      searchable.includes(
+        "top"
+      ) ||
+      searchable.includes(
+        "blusa"
+      ) ||
+      searchable.includes(
+        "camisa"
+      ) ||
+      searchable.includes(
+        "casual"
+      )
+    ){
+      return "chill";
+    }
+
+    if(
+      searchable.includes(
+        "conjunto"
+      ) ||
+      searchable.includes(
+        "set"
+      )
+    ){
+      return "quick";
+    }
+
+    if(
+      searchable.includes(
+        "bikini"
+      ) ||
+      searchable.includes(
+        "swim"
+      ) ||
+      searchable.includes(
+        "playa"
+      ) ||
+      searchable.includes(
+        "enterizo"
+      )
+    ){
+      return "sun";
+    }
+
+    return (
+      product.category ||
+      product.vibeId ||
+      null
+    );
+  }
+
+  /* ============================================================
+     MEDIA
      ============================================================ */
 
   function getMedia(
@@ -2900,6 +3217,7 @@ svg{
               typeof item ===
               "string"
             ){
+
               return item;
             }
 
@@ -2925,7 +3243,168 @@ svg{
   }
 
   /* ============================================================
-     PRODUCT LOAD
+     CATEGORY PRODUCT LIST
+     ============================================================ */
+
+  function rebuildCategoryProducts(){
+
+    state.categoryProducts =
+      state.catalog.filter(
+        product =>
+          getProductCategory(
+            product
+          ) ===
+          state.categoryId
+      );
+
+    if(
+      !state.categoryProducts.length &&
+      state.product
+    ){
+
+      state.categoryProducts =
+        [
+          state.product
+        ];
+    }
+  }
+
+  /* ============================================================
+     CATEGORY NAV
+     ============================================================ */
+
+  function renderCategoryNav(){
+
+    $("productCategoryNav")
+      .innerHTML =
+        CATEGORIES.map(
+          category => `
+
+            <button
+              class="productCategoryButton ${
+                category.id ===
+                state.categoryId
+                  ?"active"
+                  :""
+              }"
+              data-product-category="${category.id}"
+            >
+
+              ${escapeHtml(category.name)}
+
+            </button>
+
+          `
+        )
+          .join("");
+
+    qsa(
+      "[data-product-category]"
+    )
+      .forEach(
+        button => {
+
+          button.onclick =
+            event => {
+
+              event.stopPropagation();
+
+              switchCategory(
+                button.dataset
+                  .productCategory
+              );
+
+            };
+
+        }
+      );
+
+    const active =
+      document.querySelector(
+        ".productCategoryButton.active"
+      );
+
+    active?.scrollIntoView({
+      behavior:"smooth",
+      inline:"center",
+      block:"nearest"
+    });
+  }
+
+  function switchCategory(
+    categoryId
+  ){
+
+    const category =
+      CATEGORIES.find(
+        item =>
+          item.id ===
+          categoryId
+      );
+
+    if(
+      !category
+    ){
+      return;
+    }
+
+    const products =
+      state.catalog.filter(
+        product =>
+          getProductCategory(
+            product
+          ) ===
+          categoryId
+      );
+
+    if(
+      !products.length
+    ){
+
+      showToast(
+        `No hay productos en ${category.name}.`
+      );
+
+      return;
+    }
+
+    state.categoryId =
+      categoryId;
+
+    state.categoryProducts =
+      products;
+
+    state.productIndex =
+      0;
+
+    state.product =
+      products[0];
+
+    state.imageIndex =
+      0;
+
+    state.selectedSize =
+      null;
+
+    state.selectedColor =
+      "Negro";
+
+    resetColorControls();
+
+    renderCategoryNav();
+
+    renderProduct();
+
+    track(
+      "PRODUCT_CATEGORY_SWITCH",
+      {
+        categoryId
+      }
+    );
+  }
+
+  /* ============================================================
+     INITIAL PRODUCT
      ============================================================ */
 
   function loadInitialProduct(){
@@ -2935,30 +3414,28 @@ svg{
         location.search
       );
 
-    const productId =
+    const requestedProductId =
       params.get(
         "productId"
       );
 
-    state.categoryId =
+    const requestedCategory =
       params.get(
         "category"
       );
 
-    state.catalog =
+    const cachedCatalog =
       readJson(
         "cajamoda-catalog",
         []
       );
 
-    if(
-      !Array.isArray(
-        state.catalog
+    state.catalog =
+      Array.isArray(
+        cachedCatalog
       )
-    ){
-      state.catalog =
-        [];
-    }
+        ?cachedCatalog
+        :[];
 
     const cachedActive =
       readJson(
@@ -2966,14 +3443,14 @@ svg{
         null
       );
 
-    state.product =
+    let selectedProduct =
       state.catalog.find(
         product =>
           String(
             product.id
           ) ===
           String(
-            productId
+            requestedProductId
           )
       ) ||
       cachedActive ||
@@ -2981,36 +3458,40 @@ svg{
       null;
 
     if(
-      !state.product
+      !selectedProduct
     ){
 
       renderEmptyProduct();
 
+      renderCategoryNav();
+
       return;
     }
 
-    state.categoryId =
-      state.product.category ||
-      state.categoryId ||
-      null;
+    state.product =
+      selectedProduct;
 
-    state.categoryProducts =
-      state.catalog.filter(
-        product =>
-          !state.categoryId ||
-          product.category ===
-          state.categoryId
+    const actualCategory =
+      getProductCategory(
+        selectedProduct
       );
 
-    if(
-      !state.categoryProducts.length
-    ){
+    const validRequested =
+      CATEGORIES.some(
+        category =>
+          category.id ===
+          requestedCategory
+      );
 
-      state.categoryProducts =
-        [
-          state.product
-        ];
-    }
+    state.categoryId =
+      actualCategory ||
+      (
+        validRequested
+          ?requestedCategory
+          :"late"
+      );
+
+    rebuildCategoryProducts();
 
     const foundIndex =
       state.categoryProducts
@@ -3020,7 +3501,7 @@ svg{
               product.id
             ) ===
             String(
-              state.product.id
+              selectedProduct.id
             )
         );
 
@@ -3029,8 +3510,18 @@ svg{
         ?foundIndex
         :0;
 
-    renderProduct();
+    if(
+      foundIndex < 0 &&
+      state.categoryProducts.length
+    ){
 
+      state.product =
+        state.categoryProducts[0];
+    }
+
+    renderCategoryNav();
+
+    renderProduct();
   }
 
   function renderEmptyProduct(){
@@ -3090,14 +3581,32 @@ svg{
       product.image ||
       "";
 
-    $("mainPhoto").src =
-      currentImage;
+    const photo =
+      $("mainPhoto");
 
-    $("mainPhoto").alt =
-      safeText(
-        product.name,
-        "Producto CajaModa"
-      );
+    photo.classList.add(
+      "changing"
+    );
+
+    setTimeout(
+      () => {
+
+        photo.src =
+          currentImage;
+
+        photo.alt =
+          safeText(
+            product.name,
+            "Producto CajaModa"
+          );
+
+        photo.classList.remove(
+          "changing"
+        );
+
+      },
+      70
+    );
 
     $("priceCapsuleText")
       .textContent =
@@ -3121,7 +3630,12 @@ svg{
           "Producto seleccionado de CajaModa. Elige tu color y tu talla para agregarlo a tu bolsa."
         );
 
-    const productNumber =
+    /*
+      Number always represents position inside
+      the active category.
+    */
+
+    const number =
       Math.min(
         CONFIG.maxProductNumber,
         state.productIndex +
@@ -3131,7 +3645,7 @@ svg{
     $("productNumber")
       .textContent =
         String(
-          productNumber
+          number
         );
 
     state.selectedSize =
@@ -3158,7 +3672,6 @@ svg{
     );
 
     updateUrlWithoutReload();
-
   }
 
   function updateUrlWithoutReload(){
@@ -3179,15 +3692,10 @@ svg{
       state.product.id
     );
 
-    if(
-      state.product.category
-    ){
-
-      url.searchParams.set(
-        "category",
-        state.product.category
-      );
-    }
+    url.searchParams.set(
+      "category",
+      state.categoryId
+    );
 
     history.replaceState(
       null,
@@ -3208,11 +3716,10 @@ svg{
       );
 
     const five =
-      media
-        .slice(
-          0,
-          5
-        );
+      media.slice(
+        0,
+        5
+      );
 
     while(
       five.length <
@@ -3223,11 +3730,6 @@ svg{
         ""
       );
     }
-
-    /*
-      Main photo = position zero.
-      Four additional thumbnails = positions 1–4.
-    */
 
     $("thumbnailRail")
       .innerHTML =
@@ -3247,6 +3749,7 @@ svg{
                 1;
 
               return `
+
                 <button
                   class="thumbnail ${
                     actualIndex ===
@@ -3274,13 +3777,12 @@ svg{
                   }
 
                 </button>
+
               `;
 
             }
           )
-          .join(
-            ""
-          );
+          .join("");
 
     qsa(
       "[data-image-index]"
@@ -3289,7 +3791,9 @@ svg{
         button => {
 
           button.onclick =
-            () => {
+            event => {
+
+              event.stopPropagation();
 
               const index =
                 Number(
@@ -3297,10 +3801,13 @@ svg{
                     .imageIndex
                 );
 
-              if(
-                !getMedia(
+              const media =
+                getMedia(
                   state.product
-                )[index]
+                );
+
+              if(
+                !media[index]
               ){
                 return;
               }
@@ -3358,39 +3865,69 @@ svg{
   }
 
   /* ============================================================
-     SWIPE BETWEEN PRODUCTS
+     PRODUCT SWIPE
+     LEFT = NEXT
+     RIGHT = PREVIOUS
+     ALWAYS INSIDE ACTIVE CATEGORY
      ============================================================ */
 
-  let touchStartX =
+  let pointerStartX =
     0;
 
-  let touchStartY =
+  let pointerStartY =
     0;
+
+  let pointerStartedOnControl =
+    false;
+
+  let pointerTracking =
+    false;
 
   $("photoStage")
     .addEventListener(
-      "touchstart",
+      "pointerdown",
       event => {
 
-        const touch =
-          event.changedTouches[0];
+        pointerStartedOnControl =
+          !!event.target.closest(
+            "button,nav"
+          );
 
-        touchStartX =
-          touch.clientX;
+        if(
+          pointerStartedOnControl
+        ){
 
-        touchStartY =
-          touch.clientY;
+          pointerTracking =
+            false;
 
-      },
-      {
-        passive:true
+          return;
+        }
+
+        pointerTracking =
+          true;
+
+        pointerStartX =
+          event.clientX;
+
+        pointerStartY =
+          event.clientY;
+
       }
     );
 
   $("photoStage")
     .addEventListener(
-      "touchend",
+      "pointerup",
       event => {
+
+        if(
+          !pointerTracking
+        ){
+          return;
+        }
+
+        pointerTracking =
+          false;
 
         if(
           $("detailsOverlay")
@@ -3402,22 +3939,23 @@ svg{
           return;
         }
 
-        const touch =
-          event.changedTouches[0];
-
         const dx =
-          touch.clientX -
-          touchStartX;
+          event.clientX -
+          pointerStartX;
 
         const dy =
-          touch.clientY -
-          touchStartY;
+          event.clientY -
+          pointerStartY;
+
+        /*
+          Require a real horizontal swipe.
+        */
 
         if(
           Math.abs(
             dx
           ) <
-          55
+          45
         ){
           return;
         }
@@ -3445,17 +3983,30 @@ svg{
           previousProduct();
         }
 
-      },
-      {
-        passive:true
+      }
+    );
+
+  $("photoStage")
+    .addEventListener(
+      "pointercancel",
+      () => {
+
+        pointerTracking =
+          false;
       }
     );
 
   function nextProduct(){
 
     if(
-      !state.categoryProducts.length
+      state.categoryProducts.length <
+      2
     ){
+
+      showToast(
+        "No hay otro producto en esta categoría."
+      );
+
       return;
     }
 
@@ -3477,13 +4028,20 @@ svg{
     state.selectedSize =
       null;
 
+    state.selectedColor =
+      "Negro";
+
+    resetColorControls();
+
     renderProduct();
 
     track(
       "PRODUCT_SWIPE",
       {
-        direction:
-          "next"
+        direction:"left",
+        productIndex:
+          state.productIndex +
+          1
       }
     );
   }
@@ -3491,8 +4049,14 @@ svg{
   function previousProduct(){
 
     if(
-      !state.categoryProducts.length
+      state.categoryProducts.length <
+      2
     ){
+
+      showToast(
+        "No hay otro producto en esta categoría."
+      );
+
       return;
     }
 
@@ -3515,13 +4079,20 @@ svg{
     state.selectedSize =
       null;
 
+    state.selectedColor =
+      "Negro";
+
+    resetColorControls();
+
     renderProduct();
 
     track(
       "PRODUCT_SWIPE",
       {
-        direction:
-          "previous"
+        direction:"right",
+        productIndex:
+          state.productIndex +
+          1
       }
     );
   }
@@ -3582,28 +4153,11 @@ svg{
      CART
      ============================================================ */
 
-  function readCart(){
-
-    const stored =
-      readJson(
-        "cajamoda-cart",
-        {
-          items:[],
-          count:0,
-          total:0
-        }
-      );
-
-    return normalizeCart(
-      stored
-    );
-  }
-
   function normalizeCart(
     cart
   ){
 
-    const items =
+    const sourceItems =
       Array.isArray(
         cart?.items
       )
@@ -3614,8 +4168,8 @@ svg{
           ?cart.lineItems
           :[];
 
-    const normalizedItems =
-      items.map(
+    const items =
+      sourceItems.map(
         item => ({
 
           id:
@@ -3684,7 +4238,7 @@ svg{
       );
 
     const count =
-      normalizedItems.reduce(
+      items.reduce(
         (
           sum,
           item
@@ -3695,7 +4249,7 @@ svg{
       );
 
     const total =
-      normalizedItems.reduce(
+      items.reduce(
         (
           sum,
           item
@@ -3709,13 +4263,27 @@ svg{
       );
 
     return{
-      items:
-        normalizedItems,
+
+      items,
 
       count,
 
       total
     };
+  }
+
+  function readCart(){
+
+    return normalizeCart(
+      readJson(
+        "cajamoda-cart",
+        {
+          items:[],
+          count:0,
+          total:0
+        }
+      )
+    );
   }
 
   function saveCart(
@@ -3746,7 +4314,7 @@ svg{
       cart.count;
 
     [
-      $("topBagBadge"),
+      $("photoBagBadge"),
       $("navBagBadge"),
       $("detailsBagCount")
     ]
@@ -3754,24 +4322,29 @@ svg{
         badge => {
 
           if(
-            !badge
+            badge
           ){
-            return;
-          }
 
-          badge.textContent =
-            String(
-              count
-            );
+            badge.textContent =
+              String(
+                count
+              );
+          }
 
         }
       );
   }
 
-  function animateBagCount(){
+  function animateBag(){
 
     const badge =
-      $("topBagBadge");
+      $("photoBagBadge");
+
+    if(
+      !badge
+    ){
+      return;
+    }
 
     badge.classList.remove(
       "bump"
@@ -3786,7 +4359,6 @@ svg{
 
   /* ============================================================
      SIZE SELECTION
-     SELECTING SIZE = ITEM ENTERS BAG
      ============================================================ */
 
   function findExistingAutoLine(
@@ -3851,16 +4423,10 @@ svg{
       return;
     }
 
-    /*
-      Tapping the already selected size does not
-      accidentally add another duplicate item.
-    */
-
     if(
       state.selectedSize ===
       size
     ){
-
       return;
     }
 
@@ -3873,12 +4439,9 @@ svg{
 
     renderSizeState();
 
-    /*
-      Selecting a size immediately creates or updates
-      the one active product selection in the bag.
-    */
-
     syncSelectionToBag();
+
+    animateBag();
 
     if(
       navigator.vibrate
@@ -3893,13 +4456,10 @@ svg{
       `Talla ${size} agregada a la bolsa.`
     );
 
-    animateBagCount();
-
     track(
       "SIZE_SELECTED",
       {
         size,
-
         color:
           state.selectedColor
       }
@@ -3925,12 +4485,37 @@ svg{
     );
 
   /* ============================================================
-     COLOR
+     COLORS
      ============================================================ */
+
+  function resetColorControls(){
+
+    state.selectedColor =
+      "Negro";
+
+    $("selectedColorLabel")
+      .textContent =
+        "Negro";
+
+    qsa(
+      "[data-color]"
+    )
+      .forEach(
+        button => {
+
+          button.classList.toggle(
+            "active",
+            button.dataset.color ===
+            "Negro"
+          );
+
+        }
+      );
+  }
 
   function selectColor(
     color,
-    button
+    selectedButton
   ){
 
     state.selectedColor =
@@ -3944,31 +4529,22 @@ svg{
       "[data-color]"
     )
       .forEach(
-        colorButton => {
+        button => {
 
-          colorButton
-            .classList
-            .toggle(
-              "active",
-              colorButton ===
-              button
-            );
+          button.classList.toggle(
+            "active",
+            button ===
+            selectedButton
+          );
 
         }
       );
-
-    /*
-      If a size is already in the bag, update
-      that selected item rather than creating
-      a duplicate item.
-    */
 
     if(
       state.selectedSize
     ){
 
       syncSelectionToBag();
-
     }
 
     track(
@@ -3999,7 +4575,7 @@ svg{
     );
 
   /* ============================================================
-     AUTO BAG SELECTION
+     AUTO ADD TO BAG
      ============================================================ */
 
   function syncSelectionToBag(){
@@ -4037,12 +4613,6 @@ svg{
     if(
       line
     ){
-
-      /*
-        Customer changed size or color.
-        Update the same bag item.
-        Bag count stays correct.
-      */
 
       line.size =
         state.selectedSize;
@@ -4112,11 +4682,6 @@ svg{
         cart
       );
 
-    /*
-      Bridge hook for Wix eCom.
-      Local UI responds immediately.
-    */
-
     sendBridge(
       "ADD_TO_CART",
       {
@@ -4142,121 +4707,90 @@ svg{
   }
 
   /* ============================================================
-     ADD TO BAG BUTTON
+     ADD TO BAG
      ============================================================ */
-
-  function confirmBagSelection(){
-
-    if(
-      !state.product
-    ){
-      return;
-    }
-
-    if(
-      !state.selectedSize
-    ){
-
-      showToast(
-        "Selecciona una talla."
-      );
-
-      return;
-    }
-
-    /*
-      The size already added the item.
-      This button confirms the selection without
-      accidentally adding a duplicate.
-    */
-
-    syncSelectionToBag();
-
-    showToast(
-      "Producto guardado en tu bolsa."
-    );
-
-    if(
-      navigator.vibrate
-    ){
-
-      navigator.vibrate(
-        18
-      );
-    }
-
-    track(
-      "ADD_TO_BAG_CONFIRM",
-      {
-        size:
-          state.selectedSize,
-
-        color:
-          state.selectedColor
-      }
-    );
-  }
 
   $("addBagButton")
     .onclick =
-      confirmBagSelection;
+      () => {
+
+        if(
+          !state.selectedSize
+        ){
+
+          showToast(
+            "Selecciona una talla."
+          );
+
+          return;
+        }
+
+        syncSelectionToBag();
+
+        animateBag();
+
+        showToast(
+          "Producto guardado en tu bolsa."
+        );
+
+        if(
+          navigator.vibrate
+        ){
+
+          navigator.vibrate(
+            18
+          );
+        }
+      };
 
   /* ============================================================
      BUY NOW
      ============================================================ */
 
-  function buyNow(){
-
-    if(
-      !state.product
-    ){
-      return;
-    }
-
-    if(
-      !state.selectedSize
-    ){
-
-      showToast(
-        "Selecciona una talla."
-      );
-
-      return;
-    }
-
-    const cart =
-      syncSelectionToBag() ||
-      readCart();
-
-    saveJson(
-      "cajamoda-checkout-cart",
-      cart
-    );
-
-    track(
-      "BUY_NOW",
-      {
-        size:
-          state.selectedSize,
-
-        color:
-          state.selectedColor,
-
-        cartCount:
-          cart.count
-      }
-    );
-
-    location.href =
-      CONFIG.checkoutPage;
-  }
-
   $("buyNowButton")
     .onclick =
-      buyNow;
+      () => {
+
+        if(
+          !state.selectedSize
+        ){
+
+          showToast(
+            "Selecciona una talla."
+          );
+
+          return;
+        }
+
+        const cart =
+          syncSelectionToBag() ||
+          readCart();
+
+        saveJson(
+          "cajamoda-checkout-cart",
+          cart
+        );
+
+        track(
+          "BUY_NOW",
+          {
+            cartCount:
+              cart.count,
+
+            size:
+              state.selectedSize,
+
+            color:
+              state.selectedColor
+          }
+        );
+
+        location.href =
+          CONFIG.checkoutPage;
+      };
 
   /* ============================================================
-     FAVORITES
+     FAVORITE
      ============================================================ */
 
   function isFavorite(){
@@ -4269,6 +4803,36 @@ svg{
         )
       )
     );
+  }
+
+  function syncFavoriteUI(){
+
+    const active =
+      isFavorite();
+
+    $("favoriteButton")
+      .classList.toggle(
+        "active",
+        active
+      );
+
+    const svg =
+      $("favoriteButton")
+        .querySelector(
+          "svg"
+        );
+
+    if(
+      svg
+    ){
+
+      svg.setAttribute(
+        "fill",
+        active
+          ?"currentColor"
+          :"none"
+      );
+    }
   }
 
   function toggleFavorite(){
@@ -4308,6 +4872,8 @@ svg{
       ]
     );
 
+    syncFavoriteUI();
+
     if(
       navigator.vibrate
     ){
@@ -4321,8 +4887,6 @@ svg{
       );
     }
 
-    syncFavoriteUI();
-
     track(
       "FAVORITE_TOGGLE",
       {
@@ -4332,45 +4896,6 @@ svg{
           )
       }
     );
-  }
-
-  function syncFavoriteUI(){
-
-    const active =
-      isFavorite();
-
-    $("favoriteButton")
-      .classList
-      .toggle(
-        "active",
-        active
-      );
-
-    $("favoriteButton")
-      .setAttribute(
-        "aria-label",
-        active
-          ?"Quitar de favoritos"
-          :"Agregar a favoritos"
-      );
-
-    const svg =
-      $("favoriteButton")
-        .querySelector(
-          "svg"
-        );
-
-    if(
-      svg
-    ){
-
-      svg.setAttribute(
-        "fill",
-        active
-          ?"currentColor"
-          :"none"
-      );
-    }
   }
 
   $("favoriteButton")
@@ -4394,10 +4919,6 @@ svg{
       .add(
         "locked"
       );
-
-    track(
-      "SHARE_OPEN"
-    );
   }
 
   function closeShare(){
@@ -4426,9 +4947,9 @@ svg{
     }
   }
 
-  function sharePayload(){
+  function getSharePayload(){
 
-    return{
+    return {
 
       title:
         safeText(
@@ -4447,7 +4968,7 @@ svg{
   async function nativeShare(){
 
     const payload =
-      sharePayload();
+      getSharePayload();
 
     if(
       navigator.share
@@ -4488,28 +5009,21 @@ svg{
   ){
 
     const payload =
-      sharePayload();
-
-    track(
-      "SOCIAL_SHARE",
-      {
-        network
-      }
-    );
+      getSharePayload();
 
     if(
       network ===
       "whatsapp"
     ){
 
-      const url =
+      window.open(
+
         `https://wa.me/?text=${encodeURIComponent(
           `${payload.text} ${payload.url}`
-        )}`;
+        )}`,
 
-      window.open(
-        url,
         "_blank",
+
         "noopener,noreferrer"
       );
 
@@ -4517,11 +5031,6 @@ svg{
 
       return;
     }
-
-    /*
-      Instagram and TikTok are surfaced through
-      the phone's native share sheet.
-    */
 
     await nativeShare();
 
@@ -4568,7 +5077,7 @@ svg{
     );
 
   /* ============================================================
-     BAG ROUTING
+     BAG ROUTE
      ============================================================ */
 
   function goToBag(){
@@ -4581,19 +5090,11 @@ svg{
       cart
     );
 
-    track(
-      "BAG_ROUTE",
-      {
-        cartCount:
-          cart.count
-      }
-    );
-
     location.href =
       CONFIG.checkoutPage;
   }
 
-  $("topBag")
+  $("photoBag")
     .onclick =
       goToBag;
 
@@ -4606,7 +5107,7 @@ svg{
       goToBag;
 
   /* ============================================================
-     BOTTOM NAV
+     HOME / FAVORITES / PROFILE
      ============================================================ */
 
   $("navHome")
@@ -4615,7 +5116,6 @@ svg{
 
         location.href =
           CONFIG.homePage;
-
       };
 
   $("navFavorites")
@@ -4624,7 +5124,6 @@ svg{
 
         location.href =
           "/?favoritos=1";
-
       };
 
   $("navProfile")
@@ -4633,7 +5132,6 @@ svg{
 
         location.href =
           "/?perfil=1";
-
       };
 
   /* ============================================================
@@ -4719,6 +5217,9 @@ svg{
               "whatsapp"
             ){
 
+              const text =
+                `Hola CajaModa. Quiero ayuda con ${safeText(state.product?.name,"este producto")}.`;
+
               sendBridge(
                 "OPEN_WHATSAPP",
                 {
@@ -4727,9 +5228,6 @@ svg{
                     null
                 }
               );
-
-              const text =
-                `Hola CajaModa. Quiero ayuda con ${safeText(state.product?.name,"este producto")}.`;
 
               window.open(
                 `https://wa.me/?text=${encodeURIComponent(text)}`,
@@ -4785,7 +5283,7 @@ svg{
     );
 
   /* ============================================================
-     INCOMING BRIDGE
+     INCOMING WIX BRIDGE
      ============================================================ */
 
   window.addEventListener(
@@ -4802,6 +5300,7 @@ svg{
           message.source
         )
       ){
+
         return;
       }
 
@@ -4836,17 +5335,9 @@ svg{
           payload.cart
         ){
 
-          /*
-            Only replace the local cart if real line items
-            were actually supplied.
-          */
-
-          const incoming =
-            payload.cart;
-
           const incomingItems =
-            incoming.items ||
-            incoming.lineItems ||
+            payload.cart.items ||
+            payload.cart.lineItems ||
             [];
 
           if(
@@ -4857,7 +5348,7 @@ svg{
           ){
 
             saveCart(
-              incoming
+              payload.cart
             );
           }
         }
@@ -4943,8 +5434,8 @@ svg{
           [];
 
         /*
-          Do not let an empty placeholder bridge response
-          erase the user's immediate local size selection.
+          Never let an empty placeholder response erase
+          the customer's immediate local bag selection.
         */
 
         if(
@@ -4966,7 +5457,7 @@ svg{
   );
 
   /* ============================================================
-     CROSS PAGE STORAGE
+     CROSS PAGE SYNC
      ============================================================ */
 
   window.addEventListener(
@@ -5035,7 +5526,7 @@ svg{
   );
 
   /* ============================================================
-     INITIALIZE
+     START
      ============================================================ */
 
   loadInitialProduct();
@@ -5046,32 +5537,46 @@ svg{
     "READY",
     {
 
-      page:
-        "PRODUCT",
-
       brand:
         "CAJAMODA",
 
+      page:
+        "PRODUCT",
+
       version:
-        "CAJAMODA_PRODUCT_FREEZE_V2",
+        "CAJAMODA_PRODUCT_FREEZE_V3",
 
       capabilities:[
 
         "FULL_SCREEN_PRODUCT_PHOTO",
 
-        "NO_TOP_LEFT_BUTTON",
+        "NO_LOGO",
 
-        "NO_PRODUCT_LOGO",
+        "NO_BACK_BUTTON",
 
-        "FIVE_PRODUCT_PHOTOS",
+        "PRODUCT_CATEGORY_QUICK_NAV",
 
-        "FOUR_RIGHT_THUMBNAILS",
+        "NOCHES_LARGAS",
 
-        "NO_THUMBNAIL_NUMBER_OVERLAP",
+        "DIAS_TRANQUILOS",
 
-        "PRODUCT_NUMBER_1_TO_100",
+        "RAPIDO_Y_FACIL",
 
-        "SWIPE_PRODUCTS_WITHIN_CATEGORY",
+        "BANO_DE_SOL",
+
+        "CATEGORY_ACTIVE_UNDERLINE",
+
+        "CATEGORY_SWITCH",
+
+        "SWIPE_LEFT_NEXT_PRODUCT",
+
+        "SWIPE_RIGHT_PREVIOUS_PRODUCT",
+
+        "SWIPE_LOCKED_TO_ACTIVE_CATEGORY",
+
+        "PRODUCT_NUMBER",
+
+        "FOUR_PRODUCT_THUMBNAILS",
 
         "RED_FAVORITE",
 
@@ -5079,19 +5584,15 @@ svg{
 
         "SOCIAL_SHARE",
 
-        "INSTAGRAM_SHARE",
+        "RIGHT_SIDE_BAG",
 
-        "TIKTOK_SHARE",
+        "DYNAMIC_BAG_COUNT",
 
-        "WHATSAPP_SHARE",
-
-        "COLLAPSED_PRICE_CAPSULE",
+        "PRICE_CAPSULE",
 
         "CLEAR_GLASS_DETAILS",
 
-        "GLASS_BACKDROP_BLUR",
-
-        "DESCRIPTION_BEFORE_OPTIONS",
+        "DESCRIPTION_BEFORE_COLOR",
 
         "COLOR_SELECTION",
 
@@ -5099,15 +5600,9 @@ svg{
 
         "SIZE_AUTO_ADDS_TO_BAG",
 
-        "DYNAMIC_BAG_COUNT",
-
-        "ADD_TO_BAG_CONFIRM",
-
         "BUY_NOW",
 
-        "CHECKOUT_ROUTE",
-
-        "REVIEWS_RESERVED_FOR_REAL_BACKEND"
+        "CHECKOUT_ROUTE"
       ]
     }
   );
@@ -5126,4 +5621,5 @@ svg{
 ></script>
 
 </body>
+
 </html>

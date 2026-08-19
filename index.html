@@ -22,123 +22,50 @@
 >
 
 <style>
-
-/* ============================================================
-   CAJAMODA HOME
-   FREEZE V3
-   ============================================================ */
-
 :root{
-
   --bg:#ffffff;
-
   --ink:#080808;
-
   --ink-soft:#333333;
-
   --muted:#747474;
-
   --muted-light:#a1a1a1;
-
-  --line:
-    rgba(0,0,0,.065);
-
-  --line-black:
-    rgba(0,0,0,.16);
-
-  --glass:
-    rgba(255,255,255,.48);
-
-  --glass-strong:
-    rgba(255,255,255,.78);
-
-  --shadow:
-    0 9px 28px
-    rgba(0,0,0,.055);
-
-  --shadow-hover:
-    0 18px 42px
-    rgba(0,0,0,.115);
-
-  --mobile-max:
-    430px;
-
-  --nav-h:
-    51px;
-
-  --safe-top:
-    env(
-      safe-area-inset-top,
-      0px
-    );
-
-  --safe-bottom:
-    env(
-      safe-area-inset-bottom,
-      0px
-    );
+  --line:rgba(0,0,0,.065);
+  --line-black:rgba(0,0,0,.16);
+  --glass:rgba(255,255,255,.48);
+  --glass-strong:rgba(255,255,255,.78);
+  --shadow:0 9px 28px rgba(0,0,0,.055);
+  --shadow-hover:0 18px 42px rgba(0,0,0,.115);
+  --mobile-max:430px;
+  --nav-h:51px;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
 }
-
-/* ============================================================
-   RESET
-   ============================================================ */
 
 *{
   box-sizing:border-box;
 }
 
 html{
-
   width:100%;
-
   min-height:100%;
-
   margin:0;
-
   background:#fff;
-
   scroll-behavior:smooth;
-
   -webkit-text-size-adjust:100%;
 }
 
 body{
-
   width:100%;
-
   min-height:100%;
-
   margin:0;
-
   overflow-x:hidden;
-
   overflow-y:auto;
-
   overscroll-behavior-y:auto;
-
   background:#fff;
-
   color:var(--ink);
-
-  font-family:
-    Inter,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-
-  -webkit-font-smoothing:
-    antialiased;
-
-  -webkit-overflow-scrolling:
-    touch;
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased;
+  -webkit-overflow-scrolling:touch;
 }
-
-/*
-  IMPORTANT:
-  Only lock body while an overlay is actually open.
-  Normal storefront scrolling stays untouched.
-*/
 
 body.locked{
   overflow:hidden;
@@ -151,45 +78,29 @@ input{
 }
 
 button{
-
   border:0;
-
   margin:0;
-
   padding:0;
-
   background:none;
-
   cursor:pointer;
-
-  -webkit-tap-highlight-color:
-    transparent;
+  -webkit-tap-highlight-color:transparent;
 }
 
 input{
-
   border:0;
-
   outline:0;
-
   background:transparent;
 }
 
 img{
-
   display:block;
-
   max-width:100%;
-
   user-select:none;
-
   -webkit-user-drag:none;
 }
 
 svg{
-
   display:block;
-
   pointer-events:none;
 }
 
@@ -197,55 +108,27 @@ svg{
   display:none!important;
 }
 
-/* ============================================================
-   PAGE SHELL
-   ============================================================ */
-
 .appShell{
-
   position:relative;
-
   width:100%;
-
   min-height:100dvh;
-
   margin:0 auto;
-
-  padding-bottom:
-    calc(
-      var(--nav-h) +
-      28px +
-      var(--safe-bottom)
-    );
-
+  padding-bottom:calc(var(--nav-h) + 28px + var(--safe-bottom));
   background:#fff;
 }
 
 @media(min-width:700px){
-
   body{
     background:#f5f5f5;
   }
 
   .appShell{
-
-    width:min(
-      100%,
-      var(--mobile-max)
-    );
-
-    box-shadow:
-      0 0 68px
-      rgba(0,0,0,.075);
+    width:min(100%,var(--mobile-max));
+    box-shadow:0 0 68px rgba(0,0,0,.075);
   }
 }
 
-/* ============================================================
-   GLASS
-   ============================================================ */
-
 .glass{
-
   background:
     linear-gradient(
       145deg,
@@ -253,32 +136,18 @@ svg{
       rgba(255,255,255,.36)
     );
 
-  border:
-    1px solid
-    rgba(255,255,255,.96);
+  border:1px solid rgba(255,255,255,.96);
 
   box-shadow:
+    0 0 0 1px rgba(0,0,0,.026),
+    inset 0 1px 0 rgba(255,255,255,1),
+    0 8px 24px rgba(0,0,0,.055);
 
-    0 0 0 1px
-    rgba(0,0,0,.026),
-
-    inset 0 1px 0
-    rgba(255,255,255,1),
-
-    0 8px 24px
-    rgba(0,0,0,.055);
-
-  backdrop-filter:
-    blur(25px)
-    saturate(165%);
-
-  -webkit-backdrop-filter:
-    blur(25px)
-    saturate(165%);
+  backdrop-filter:blur(25px) saturate(165%);
+  -webkit-backdrop-filter:blur(25px) saturate(165%);
 }
 
 .glassStrong{
-
   background:
     linear-gradient(
       145deg,
@@ -286,28 +155,15 @@ svg{
       rgba(255,255,255,.60)
     );
 
-  border:
-    1px solid
-    rgba(255,255,255,.98);
+  border:1px solid rgba(255,255,255,.98);
 
   box-shadow:
+    0 0 0 1px rgba(0,0,0,.04),
+    inset 0 1px 0 #fff,
+    0 20px 48px rgba(0,0,0,.10);
 
-    0 0 0 1px
-    rgba(0,0,0,.04),
-
-    inset 0 1px 0
-    #fff,
-
-    0 20px 48px
-    rgba(0,0,0,.10);
-
-  backdrop-filter:
-    blur(31px)
-    saturate(178%);
-
-  -webkit-backdrop-filter:
-    blur(31px)
-    saturate(178%);
+  backdrop-filter:blur(31px) saturate(178%);
+  -webkit-backdrop-filter:blur(31px) saturate(178%);
 }
 
 /* ============================================================
@@ -315,75 +171,9 @@ svg{
    ============================================================ */
 
 .homeHeader{
-
   position:relative;
-
   height:116px;
-
-  padding-top:
-    var(--safe-top);
-}
-
-/* ============================================================
-   HEADER PLUS
-   ============================================================ */
-
-.headerPlus{
-
-  position:absolute;
-
-  z-index:4;
-
-  left:14px;
-
-  top:
-    calc(
-      27px +
-      var(--safe-top)
-    );
-
-  width:38px;
-
-  height:38px;
-
-  border-radius:50%;
-
-  display:grid;
-
-  place-items:center;
-
-  transition:
-    transform .18s ease,
-    box-shadow .18s ease;
-}
-
-.headerPlus svg{
-
-  width:20px;
-
-  height:20px;
-
-  stroke-width:1.35;
-}
-
-@media(hover:hover){
-
-  .headerPlus:hover{
-
-    transform:
-      translateY(-2px)
-      scale(1.035);
-
-    box-shadow:
-      0 15px 30px
-      rgba(0,0,0,.105);
-  }
-}
-
-.headerPlus:active{
-
-  transform:
-    scale(.94);
+  padding-top:var(--safe-top);
 }
 
 /* ============================================================
@@ -391,176 +181,76 @@ svg{
    ============================================================ */
 
 .brandLockup{
-
   position:absolute;
-
   z-index:2;
-
-  top:
-    calc(
-      4px +
-      var(--safe-top)
-    );
-
+  top:calc(4px + var(--safe-top));
   left:50%;
-
-  transform:
-    translateX(-50%);
-
+  transform:translateX(-50%);
   width:190px;
-
   display:flex;
-
   flex-direction:column;
-
   align-items:center;
-
   pointer-events:none;
 }
 
-/*
-  CM mark:
-  Bodoni instead of generic Times.
-  Thin/high-contrast letterforms.
-*/
-
 .brandMonogram{
-
   position:relative;
-
   width:100px;
-
   height:57px;
-
-  font-family:
-    "Bodoni Moda",
-    Didot,
-    serif;
+  font-family:"Bodoni Moda",Didot,serif;
 }
 
 .brandC{
-
   position:absolute;
-
   left:7px;
-
   top:-12px;
-
   font-size:74px;
-
   line-height:1;
-
   font-weight:400;
-
   letter-spacing:-8px;
-
-  transform:
-    scaleX(.89);
+  transform:scaleX(.89);
 }
 
 .brandM{
-
   position:absolute;
-
   left:43px;
-
   top:8px;
-
   font-size:52px;
-
   line-height:1;
-
   font-weight:400;
-
   letter-spacing:-5px;
-
-  transform:
-    scaleX(.90);
-}
-
-/*
-  Subtle lower sweep.
-  Thin enough to feel like part of the letterform.
-*/
-
-.brandMonogram::after{
-
-  content:"";
-
-  position:absolute;
-
-  left:18px;
-
-  top:39px;
-
-  width:72px;
-
-  height:20px;
-
-  border-top:
-    1px solid
-    rgba(0,0,0,.88);
-
-  border-radius:50%;
-
-  transform:
-    rotate(5deg);
+  transform:scaleX(.90);
 }
 
 .brandWord{
-
   margin-top:-2px;
-
   padding-left:6px;
-
-  font-family:
-    "Bodoni Moda",
-    Didot,
-    serif;
-
+  font-family:"Bodoni Moda",Didot,serif;
   font-size:11px;
-
   line-height:1;
-
   font-weight:500;
-
   letter-spacing:5.4px;
 }
 
 .brandCountryRow{
-
   width:145px;
-
   margin-top:7px;
-
   display:grid;
-
-  grid-template-columns:
-    1fr auto 1fr;
-
+  grid-template-columns:1fr auto 1fr;
   align-items:center;
-
   gap:8px;
 }
 
 .brandCountryLine{
-
   height:1px;
-
-  background:
-    rgba(0,0,0,.42);
+  background:rgba(0,0,0,.42);
 }
 
 .brandCountry{
-
   padding-left:3px;
-
   font-size:6px;
-
   line-height:1;
-
   font-weight:600;
-
   letter-spacing:3.1px;
 }
 
@@ -569,96 +259,53 @@ svg{
    ============================================================ */
 
 .homeBagTop{
-
   position:absolute;
-
   z-index:4;
-
   right:14px;
-
-  top:
-    calc(
-      27px +
-      var(--safe-top)
-    );
-
+  top:calc(27px + var(--safe-top));
   width:39px;
-
   height:39px;
-
   border-radius:50%;
-
   display:grid;
-
   place-items:center;
-
-  transition:
-    transform .18s ease,
-    box-shadow .18s ease;
+  transition:transform .18s ease,box-shadow .18s ease;
 }
 
 .homeBagTop svg{
-
   width:23px;
-
   height:23px;
-
   stroke-width:1.45;
 }
 
 @media(hover:hover){
-
   .homeBagTop:hover{
-
-    transform:
-      translateY(-2px);
-
-    box-shadow:
-      0 14px 29px
-      rgba(0,0,0,.09);
+    transform:translateY(-2px);
+    box-shadow:0 14px 29px rgba(0,0,0,.09);
   }
 }
 
 .bagBadge{
-
   position:absolute;
-
   top:-2px;
-
   right:-2px;
-
   min-width:18px;
-
   height:18px;
-
   padding:0 4px;
-
   border-radius:999px;
-
   background:#080808;
-
   color:#fff;
-
-  border:
-    2px solid #fff;
-
+  border:2px solid #fff;
   display:grid;
-
   place-items:center;
-
   font-size:8px;
-
   font-weight:800;
 }
 
 .bagBadge.bump{
-
-  animation:
-    bagBump .22s ease;
+  animation:bagBump .22s ease;
 }
 
 @keyframes bagBump{
-
   50%{
     transform:scale(1.25);
   }
@@ -669,9 +316,7 @@ svg{
    ============================================================ */
 
 .homeContent{
-
-  padding:
-    0 12px;
+  padding:0 12px;
 }
 
 /* ============================================================
@@ -679,38 +324,20 @@ svg{
    ============================================================ */
 
 .categoryAnchors{
-
   display:grid;
-
-  grid-template-columns:
-    repeat(
-      4,
-      minmax(0,1fr)
-    );
-
+  grid-template-columns:repeat(4,minmax(0,1fr));
   gap:6px;
-
   margin-top:1px;
 }
 
 .categoryAnchor{
-
   position:relative;
-
   min-width:0;
-
   aspect-ratio:.70;
-
   overflow:hidden;
-
   border-radius:10px;
-
   background:#ececec;
-
-  box-shadow:
-    0 7px 20px
-    rgba(0,0,0,.06);
-
+  box-shadow:0 7px 20px rgba(0,0,0,.06);
   transition:
     transform .22s ease,
     box-shadow .22s ease,
@@ -718,28 +345,19 @@ svg{
 }
 
 .categoryAnchor img{
-
   width:100%;
-
   height:100%;
-
   object-fit:cover;
-
   transition:
     transform .38s ease,
     filter .38s ease;
 }
 
 .categoryAnchor::after{
-
   content:"";
-
   position:absolute;
-
   inset:0;
-
   pointer-events:none;
-
   background:
     linear-gradient(
       to bottom,
@@ -749,67 +367,34 @@ svg{
 }
 
 .categoryAnchorLabel{
-
   position:absolute;
-
   z-index:2;
-
   left:4px;
-
   right:4px;
-
   bottom:10px;
-
   color:#fff;
-
   text-align:center;
-
   font-size:8.7px;
-
   line-height:1.05;
-
   font-weight:800;
-
   text-transform:uppercase;
-
-  text-shadow:
-    0 1px 7px
-    rgba(0,0,0,.35);
+  text-shadow:0 1px 7px rgba(0,0,0,.35);
 }
 
-/*
-  Hover:
-  lift + subtle image zoom.
-*/
-
 @media(hover:hover){
-
   .categoryAnchor:hover{
-
-    transform:
-      translateY(-5px)
-      scale(1.012);
-
-    box-shadow:
-      0 18px 38px
-      rgba(0,0,0,.14);
+    transform:translateY(-5px) scale(1.012);
+    box-shadow:0 18px 38px rgba(0,0,0,.14);
   }
 
   .categoryAnchor:hover img{
-
-    transform:
-      scale(1.055);
-
-    filter:
-      saturate(1.05)
-      contrast(1.025);
+    transform:scale(1.055);
+    filter:saturate(1.05) contrast(1.025);
   }
 }
 
 .categoryAnchor:active{
-
-  transform:
-    scale(.985);
+  transform:scale(.985);
 }
 
 /* ============================================================
@@ -817,82 +402,44 @@ svg{
    ============================================================ */
 
 .deliverySection{
-
   margin-top:10px;
 }
 
 .deliveryRail{
-
   display:grid;
-
-  grid-template-columns:
-    repeat(
-      4,
-      minmax(0,1fr)
-    );
-
+  grid-template-columns:repeat(4,minmax(0,1fr));
   gap:6px;
 }
 
-/*
-  Clear frost.
-  Very thin black hairline.
-*/
-
 .deliveryCard{
-
   position:relative;
-
   overflow:hidden;
-
   min-width:0;
-
   min-height:91px;
-
-  padding:
-    10px 5px 9px;
-
+  padding:10px 5px 9px;
   border-radius:13px;
-
   display:flex;
-
   flex-direction:column;
-
   justify-content:center;
-
   align-items:center;
-
   text-align:center;
 
   background:
     linear-gradient(
       145deg,
-      rgba(255,255,255,.70),
-      rgba(255,255,255,.22)
+      rgba(255,255,255,.50),
+      rgba(255,255,255,.12)
     );
 
-  border:
-    .65px solid
-    rgba(0,0,0,.18);
+  border:.8px solid rgba(0,0,0,.22);
 
   box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.96),
+    inset 0 -1px 0 rgba(255,255,255,.38),
+    0 7px 21px rgba(0,0,0,.047);
 
-    inset 0 1px 0
-    rgba(255,255,255,.96),
-
-    inset 0 -1px 0
-    rgba(255,255,255,.38),
-
-    0 7px 21px
-    rgba(0,0,0,.047);
-
-  backdrop-filter:
-    blur(28px)
-    saturate(175%);
-
-  -webkit-backdrop-filter:
-    blur(28px)
-    saturate(175%);
+  backdrop-filter:blur(28px) saturate(175%);
+  -webkit-backdrop-filter:blur(28px) saturate(175%);
 
   transition:
     transform .20s ease,
@@ -901,217 +448,131 @@ svg{
 }
 
 .deliveryCard::before{
-
   content:"";
-
   position:absolute;
-
   top:-33px;
-
   left:-28px;
-
   width:76px;
-
   height:76px;
-
   border-radius:50%;
-
-  background:
-    rgba(255,255,255,.90);
-
-  filter:
-    blur(13px);
-
-  opacity:.63;
-
+  background:rgba(255,255,255,.90);
+  filter:blur(13px);
+  opacity:.42;
   pointer-events:none;
 }
 
 .deliveryCard::after{
-
   content:"";
-
   position:absolute;
-
   inset:1px;
-
   border-radius:12px;
-
-  border:
-    1px solid
-    rgba(255,255,255,.48);
-
+  border:1px solid rgba(255,255,255,.42);
   pointer-events:none;
 }
 
 .deliveryIcon{
-
   position:relative;
-
   z-index:2;
-
   width:26px;
-
   height:26px;
-
-  margin:
-    0 auto 7px;
+  margin:0 auto 7px;
 }
 
 .deliveryIcon svg{
-
   width:100%;
-
   height:100%;
-
   stroke-width:1.4;
 }
 
 .deliveryTitle{
-
   position:relative;
-
   z-index:2;
-
   font-size:8px;
-
   line-height:1.2;
-
   font-weight:700;
 }
 
 .deliveryEta{
-
   position:relative;
-
   z-index:2;
-
   margin-top:3px;
-
   font-size:7.2px;
-
   line-height:1.2;
-
   color:var(--muted);
 }
 
 @media(hover:hover){
-
   .deliveryCard:hover{
-
-    transform:
-      translateY(-4px);
-
+    transform:translateY(-4px);
     background:
       linear-gradient(
         145deg,
-        rgba(255,255,255,.93),
-        rgba(255,255,255,.37)
+        rgba(255,255,255,.78),
+        rgba(255,255,255,.25)
       );
-
     box-shadow:
       inset 0 1px 0 #fff,
-      0 17px 36px
-      rgba(0,0,0,.11);
+      0 17px 36px rgba(0,0,0,.11);
   }
 }
 
 .deliveryCard:active{
-
-  transform:
-    scale(.985);
+  transform:scale(.985);
 }
 
 .deliveryInfo{
-
   display:none;
-
   position:relative;
-
   margin-top:8px;
-
-  padding:
-    11px 40px 11px 12px;
-
+  padding:11px 40px 11px 12px;
   border-radius:15px;
-
-  border:
-    .65px solid
-    rgba(0,0,0,.13);
+  border:.65px solid rgba(0,0,0,.13);
 }
 
 .deliveryInfo.open{
-
   display:block;
-
-  animation:
-    deliveryReveal .17s ease;
+  animation:deliveryReveal .17s ease;
 }
 
 @keyframes deliveryReveal{
-
   from{
-
     opacity:0;
-
-    transform:
-      translateY(-4px);
+    transform:translateY(-4px);
   }
 
   to{
-
     opacity:1;
-
     transform:none;
   }
 }
 
 .deliveryInfoTitle{
-
   font-size:9.5px;
-
   font-weight:800;
 }
 
 .deliveryInfoText{
-
   margin-top:4px;
-
   font-size:8px;
-
   line-height:1.45;
-
   color:#555;
 }
 
 .deliveryInfoClose{
-
   position:absolute;
-
   right:7px;
-
   top:50%;
-
-  transform:
-    translateY(-50%);
-
+  transform:translateY(-50%);
   width:28px;
-
   height:28px;
-
   border-radius:50%;
-
   display:grid;
-
   place-items:center;
 }
 
 .deliveryInfoClose svg{
-
   width:14px;
-
   height:14px;
-
   stroke-width:1.5;
 }
 
@@ -1120,248 +581,150 @@ svg{
    ============================================================ */
 
 .searchShell{
-
   height:47px;
-
   margin-top:11px;
-
   border-radius:15px;
-
   display:flex;
-
   align-items:center;
-
   gap:9px;
-
-  padding:
-    0 10px 0 13px;
-
+  padding:0 10px 0 13px;
   transition:
     box-shadow .18s ease,
     transform .18s ease;
 }
 
 @media(hover:hover){
-
   .searchShell:hover{
-
-    transform:
-      translateY(-1px);
-
-    box-shadow:
-      0 13px 28px
-      rgba(0,0,0,.075);
+    transform:translateY(-1px);
+    box-shadow:0 13px 28px rgba(0,0,0,.075);
   }
 }
 
 .searchIcon{
-
   width:19px;
-
   height:19px;
-
   stroke-width:1.5;
-
   flex:0 0 auto;
 }
 
 .searchInput{
-
   flex:1;
-
   min-width:0;
-
   height:43px;
-
   font-size:9.4px;
 }
 
 .searchInput::placeholder{
-
   color:#999;
 }
 
 .searchClear{
-
   display:none;
-
   width:27px;
-
   height:27px;
-
   border-radius:50%;
-
   place-items:center;
 }
 
 .searchClear.show{
-
   display:grid;
 }
 
 .searchClear svg{
-
   width:13px;
-
   height:13px;
-
   stroke-width:1.5;
 }
 
 .filterButton{
-
   width:30px;
-
   height:30px;
-
   border-radius:50%;
-
   display:grid;
-
   place-items:center;
 }
 
 .filterButton svg{
-
   width:17px;
-
   height:17px;
-
   stroke-width:1.45;
 }
 
 .searchStatus{
-
   display:none;
-
   margin-top:7px;
-
-  padding:
-    7px 9px;
-
+  padding:7px 9px;
   border-radius:10px;
-
   background:#fafafa;
-
-  border:
-    1px solid
-    rgba(0,0,0,.05);
-
+  border:1px solid rgba(0,0,0,.05);
   font-size:7.5px;
-
   color:#777;
 }
 
 .searchStatus.show{
-
   display:block;
 }
 
 /* ============================================================
    CATEGORY LINE
-   TODOS / LONG NIGHTS / QUIET DAYS / QUICK AND EASY / SUNBATHING
    ============================================================ */
 
 .categoryTabs{
-
   display:flex;
-
   align-items:center;
-
+  justify-content:space-between;
+  gap:14px;
   width:100%;
-
-  margin-top:8px;
-
+  margin-top:10px;
+  padding:0 7px;
   overflow-x:auto;
-
   overflow-y:hidden;
-
-  border-bottom:
-    1px solid
-    rgba(0,0,0,.052);
-
+  border-bottom:1px solid rgba(0,0,0,.052);
   scrollbar-width:none;
-
-  -webkit-overflow-scrolling:
-    touch;
-
-  /*
-    AUTO is important.
-    Do NOT force pan-x here.
-    It allows vertical scrolling to begin
-    even if the user's finger lands on this row.
-  */
-
+  -webkit-overflow-scrolling:touch;
   touch-action:auto;
 }
 
 .categoryTabs::-webkit-scrollbar{
-
   display:none;
 }
 
 .categoryTab{
-
   position:relative;
-
   flex:0 0 auto;
-
-  height:38px;
-
-  padding:
-    0 11px;
-
+  height:40px;
+  padding:0 7px;
   white-space:nowrap;
-
-  font-size:7.1px;
-
+  font-size:7px;
   font-weight:500;
-
   color:#777;
-
   text-transform:uppercase;
-
-  transition:
-    color .18s ease;
+  transition:color .18s ease;
 }
 
 .categoryTab.all{
-
-  padding-left:8px;
-
-  min-width:53px;
+  padding-left:4px;
+  min-width:50px;
 }
 
 .categoryTab.active{
-
   color:#080808;
-
   font-weight:800;
 }
 
 .categoryTab.active::after{
-
   content:"";
-
   position:absolute;
-
-  left:9px;
-
-  right:9px;
-
+  left:5px;
+  right:5px;
   bottom:-1px;
-
   height:2px;
-
   border-radius:999px;
-
   background:#111;
 }
 
 @media(hover:hover){
-
   .categoryTab:hover{
-
     color:#111;
   }
 }
@@ -1371,61 +734,39 @@ svg{
    ============================================================ */
 
 .productSection{
-
   margin-top:17px;
-
   scroll-margin-top:10px;
 }
 
 .productSectionHead{
-
   display:flex;
-
   align-items:center;
-
   justify-content:space-between;
-
   margin-bottom:8px;
 }
 
 .productSectionTitle{
-
   margin:0;
-
-  font-family:
-    "Bodoni Moda",
-    Didot,
-    serif;
-
-  font-size:14px;
-
-  font-weight:600;
-
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:13px;
+  font-weight:800;
   letter-spacing:.1px;
-
   text-transform:uppercase;
 }
 
 .productSectionMeta{
-
   display:flex;
-
   align-items:center;
-
   gap:8px;
 }
 
 .liveCount{
-
   font-size:6.7px;
-
   color:#aaa;
 }
 
 .viewAll{
-
   font-size:8px;
-
   color:#333;
 }
 
@@ -1434,66 +775,27 @@ svg{
    ============================================================ */
 
 .productRail{
-
   display:grid;
-
   grid-auto-flow:column;
-
-  grid-auto-columns:
-    calc(
-      (100vw - 44px) /
-      3
-    );
-
+  grid-auto-columns:calc((100vw - 44px)/3);
   gap:8px;
-
   overflow-x:auto;
-
   overflow-y:hidden;
-
   padding-bottom:3px;
-
-  scroll-snap-type:
-    x mandatory;
-
+  scroll-snap-type:x mandatory;
   scrollbar-width:none;
-
-  -webkit-overflow-scrolling:
-    touch;
-
-  /*
-    This is the main scrolling correction.
-    Previous forced pan-x behavior can make
-    vertical page scrolling feel sticky.
-
-    AUTO lets the browser naturally determine
-    whether the user wants vertical page scroll
-    or horizontal product scroll.
-  */
-
+  -webkit-overflow-scrolling:touch;
   touch-action:auto;
-
-  overscroll-behavior-inline:
-    contain;
+  overscroll-behavior-inline:contain;
 }
 
 .productRail::-webkit-scrollbar{
-
   display:none;
 }
 
 @media(min-width:700px){
-
   .productRail{
-
-    grid-auto-columns:
-      calc(
-        (
-          var(--mobile-max) -
-          44px
-        ) /
-        3
-      );
+    grid-auto-columns:calc((var(--mobile-max) - 44px)/3);
   }
 }
 
@@ -1502,167 +804,96 @@ svg{
    ============================================================ */
 
 .productCard{
-
   min-width:0;
-
   overflow:hidden;
-
   border-radius:11px;
-
   scroll-snap-align:start;
-
   background:#fff;
-
-  box-shadow:
-    0 5px 17px
-    rgba(0,0,0,.046);
-
+  box-shadow:0 5px 17px rgba(0,0,0,.046);
   transition:
     transform .21s ease,
     box-shadow .21s ease;
 }
 
 @media(hover:hover){
-
   .productCard:not(.placeholderCard):hover{
-
-    transform:
-      translateY(-5px);
-
-    box-shadow:
-      0 17px 34px
-      rgba(0,0,0,.105);
+    transform:translateY(-5px);
+    box-shadow:0 17px 34px rgba(0,0,0,.105);
   }
 }
 
 .productMedia{
-
   position:relative;
-
   aspect-ratio:.74;
-
   overflow:hidden;
-
   background:#eee;
 }
 
 .productMedia img{
-
   width:100%;
-
   height:100%;
-
   object-fit:cover;
-
-  transition:
-    transform .38s ease;
+  transition:transform .38s ease;
 }
 
 @media(hover:hover){
-
-  .productCard:hover
-  .productMedia img{
-
-    transform:
-      scale(1.04);
+  .productCard:hover .productMedia img{
+    transform:scale(1.04);
   }
 }
 
 .productHeart{
-
   position:absolute;
-
   z-index:3;
-
   top:5px;
-
   right:5px;
-
   width:27px;
-
   height:27px;
-
   border-radius:50%;
-
   display:grid;
-
   place-items:center;
-
-  background:
-    rgba(255,255,255,.88);
-
-  border:
-    1px solid
-    rgba(255,255,255,.97);
-
-  backdrop-filter:
-    blur(12px);
-
-  -webkit-backdrop-filter:
-    blur(12px);
-
-  transition:
-    transform .17s ease;
+  background:rgba(255,255,255,.88);
+  border:1px solid rgba(255,255,255,.97);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  transition:transform .17s ease;
 }
 
 .productHeart svg{
-
   width:15px;
-
   height:15px;
-
   stroke-width:1.7;
 }
 
 .productHeart.active{
-
   color:#df1732;
 }
 
 @media(hover:hover){
-
   .productHeart:hover{
-
-    transform:
-      scale(1.10);
+    transform:scale(1.10);
   }
 }
 
 .productInfo{
-
   min-height:54px;
-
-  padding:
-    6px 6px 8px;
-
+  padding:6px 6px 8px;
   background:#fff;
-
-  border:
-    1px solid
-    rgba(0,0,0,.052);
-
+  border:1px solid rgba(0,0,0,.052);
   border-top:0;
 }
 
 .productName{
-
   height:19px;
-
   overflow:hidden;
-
   font-size:7.8px;
-
   line-height:1.2;
-
   font-weight:550;
 }
 
 .productPrice{
-
   margin-top:3px;
-
   font-size:9.4px;
-
   font-weight:800;
 }
 
@@ -1671,24 +902,16 @@ svg{
    ============================================================ */
 
 .placeholderCard{
-
   pointer-events:none;
-
   box-shadow:none;
 }
 
 .placeholderMedia{
-
   position:relative;
-
   width:100%;
-
   height:100%;
-
   display:grid;
-
   place-items:center;
-
   background:
     linear-gradient(
       145deg,
@@ -1698,81 +921,52 @@ svg{
 }
 
 .placeholderMedia::after{
-
   content:"";
-
   position:absolute;
-
   inset:9px;
-
-  border:
-    .8px dashed
-    rgba(0,0,0,.15);
-
+  border:.8px dashed rgba(0,0,0,.15);
   border-radius:9px;
 }
 
 .placeholderInner{
-
   position:relative;
-
   z-index:2;
-
   text-align:center;
-
   color:#999;
 }
 
 .placeholderNumber{
-
-  font-family:
-    "Bodoni Moda",
-    Didot,
-    serif;
-
-  font-size:22px;
-
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:20px;
   line-height:1;
-
+  font-weight:300;
   color:#8c8c8c;
 }
 
 .placeholderLabel{
-
   margin-top:5px;
-
   font-size:5.9px;
-
   font-weight:700;
-
   letter-spacing:1px;
-
   text-transform:uppercase;
 }
 
 .placeholderHint{
-
   margin-top:3px;
-
   font-size:5.4px;
-
   color:#aaa;
 }
 
 .placeholderCard .productInfo{
-
   background:#fafafa;
 }
 
 .placeholderCard .productName{
-
   color:#999;
 }
 
 .placeholderCard .productPrice{
-
   color:#bbb;
-
   font-weight:500;
 }
 
@@ -1781,39 +975,26 @@ svg{
    ============================================================ */
 
 .railDots{
-
   height:18px;
-
   display:flex;
-
   align-items:center;
-
   justify-content:center;
-
   gap:4px;
 }
 
 .railDot{
-
   width:4px;
-
   height:4px;
-
   border-radius:50%;
-
   background:#ddd;
-
   transition:
     width .17s ease,
     background .17s ease;
 }
 
 .railDot.active{
-
   width:13px;
-
   border-radius:999px;
-
   background:#111;
 }
 
@@ -1822,22 +1003,13 @@ svg{
    ============================================================ */
 
 .emptySearch{
-
   min-height:180px;
-
-  padding:
-    30px 20px;
-
+  padding:30px 20px;
   display:grid;
-
   place-items:center;
-
   text-align:center;
-
   font-size:8.5px;
-
   line-height:1.55;
-
   color:#777;
 }
 
@@ -1846,44 +1018,17 @@ svg{
    ============================================================ */
 
 .bottomNav{
-
   position:fixed;
-
   z-index:90;
-
   left:50%;
-
-  bottom:
-    max(
-      7px,
-      var(--safe-bottom)
-    );
-
-  transform:
-    translateX(-50%);
-
-  width:
-    min(
-      calc(100% - 27px),
-      398px
-    );
-
-  height:
-    var(--nav-h);
-
-  padding:
-    2px 5px;
-
+  bottom:max(7px,var(--safe-bottom));
+  transform:translateX(-50%);
+  width:min(calc(100% - 27px),398px);
+  height:var(--nav-h);
+  padding:2px 5px;
   border-radius:17px;
-
   display:grid;
-
-  grid-template-columns:
-    repeat(
-      5,
-      1fr
-    );
-
+  grid-template-columns:repeat(5,1fr);
   align-items:center;
 
   background:
@@ -1893,48 +1038,26 @@ svg{
       rgba(255,255,255,.25)
     );
 
-  border:
-    1px solid
-    rgba(255,255,255,.92);
+  border:1px solid rgba(255,255,255,.92);
 
   box-shadow:
+    0 0 0 1px rgba(0,0,0,.027),
+    inset 0 1px 0 rgba(255,255,255,.98),
+    0 8px 24px rgba(0,0,0,.075);
 
-    0 0 0 1px
-    rgba(0,0,0,.027),
-
-    inset 0 1px 0
-    rgba(255,255,255,.98),
-
-    0 8px 24px
-    rgba(0,0,0,.075);
-
-  backdrop-filter:
-    blur(29px)
-    saturate(170%);
-
-  -webkit-backdrop-filter:
-    blur(29px)
-    saturate(170%);
+  backdrop-filter:blur(29px) saturate(170%);
+  -webkit-backdrop-filter:blur(29px) saturate(170%);
 }
 
 .navButton{
-
   position:relative;
-
   height:43px;
-
   border-radius:14px;
-
   display:flex;
-
   flex-direction:column;
-
   align-items:center;
-
   justify-content:center;
-
   gap:1px;
-
   transition:
     transform .17s ease,
     background .17s ease,
@@ -1942,107 +1065,61 @@ svg{
 }
 
 .navButton svg{
-
   width:18px;
-
   height:18px;
-
   stroke-width:1.4;
 }
 
 .navButton span{
-
   font-size:6.7px;
 }
 
 .navButton.active{
-
-  background:
-    rgba(255,255,255,.78);
-
-  box-shadow:
-    0 3px 13px
-    rgba(0,0,0,.055);
+  background:rgba(255,255,255,.78);
+  box-shadow:0 3px 13px rgba(0,0,0,.055);
 }
 
 @media(hover:hover){
-
   .navButton:hover{
-
-    transform:
-      translateY(-2px);
-
-    background:
-      rgba(255,255,255,.65);
+    transform:translateY(-2px);
+    background:rgba(255,255,255,.65);
   }
 }
 
 .navPlusOrb{
-
   width:29px;
-
   height:29px;
-
   border-radius:50%;
-
   display:grid;
-
   place-items:center;
-
   background:#111;
-
   color:#fff;
-
-  box-shadow:
-    0 6px 16px
-    rgba(0,0,0,.15);
+  box-shadow:0 6px 16px rgba(0,0,0,.15);
 }
 
 .navPlusOrb svg{
-
   width:15px;
-
   height:15px;
 }
 
 .navPlusLabel{
-
   display:none;
 }
 
 .navBagBadge{
-
   position:absolute;
-
   top:0;
-
-  right:
-    calc(
-      50% - 18px
-    );
-
+  right:calc(50% - 18px);
   min-width:15px;
-
   height:15px;
-
-  padding:
-    0 3px;
-
+  padding:0 3px;
   border-radius:999px;
-
   background:#090909;
-
   color:#fff;
-
-  border:
-    1.5px solid #fff;
-
+  border:1.5px solid #fff;
   display:grid;
-
   place-items:center;
-
   font-size:6.3px!important;
-
   font-weight:800;
 }
 
@@ -2051,27 +1128,16 @@ svg{
    ============================================================ */
 
 .overlay{
-
   position:fixed;
-
   inset:0;
-
   z-index:130;
-
   display:none;
-
-  background:
-    rgba(0,0,0,.10);
-
-  backdrop-filter:
-    blur(6px);
-
-  -webkit-backdrop-filter:
-    blur(6px);
+  background:rgba(0,0,0,.10);
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
 }
 
 .overlay.open{
-
   display:block;
 }
 
@@ -2080,190 +1146,110 @@ svg{
    ============================================================ */
 
 .plusPanel{
-
   position:absolute;
-
   left:12px;
-
   right:12px;
-
-  bottom:
-    calc(
-      var(--nav-h) +
-      18px +
-      var(--safe-bottom)
-    );
-
+  bottom:calc(var(--nav-h) + 18px + var(--safe-bottom));
   border-radius:20px;
-
-  padding:
-    12px;
+  padding:12px;
 }
 
 .plusHeader{
-
   display:flex;
-
   align-items:center;
-
   justify-content:space-between;
-
-  padding:
-    0 2px 7px;
+  padding:0 2px 7px;
 }
 
 .plusTitleBlock{
-
   min-width:0;
 }
 
 .panelEyebrow{
-
   font-size:6.4px;
-
   color:#888;
-
   font-weight:800;
-
   letter-spacing:1.4px;
-
   text-transform:uppercase;
 }
 
 .panelTitle{
-
   margin-top:3px;
-
   font-size:13px;
-
   font-weight:800;
 }
 
 .closeCircle{
-
   width:29px;
-
   height:29px;
-
   border-radius:50%;
-
   display:grid;
-
   place-items:center;
-
-  background:
-    rgba(255,255,255,.55);
-
-  border:
-    1px solid
-    rgba(0,0,0,.06);
+  background:rgba(255,255,255,.55);
+  border:1px solid rgba(0,0,0,.06);
 }
 
 .closeCircle svg{
-
   width:14px;
-
   height:14px;
-
   stroke-width:1.5;
 }
 
 .plusList{
-
   display:flex;
-
   flex-direction:column;
-
-  border-top:
-    1px solid
-    rgba(0,0,0,.06);
+  border-top:1px solid rgba(0,0,0,.06);
 }
 
 .plusItem{
-
   min-height:45px;
-
   width:100%;
-
   display:grid;
-
-  grid-template-columns:
-    31px 1fr auto;
-
+  grid-template-columns:31px 1fr auto;
   align-items:center;
-
   gap:8px;
-
-  border-bottom:
-    1px solid
-    rgba(0,0,0,.065);
-
+  border-bottom:1px solid rgba(0,0,0,.065);
   text-align:left;
-
   transition:
     transform .17s ease,
     background .17s ease;
 }
 
 .plusItem:last-child{
-
   border-bottom:0;
 }
 
 .plusItemIcon{
-
   width:28px;
-
   height:28px;
-
   border-radius:50%;
-
   display:grid;
-
   place-items:center;
-
-  background:
-    rgba(255,255,255,.64);
-
-  border:
-    1px solid
-    rgba(0,0,0,.055);
+  background:rgba(255,255,255,.64);
+  border:1px solid rgba(0,0,0,.055);
 }
 
 .plusItemIcon svg{
-
   width:14px;
-
   height:14px;
-
   stroke-width:1.45;
 }
 
 .plusItemText{
-
   font-size:8.5px;
-
   font-weight:650;
 }
 
 .plusArrow{
-
   padding-right:2px;
-
   color:#777;
-
   font-size:14px;
 }
 
 @media(hover:hover){
-
   .plusItem:hover{
-
-    transform:
-      translateX(2px);
-
-    background:
-      rgba(255,255,255,.35);
+    transform:translateX(2px);
+    background:rgba(255,255,255,.35);
   }
 }
 
@@ -2272,48 +1258,28 @@ svg{
    ============================================================ */
 
 .profilePanel{
-
   position:absolute;
-
   left:10px;
-
   right:10px;
-
-  bottom:
-    calc(
-      var(--nav-h) +
-      17px +
-      var(--safe-bottom)
-    );
-
+  bottom:calc(var(--nav-h) + 17px + var(--safe-bottom));
   border-radius:22px;
-
   padding:14px;
 }
 
 .panelHead{
-
   display:flex;
-
   align-items:center;
-
   justify-content:space-between;
 }
 
 .panelHeadTitle{
-
   font-size:13px;
-
   font-weight:800;
 }
 
 .profileOffer{
-
   margin-top:11px;
-
-  padding:
-    12px;
-
+  padding:12px;
   border-radius:15px;
 
   background:
@@ -2323,218 +1289,121 @@ svg{
       rgba(255,255,255,.31)
     );
 
-  border:
-    .65px solid
-    rgba(0,0,0,.12);
+  border:.65px solid rgba(0,0,0,.12);
 }
 
 .profileOfferTop{
-
-  font-family:
-    "Bodoni Moda",
-    Didot,
-    serif;
-
-  font-size:17px;
-
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:16px;
   line-height:1.1;
-
-  font-weight:600;
+  font-weight:800;
 }
 
 .profileOfferText{
-
   margin-top:5px;
-
   font-size:7.7px;
-
   line-height:1.48;
-
   color:#555;
 }
 
 .profileBenefits{
-
   display:grid;
-
-  grid-template-columns:
-    repeat(
-      3,
-      1fr
-    );
-
+  grid-template-columns:repeat(3,1fr);
   gap:5px;
-
   margin-top:9px;
 }
 
 .profileBenefit{
-
   min-height:53px;
-
-  padding:
-    7px 5px;
-
+  padding:7px 5px;
   border-radius:11px;
-
   text-align:center;
-
-  border:
-    1px solid
-    rgba(0,0,0,.055);
-
-  background:
-    rgba(255,255,255,.44);
+  border:1px solid rgba(0,0,0,.055);
+  background:rgba(255,255,255,.44);
 }
 
 .profileBenefitStrong{
-
   font-size:7px;
-
   font-weight:800;
 }
 
 .profileBenefitText{
-
   margin-top:3px;
-
   font-size:6.2px;
-
   line-height:1.3;
-
   color:#777;
 }
 
 .fieldLabel{
-
   display:block;
-
-  margin:
-    10px 0 5px;
-
+  margin:10px 0 5px;
   font-size:6.5px;
-
   letter-spacing:.85px;
-
   font-weight:800;
-
   color:#666;
-
   text-transform:uppercase;
 }
 
 .profileInput{
-
   width:100%;
-
   height:41px;
-
-  padding:
-    0 11px;
-
+  padding:0 11px;
   border-radius:12px;
-
-  border:
-    1px solid
-    rgba(0,0,0,.09);
-
-  background:
-    rgba(255,255,255,.58);
-
+  border:1px solid rgba(0,0,0,.09);
+  background:rgba(255,255,255,.58);
   font-size:8.8px;
 }
 
 .profileMarketing{
-
   display:flex;
-
   align-items:flex-start;
-
   gap:8px;
-
   margin-top:9px;
-
   font-size:7px;
-
   line-height:1.42;
-
   color:#666;
 }
 
 .profileMarketing input{
-
   width:14px;
-
   height:14px;
-
   margin-top:1px;
-
-  flex:
-    0 0 auto;
+  flex:0 0 auto;
 }
 
 .profileActions{
-
   display:grid;
-
-  grid-template-columns:
-    1fr 1fr;
-
+  grid-template-columns:1fr 1fr;
   gap:7px;
-
   margin-top:11px;
 }
 
 .profileButton{
-
   min-height:40px;
-
-  padding:
-    0 8px;
-
+  padding:0 8px;
   border-radius:12px;
-
   font-size:8.2px;
-
   font-weight:750;
 }
 
 .profileButton.secondary{
-
-  border:
-    1px solid
-    rgba(0,0,0,.10);
-
-  background:
-    rgba(255,255,255,.45);
+  border:1px solid rgba(0,0,0,.10);
+  background:rgba(255,255,255,.45);
 }
 
 .profileButton.primary{
-
   background:#111;
-
   color:#fff;
 }
 
 .profileTrack{
-
   width:100%;
-
   height:38px;
-
   margin-top:7px;
-
   border-radius:12px;
-
-  border:
-    1px solid
-    rgba(0,0,0,.10);
-
-  background:
-    rgba(255,255,255,.48);
-
+  border:1px solid rgba(0,0,0,.10);
+  background:rgba(255,255,255,.48);
   font-size:7.8px;
-
   font-weight:700;
 }
 
@@ -2543,113 +1412,67 @@ svg{
    ============================================================ */
 
 .favoritesPanel{
-
   position:absolute;
-
   left:9px;
-
   right:9px;
-
-  bottom:
-    calc(
-      var(--nav-h) +
-      16px +
-      var(--safe-bottom)
-    );
-
+  bottom:calc(var(--nav-h) + 16px + var(--safe-bottom));
   border-radius:22px;
-
   padding:13px;
 }
 
 .favoriteRail{
-
   display:flex;
-
   gap:7px;
-
   margin-top:10px;
-
   overflow-x:auto;
-
-  scroll-snap-type:
-    x mandatory;
-
+  scroll-snap-type:x mandatory;
   scrollbar-width:none;
-
-  -webkit-overflow-scrolling:
-    touch;
-
+  -webkit-overflow-scrolling:touch;
   touch-action:auto;
 }
 
 .favoriteRail::-webkit-scrollbar{
-
   display:none;
 }
 
 .favoriteMini{
-
-  flex:
-    0 0 93px;
-
+  flex:0 0 93px;
   scroll-snap-align:start;
 }
 
 .favoriteMiniImage{
-
   width:93px;
-
   height:116px;
-
   overflow:hidden;
-
   border-radius:11px;
-
   background:#eee;
 }
 
 .favoriteMiniImage img{
-
   width:100%;
-
   height:100%;
-
   object-fit:cover;
 }
 
 .favoriteMiniName{
-
   margin-top:5px;
-
   font-size:7px;
-
   line-height:1.25;
 }
 
 .favoriteMiniPrice{
-
   margin-top:2px;
-
   font-size:8px;
-
   font-weight:800;
 }
 
 .favoriteEmpty{
-
   width:100%;
-
   min-height:90px;
-
   display:grid;
-
   place-items:center;
-
   text-align:center;
-
   color:#777;
-
   font-size:8.5px;
 }
 
@@ -2658,328 +1481,191 @@ svg{
    ============================================================ */
 
 .bagDrawer{
-
   position:absolute;
-
   left:8px;
-
   right:8px;
-
   bottom:8px;
-
-  max-height:
-    79dvh;
-
+  max-height:79dvh;
   overflow-y:auto;
-
-  -webkit-overflow-scrolling:
-    touch;
-
+  -webkit-overflow-scrolling:touch;
   border-radius:23px;
-
-  padding:
-    14px 13px
-    calc(
-      15px +
-      var(--safe-bottom)
-    );
+  padding:14px 13px calc(15px + var(--safe-bottom));
 }
 
 .bagHeader{
-
   display:flex;
-
   align-items:center;
-
   justify-content:space-between;
-
   position:sticky;
-
   top:0;
-
   z-index:4;
-
   padding-bottom:6px;
 }
 
 .bagTitle{
-
-  font-family:
-    "Bodoni Moda",
-    Didot,
-    serif;
-
-  font-size:17px;
-
-  font-weight:600;
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:16px;
+  font-weight:800;
 }
 
 .bagSubtitle{
-
   margin-top:2px;
-
   font-size:6.8px;
-
   color:#888;
 }
 
 .bagItems{
-
   margin-top:4px;
 }
 
 .bagItem{
-
   display:grid;
-
-  grid-template-columns:
-    61px 1fr auto;
-
+  grid-template-columns:61px 1fr auto;
   gap:9px;
-
-  padding:
-    10px 0;
-
-  border-bottom:
-    1px solid
-    rgba(0,0,0,.07);
+  padding:10px 0;
+  border-bottom:1px solid rgba(0,0,0,.07);
 }
 
 .bagItemImage{
-
   width:61px;
-
   height:78px;
-
   border-radius:10px;
-
   overflow:hidden;
-
   background:#eee;
 }
 
 .bagItemImage img{
-
   width:100%;
-
   height:100%;
-
   object-fit:cover;
 }
 
 .bagItemName{
-
   font-size:8.8px;
-
   font-weight:700;
-
   line-height:1.3;
 }
 
 .bagItemMeta{
-
   margin-top:4px;
-
   font-size:7px;
-
   color:#777;
 }
 
 .bagQty{
-
   display:flex;
-
   align-items:center;
-
   gap:6px;
-
   margin-top:8px;
 }
 
 .bagQtyButton{
-
   width:24px;
-
   height:24px;
-
   border-radius:50%;
-
-  border:
-    1px solid
-    rgba(0,0,0,.12);
-
+  border:1px solid rgba(0,0,0,.12);
   display:grid;
-
   place-items:center;
-
   font-size:11px;
 }
 
 .bagQtyValue{
-
   min-width:14px;
-
   text-align:center;
-
   font-size:7.5px;
 }
 
 .bagRemove{
-
   margin-top:7px;
-
   font-size:6.8px;
-
   color:#555;
-
   text-decoration:underline;
-
   text-underline-offset:2px;
 }
 
 .bagItemPrice{
-
   font-size:8.2px;
-
   font-weight:750;
-
   white-space:nowrap;
 }
 
 .bagEmpty{
-
   min-height:150px;
-
   display:grid;
-
   place-items:center;
-
   text-align:center;
-
   padding:20px;
-
   color:#777;
-
   font-size:8.5px;
-
   line-height:1.5;
 }
 
 .bagSummary{
-
   margin-top:11px;
 }
 
 .summaryRow{
-
   min-height:28px;
-
   display:flex;
-
   align-items:center;
-
   justify-content:space-between;
-
   font-size:8.3px;
 }
 
 .summaryRow.total{
-
   margin-top:5px;
-
   padding-top:9px;
-
-  border-top:
-    1px solid
-    rgba(0,0,0,.08);
-
+  border-top:1px solid rgba(0,0,0,.08);
   font-size:10px;
-
   font-weight:800;
 }
 
 .checkoutButton{
-
   width:100%;
-
   height:44px;
-
   margin-top:10px;
-
   border-radius:13px;
-
   background:#090909;
-
   color:#fff;
-
   font-size:9px;
-
   font-weight:800;
-
-  transition:
-    transform .17s ease;
+  transition:transform .17s ease;
 }
 
 @media(hover:hover){
-
   .checkoutButton:hover{
-
-    transform:
-      translateY(-2px);
+    transform:translateY(-2px);
   }
 }
 
 /* ============================================================
-   CONTACT SMALL SHEET
+   CONTACT
    ============================================================ */
 
 .contactPanel{
-
   position:absolute;
-
   left:11px;
-
   right:11px;
-
-  bottom:
-    calc(
-      var(--nav-h) +
-      17px +
-      var(--safe-bottom)
-    );
-
+  bottom:calc(var(--nav-h) + 17px + var(--safe-bottom));
   border-radius:21px;
-
   padding:14px;
 }
 
 .contactText{
-
   margin-top:8px;
-
   font-size:7.7px;
-
   line-height:1.5;
-
   color:#555;
 }
 
 .contactButton{
-
   width:100%;
-
   height:40px;
-
   margin-top:10px;
-
   border-radius:12px;
-
   background:#111;
-
   color:#fff;
-
   font-size:8px;
-
   font-weight:750;
 }
 
@@ -2988,104 +1674,44 @@ svg{
    ============================================================ */
 
 .toast{
-
   position:fixed;
-
   z-index:220;
-
   left:50%;
-
-  bottom:
-    calc(
-      var(--nav-h) +
-      23px +
-      var(--safe-bottom)
-    );
-
-  transform:
-    translateX(-50%)
-    translateY(8px);
-
-  max-width:
-    calc(
-      100vw -
-      36px
-    );
-
-  padding:
-    9px 13px;
-
+  bottom:calc(var(--nav-h) + 23px + var(--safe-bottom));
+  transform:translateX(-50%) translateY(8px);
+  max-width:calc(100vw - 36px);
+  padding:9px 13px;
   border-radius:999px;
-
   background:#090909;
-
   color:#fff;
-
   font-size:8px;
-
   opacity:0;
-
   pointer-events:none;
-
   transition:.18s ease;
 }
 
 .toast.show{
-
   opacity:1;
-
-  transform:
-    translateX(-50%)
-    translateY(0);
+  transform:translateX(-50%) translateY(0);
 }
 
 @media(prefers-reduced-motion:reduce){
-
   *,
   *::before,
   *::after{
-
     scroll-behavior:auto!important;
-
-    animation-duration:
-      .01ms!important;
-
-    transition-duration:
-      .01ms!important;
+    animation-duration:.01ms!important;
+    transition-duration:.01ms!important;
   }
 }
-
 </style>
 </head>
 
 <body>
 
-<div
-  id="app"
-  class="appShell"
->
-
-<!-- ============================================================
-     HEADER
-     ============================================================ -->
+<div id="app" class="appShell">
 
 <header class="homeHeader">
-
-  <button
-    id="headerPlus"
-    class="headerPlus glass"
-    aria-label="Más"
-  >
-
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-    >
-      <path d="M12 5v14M5 12h14"/>
-    </svg>
-
-  </button>
 
   <div
     class="brandLockup"
@@ -3093,15 +1719,8 @@ svg{
   >
 
     <div class="brandMonogram">
-
-      <span class="brandC">
-        C
-      </span>
-
-      <span class="brandM">
-        M
-      </span>
-
+      <span class="brandC">C</span>
+      <span class="brandM">M</span>
     </div>
 
     <div class="brandWord">
@@ -3109,7 +1728,6 @@ svg{
     </div>
 
     <div class="brandCountryRow">
-
       <span class="brandCountryLine"></span>
 
       <span class="brandCountry">
@@ -3117,7 +1735,6 @@ svg{
       </span>
 
       <span class="brandCountryLine"></span>
-
     </div>
 
   </div>
@@ -3148,21 +1765,13 @@ svg{
 
 </header>
 
-<!-- ============================================================
-     HOME
-     ============================================================ -->
-
 <main class="homeContent">
-
-  <!-- FOUR IMAGE ANCHORS -->
 
   <section
     id="categoryAnchors"
     class="categoryAnchors"
     aria-label="Categorías CajaModa"
   ></section>
-
-  <!-- DELIVERY -->
 
   <section class="deliverySection">
 
@@ -3205,8 +1814,6 @@ svg{
     </div>
 
   </section>
-
-  <!-- SEARCH -->
 
   <div class="searchShell glass">
 
@@ -3270,26 +1877,21 @@ svg{
     class="searchStatus"
   ></div>
 
-  <!-- CATEGORY LINE -->
-
   <nav
     id="categoryTabs"
     class="categoryTabs"
     aria-label="Categorías"
   ></nav>
 
-  <!-- PRODUCT SECTIONS -->
-
-  <div
-    id="homeSections"
-  ></div>
+  <div id="homeSections"></div>
 
 </main>
 
 </div>
 
 <!-- ============================================================
-     BOTTOM NAV
+     BOTTOM BAR
+     PLUS NOW LIVES HERE ONLY
      ============================================================ -->
 
 <nav
@@ -3300,7 +1902,7 @@ svg{
   <button
     id="navPlus"
     class="navButton"
-    aria-label="Más"
+    aria-label="Más opciones"
   >
 
     <span class="navPlusOrb">
@@ -3344,7 +1946,7 @@ svg{
   <button
     id="navHome"
     class="navButton active"
-    aria-label="Home"
+    aria-label="Inicio"
   >
 
     <svg
@@ -3358,7 +1960,7 @@ svg{
     </svg>
 
     <span>
-      Home
+      Inicio
     </span>
 
   </button>
@@ -3461,8 +2063,6 @@ svg{
 
     <div class="plusList">
 
-      <!-- WHATSAPP -->
-
       <button
         class="plusItem"
         data-plus-action="whatsapp"
@@ -3491,8 +2091,6 @@ svg{
 
       </button>
 
-      <!-- CONTACT -->
-
       <button
         class="plusItem"
         data-plus-action="contact"
@@ -3520,8 +2118,6 @@ svg{
         </span>
 
       </button>
-
-      <!-- TRACK -->
 
       <button
         class="plusItem"
@@ -3552,8 +2148,6 @@ svg{
         </span>
 
       </button>
-
-      <!-- HELP -->
 
       <button
         class="plusItem"
@@ -3608,7 +2202,7 @@ svg{
       <div>
 
         <div class="panelEyebrow">
-          CAJAMODA MEMBERS
+          MIEMBROS CAJAMODA
         </div>
 
         <div class="panelHeadTitle">
@@ -3638,7 +2232,7 @@ svg{
     <div class="profileOffer">
 
       <div class="profileOfferTop">
-        Únete y recibe 10% OFF
+        Únete y recibe 10% de descuento
       </div>
 
       <div class="profileOfferText">
@@ -3657,7 +2251,7 @@ svg{
           </div>
 
           <div class="profileBenefitText">
-            Primera orden
+            Primera compra
           </div>
 
         </div>
@@ -3665,7 +2259,7 @@ svg{
         <div class="profileBenefit">
 
           <div class="profileBenefitStrong">
-            TRACK
+            RASTREA
           </div>
 
           <div class="profileBenefitText">
@@ -3677,11 +2271,11 @@ svg{
         <div class="profileBenefit">
 
           <div class="profileBenefitStrong">
-            EARLY
+            PRIMERO
           </div>
 
           <div class="profileBenefitText">
-            Lanzamientos
+            Nuevos lanzamientos
           </div>
 
         </div>
@@ -3709,7 +2303,7 @@ svg{
       class="fieldLabel"
       for="profileEmail"
     >
-      Email
+      Correo electrónico
     </label>
 
     <input
@@ -3917,7 +2511,7 @@ svg{
         id="checkoutButton"
         class="checkoutButton"
       >
-        Ir a checkout
+        Ir a pagar
       </button>
 
     </div>
@@ -3974,7 +2568,7 @@ svg{
     <div class="contactText">
       ¿Tienes una pregunta sobre un producto o pedido?
       Envíanos un mensaje y mantendremos el contexto de tu
-      sesión para que podamos ayudarte más rápido.
+      sesión para ayudarte más rápido.
     </div>
 
     <button
@@ -3988,24 +2582,15 @@ svg{
 
 </div>
 
-<!-- ============================================================
-     TOAST
-     ============================================================ -->
-
 <div
   id="toast"
   class="toast"
 ></div>
 
 <script>
-
 (() => {
 
   "use strict";
-
-  /* ============================================================
-     CONFIG
-     ============================================================ */
 
   const CONFIG =
     Object.freeze({
@@ -4015,12 +2600,6 @@ svg{
 
       bridgeSource:
         "CAJAMODA_IFRAME",
-
-      /*
-        Accept CajaModa plus the legacy bridge names
-        so the current Wix/main.js connection is not broken.
-        Legacy identifiers are not displayed to customers.
-      */
 
       acceptedSources:[
         "CAJAMODA_STOREFRONT",
@@ -4045,18 +2624,6 @@ svg{
       searchDebounceMs:
         160,
 
-      /*
-        Add the business WhatsApp number later
-        in international format without +.
-
-        Example:
-        "573001234567"
-
-        With this blank, WhatsApp still opens
-        with the prewritten order message and
-        allows the customer to choose a contact.
-      */
-
       whatsappNumber:
         "",
 
@@ -4064,25 +2631,16 @@ svg{
         "CAJA10"
     });
 
-  /* ============================================================
-     CATEGORY LAW
-     ============================================================ */
-
   const CATEGORIES =
     Object.freeze([
 
       {
-        id:
-          "late",
-
-        name:
-          "Long Nights",
-
-        image:
-          "https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=900&q=88",
-
+        id:"late",
+        name:"Noches Largas",
+        image:"https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=900&q=88",
         terms:[
           "long nights",
+          "noches largas",
           "night",
           "evening",
           "party",
@@ -4095,17 +2653,12 @@ svg{
       },
 
       {
-        id:
-          "chill",
-
-        name:
-          "Quiet Days",
-
-        image:
-          "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=900&q=88",
-
+        id:"chill",
+        name:"Días Tranquilos",
+        image:"https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=900&q=88",
         terms:[
           "quiet days",
+          "dias tranquilos",
           "quiet",
           "casual",
           "top",
@@ -4119,17 +2672,12 @@ svg{
       },
 
       {
-        id:
-          "quick",
-
-        name:
-          "Quick and Easy",
-
-        image:
-          "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=900&q=88",
-
+        id:"quick",
+        name:"Rápido y Fácil",
+        image:"https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=900&q=88",
         terms:[
           "quick and easy",
+          "rapido y facil",
           "quick",
           "set",
           "sets",
@@ -4142,17 +2690,12 @@ svg{
       },
 
       {
-        id:
-          "sun",
-
-        name:
-          "Sunbathing",
-
-        image:
-          "https://images.unsplash.com/photo-1524250502761-1ac6f2e30d43?auto=format&fit=crop&w=900&q=88",
-
+        id:"sun",
+        name:"Baño de Sol",
+        image:"https://images.unsplash.com/photo-1524250502761-1ac6f2e30d43?auto=format&fit=crop&w=900&q=88",
         terms:[
           "sunbathing",
+          "bano de sol",
           "sun",
           "bikini",
           "bikinis",
@@ -4169,138 +2712,68 @@ svg{
 
     ]);
 
-  /* ============================================================
-     DELIVERY
-     ============================================================ */
-
   const DELIVERY_METHODS =
     Object.freeze([
 
       {
-        id:
-          "pickup",
-
-        title:
-          "Recoge en tienda",
-
-        eta:
-          "Local",
-
-        description:
-          "Compra en línea y recoge localmente cuando confirmemos que tu pedido está listo.",
-
-        icon:
-          "pin"
+        id:"pickup",
+        title:"Recoge en tienda",
+        eta:"Local",
+        description:"Compra en línea y recoge localmente cuando confirmemos que tu pedido está listo.",
+        icon:"pin"
       },
 
       {
-        id:
-          "fast",
-
-        title:
-          "Entrega rápida",
-
-        eta:
-          "24–48 h",
-
-        description:
-          "Productos elegibles se procesan con prioridad para una entrega estimada entre 24 y 48 horas.",
-
-        icon:
-          "truck"
+        id:"fast",
+        title:"Entrega rápida",
+        eta:"24–48 h",
+        description:"Productos elegibles se procesan con prioridad para una entrega estimada entre 24 y 48 horas.",
+        icon:"truck"
       },
 
       {
-        id:
-          "ship",
-
-        title:
-          "Envíos",
-
-        eta:
-          "14–21 días",
-
-        description:
-          "Algunos productos conectados a nuestra red de suministro pueden requerir aproximadamente 14 a 21 días.",
-
-        icon:
-          "globe"
+        id:"ship",
+        title:"Envíos",
+        eta:"14–21 días",
+        description:"Algunos productos conectados a nuestra red de suministro pueden requerir aproximadamente 14 a 21 días.",
+        icon:"globe"
       },
 
       {
-        id:
-          "reserve",
-
-        title:
-          "Reserva el lanzamiento",
-
-        eta:
-          "Sé la primera",
-
-        description:
-          "Registra tu interés antes del lanzamiento para recibir noticias cuando el producto esté disponible.",
-
-        icon:
-          "spark"
+        id:"reserve",
+        title:"Reserva el lanzamiento",
+        eta:"Sé la primera",
+        description:"Registra tu interés antes del lanzamiento para recibir noticias cuando el producto esté disponible.",
+        icon:"spark"
       }
 
     ]);
 
-  /* ============================================================
-     DOM HELPERS
-     ============================================================ */
-
   const $ =
     id =>
-      document.getElementById(
-        id
-      );
+      document.getElementById(id);
 
   const qsa =
-    (
-      selector,
-      root=document
-    ) =>
-      [
-        ...root.querySelectorAll(
-          selector
-        )
-      ];
-
-  /* ============================================================
-     STATE
-     ============================================================ */
+    (selector,root=document) =>
+      [...root.querySelectorAll(selector)];
 
   const state = {
 
-    products:
-      [],
+    products:[],
 
-    /*
-      ALWAYS starts on TODOS.
-    */
+    activeFilter:"all",
 
-    activeFilter:
-      "all",
+    activeAnchor:null,
 
-    activeAnchor:
-      null,
+    search:"",
 
-    search:
-      "",
-
-    searchTimer:
-      null,
+    searchTimer:null,
 
     favorites:
       new Set(
         readFavorites()
       )
   };
-
-  /* ============================================================
-     STORAGE
-     ============================================================ */
 
   function readJson(
     key,
@@ -4310,19 +2783,13 @@ svg{
     try{
 
       const raw =
-        localStorage.getItem(
-          key
-        );
+        localStorage.getItem(key);
 
-      if(
-        !raw
-      ){
+      if(!raw){
         return fallback;
       }
 
-      return JSON.parse(
-        raw
-      );
+      return JSON.parse(raw);
 
     }catch{
 
@@ -4339,9 +2806,7 @@ svg{
 
       localStorage.setItem(
         key,
-        JSON.stringify(
-          value
-        )
+        JSON.stringify(value)
       );
 
     }catch{}
@@ -4355,9 +2820,7 @@ svg{
         []
       );
 
-    return Array.isArray(
-      data
-    )
+    return Array.isArray(data)
       ?data
         .map(String)
         .slice(
@@ -4371,9 +2834,7 @@ svg{
 
     saveJson(
       "cajamoda-favorites",
-      [
-        ...state.favorites
-      ]
+      [...state.favorites]
     );
   }
 
@@ -4400,23 +2861,16 @@ svg{
 
     saveJson(
       "cajamoda-cart",
-      normalizeCart(
-        cart
-      )
+      normalizeCart(cart)
     );
   }
-
-  /* ============================================================
-     GENERAL HELPERS
-     ============================================================ */
 
   function createId(){
 
     if(
       window.crypto?.randomUUID
     ){
-      return window.crypto
-        .randomUUID();
+      return window.crypto.randomUUID();
     }
 
     return (
@@ -4435,26 +2889,11 @@ svg{
       value ??
       ""
     )
-      .replaceAll(
-        "&",
-        "&amp;"
-      )
-      .replaceAll(
-        "<",
-        "&lt;"
-      )
-      .replaceAll(
-        ">",
-        "&gt;"
-      )
-      .replaceAll(
-        '"',
-        "&quot;"
-      )
-      .replaceAll(
-        "'",
-        "&#039;"
-      );
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
   }
 
   function normalizeText(
@@ -4465,9 +2904,7 @@ svg{
       value ||
       ""
     )
-      .normalize(
-        "NFD"
-      )
+      .normalize("NFD")
       .replace(
         /[\u0300-\u036f]/g,
         ""
@@ -4491,20 +2928,12 @@ svg{
     return new Intl.NumberFormat(
       "es-CO",
       {
-        style:
-          "currency",
-
-        currency:
-          "COP",
-
-        maximumFractionDigits:
-          0
+        style:"currency",
+        currency:"COP",
+        maximumFractionDigits:0
       }
     ).format(
-      Number(
-        value ||
-        0
-      )
+      Number(value || 0)
     );
   }
 
@@ -4515,8 +2944,7 @@ svg{
     return (
       CATEGORIES.find(
         category =>
-          category.id ===
-          id
+          category.id === id
       ) ||
       CATEGORIES[0]
     );
@@ -4528,14 +2956,9 @@ svg{
 
     return state.products.find(
       product =>
-        String(
-          product.id
-        ) ===
-        String(
-          productId
-        )
-    ) ||
-    null;
+        String(product.id) ===
+        String(productId)
+    ) || null;
   }
 
   function heartIcon(
@@ -4545,7 +2968,7 @@ svg{
     return `
       <svg
         viewBox="0 0 24 24"
-        fill="${filled?"currentColor":"none"}"
+        fill="${filled ? "currentColor" : "none"}"
         stroke="currentColor"
       >
         <path d="M20.3 5.7a5.2 5.2 0 0 0-7.4 0L12 6.6l-.9-.9a5.2 5.2 0 0 0-7.4 7.4L12 21l8.3-7.9a5.2 5.2 0 0 0 0-7.4Z"/>
@@ -4557,10 +2980,7 @@ svg{
     type
   ){
 
-    if(
-      type ===
-      "pin"
-    ){
+    if(type === "pin"){
 
       return `
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -4570,10 +2990,7 @@ svg{
       `;
     }
 
-    if(
-      type ===
-      "truck"
-    ){
+    if(type === "truck"){
 
       return `
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -4585,10 +3002,7 @@ svg{
       `;
     }
 
-    if(
-      type ===
-      "globe"
-    ){
+    if(type === "globe"){
 
       return `
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -4608,25 +3022,18 @@ svg{
     `;
   }
 
-  /* ============================================================
-     PRODUCT NORMALIZATION
-     ============================================================ */
-
   function normalizeMedia(
     product
   ){
 
     if(
-      Array.isArray(
-        product.media
-      )
+      Array.isArray(product.media)
     ){
 
       return product.media
         .map(
           item =>
-            typeof item ===
-            "string"
+            typeof item === "string"
               ?item
               :item.url ||
                item.src ||
@@ -4648,10 +3055,6 @@ svg{
     product
   ){
 
-    /*
-      First honor explicit vibe/category data.
-    */
-
     const explicit =
       normalizeText(
         [
@@ -4662,14 +3065,13 @@ svg{
           product.type
         ]
           .filter(Boolean)
-          .join(
-            " "
-          )
+          .join(" ")
       );
 
     if(
       explicit.includes("late") ||
       explicit.includes("long night") ||
+      explicit.includes("noches largas") ||
       explicit.includes("vestido") ||
       explicit.includes("dress")
     ){
@@ -4679,6 +3081,7 @@ svg{
     if(
       explicit.includes("chill") ||
       explicit.includes("quiet day") ||
+      explicit.includes("dias tranquilos") ||
       explicit.includes("top") ||
       explicit.includes("blusa")
     ){
@@ -4687,6 +3090,7 @@ svg{
 
     if(
       explicit.includes("quick") ||
+      explicit.includes("rapido y facil") ||
       explicit.includes("conjunto") ||
       explicit.includes("set")
     ){
@@ -4695,16 +3099,13 @@ svg{
 
     if(
       explicit.includes("sun") ||
+      explicit.includes("bano de sol") ||
       explicit.includes("enterizo") ||
       explicit.includes("bikini") ||
       explicit.includes("swim")
     ){
       return "sun";
     }
-
-    /*
-      Then infer from the searchable product text.
-    */
 
     const text =
       normalizeText(
@@ -4719,9 +3120,7 @@ svg{
         ]
           .flat()
           .filter(Boolean)
-          .join(
-            " "
-          )
+          .join(" ")
       );
 
     for(
@@ -4733,9 +3132,7 @@ svg{
         category.terms.some(
           term =>
             text.includes(
-              normalizeText(
-                term
-              )
+              normalizeText(term)
             )
         )
       ){
@@ -4751,9 +3148,7 @@ svg{
   ){
 
     const media =
-      normalizeMedia(
-        product
-      );
+      normalizeMedia(product);
 
     return{
 
@@ -4764,12 +3159,10 @@ svg{
 
       name:
         product.name ||
-        "CajaModa Product",
+        "Producto CajaModa",
 
       category:
-        inferCategory(
-          product
-        ),
+        inferCategory(product),
 
       productType:
         product.productType ||
@@ -4817,9 +3210,7 @@ svg{
         category.terms
       ]
         .flat()
-        .join(
-          " "
-        )
+        .join(" ")
     );
   }
 
@@ -4832,35 +3223,23 @@ svg{
         state.search
       );
 
-    if(
-      !query
-    ){
+    if(!query){
       return true;
     }
 
     const tokens =
       query
-        .split(
-          " "
-        )
+        .split(" ")
         .filter(Boolean);
 
     const haystack =
-      productSearchText(
-        product
-      );
+      productSearchText(product);
 
     return tokens.every(
       token =>
-        haystack.includes(
-          token
-        )
+        haystack.includes(token)
     );
   }
-
-  /* ============================================================
-     CART NORMALIZATION
-     ============================================================ */
 
   function normalizeCart(
     payload
@@ -4882,15 +3261,12 @@ svg{
 
           const productId =
             item.productId ||
-            item.catalogReference
-              ?.catalogItemId ||
+            item.catalogReference?.catalogItemId ||
             item.catalogItemId ||
             null;
 
           const product =
-            findProduct(
-              productId
-            );
+            findProduct(productId);
 
           return{
 
@@ -4904,8 +3280,7 @@ svg{
 
             variantId:
               item.variantId ||
-              item.catalogReference
-                ?.variantId ||
+              item.catalogReference?.variantId ||
               null,
 
             name:
@@ -4942,8 +3317,7 @@ svg{
               Number(
                 item.price?.amount ??
                 item.price ??
-                item.lineItemPrice
-                  ?.amount ??
+                item.lineItemPrice?.amount ??
                 product?.price ??
                 0
               )
@@ -4953,21 +3327,14 @@ svg{
 
     const count =
       items.reduce(
-        (
-          sum,
-          item
-        ) =>
-          sum +
-          item.quantity,
+        (sum,item) =>
+          sum + item.quantity,
         0
       );
 
     const total =
       items.reduce(
-        (
-          sum,
-          item
-        ) =>
+        (sum,item) =>
           sum +
           (
             item.price *
@@ -4983,10 +3350,6 @@ svg{
     };
   }
 
-  /* ============================================================
-     BRIDGE
-     ============================================================ */
-
   function sendBridge(
     type,
     payload={}
@@ -4998,9 +3361,7 @@ svg{
         {
           source:
             CONFIG.bridgeSource,
-
           type,
-
           payload
         },
         "*"
@@ -5026,20 +3387,14 @@ svg{
           new Date()
             .toISOString(),
 
-        page:
-          "home",
+        page:"home",
 
-        brand:
-          "CAJAMODA",
+        brand:"CAJAMODA",
 
         ...payload
       }
     );
   }
-
-  /* ============================================================
-     CATEGORY HERO
-     ============================================================ */
 
   function renderAnchors(){
 
@@ -5065,9 +3420,7 @@ svg{
 
             </button>
           `
-        ).join(
-          ""
-        );
+        ).join("");
 
     qsa(
       "[data-anchor]"
@@ -5078,8 +3431,7 @@ svg{
           () => {
 
             const id =
-              button.dataset
-                .anchor;
+              button.dataset.anchor;
 
             state.activeAnchor =
               id;
@@ -5092,8 +3444,7 @@ svg{
             track(
               "CATEGORY_ANCHOR_CLICK",
               {
-                categoryId:
-                  id
+                categoryId:id
               }
             );
 
@@ -5105,11 +3456,8 @@ svg{
                     `[data-section="${id}"]`
                   )
                   ?.scrollIntoView({
-                    behavior:
-                      "smooth",
-
-                    block:
-                      "start"
+                    behavior:"smooth",
+                    block:"start"
                   });
 
               }
@@ -5119,10 +3467,6 @@ svg{
       }
     );
   }
-
-  /* ============================================================
-     DELIVERY
-     ============================================================ */
 
   function renderDelivery(){
 
@@ -5149,9 +3493,7 @@ svg{
 
             </button>
           `
-        ).join(
-          ""
-        );
+        ).join("");
 
     qsa(
       "[data-delivery]"
@@ -5165,13 +3507,10 @@ svg{
               DELIVERY_METHODS.find(
                 item =>
                   item.id ===
-                  button.dataset
-                    .delivery
+                  button.dataset.delivery
               );
 
-            if(
-              !method
-            ){
+            if(!method){
               return;
             }
 
@@ -5185,9 +3524,7 @@ svg{
 
             $("deliveryInfo")
               .classList
-              .add(
-                "open"
-              );
+              .add("open");
 
             track(
               "DELIVERY_INFO_OPEN",
@@ -5202,29 +3539,19 @@ svg{
     );
   }
 
-  /* ============================================================
-     CATEGORY TABS
-     ============================================================ */
-
   function renderTabs(){
 
     const tabs = [
 
       {
-        id:
-          "all",
-
-        name:
-          "Todos"
+        id:"all",
+        name:"Todos"
       },
 
       ...CATEGORIES.map(
         category => ({
-          id:
-            category.id,
-
-          name:
-            category.name
+          id:category.id,
+          name:category.name
         })
       )
 
@@ -5236,13 +3563,11 @@ svg{
           tab => `
             <button
               class="categoryTab ${
-                tab.id ===
-                "all"
+                tab.id === "all"
                   ?"all"
                   :""
               } ${
-                state.activeFilter ===
-                tab.id
+                state.activeFilter === tab.id
                   ?"active"
                   :""
               }"
@@ -5251,9 +3576,7 @@ svg{
               ${escapeHtml(tab.name)}
             </button>
           `
-        ).join(
-          ""
-        );
+        ).join("");
 
     qsa(
       "[data-tab]"
@@ -5264,16 +3587,12 @@ svg{
           () => {
 
             const id =
-              button.dataset
-                .tab;
+              button.dataset.tab;
 
             state.activeFilter =
               id;
 
-            if(
-              id ===
-              "all"
-            ){
+            if(id === "all"){
 
               state.activeAnchor =
                 null;
@@ -5288,8 +3607,7 @@ svg{
               track(
                 "CATEGORY_FILTER",
                 {
-                  categoryId:
-                    "all"
+                  categoryId:"all"
                 }
               );
 
@@ -5306,18 +3624,14 @@ svg{
                 `[data-section="${id}"]`
               )
               ?.scrollIntoView({
-                behavior:
-                  "smooth",
-
-                block:
-                  "start"
+                behavior:"smooth",
+                block:"start"
               });
 
             track(
               "CATEGORY_FILTER",
               {
-                categoryId:
-                  id
+                categoryId:id
               }
             );
 
@@ -5326,10 +3640,6 @@ svg{
     );
   }
 
-  /* ============================================================
-     PRODUCTS
-     ============================================================ */
-
   function productsForCategory(
     categoryId
   ){
@@ -5337,11 +3647,8 @@ svg{
     return state.products
       .filter(
         product =>
-          product.category ===
-          categoryId &&
-          matchesSearch(
-            product
-          )
+          product.category === categoryId &&
+          matchesSearch(product)
       )
       .slice(
         0,
@@ -5349,26 +3656,16 @@ svg{
       );
   }
 
-  /*
-    Placeholder designed as an actual photo position,
-    not a random "empty slot" box.
-
-    When no real product occupies the space, the
-    first three visible cards clearly show where
-    product photography belongs.
-  */
-
   function placeholderCard(
     slot
   ){
 
     const number =
-      String(
-        slot
-      ).padStart(
-        2,
-        "0"
-      );
+      String(slot)
+        .padStart(
+          2,
+          "0"
+        );
 
     return `
       <article
@@ -5387,11 +3684,11 @@ svg{
               </div>
 
               <div class="placeholderLabel">
-                PRODUCT PHOTO
+                FOTO DE PRODUCTO
               </div>
 
               <div class="placeholderHint">
-                Image ready
+                Espacio disponible
               </div>
 
             </div>
@@ -5403,7 +3700,7 @@ svg{
         <div class="productInfo">
 
           <div class="productName">
-            Product coming soon
+            Producto próximamente
           </div>
 
           <div class="productPrice">
@@ -5422,9 +3719,7 @@ svg{
 
     const favorite =
       state.favorites.has(
-        String(
-          product.id
-        )
+        String(product.id)
       );
 
     return `
@@ -5454,7 +3749,7 @@ svg{
                     </div>
 
                     <div class="placeholderLabel">
-                      PRODUCT PHOTO
+                      FOTO DE PRODUCTO
                     </div>
 
                   </div>
@@ -5517,8 +3812,7 @@ svg{
 
             if(
               searching &&
-              products.length ===
-              0
+              products.length === 0
             ){
               return "";
             }
@@ -5531,34 +3825,20 @@ svg{
                 productCard
               );
 
-            /*
-              Always maintain capacity for 10.
-
-              If there are only 0, 1, or 2 products,
-              the first three visible positions still
-              clearly show the structure of the store.
-            */
-
-            if(
-              !searching
-            ){
+            if(!searching){
 
               for(
                 let slot =
-                  products.length +
-                  1;
+                  products.length + 1;
 
                 slot <=
                   CONFIG.maxSlotsPerCategory;
 
-                slot +=
-                  1
+                slot += 1
               ){
 
                 cards.push(
-                  placeholderCard(
-                    slot
-                  )
+                  placeholderCard(slot)
                 );
               }
             }
@@ -5580,7 +3860,7 @@ svg{
                     <span class="liveCount">
                       ${
                         searching
-                          ?`${products.length} found`
+                          ?`${products.length} encontrados`
                           :`${products.length} / ${CONFIG.maxSlotsPerCategory}`
                       }
                     </span>
@@ -5600,19 +3880,14 @@ svg{
                   class="productRail"
                   data-rail="${category.id}"
                 >
-
                   ${cards.join("")}
-
                 </div>
 
                 <div class="railDots">
 
                   <span class="railDot active"></span>
-
                   <span class="railDot"></span>
-
                   <span class="railDot"></span>
-
                   <span class="railDot"></span>
 
                 </div>
@@ -5620,13 +3895,10 @@ svg{
               </section>
             `;
           }
-        ).join(
-          ""
-        );
+        ).join("");
 
     if(
-      visibleSections ===
-      0
+      visibleSections === 0
     ){
 
       $("homeSections")
@@ -5668,25 +3940,12 @@ svg{
 
             const product =
               findProduct(
-                card.dataset
-                  .product
+                card.dataset.product
               );
 
-            if(
-              !product
-            ){
+            if(!product){
               return;
             }
-
-            /*
-              Store the selected product too.
-
-              This gives the future Product page
-              two ways to resolve the product:
-
-              1. URL productId
-              2. shared local product snapshot
-            */
 
             saveJson(
               "cajamoda-active-product",
@@ -5738,8 +3997,7 @@ svg{
             event.stopPropagation();
 
             toggleFavorite(
-              button.dataset
-                .favorite
+              button.dataset.favorite
             );
 
           };
@@ -5755,8 +4013,7 @@ svg{
           () => {
 
             const id =
-              button.dataset
-                .view;
+              button.dataset.view;
 
             state.activeFilter =
               id;
@@ -5779,10 +4036,6 @@ svg{
       }
     );
   }
-
-  /* ============================================================
-     HORIZONTAL RAIL
-     ============================================================ */
 
   function bindRails(){
 
@@ -5812,34 +4065,26 @@ svg{
 
             const ratio =
               max > 0
-                ?rail.scrollLeft /
-                 max
+                ?rail.scrollLeft / max
                 :0;
 
             const active =
               Math.min(
-                dots.length -
-                1,
-
+                dots.length - 1,
                 Math.round(
                   ratio *
                   (
-                    dots.length -
-                    1
+                    dots.length - 1
                   )
                 )
               );
 
             dots.forEach(
-              (
-                dot,
-                index
-              ) => {
+              (dot,index) => {
 
                 dot.classList.toggle(
                   "active",
-                  index ===
-                  active
+                  index === active
                 );
 
               }
@@ -5855,10 +4100,6 @@ svg{
     );
   }
 
-  /* ============================================================
-     SEARCH
-     ============================================================ */
-
   function renderSearchStatus(){
 
     const query =
@@ -5871,9 +4112,7 @@ svg{
         !!query
       );
 
-    if(
-      !query
-    ){
+    if(!query){
 
       $("searchStatus")
         .classList
@@ -5906,23 +4145,15 @@ svg{
       );
   }
 
-  /* ============================================================
-     FAVORITES
-     ============================================================ */
-
   function toggleFavorite(
     productId
   ){
 
     const id =
-      String(
-        productId
-      );
+      String(productId);
 
     if(
-      state.favorites.has(
-        id
-      )
+      state.favorites.has(id)
     ){
 
       state.favorites.delete(
@@ -5957,13 +4188,9 @@ svg{
     track(
       "FAVORITE_TOGGLE",
       {
-        productId:
-          id,
-
+        productId:id,
         active:
-          state.favorites.has(
-            id
-          )
+          state.favorites.has(id)
       }
     );
   }
@@ -5974,9 +4201,7 @@ svg{
       state.products.filter(
         product =>
           state.favorites.has(
-            String(
-              product.id
-            )
+            String(product.id)
           )
       );
 
@@ -6015,9 +4240,7 @@ svg{
 
               </button>
             `
-          ).join(
-            ""
-          )
+          ).join("")
           :`
             <div class="favoriteEmpty">
               Tus productos guardados aparecerán aquí.
@@ -6034,13 +4257,10 @@ svg{
 
             const product =
               findProduct(
-                button.dataset
-                  .favoriteOpen
+                button.dataset.favoriteOpen
               );
 
-            if(
-              !product
-            ){
+            if(!product){
               return;
             }
 
@@ -6073,10 +4293,6 @@ svg{
     );
   }
 
-  /* ============================================================
-     CART
-     ============================================================ */
-
   function cartCount(){
 
     return readCart()
@@ -6097,13 +4313,9 @@ svg{
       badge => {
 
         badge.textContent =
-          String(
-            count
-          );
+          String(count);
 
-        if(
-          animate
-        ){
+        if(animate){
 
           badge.classList.remove(
             "bump"
@@ -6131,15 +4343,11 @@ svg{
 
     $("bagQuantity")
       .textContent =
-        String(
-          cart.count
-        );
+        String(cart.count);
 
     $("bagSubtotal")
       .textContent =
-        money(
-          cart.total
-        );
+        money(cart.total);
 
     $("bagItems")
       .innerHTML =
@@ -6226,24 +4434,20 @@ svg{
 
             </article>
           `
-        ).join(
-          ""
-        );
+        ).join("");
 
     $("bagEmpty")
       .classList
       .toggle(
         "hidden",
-        cart.items.length >
-        0
+        cart.items.length > 0
       );
 
     $("bagSummary")
       .classList
       .toggle(
         "hidden",
-        cart.items.length ===
-        0
+        cart.items.length === 0
       );
 
     qsa(
@@ -6256,13 +4460,11 @@ svg{
 
             const delta =
               Number(
-                button.dataset
-                  .cartDelta
+                button.dataset.cartDelta
               );
 
             changeCartQuantity(
-              button.dataset
-                .cartLine,
+              button.dataset.cartLine,
               delta
             );
 
@@ -6279,8 +4481,7 @@ svg{
           () => {
 
             removeCartLine(
-              button.dataset
-                .cartRemove
+              button.dataset.cartRemove
             );
 
           };
@@ -6299,30 +4500,19 @@ svg{
     const line =
       cart.items.find(
         item =>
-          String(
-            item.id
-          ) ===
-          String(
-            lineId
-          )
+          String(item.id) ===
+          String(lineId)
       );
 
-    if(
-      !line
-    ){
+    if(!line){
       return;
     }
 
     const next =
       line.quantity +
-      Number(
-        delta
-      );
+      Number(delta);
 
-    if(
-      next <=
-      0
-    ){
+    if(next <= 0){
 
       removeCartLine(
         lineId
@@ -6331,20 +4521,12 @@ svg{
       return;
     }
 
-    /*
-      Update local shared state immediately.
-    */
-
     line.quantity =
       next;
 
     saveCart(
       cart
     );
-
-    /*
-      Also tell Wix/main.js.
-    */
 
     sendBridge(
       "UPDATE_BAG_QUANTITY",
@@ -6374,12 +4556,8 @@ svg{
     const nextItems =
       cart.items.filter(
         item =>
-          String(
-            item.id
-          ) !==
-          String(
-            lineId
-          )
+          String(item.id) !==
+          String(lineId)
       );
 
     saveCart({
@@ -6403,10 +4581,6 @@ svg{
   }
 
   function openBag(){
-
-    /*
-      Ask Wix for its latest cart state first.
-    */
 
     sendBridge(
       "GET_CART"
@@ -6432,9 +4606,7 @@ svg{
     const cart =
       readCart();
 
-    if(
-      !cart.count
-    ){
+    if(!cart.count){
 
       showToast(
         "Tu bolsa está vacía."
@@ -6442,11 +4614,6 @@ svg{
 
       return;
     }
-
-    /*
-      Save a checkout snapshot.
-      Product + Checkout pages can read the same data.
-    */
 
     saveJson(
       "cajamoda-checkout-cart",
@@ -6467,10 +4634,6 @@ svg{
     location.href =
       CONFIG.checkoutPage;
   }
-
-  /* ============================================================
-     PROFILE
-     ============================================================ */
 
   function loadProfile(){
 
@@ -6513,13 +4676,11 @@ svg{
 
     if(
       !email ||
-      !email.includes(
-        "@"
-      )
+      !email.includes("@")
     ){
 
       showToast(
-        "Ingresa un email válido."
+        "Ingresa un correo electrónico válido."
       );
 
       return;
@@ -6532,8 +4693,7 @@ svg{
       );
 
     const isNewMember =
-      mode ===
-      "signup" &&
+      mode === "signup" &&
       !existing.email;
 
     const profile = {
@@ -6570,14 +4730,11 @@ svg{
       "MEMBER_AUTH_REQUEST",
       {
         mode,
-
         ...profile
       }
     );
 
-    if(
-      isNewMember
-    ){
+    if(isNewMember){
 
       saveJson(
         "cajamoda-promo",
@@ -6604,8 +4761,7 @@ svg{
     }else{
 
       showToast(
-        mode ===
-        "signup"
+        mode === "signup"
           ?"Perfil actualizado."
           :"Inicio de sesión solicitado."
       );
@@ -6625,10 +4781,6 @@ svg{
     location.href =
       `${CONFIG.checkoutPage}?track=1`;
   }
-
-  /* ============================================================
-     PLUS MENU
-     ============================================================ */
 
   function openWhatsApp(){
 
@@ -6654,12 +4806,6 @@ svg{
           text
       }
     );
-
-    /*
-      Browser fallback.
-      If whatsappNumber is added later,
-      it will open the business directly.
-    */
 
     const number =
       CONFIG.whatsappNumber
@@ -6700,8 +4846,7 @@ svg{
     sendBridge(
       "OPEN_CONTACT",
       {
-        page:
-          "home",
+        page:"home",
 
         cartCount:
           cartCount()
@@ -6732,8 +4877,7 @@ svg{
     sendBridge(
       "OPEN_HELP",
       {
-        page:
-          "home"
+        page:"home"
       }
     );
 
@@ -6742,26 +4886,16 @@ svg{
     );
   }
 
-  /* ============================================================
-     OVERLAYS
-     ============================================================ */
-
   function openOverlay(
     element
   ){
-
-    /*
-      Close anything else first.
-    */
 
     qsa(
       ".overlay.open"
     ).forEach(
       overlay =>
         overlay.classList
-          .remove(
-            "open"
-          )
+          .remove("open")
     );
 
     element.classList.add(
@@ -6797,10 +4931,6 @@ svg{
     }
   }
 
-  /* ============================================================
-     TOAST
-     ============================================================ */
-
   function showToast(
     text
   ){
@@ -6833,10 +4963,6 @@ svg{
       );
   }
 
-  /* ============================================================
-     INCOMING WIX / MAIN.JS EVENTS
-     ============================================================ */
-
   window.addEventListener(
     "message",
     event => {
@@ -6844,12 +4970,6 @@ svg{
       const message =
         event.data ||
         {};
-
-      /*
-        If source exists, enforce known bridge sources.
-        Allows the current legacy Wix bridge to survive
-        while customer-facing naming stays CajaModa.
-      */
 
       if(
         message.source &&
@@ -6882,10 +5002,6 @@ svg{
                 .map(
                   normalizeProduct
                 );
-
-            /*
-              Cache the catalog for Product page.
-            */
 
             saveJson(
               "cajamoda-catalog",
@@ -6922,9 +5038,7 @@ svg{
               new Map(
                 state.products.map(
                   product => [
-                    String(
-                      product.id
-                    ),
+                    String(product.id),
                     product
                   ]
                 )
@@ -6938,9 +5052,7 @@ svg{
                 product => {
 
                   map.set(
-                    String(
-                      product.id
-                    ),
+                    String(product.id),
                     product
                   );
 
@@ -6948,9 +5060,7 @@ svg{
               );
 
             state.products =
-              [
-                ...map.values()
-              ];
+              [...map.values()];
 
             saveJson(
               "cajamoda-catalog",
@@ -6978,9 +5088,7 @@ svg{
           if(
             $("bagOverlay")
               .classList
-              .contains(
-                "open"
-              )
+              .contains("open")
           ){
             renderBag();
           }
@@ -7000,11 +5108,6 @@ svg{
                 payload ??
                 0
               );
-
-            /*
-              If we do not have item details yet,
-              preserve count without fabricating products.
-            */
 
             if(
               !cart.items.length
@@ -7034,19 +5137,13 @@ svg{
     }
   );
 
-  /* ============================================================
-     HOME EVENTS
-     ============================================================ */
-
   $("deliveryInfoClose")
     .onclick =
       () => {
 
         $("deliveryInfo")
           .classList
-          .remove(
-            "open"
-          );
+          .remove("open");
 
       };
 
@@ -7111,10 +5208,6 @@ svg{
 
       };
 
-  /* ============================================================
-     PLUS EVENTS
-     ============================================================ */
-
   function openPlus(){
 
     openOverlay(
@@ -7126,9 +5219,9 @@ svg{
     );
   }
 
-  $("headerPlus")
-    .onclick =
-      openPlus;
+  /*
+    PLUS NOW OPENS ONLY FROM THE BOTTOM BAR
+  */
 
   $("navPlus")
     .onclick =
@@ -7166,33 +5259,28 @@ svg{
         () => {
 
           const action =
-            button.dataset
-              .plusAction;
+            button.dataset.plusAction;
 
           if(
-            action ===
-            "whatsapp"
+            action === "whatsapp"
           ){
 
             openWhatsApp();
 
           }else if(
-            action ===
-            "contact"
+            action === "contact"
           ){
 
             openContact();
 
           }else if(
-            action ===
-            "track"
+            action === "track"
           ){
 
             openTrack();
 
           }else if(
-            action ===
-            "help"
+            action === "help"
           ){
 
             openHelp();
@@ -7201,10 +5289,6 @@ svg{
         };
     }
   );
-
-  /* ============================================================
-     CONTACT EVENTS
-     ============================================================ */
 
   $("contactClose")
     .onclick =
@@ -7232,10 +5316,6 @@ svg{
   $("contactMessage")
     .onclick =
       contactMessage;
-
-  /* ============================================================
-     FAVORITES EVENTS
-     ============================================================ */
 
   $("navFavorites")
     .onclick =
@@ -7271,10 +5351,6 @@ svg{
         }
 
       };
-
-  /* ============================================================
-     PROFILE EVENTS
-     ============================================================ */
 
   $("navProfile")
     .onclick =
@@ -7333,10 +5409,6 @@ svg{
     .onclick =
       trackOrders;
 
-  /* ============================================================
-     BAG EVENTS
-     ============================================================ */
-
   $("navBag")
     .onclick =
       openBag;
@@ -7372,18 +5444,9 @@ svg{
     .onclick =
       goToCheckout;
 
-  /* ============================================================
-     HOME BUTTON
-     ============================================================ */
-
   $("navHome")
     .onclick =
       () => {
-
-        /*
-          Restore TODOS whenever customer
-          explicitly returns Home.
-        */
 
         state.activeFilter =
           "all";
@@ -7400,10 +5463,6 @@ svg{
 
       };
 
-  /* ============================================================
-     CROSS-PAGE STORAGE SYNC
-     ============================================================ */
-
   window.addEventListener(
     "storage",
     event => {
@@ -7418,9 +5477,7 @@ svg{
         if(
           $("bagOverlay")
             .classList
-            .contains(
-              "open"
-            )
+            .contains("open")
         ){
 
           renderBag();
@@ -7449,21 +5506,12 @@ svg{
     "pageshow",
     () => {
 
-      /*
-        Product page may have changed the bag
-        while Home was in browser history.
-      */
-
       syncBagCount();
 
       state.favorites =
         new Set(
           readFavorites()
         );
-
-      /*
-        Use cached catalog while Wix refreshes.
-      */
 
       const cached =
         readJson(
@@ -7473,9 +5521,7 @@ svg{
 
       if(
         !state.products.length &&
-        Array.isArray(
-          cached
-        ) &&
+        Array.isArray(cached) &&
         cached.length
       ){
 
@@ -7492,16 +5538,6 @@ svg{
     }
   );
 
-  /* ============================================================
-     INITIALIZE
-     ============================================================ */
-
-  /*
-    Load cached products first.
-    This makes navigation between separate pages
-    feel immediate instead of waiting every time.
-  */
-
   const cachedCatalog =
     readJson(
       "cajamoda-catalog",
@@ -7509,9 +5545,7 @@ svg{
     );
 
   if(
-    Array.isArray(
-      cachedCatalog
-    ) &&
+    Array.isArray(cachedCatalog) &&
     cachedCatalog.length
   ){
 
@@ -7535,45 +5569,33 @@ svg{
 
   syncBagCount();
 
-  /*
-    HOME begins on TODOS.
-  */
-
   state.activeFilter =
     "all";
 
   renderTabs();
 
-  /* ============================================================
-     READY
-     ============================================================ */
-
   sendBridge(
     "READY",
     {
 
-      brand:
-        "CAJAMODA",
+      brand:"CAJAMODA",
 
-      page:
-        "HOME",
+      page:"HOME",
 
       version:
-        "CAJAMODA_HOME_FREEZE_V3",
+        "CAJAMODA_HOME_FREEZE_V4",
 
       capabilities:[
 
-        "SMOOTH_VERTICAL_SCROLL",
-
         "TODOS_DEFAULT",
 
-        "LONG_NIGHTS",
+        "SPANISH_UI",
 
-        "QUIET_DAYS",
+        "INTER_PAGE_FONT",
 
-        "QUICK_AND_EASY",
+        "BOTTOM_PLUS_ONLY",
 
-        "SUNBATHING",
+        "SMOOTH_VERTICAL_SCROLL",
 
         "FOUR_CATEGORY_ANCHORS",
 
@@ -7586,8 +5608,6 @@ svg{
         "DELIVERY_HAIRLINE_BORDER",
 
         "TEN_PRODUCT_POSITIONS",
-
-        "THREE_VISIBLE_POSITIONS",
 
         "PHOTO_PLACEHOLDERS",
 
@@ -7613,13 +5633,7 @@ svg{
 
         "WELCOME_10_PERCENT",
 
-        "EARLY_RELEASE_SIGNUP",
-
         "BAG_DRAWER",
-
-        "BAG_QUANTITY",
-
-        "BAG_REMOVE",
 
         "CHECKOUT_ROUTE",
 
@@ -7634,10 +5648,6 @@ svg{
     }
   );
 
-  /*
-    Ask for fresh Wix cart.
-  */
-
   sendBridge(
     "GET_CART"
   );
@@ -7645,10 +5655,6 @@ svg{
 })();
 
 </script>
-
-<!-- ============================================================
-     EXISTING WIX HEADLESS CONNECTION
-     ============================================================ -->
 
 <script
   type="module"

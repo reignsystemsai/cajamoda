@@ -1,91 +1,24 @@
-import { createClient, OAuthStrategy, media } from "@wix/sdk";
+import { createClient, OAuthStrategy } from "@wix/sdk";
 import { products } from "@wix/stores";
-import { currentCart } from "@wix/ecom";
-import { redirects } from "@wix/redirects";
 
-const CLIENT_ID = import.meta.env.VITE_WIX_CLIENT_ID;
+const WIX_CLIENT_ID = "c682f362-82a0-4e32-a16c-acae124ad9a7";
 
-const STORES_APP_ID =
-  "1380b703-ce81-ff05-f115-39571d94dfcd";
-
-const TOKEN_KEY =
-  "cajamoda-wix-session";
-
-const BRIDGE_SOURCE =
-  "MODAPOP_WIX";
-
-
-/* =========================================================
-   WIX CLIENT
-   ========================================================= */
-
-function readTokens() {
-  try {
-    return (
-      JSON.parse(
-        localStorage.getItem(TOKEN_KEY) || "null"
-      ) || undefined
-    );
-  } catch {
-    return undefined;
-  }
-}
-
+const SOURCE = "CAJAMODA_WIX";
+const STOREFRONT_SOURCE = "CAJAMODA_STOREFRONT";
 
 const wixClient = createClient({
   modules: {
-    products,
-    currentCart,
-    redirects
+    products
   },
-
   auth: OAuthStrategy({
-    clientId: CLIENT_ID,
-    tokens: readTokens()
+    clientId: WIX_CLIENT_ID
   })
 });
-
-
-function saveTokens() {
-  try {
-    const tokens =
-      wixClient.auth.getTokens();
-
-    if (tokens) {
-      localStorage.setItem(
-        TOKEN_KEY,
-        JSON.stringify(tokens)
-      );
-    }
-  } catch {}
-}
-
-
-async function ensureVisitorSession() {
-  const existing =
-    readTokens();
-
-  if (existing) {
-    wixClient.auth.setTokens(existing);
-    return;
-  }
-
-  const tokens =
-    await wixClient.auth.generateVisitorTokens();
-
-  wixClient.auth.setTokens(tokens);
-  saveTokens();
-}
-
-
-/* =========================================================
-   BRIDGE TO EXISTING MODAPOP UI
-   ========================================================= */
 
 function send(type, payload = {}) {
   window.postMessage(
     {
-      source: BRIDGE_SOURCE,
+      source: SOURCE,
       type,
       payload
     },
@@ -93,1002 +26,257 @@ function send(type, payload = {}) {
   );
 }
 
-
-/* =========================================================
-   HELPERS
-   ========================================================= */
-
-const wixProducts =
-  new Map();
-
-
-function numberValue(value) {
-  const parsed =
-    Number(value);
-
-  return Number.isFinite(parsed)
-    ? parsed
-    : 0;
+function stripHtml(value = "") {
+  const element = document.createElement("div");
+  element.innerHTML = String(value);
+  return element.textContent || element.innerText || "";
 }
 
+function imageUrlFromMediaItem(item) {
+  return (
+    item?.image?.url ||
+    item?.url ||
+    item?.src ||
+    ""
+  );
+}
 
-function cleanDescription(value) {
-  if (!value) return "";
+function extractMedia(product) {
+  const urls = [];
 
-  if (typeof value !== "string") {
-    return "";
+  const main =
+    product?.media?.mainMedia?.image?.url ||
+    product?.media?.mainMedia?.url ||
+    product?.image?.url ||
+    "";
+
+  if (main) {
+    urls.push(main);
   }
 
-  const element =
-    document.createElement("div");
+  const items =
+    product?.media?.items ||
+    product?.media?.mediaItems ||
+    [];
 
-  element.innerHTML =
-    value;
+  for (const item of items) {
+    const url = imageUrlFromMediaItem(item);
 
-  return (
-    element.textContent ||
-    element.innerText ||
-    ""
-  ).trim();
-}
-
-
-function imageUrl(value) {
-  if (!value) return "";
-
-  const source =
-    typeof value === "string"
-      ? value
-      : value.url ||
-        value.image?.url ||
-        "";
-
-  if (!source) return "";
-
-  if (
-    source.startsWith("wix:image://")
-  ) {
-    try {
-      return media.getImageUrl(
-        source
-      ).url;
-    } catch {
-      return "";
+    if (url && !urls.includes(url)) {
+      urls.push(url);
     }
   }
 
-  return source;
+  return urls;
 }
 
-
-function getProductImages(product) {
-  const candidates = [
-    product.media?.mainMedia?.image?.url,
-    product.media?.mainMedia?.image,
-
-    ...(product.media?.items || [])
-      .map(
-        item =>
-          item.image?.url ||
-          item.image
-      )
-  ];
-
-  return [
-    ...new Set(
-      candidates
-        .map(imageUrl)
-        .filter(Boolean)
-    )
-  ];
-}
-
-
-function getOptions(product) {
-  return (
-    product.productOptions ||
-    product.options ||
-    []
-  );
-}
-
-
-function getSizeOption(product) {
-  const options =
-    getOptions(product);
-
-  return (
-    options.find(option =>
-      /size|talla/i.test(
-        String(option?.name || "")
-      )
-    ) ||
-    options[0] ||
-    null
-  );
-}
-
-
-function getSizes(product) {
-  const option =
-    getSizeOption(product);
-
-  if (!option) {
-    return ["Única"];
-  }
-
-  const choices =
-    option.choices ||
-    [];
-
-  const sizes =
-    choices
-      .map(choice =>
-        choice.description ||
-        choice.name ||
-        choice.value ||
-        ""
-      )
-      .filter(Boolean);
-
-  return sizes.length
-    ? sizes
-    : ["Única"];
-}
-
-
-function getProductPrice(product) {
-  return numberValue(
-    product.priceData
-      ?.discountedPrice ??
-
-    product.priceData
-      ?.price ??
-
-    product.convertedPriceData
-      ?.discountedPrice ??
-
-    product.convertedPriceData
-      ?.price ??
-
+function extractPrice(product) {
+  return Number(
+    product?.priceData?.discountedPrice ??
+    product?.priceData?.price ??
+    product?.price?.amount ??
+    product?.price ??
     0
   );
 }
 
+function extractSizes(product) {
+  const options =
+    product?.productOptions ||
+    product?.options ||
+    [];
 
-/* =========================================================
-   PRODUCT MAPPING
-   ========================================================= */
+  const sizeOption = options.find(option => {
+    const name = String(
+      option?.name ||
+      option?.title ||
+      ""
+    ).toLowerCase();
 
-function mapProduct(product) {
-  const id =
-    product._id ||
-    product.id;
-
-  return {
-    id,
-
-    masterProductId:
-      id,
-
-    source:
-      "wix",
-
-    name:
-      product.name ||
-      "Producto",
-
-    /*
-      Current storefront grouping.
-      We will make categories dynamic after
-      the basic commerce path is working.
-    */
-    productType:
-      "Vestidos",
-
-    vibeId:
-      "late",
-
-    price:
-      getProductPrice(product),
-
-    media:
-      getProductImages(product),
-
-    sizes:
-      getSizes(product),
-
-    /*
-      We intentionally use Wix selected
-      product options for this first build.
-
-      That means we don't need a separate
-      variant lookup just to make purchasing work.
-    */
-    variants: [],
-
-    deliveryModes: [
-      "ship"
-    ],
-
-    inventoryStatus:
-      product.stock?.inStock === false
-        ? "OUT_OF_STOCK"
-        : "AVAILABLE",
-
-    description:
-      cleanDescription(
-        product.description
-      )
-  };
-}
-
-
-/* =========================================================
-   CATALOG
-   ========================================================= */
-
-async function loadProducts() {
-  const result =
-    await wixClient.products
-      .queryProducts()
-      .find();
-
-  const items =
-    result.items || [];
-
-  wixProducts.clear();
-
-  items.forEach(product => {
-    wixProducts.set(
-      String(
-        product._id ||
-        product.id
-      ),
-      product
+    return (
+      name.includes("size") ||
+      name.includes("talla")
     );
   });
 
-  saveTokens();
-
-  return items.map(
-    mapProduct
-  );
-}
-
-
-/* =========================================================
-   CART MAPPING
-   ========================================================= */
-
-function cartSize(item) {
-  const options =
-    item.catalogReference
-      ?.options
-      ?.options ||
-    {};
-
-  const sizeKey =
-    Object.keys(options)
-      .find(key =>
-        /size|talla/i.test(key)
-      );
-
-  if (sizeKey) {
-    return String(
-      options[sizeKey]
-    );
+  if (!sizeOption) {
+    return [];
   }
 
-  return "";
-}
-
-
-function mapCart(cart) {
-  const lineItems =
-    cart?.lineItems ||
+  const choices =
+    sizeOption?.choices ||
+    sizeOption?.values ||
     [];
 
-  const items =
-    lineItems.map(item => ({
-      id:
-        item._id ||
-        item.id,
-
-      productId:
-        item.catalogReference
-          ?.catalogItemId ||
-        null,
-
-      variantId:
-        item.catalogReference
-          ?.options
-          ?.variantId ||
-        null,
-
-      name:
-        item.productName
-          ?.original ||
-
-        item.productName ||
-
-        item.name ||
-
-        "Producto",
-
-      image:
-        imageUrl(
-          item.image ||
-          item.media?.url ||
-          item.imageUrl ||
-          ""
-        ),
-
-      size:
-        cartSize(item),
-
-      deliveryMode:
-        "ship",
-
-      quantity:
-        numberValue(
-          item.quantity || 1
-        ),
-
-      price:
-        numberValue(
-          item.price?.amount ??
-          item.lineItemPrice?.amount ??
-          item.price ??
-          0
-        )
-    }));
-
-
-  const total =
-    numberValue(
-      cart?.subtotal?.amount ??
-      cart?.priceSummary
-        ?.subtotal
-        ?.amount
-    ) ||
-    items.reduce(
-      (sum, item) =>
-        sum +
-        item.price *
-        item.quantity,
-      0
-    );
-
-
-  return {
-    items,
-
-    count:
-      items.reduce(
-        (sum, item) =>
-          sum +
-          item.quantity,
-        0
-      ),
-
-    total
-  };
+  return choices
+    .map(choice =>
+      String(
+        choice?.description ||
+        choice?.value ||
+        choice?.name ||
+        choice
+      ).trim()
+    )
+    .filter(Boolean);
 }
 
-
-async function loadCart() {
-  try {
-    const cart =
-      await wixClient
-        .currentCart
-        .getCurrentCart();
-
-    saveTokens();
-
-    return mapCart(cart);
-  } catch {
-    return {
-      items: [],
-      count: 0,
-      total: 0
-    };
-  }
-}
-
-
-/* =========================================================
-   ADD PRODUCT
-   ========================================================= */
-
-function selectedProductOptions(
-  product,
-  selectedSize
-) {
-  const option =
-    getSizeOption(product);
+function classifyProduct(name = "") {
+  const text = String(name).toLowerCase();
 
   if (
-    !option ||
-    !selectedSize ||
-    selectedSize === "Única"
+    text.includes("vestido") ||
+    text.includes("dress")
   ) {
-    return null;
+    return "Vestidos";
   }
+
+  if (
+    text.includes("top") ||
+    text.includes("blusa") ||
+    text.includes("shirt")
+  ) {
+    return "Tops";
+  }
+
+  if (
+    text.includes("conjunto") ||
+    text.includes("set")
+  ) {
+    return "Conjuntos";
+  }
+
+  if (
+    text.includes("enterizo") ||
+    text.includes("jumpsuit")
+  ) {
+    return "Enterizos";
+  }
+
+  return "Vestidos";
+}
+
+function normalizeWixProduct(product) {
+  const media = extractMedia(product);
 
   return {
-    [option.name]:
-      selectedSize
+    id:
+      product?._id ||
+      product?.id,
+
+    masterProductId:
+      product?._id ||
+      product?.id,
+
+    source: "wix",
+
+    name:
+      product?.name ||
+      "Producto",
+
+    productType:
+      classifyProduct(product?.name),
+
+    vibeId: "late",
+
+    vibes: ["late"],
+
+    price:
+      extractPrice(product),
+
+    media,
+
+    sizes:
+      extractSizes(product),
+
+    variants: [],
+
+    deliveryModes: [
+      "pickup",
+      "fast",
+      "ship"
+    ],
+
+    inventoryMode:
+      product?.stock?.trackInventory
+        ? "STOCKED"
+        : "WIX",
+
+    inventoryStatus:
+      product?.stock?.inStock === false
+        ? "OUT_OF_STOCK"
+        : "AVAILABLE",
+
+    inventoryQuantity:
+      product?.stock?.quantity ??
+      null,
+
+    fulfillmentConfidence:
+      null,
+
+    supplyRef:
+      null,
+
+    defaultLocationId:
+      null,
+
+    inventoryItems: [],
+
+    supplySyncAt:
+      new Date().toISOString(),
+
+    description:
+      stripHtml(
+        product?.description ||
+        ""
+      ),
+
+    reviews: []
   };
 }
 
-
-async function addProductToCart(
-  payload
-) {
-  const product =
-    wixProducts.get(
-      String(
-        payload.productId
-      )
-    );
-
-  if (!product) {
-    throw new Error(
-      "Producto no encontrado en Wix."
-    );
-  }
-
-
-  const catalogReference = {
-    appId:
-      STORES_APP_ID,
-
-    catalogItemId:
-      payload.productId
-  };
-
-
-  const options =
-    selectedProductOptions(
-      product,
-      payload.size
-    );
-
-
-  if (options) {
-    catalogReference.options = {
-      options
-    };
-  }
-
-
-  const response =
-    await wixClient
-      .currentCart
-      .addToCurrentCart({
-        lineItems: [
-          {
-            catalogReference,
-
-            quantity:
-              payload.quantity || 1
-          }
-        ]
-      });
-
-
-  saveTokens();
-
-
-  return mapCart(
-    response.cart ||
-    response
-  );
-}
-
-
-/* =========================================================
-   PREVENT DUPLICATES / CHANGE SIZE
-   ========================================================= */
-
-async function syncSelection(
-  payload
-) {
-  let cart =
-    await loadCart();
-
-
-  const existing =
-    cart.items.find(
-      item =>
-        String(
-          item.productId
-        ) ===
-        String(
-          payload.productId
-        )
-    );
-
-
-  if (existing) {
-    const sameSize =
-      String(
-        existing.size || ""
-      ) ===
-      String(
-        payload.size || ""
-      );
-
-
-    if (
-      sameSize &&
-      payload.preventDuplicate
-    ) {
-      return cart;
-    }
-
-
-    await wixClient
-      .currentCart
-      .removeLineItemsFromCurrentCart(
-        [existing.id]
-      );
-  }
-
-
-  return addProductToCart(
-    payload
-  );
-}
-
-
-/* =========================================================
-   CART QUANTITY
-   ========================================================= */
-
-async function updateQuantity(
-  payload
-) {
-  const response =
-    await wixClient
-      .currentCart
-      .updateCurrentCartLineItemQuantity([
-        {
-          _id:
-            payload.lineItemId,
-
-          quantity:
-            payload.quantity
-        }
-      ]);
-
-
-  saveTokens();
-
-
-  return mapCart(
-    response.cart ||
-    response
-  );
-}
-
-
-/* =========================================================
-   REMOVE CART ITEM
-   ========================================================= */
-
-async function removeItem(
-  payload
-) {
-  const response =
-    await wixClient
-      .currentCart
-      .removeLineItemsFromCurrentCart([
-        payload.lineItemId
-      ]);
-
-
-  saveTokens();
-
-
-  return mapCart(
-    response.cart ||
-    response
-  );
-}
-
-
-/* =========================================================
-   WIX CHECKOUT
-   ========================================================= */
-
-async function openCheckout() {
-  const checkout =
-    await wixClient
-      .currentCart
-      .createCheckoutFromCurrentCart({
-        channelType:
-          currentCart.ChannelType
-            ?.WEB ||
-          "WEB"
-      });
-
-
-  const redirect =
-    await wixClient
-      .redirects
-      .createRedirectSession({
-        ecomCheckout: {
-          checkoutId:
-            checkout.checkoutId
-        },
-
-        callbacks: {
-          postFlowUrl:
-            window.location.origin
-        }
-      });
-
-
-  saveTokens();
-
-
-  const url =
-    redirect
-      ?.redirectSession
-      ?.fullUrl;
-
-
-  if (!url) {
-    throw new Error(
-      "Wix no devolvió la dirección de checkout."
-    );
-  }
-
-
-  window.location.href =
-    url;
-}
-
-
-/* =========================================================
-   INITIAL LOAD
-   ========================================================= */
-
-let initialized =
-  false;
-
-
-async function initialize() {
-  if (initialized) {
-    return;
-  }
-
-  initialized =
-    true;
-
-
-  if (!CLIENT_ID) {
-    console.error(
-      "VITE_WIX_CLIENT_ID is missing."
-    );
-
-    send(
-      "CART_ERROR",
-      {
-        message:
-          "Falta la conexión de Wix Headless."
-      }
-    );
-
-    return;
-  }
-
-
+async function loadCatalog() {
   try {
-    await ensureVisitorSession();
+    const result =
+      await wixClient.products
+        .queryProducts()
+        .limit(100)
+        .find();
 
+    const wixProducts =
+      result?.items ||
+      [];
 
-    const [
-      catalog,
-      cart
-    ] =
-      await Promise.all([
-        loadProducts(),
-        loadCart()
-      ]);
+    const normalized =
+      wixProducts
+        .map(normalizeWixProduct)
+        .filter(product => product.id);
 
+    send("INIT", {
+      products: normalized,
 
-    send(
-      "INIT",
-      {
-        products:
-          catalog,
+      sellerId: "CAJAMODA",
 
-        cart,
+      storefrontId: "CAJAMODA",
 
-        brand: {
-          name:
-            "MODAPOP",
+      storefrontSlug: "cajamoda",
 
-          publicName:
-            "ModaPop"
-        },
+      brand: {
+        name: "CAJAMODA",
+        publicName: "CajaModa",
+        monogram: "CM"
+      },
 
-        supplyContext: {
-          enabled:
-            true,
+      identity: {},
 
-          checkoutMode:
-            "DEFAULT_LOCATION_NATIVE",
+      cart: {
+        items: [],
+        count: 0,
+        total: 0
+      },
 
-          supportsLocationInventory:
-            false
-        }
-      }
-    );
+      features: {
+        reviewsEnabled: false
+      },
 
-  } catch (error) {
-    console.error(
-      "Wix initialization failed:",
-      error
-    );
-
-
-    send(
-      "CART_ERROR",
-      {
-        message:
-          "No pudimos conectar el catálogo de Wix."
-      }
-    );
-  }
-}
-
-
-/* =========================================================
-   EXISTING STOREFRONT EVENTS
-   ========================================================= */
-
-window.addEventListener(
-  "message",
-  async event => {
-
-    if (
-      event.source !== window
-    ) {
-      return;
-    }
-
-
-    const message =
-      event.data ||
-      {};
-
-
-    if (
-      message.source !==
-      "MODAPOP_IFRAME"
-    ) {
-      return;
-    }
-
-
-    const payload =
-      message.payload ||
-      {};
-
-
-    try {
-      switch (
-        message.type
-      ) {
-
-        case "READY":
-          await initialize();
-          break;
-
-
-        case "GET_CART":
-          send(
-            "CART_STATE",
-            await loadCart()
-          );
-          break;
-
-
-        /*
-          Sizes are already loaded from
-          Wix product options in INIT.
-        */
-        case "REQUEST_VARIANTS":
-          break;
-
-
-        case "REQUEST_PRODUCT_META": {
-          const product =
-            wixProducts.get(
-              String(
-                payload.productId
-              )
-            );
-
-          if (product) {
-            send(
-              "PRODUCT_META",
-              mapProduct(product)
-            );
-          }
-
-          break;
-        }
-
-
-        case "REQUEST_SUPPLY_CONTEXT":
-          send(
-            "SUPPLY_CONTEXT",
-            {
-              enabled:
-                true,
-
-              checkoutMode:
-                "DEFAULT_LOCATION_NATIVE",
-
-              supportsLocationInventory:
-                false
-            }
-          );
-          break;
-
-
-        /*
-          Advanced supplier/location
-          inventory comes later.
-        */
-        case "REQUEST_PRODUCT_SUPPLY":
-        case "REQUEST_VARIANT_INVENTORY":
-          break;
-
-
-        case "VALIDATE_PURCHASE_PATH":
-          send(
-            "PURCHASE_PATH_STATE",
-            {
-              allowed:
-                true,
-
-              sellable:
-                true,
-
-              checkoutMode:
-                "DEFAULT_LOCATION_NATIVE",
-
-              supplyIntent:
-                payload.supplyIntent
-            }
-          );
-          break;
-
-
-        case "SYNC_BAG_SELECTION":
-          send(
-            "CART_WORKING",
-            {
-              message:
-                "Actualizando bolsa…"
-            }
-          );
-
-
-          send(
-            "CART_STATE",
-            await syncSelection(
-              payload
-            )
-          );
-          break;
-
-
-        case "UPDATE_BAG_QUANTITY":
-          send(
-            "CART_STATE",
-            await updateQuantity(
-              payload
-            )
-          );
-          break;
-
-
-        case "REMOVE_BAG_ITEM":
-          send(
-            "CART_STATE",
-            await removeItem(
-              payload
-            )
-          );
-          break;
-
-
-        case "BUY_NOW":
-          send(
-            "BUY_WORKING",
-            {
-              message:
-                "Abriendo checkout…"
-            }
-          );
-
-
-          await syncSelection({
-            ...payload,
-
-            preventDuplicate:
-              true
-          });
-
-
-          send(
-            "BUY_SUCCESS",
-            {}
-          );
-
-
-          await openCheckout();
-          break;
-
-
-        case "CHECKOUT_BAG":
-          send(
-            "CART_WORKING",
-            {
-              message:
-                "Abriendo checkout…"
-            }
-          );
-
-
-          await openCheckout();
-          break;
-
-
-        default:
-          break;
-      }
-
-    } catch (error) {
-      console.error(
-        `Wix bridge error: ${message.type}`,
-        error
-      );
-
-
-      const checkoutError =
-        message.type ===
-          "BUY_NOW" ||
-
-        message.type ===
-          "CHECKOUT_BAG";
-
-
-      send(
-        checkoutError
-          ? "BUY_ERROR"
-          : "CART_ERROR",
-
-        {
-          message:
-            error?.message ||
-            "No pudimos completar la operación."
-        }
-      );
-    }
-  }
-);
-
-
-/* =========================================================
-   START
-   ========================================================= */
-
-initialize();
+      inventoryCheckoutMode:
+       

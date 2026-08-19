@@ -1,0 +1,3718 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+
+<meta charset="utf-8">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1,viewport-fit=cover"
+>
+
+<meta
+  name="theme-color"
+  content="#ffffff"
+>
+
+<title>Store Loader</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+  rel="stylesheet"
+>
+
+<style>
+
+:root{
+
+  --ink:#080808;
+
+  --muted:#777;
+
+  --soft:#f5f5f5;
+
+  --line:rgba(0,0,0,.08);
+
+  --safe-top:
+    env(
+      safe-area-inset-top,
+      0px
+    );
+
+  --safe-bottom:
+    env(
+      safe-area-inset-bottom,
+      0px
+    );
+}
+
+*{
+  box-sizing:border-box;
+}
+
+html,
+body{
+
+  margin:0;
+
+  width:100%;
+
+  min-height:100%;
+
+  background:#fff;
+
+  color:var(--ink);
+
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  -webkit-font-smoothing:antialiased;
+}
+
+body{
+  overflow-x:hidden;
+}
+
+button,
+input,
+select,
+textarea{
+
+  font:inherit;
+
+  color:inherit;
+}
+
+button{
+
+  border:0;
+
+  background:none;
+
+  cursor:pointer;
+
+  -webkit-tap-highlight-color:transparent;
+}
+
+input,
+select,
+textarea{
+
+  outline:none;
+}
+
+img{
+
+  display:block;
+
+  max-width:100%;
+}
+
+.hidden{
+  display:none!important;
+}
+
+/* ============================================================
+   APP
+   ============================================================ */
+
+.loaderApp{
+
+  width:100%;
+
+  max-width:560px;
+
+  min-height:100dvh;
+
+  margin:0 auto;
+
+  padding-bottom:
+    calc(
+      90px +
+      var(--safe-bottom)
+    );
+
+  background:#fff;
+}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+
+.loaderHeader{
+
+  position:sticky;
+
+  z-index:80;
+
+  top:0;
+
+  padding:
+    calc(
+      10px +
+      var(--safe-top)
+    )
+    16px
+    10px;
+
+  background:
+    rgba(255,255,255,.94);
+
+  border-bottom:
+    1px solid
+    rgba(0,0,0,.05);
+
+  backdrop-filter:
+    blur(20px);
+
+  -webkit-backdrop-filter:
+    blur(20px);
+}
+
+.headerTop{
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:space-between;
+
+  gap:12px;
+}
+
+.loaderBrand{
+
+  font-size:15px;
+
+  font-weight:800;
+
+  letter-spacing:-.4px;
+}
+
+.loaderLabel{
+
+  margin-top:3px;
+
+  color:#888;
+
+  font-size:6.5px;
+
+  font-weight:600;
+
+  text-transform:uppercase;
+
+  letter-spacing:.8px;
+}
+
+.storeSelector{
+
+  min-width:150px;
+
+  height:36px;
+
+  padding:0 11px;
+
+  border:
+    1px solid
+    rgba(0,0,0,.10);
+
+  border-radius:999px;
+
+  background:#fff;
+
+  font-size:7.5px;
+
+  font-weight:700;
+}
+
+/* ============================================================
+   NAV
+   ============================================================ */
+
+.loaderTabs{
+
+  margin-top:11px;
+
+  display:flex;
+
+  gap:17px;
+
+  overflow-x:auto;
+
+  scrollbar-width:none;
+}
+
+.loaderTabs::-webkit-scrollbar{
+  display:none;
+}
+
+.tabButton{
+
+  position:relative;
+
+  flex:0 0 auto;
+
+  padding:
+    7px
+    0
+    8px;
+
+  color:#888;
+
+  font-size:7px;
+
+  font-weight:650;
+
+  text-transform:uppercase;
+
+  white-space:nowrap;
+}
+
+.tabButton.active{
+
+  color:#080808;
+
+  font-weight:800;
+}
+
+.tabButton.active::after{
+
+  content:"";
+
+  position:absolute;
+
+  left:0;
+
+  right:0;
+
+  bottom:0;
+
+  height:2px;
+
+  border-radius:999px;
+
+  background:#080808;
+}
+
+/* ============================================================
+   MAIN
+   ============================================================ */
+
+.loaderMain{
+
+  padding:
+    17px
+    16px
+    0;
+}
+
+.panel{
+  display:none;
+}
+
+.panel.active{
+  display:block;
+}
+
+.pageTitle{
+
+  margin:0;
+
+  font-size:23px;
+
+  line-height:1.05;
+
+  letter-spacing:-.8px;
+}
+
+.pageIntro{
+
+  margin:
+    7px
+    0
+    0;
+
+  color:#777;
+
+  font-size:7.5px;
+
+  line-height:1.5;
+}
+
+/* ============================================================
+   METRIC GRID
+   ============================================================ */
+
+.metricGrid{
+
+  display:grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0,1fr)
+    );
+
+  gap:8px;
+
+  margin-top:16px;
+}
+
+.metricCard{
+
+  min-height:95px;
+
+  padding:13px;
+
+  border-radius:16px;
+
+  background:#f7f7f7;
+
+  border:
+    1px solid
+    rgba(0,0,0,.04);
+}
+
+.metricLabel{
+
+  color:#777;
+
+  font-size:6.5px;
+
+  font-weight:650;
+
+  text-transform:uppercase;
+}
+
+.metricValue{
+
+  margin-top:10px;
+
+  font-size:22px;
+
+  line-height:1;
+
+  font-weight:800;
+
+  letter-spacing:-.8px;
+}
+
+.metricSub{
+
+  margin-top:6px;
+
+  color:#888;
+
+  font-size:6.3px;
+
+  line-height:1.4;
+}
+
+/* ============================================================
+   SECTION
+   ============================================================ */
+
+.sectionBlock{
+
+  margin-top:20px;
+}
+
+.sectionHeader{
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:space-between;
+
+  gap:10px;
+
+  margin-bottom:9px;
+}
+
+.sectionTitle{
+
+  font-size:9.5px;
+
+  font-weight:800;
+}
+
+.sectionAction{
+
+  color:#555;
+
+  font-size:6.5px;
+
+  font-weight:700;
+}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+
+.primaryButton{
+
+  min-height:43px;
+
+  padding:
+    0 16px;
+
+  border-radius:12px;
+
+  display:inline-flex;
+
+  align-items:center;
+
+  justify-content:center;
+
+  gap:7px;
+
+  background:#080808;
+
+  color:#fff;
+
+  font-size:8px;
+
+  font-weight:750;
+}
+
+.secondaryButton{
+
+  min-height:39px;
+
+  padding:
+    0 14px;
+
+  border:
+    1px solid
+    rgba(0,0,0,.12);
+
+  border-radius:11px;
+
+  background:#fff;
+
+  font-size:7.5px;
+
+  font-weight:700;
+}
+
+.fullButton{
+  width:100%;
+}
+
+/* ============================================================
+   PRODUCTS
+   ============================================================ */
+
+.productList{
+
+  display:flex;
+
+  flex-direction:column;
+
+  gap:8px;
+}
+
+.productRow{
+
+  display:grid;
+
+  grid-template-columns:
+    64px 1fr auto;
+
+  gap:10px;
+
+  align-items:center;
+
+  padding:8px;
+
+  border:
+    1px solid
+    var(--line);
+
+  border-radius:14px;
+
+  background:#fff;
+}
+
+.productThumb{
+
+  width:64px;
+
+  height:74px;
+
+  overflow:hidden;
+
+  border-radius:10px;
+
+  background:#f1f1f1;
+}
+
+.productThumb img{
+
+  width:100%;
+
+  height:100%;
+
+  object-fit:cover;
+}
+
+.productThumbPlaceholder{
+
+  width:100%;
+
+  height:100%;
+
+  display:grid;
+
+  place-items:center;
+
+  color:#aaa;
+
+  font-size:5px;
+}
+
+.productName{
+
+  font-size:8px;
+
+  font-weight:750;
+}
+
+.productMeta{
+
+  margin-top:4px;
+
+  color:#777;
+
+  font-size:6.3px;
+
+  line-height:1.45;
+}
+
+.productEarning{
+
+  margin-top:5px;
+
+  font-size:6.8px;
+
+  font-weight:750;
+}
+
+.productStatus{
+
+  min-width:65px;
+
+  height:26px;
+
+  padding:0 9px;
+
+  border-radius:999px;
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:center;
+
+  background:#f4f4f4;
+
+  font-size:6px;
+
+  font-weight:700;
+}
+
+/* ============================================================
+   ADD PRODUCT
+   ============================================================ */
+
+.formGrid{
+
+  display:flex;
+
+  flex-direction:column;
+
+  gap:9px;
+
+  margin-top:16px;
+}
+
+.field{
+
+  display:flex;
+
+  flex-direction:column;
+
+  gap:5px;
+}
+
+.field label{
+
+  margin-left:2px;
+
+  color:#666;
+
+  font-size:6.5px;
+
+  font-weight:650;
+}
+
+.field input,
+.field select,
+.field textarea{
+
+  width:100%;
+
+  border:
+    1px solid
+    rgba(0,0,0,.10);
+
+  border-radius:12px;
+
+  background:#fff;
+
+  font-size:8px;
+}
+
+.field input,
+.field select{
+
+  height:45px;
+
+  padding:
+    0 12px;
+}
+
+.field textarea{
+
+  min-height:90px;
+
+  padding:12px;
+
+  resize:vertical;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus{
+
+  border-color:
+    rgba(0,0,0,.38);
+
+  box-shadow:
+    0 0 0 3px
+    rgba(0,0,0,.03);
+}
+
+.twoColumn{
+
+  display:grid;
+
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0,1fr)
+    );
+
+  gap:8px;
+}
+
+/* ============================================================
+   PHOTOS
+   ============================================================ */
+
+.photoUploadGrid{
+
+  display:grid;
+
+  grid-template-columns:
+    repeat(
+      5,
+      1fr
+    );
+
+  gap:6px;
+}
+
+.photoBox{
+
+  position:relative;
+
+  aspect-ratio:.8;
+
+  overflow:hidden;
+
+  border:
+    1px dashed
+    rgba(0,0,0,.18);
+
+  border-radius:11px;
+
+  display:grid;
+
+  place-items:center;
+
+  background:#fafafa;
+}
+
+.photoBox input{
+
+  position:absolute;
+
+  inset:0;
+
+  width:100%;
+
+  height:100%;
+
+  opacity:0;
+
+  cursor:pointer;
+}
+
+.photoBox span{
+
+  color:#999;
+
+  text-align:center;
+
+  font-size:5.5px;
+
+  line-height:1.3;
+}
+
+.photoBox img{
+
+  position:absolute;
+
+  inset:0;
+
+  width:100%;
+
+  height:100%;
+
+  object-fit:cover;
+}
+
+/* ============================================================
+   SIZES
+   ============================================================ */
+
+.checkGrid{
+
+  display:grid;
+
+  grid-template-columns:
+    repeat(
+      5,
+      1fr
+    );
+
+  gap:6px;
+}
+
+.checkOption{
+
+  position:relative;
+}
+
+.checkOption input{
+
+  position:absolute;
+
+  opacity:0;
+
+  pointer-events:none;
+}
+
+.checkOption label{
+
+  height:38px;
+
+  margin:0;
+
+  display:grid;
+
+  place-items:center;
+
+  border:
+    1px solid
+    rgba(0,0,0,.10);
+
+  border-radius:10px;
+
+  background:#fff;
+
+  color:#555;
+
+  font-size:7px;
+
+  cursor:pointer;
+}
+
+.checkOption input:checked + label{
+
+  border-color:#080808;
+
+  background:#080808;
+
+  color:#fff;
+}
+
+/* ============================================================
+   POTENTIAL EARNINGS
+   ============================================================ */
+
+.earningPreview{
+
+  padding:14px;
+
+  border-radius:15px;
+
+  background:#080808;
+
+  color:#fff;
+}
+
+.earningPreviewTop{
+
+  display:flex;
+
+  justify-content:space-between;
+
+  gap:12px;
+}
+
+.earningPreviewLabel{
+
+  color:
+    rgba(255,255,255,.62);
+
+  font-size:6.5px;
+
+  text-transform:uppercase;
+}
+
+.earningPreviewValue{
+
+  margin-top:7px;
+
+  font-size:22px;
+
+  font-weight:800;
+
+  letter-spacing:-.6px;
+}
+
+.earningPreviewSplit{
+
+  text-align:right;
+
+  color:
+    rgba(255,255,255,.70);
+
+  font-size:6.5px;
+
+  line-height:1.5;
+}
+
+/* ============================================================
+   INVENTORY
+   ============================================================ */
+
+.inventoryRow{
+
+  display:grid;
+
+  grid-template-columns:
+    1fr 65px 70px;
+
+  gap:8px;
+
+  align-items:center;
+
+  min-height:51px;
+
+  border-bottom:
+    1px solid
+    rgba(0,0,0,.06);
+}
+
+.inventoryName{
+
+  font-size:7.5px;
+
+  font-weight:700;
+}
+
+.inventoryQty{
+
+  text-align:center;
+
+  font-size:8px;
+
+  font-weight:800;
+}
+
+.inventoryState{
+
+  height:25px;
+
+  border-radius:999px;
+
+  display:grid;
+
+  place-items:center;
+
+  background:#f4f4f4;
+
+  font-size:5.8px;
+
+  font-weight:700;
+}
+
+/* ============================================================
+   ORDERS
+   ============================================================ */
+
+.orderList{
+
+  display:flex;
+
+  flex-direction:column;
+
+  gap:9px;
+}
+
+.orderCard{
+
+  padding:13px;
+
+  border:
+    1px solid
+    var(--line);
+
+  border-radius:15px;
+}
+
+.orderTop{
+
+  display:flex;
+
+  justify-content:space-between;
+
+  gap:10px;
+}
+
+.orderNumber{
+
+  font-size:8px;
+
+  font-weight:800;
+}
+
+.orderDate{
+
+  color:#888;
+
+  font-size:6px;
+}
+
+.orderCustomer{
+
+  margin-top:6px;
+
+  font-size:7px;
+
+  font-weight:650;
+}
+
+.orderProducts{
+
+  margin-top:4px;
+
+  color:#777;
+
+  font-size:6.3px;
+
+  line-height:1.5;
+}
+
+.orderMoney{
+
+  margin-top:8px;
+
+  display:flex;
+
+  justify-content:space-between;
+
+  gap:12px;
+
+  font-size:7px;
+}
+
+.orderMoney strong{
+  font-size:8px;
+}
+
+/* ============================================================
+   ORDER TRACKING
+   ============================================================ */
+
+.trackingBlock{
+
+  margin-top:12px;
+
+  padding-top:11px;
+
+  border-top:
+    1px solid
+    rgba(0,0,0,.06);
+}
+
+.trackingSteps{
+
+  display:grid;
+
+  grid-template-columns:
+    repeat(
+      4,
+      1fr
+    );
+
+  gap:4px;
+
+  margin-bottom:10px;
+}
+
+.trackingStep{
+
+  position:relative;
+
+  min-height:32px;
+
+  padding-top:14px;
+
+  text-align:center;
+
+  color:#aaa;
+
+  font-size:5.3px;
+
+  font-weight:650;
+}
+
+.trackingStep::before{
+
+  content:"";
+
+  position:absolute;
+
+  top:3px;
+
+  left:50%;
+
+  width:8px;
+
+  height:8px;
+
+  transform:
+    translateX(-50%);
+
+  border-radius:50%;
+
+  background:#ddd;
+}
+
+.trackingStep.done{
+
+  color:#080808;
+}
+
+.trackingStep.done::before{
+
+  background:#080808;
+}
+
+.trackingInputs{
+
+  display:grid;
+
+  grid-template-columns:
+    1fr
+    1fr;
+
+  gap:7px;
+}
+
+.trackingInputs input,
+.trackingInputs select{
+
+  width:100%;
+
+  height:36px;
+
+  padding:
+    0 10px;
+
+  border:
+    1px solid
+    rgba(0,0,0,.10);
+
+  border-radius:10px;
+
+  background:#fff;
+
+  font-size:6.5px;
+}
+
+.trackingActions{
+
+  display:flex;
+
+  gap:7px;
+
+  margin-top:7px;
+}
+
+/* ============================================================
+   EARNINGS
+   ============================================================ */
+
+.earningSummary{
+
+  margin-top:16px;
+
+  padding:17px;
+
+  border-radius:18px;
+
+  background:#080808;
+
+  color:#fff;
+}
+
+.earningSummaryLabel{
+
+  color:
+    rgba(255,255,255,.60);
+
+  font-size:6.5px;
+
+  text-transform:uppercase;
+}
+
+.earningSummaryValue{
+
+  margin-top:9px;
+
+  font-size:30px;
+
+  font-weight:800;
+
+  letter-spacing:-1px;
+}
+
+.earningSummarySub{
+
+  margin-top:6px;
+
+  color:
+    rgba(255,255,255,.65);
+
+  font-size:6.3px;
+
+  line-height:1.45;
+}
+
+.earningRow{
+
+  min-height:52px;
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:space-between;
+
+  gap:10px;
+
+  border-bottom:
+    1px solid
+    rgba(0,0,0,.06);
+}
+
+.earningRowLabel{
+
+  font-size:7.5px;
+
+  font-weight:700;
+}
+
+.earningRowMeta{
+
+  margin-top:3px;
+
+  color:#888;
+
+  font-size:5.8px;
+}
+
+.earningRowValue{
+
+  font-size:8px;
+
+  font-weight:800;
+}
+
+/* ============================================================
+   STORE SETTINGS
+   ============================================================ */
+
+.settingsCard{
+
+  margin-top:14px;
+
+  padding:14px;
+
+  border:
+    1px solid
+    var(--line);
+
+  border-radius:15px;
+}
+
+.settingsTitle{
+
+  font-size:8px;
+
+  font-weight:800;
+}
+
+.settingsText{
+
+  margin-top:5px;
+
+  color:#777;
+
+  font-size:6.3px;
+
+  line-height:1.5;
+}
+
+/* ============================================================
+   EMPTY STATE
+   ============================================================ */
+
+.emptyState{
+
+  padding:
+    35px
+    18px;
+
+  border:
+    1px solid
+    var(--line);
+
+  border-radius:16px;
+
+  text-align:center;
+}
+
+.emptyStateTitle{
+
+  font-size:9px;
+
+  font-weight:750;
+}
+
+.emptyStateText{
+
+  margin-top:5px;
+
+  color:#888;
+
+  font-size:6.5px;
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+
+.toast{
+
+  position:fixed;
+
+  z-index:200;
+
+  left:50%;
+
+  bottom:
+    calc(
+      18px +
+      var(--safe-bottom)
+    );
+
+  transform:
+    translateX(-50%)
+    translateY(8px);
+
+  max-width:
+    calc(
+      100vw -
+      30px
+    );
+
+  padding:
+    9px
+    13px;
+
+  border-radius:999px;
+
+  background:#080808;
+
+  color:#fff;
+
+  font-size:7px;
+
+  white-space:nowrap;
+
+  opacity:0;
+
+  pointer-events:none;
+
+  transition:.18s ease;
+}
+
+.toast.show{
+
+  opacity:1;
+
+  transform:
+    translateX(-50%)
+    translateY(0);
+}
+
+@media(min-width:700px){
+
+  body{
+    background:#f2f2f2;
+  }
+
+  .loaderApp{
+
+    box-shadow:
+      0 0 70px
+      rgba(0,0,0,.06);
+  }
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="loaderApp">
+
+<header class="loaderHeader">
+
+  <div class="headerTop">
+
+    <div>
+
+      <div class="loaderBrand">
+        Store Loader
+      </div>
+
+      <div class="loaderLabel">
+        Commerce Network
+      </div>
+
+    </div>
+
+    <select
+      id="storeSelector"
+      class="storeSelector"
+    >
+
+      <option value="carolize">
+        Carolize Boutique
+      </option>
+
+    </select>
+
+  </div>
+
+  <nav class="loaderTabs">
+
+    <button
+      class="tabButton active"
+      data-tab="dashboard"
+    >
+      Inicio
+    </button>
+
+    <button
+      class="tabButton"
+      data-tab="products"
+    >
+      Productos
+    </button>
+
+    <button
+      class="tabButton"
+      data-tab="inventory"
+    >
+      Inventario
+    </button>
+
+    <button
+      class="tabButton"
+      data-tab="orders"
+    >
+      Pedidos
+    </button>
+
+    <button
+      class="tabButton"
+      data-tab="earnings"
+    >
+      Ganancias
+    </button>
+
+    <button
+      class="tabButton"
+      data-tab="store"
+    >
+      Tienda
+    </button>
+
+  </nav>
+
+</header>
+
+<main class="loaderMain">
+
+<!-- ==========================================================
+     DASHBOARD
+     ========================================================== -->
+
+<section
+  id="panel-dashboard"
+  class="panel active"
+>
+
+  <h1 class="pageTitle">
+    Tu tienda.
+  </h1>
+
+  <p class="pageIntro">
+    Carga productos, sigue pedidos y conoce cuánto puedes ganar con tu split.
+  </p>
+
+  <div class="metricGrid">
+
+    <div class="metricCard">
+
+      <div class="metricLabel">
+        Productos
+      </div>
+
+      <div
+        id="dashboardProducts"
+        class="metricValue"
+      >
+        0
+      </div>
+
+      <div class="metricSub">
+        publicados en tu tienda
+      </div>
+
+    </div>
+
+    <div class="metricCard">
+
+      <div class="metricLabel">
+        Pedidos
+      </div>
+
+      <div
+        id="dashboardOrders"
+        class="metricValue"
+      >
+        0
+      </div>
+
+      <div class="metricSub">
+        pedidos registrados
+      </div>
+
+    </div>
+
+    <div class="metricCard">
+
+      <div class="metricLabel">
+        Ganado
+      </div>
+
+      <div
+        id="dashboardEarned"
+        class="metricValue"
+      >
+        $0
+      </div>
+
+      <div class="metricSub">
+        ganancias confirmadas
+      </div>
+
+    </div>
+
+    <div class="metricCard">
+
+      <div class="metricLabel">
+        Potencial
+      </div>
+
+      <div
+        id="dashboardPotential"
+        class="metricValue"
+      >
+        $0
+      </div>
+
+      <div class="metricSub">
+        si vendes una unidad de cada producto activo
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="sectionBlock">
+
+    <button
+      id="dashboardAddProduct"
+      class="primaryButton fullButton"
+      type="button"
+    >
+      + Agregar producto
+    </button>
+
+  </div>
+
+  <div class="sectionBlock">
+
+    <div class="sectionHeader">
+
+      <div class="sectionTitle">
+        Pedidos recientes
+      </div>
+
+      <button
+        class="sectionAction"
+        data-go="orders"
+      >
+        Ver todos
+      </button>
+
+    </div>
+
+    <div
+      id="recentOrders"
+      class="orderList"
+    ></div>
+
+  </div>
+
+</section>
+
+<!-- ==========================================================
+     PRODUCTS
+     ========================================================== -->
+
+<section
+  id="panel-products"
+  class="panel"
+>
+
+  <h1 class="pageTitle">
+    Productos.
+  </h1>
+
+  <p class="pageIntro">
+    Carga productos manualmente hoy. Más adelante podrás importar desde Inventory Cloud.
+  </p>
+
+  <div class="sectionBlock">
+
+    <button
+      id="openAddProduct"
+      class="primaryButton fullButton"
+      type="button"
+    >
+      + Nuevo producto
+    </button>
+
+  </div>
+
+  <div class="sectionBlock">
+
+    <div
+      id="productList"
+      class="productList"
+    ></div>
+
+  </div>
+
+</section>
+
+<!-- ==========================================================
+     ADD PRODUCT
+     ========================================================== -->
+
+<section
+  id="panel-add"
+  class="panel"
+>
+
+  <h1 class="pageTitle">
+    Nuevo producto.
+  </h1>
+
+  <p class="pageIntro">
+    Agrega las fotos y la información que verá el cliente.
+  </p>
+
+  <div class="formGrid">
+
+    <div class="field">
+
+      <label>
+        Fotos · máximo 5
+      </label>
+
+      <div
+        id="photoUploadGrid"
+        class="photoUploadGrid"
+      ></div>
+
+    </div>
+
+    <div class="field">
+
+      <label for="productName">
+        Nombre del producto
+      </label>
+
+      <input
+        id="productName"
+        type="text"
+        placeholder="Ej. Vestido Luna"
+      >
+
+    </div>
+
+    <div class="field">
+
+      <label for="productDescription">
+        Descripción
+      </label>
+
+      <textarea
+        id="productDescription"
+        placeholder="Descripción corta del producto"
+      ></textarea>
+
+    </div>
+
+    <div class="twoColumn">
+
+      <div class="field">
+
+        <label for="productPrice">
+          Precio de venta
+        </label>
+
+        <input
+          id="productPrice"
+          type="number"
+          min="0"
+          step="1"
+          placeholder="0"
+        >
+
+      </div>
+
+      <div class="field">
+
+        <label for="productQuantity">
+          Inventario
+        </label>
+
+        <input
+          id="productQuantity"
+          type="number"
+          min="0"
+          step="1"
+          placeholder="0"
+        >
+
+      </div>
+
+    </div>
+
+    <div class="field">
+
+      <label for="productCategory">
+        Categoría
+      </label>
+
+      <select id="productCategory">
+
+        <option value="late">
+          Noches Largas
+        </option>
+
+        <option value="chill">
+          Días Tranquilos
+        </option>
+
+        <option value="quick">
+          Rápido y Fácil
+        </option>
+
+        <option value="sun">
+          Baño de Sol
+        </option>
+
+      </select>
+
+    </div>
+
+    <div class="field">
+
+      <label>
+        Tallas
+      </label>
+
+      <div class="checkGrid">
+
+        <div class="checkOption">
+
+          <input
+            id="sizeXS"
+            type="checkbox"
+            value="XS"
+            data-size
+          >
+
+          <label for="sizeXS">
+            XS
+          </label>
+
+        </div>
+
+        <div class="checkOption">
+
+          <input
+            id="sizeS"
+            type="checkbox"
+            value="S"
+            data-size
+          >
+
+          <label for="sizeS">
+            S
+          </label>
+
+        </div>
+
+        <div class="checkOption">
+
+          <input
+            id="sizeM"
+            type="checkbox"
+            value="M"
+            data-size
+          >
+
+          <label for="sizeM">
+            M
+          </label>
+
+        </div>
+
+        <div class="checkOption">
+
+          <input
+            id="sizeL"
+            type="checkbox"
+            value="L"
+            data-size
+          >
+
+          <label for="sizeL">
+            L
+          </label>
+
+        </div>
+
+        <div class="checkOption">
+
+          <input
+            id="sizeXL"
+            type="checkbox"
+            value="XL"
+            data-size
+          >
+
+          <label for="sizeXL">
+            XL
+          </label>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="field">
+
+      <label for="productColors">
+        Colores
+      </label>
+
+      <input
+        id="productColors"
+        type="text"
+        placeholder="Ej. Negro, rojo, crema"
+      >
+
+    </div>
+
+    <div
+      id="potentialPreview"
+      class="earningPreview"
+    >
+
+      <div class="earningPreviewTop">
+
+        <div>
+
+          <div class="earningPreviewLabel">
+            Ganancia potencial por venta
+          </div>
+
+          <div
+            id="potentialEarningValue"
+            class="earningPreviewValue"
+          >
+            $0
+          </div>
+
+        </div>
+
+        <div
+          id="potentialSplitText"
+          class="earningPreviewSplit"
+        >
+          Split no definido
+        </div>
+
+      </div>
+
+    </div>
+
+    <button
+      id="publishProduct"
+      class="primaryButton fullButton"
+      type="button"
+    >
+      Publicar producto
+    </button>
+
+    <button
+      id="cancelAddProduct"
+      class="secondaryButton fullButton"
+      type="button"
+    >
+      Cancelar
+    </button>
+
+  </div>
+
+</section>
+
+<!-- ==========================================================
+     INVENTORY
+     ========================================================== -->
+
+<section
+  id="panel-inventory"
+  class="panel"
+>
+
+  <h1 class="pageTitle">
+    Inventario.
+  </h1>
+
+  <p class="pageIntro">
+    Revisa las unidades disponibles de cada producto.
+  </p>
+
+  <div
+    id="inventoryList"
+    class="sectionBlock"
+  ></div>
+
+</section>
+
+<!-- ==========================================================
+     ORDERS
+     ========================================================== -->
+
+<section
+  id="panel-orders"
+  class="panel"
+>
+
+  <h1 class="pageTitle">
+    Pedidos.
+  </h1>
+
+  <p class="pageIntro">
+    Sigue cada pedido desde la compra hasta la entrega.
+  </p>
+
+  <div
+    id="orderList"
+    class="orderList sectionBlock"
+  ></div>
+
+</section>
+
+<!-- ==========================================================
+     EARNINGS
+     ========================================================== -->
+
+<section
+  id="panel-earnings"
+  class="panel"
+>
+
+  <h1 class="pageTitle">
+    Ganancias.
+  </h1>
+
+  <p class="pageIntro">
+    Tus ganancias dependen del valor vendido y del split asignado a tu tienda.
+  </p>
+
+  <div class="earningSummary">
+
+    <div class="earningSummaryLabel">
+      Ganancias confirmadas
+    </div>
+
+    <div
+      id="totalEarned"
+      class="earningSummaryValue"
+    >
+      $0
+    </div>
+
+    <div
+      id="earningsSplitLabel"
+      class="earningSummarySub"
+    >
+      Split no definido
+    </div>
+
+  </div>
+
+  <div class="sectionBlock">
+
+    <div class="sectionHeader">
+
+      <div class="sectionTitle">
+        Potencial por producto
+      </div>
+
+    </div>
+
+    <div
+      id="potentialProductList"
+    ></div>
+
+  </div>
+
+</section>
+
+<!-- ==========================================================
+     STORE
+     ========================================================== -->
+
+<section
+  id="panel-store"
+  class="panel"
+>
+
+  <h1 class="pageTitle">
+    Tu tienda.
+  </h1>
+
+  <p class="pageIntro">
+    Configuración básica de la tienda y del split de ganancias.
+  </p>
+
+  <div class="settingsCard">
+
+    <div class="settingsTitle">
+      Identidad
+    </div>
+
+    <div class="settingsText">
+      Esta información identifica la tienda dentro de Store Loader.
+    </div>
+
+    <div class="formGrid">
+
+      <div class="field">
+
+        <label for="storeName">
+          Nombre de la tienda
+        </label>
+
+        <input
+          id="storeName"
+          type="text"
+          value="Carolize Boutique"
+        >
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="settingsCard">
+
+    <div class="settingsTitle">
+      Split
+    </div>
+
+    <div class="settingsText">
+      Este porcentaje determina cuánto gana esta tienda por cada venta. Más adelante este valor será asignado por la plataforma y no editable por el loader.
+    </div>
+
+    <div class="formGrid">
+
+      <div class="field">
+
+        <label for="loaderSplit">
+          Porcentaje de la tienda
+        </label>
+
+        <input
+          id="loaderSplit"
+          type="number"
+          min="0"
+          max="100"
+          step="1"
+          placeholder="Ej. 40"
+        >
+
+      </div>
+
+      <button
+        id="saveStoreSettings"
+        class="primaryButton fullButton"
+        type="button"
+      >
+        Guardar configuración
+      </button>
+
+    </div>
+
+  </div>
+
+</section>
+
+</main>
+
+</div>
+
+<div
+  id="toast"
+  class="toast"
+></div>
+
+<script>
+
+(() => {
+
+  "use strict";
+
+  const $ =
+    id =>
+      document.getElementById(
+        id
+      );
+
+  const qsa =
+    (
+      selector,
+      root=document
+    ) =>
+      [
+        ...root.querySelectorAll(
+          selector
+        )
+      ];
+
+  /* ============================================================
+     STORAGE
+     ============================================================ */
+
+  function readJson(
+    key,
+    fallback
+  ){
+
+    try{
+
+      const raw =
+        localStorage.getItem(
+          key
+        );
+
+      if(
+        !raw
+      ){
+        return fallback;
+      }
+
+      return JSON.parse(
+        raw
+      );
+
+    }catch{
+
+      return fallback;
+    }
+  }
+
+  function saveJson(
+    key,
+    value
+  ){
+
+    try{
+
+      localStorage.setItem(
+        key,
+        JSON.stringify(
+          value
+        )
+      );
+
+    }catch{}
+  }
+
+  /* ============================================================
+     HELPERS
+     ============================================================ */
+
+  function createId(){
+
+    if(
+      window.crypto?.randomUUID
+    ){
+
+      return window.crypto
+        .randomUUID();
+    }
+
+    return (
+      `${Date.now()}-` +
+      Math.random()
+        .toString(16)
+        .slice(2)
+    );
+  }
+
+  function money(
+    value
+  ){
+
+    return new Intl.NumberFormat(
+      "es-CO",
+      {
+        style:"currency",
+        currency:"COP",
+        maximumFractionDigits:0
+      }
+    )
+      .format(
+        Number(
+          value ||
+          0
+        )
+      );
+  }
+
+  function escapeHtml(
+    value
+  ){
+
+    return String(
+      value ??
+      ""
+    )
+      .replaceAll(
+        "&",
+        "&amp;"
+      )
+      .replaceAll(
+        "<",
+        "&lt;"
+      )
+      .replaceAll(
+        ">",
+        "&gt;"
+      )
+      .replaceAll(
+        '"',
+        "&quot;"
+      )
+      .replaceAll(
+        "'",
+        "&#039;"
+      );
+  }
+
+  function showToast(
+    message
+  ){
+
+    const toast =
+      $("toast");
+
+    toast.textContent =
+      message;
+
+    toast.classList.add(
+      "show"
+    );
+
+    clearTimeout(
+      showToast.timer
+    );
+
+    showToast.timer =
+      setTimeout(
+        () => {
+
+          toast.classList
+            .remove(
+              "show"
+            );
+
+        },
+        1500
+      );
+  }
+
+  /* ============================================================
+     STORE
+     ============================================================ */
+
+  const defaultStore = {
+
+    id:
+      "carolize",
+
+    name:
+      "Carolize Boutique",
+
+    loaderSplitPercent:
+      0
+  };
+
+  let store =
+    readJson(
+      "store-loader-store",
+      defaultStore
+    );
+
+  let products =
+    readJson(
+      "store-loader-products",
+      []
+    );
+
+  let orders =
+    readJson(
+      "store-loader-orders",
+      []
+    );
+
+  /* ============================================================
+     TABS
+     ============================================================ */
+
+  function showPanel(
+    name
+  ){
+
+    qsa(
+      ".panel"
+    )
+      .forEach(
+        panel => {
+
+          panel.classList.toggle(
+            "active",
+            panel.id ===
+            `panel-${name}`
+          );
+
+        }
+      );
+
+    qsa(
+      ".tabButton"
+    )
+      .forEach(
+        button => {
+
+          button.classList.toggle(
+            "active",
+            button.dataset.tab ===
+            name
+          );
+
+        }
+      );
+
+    window.scrollTo({
+      top:0,
+      behavior:"smooth"
+    });
+  }
+
+  qsa(
+    "[data-tab]"
+  )
+    .forEach(
+      button => {
+
+        button.onclick =
+          () => {
+
+            showPanel(
+              button.dataset.tab
+            );
+
+          };
+
+      }
+    );
+
+  qsa(
+    "[data-go]"
+  )
+    .forEach(
+      button => {
+
+        button.onclick =
+          () => {
+
+            showPanel(
+              button.dataset.go
+            );
+
+          };
+
+      }
+    );
+
+  $("openAddProduct")
+    .onclick =
+      () => {
+
+        resetProductForm();
+
+        showPanel(
+          "add"
+        );
+      };
+
+  $("dashboardAddProduct")
+    .onclick =
+      () => {
+
+        resetProductForm();
+
+        showPanel(
+          "add"
+        );
+      };
+
+  $("cancelAddProduct")
+    .onclick =
+      () => {
+
+        showPanel(
+          "products"
+        );
+      };
+
+  /* ============================================================
+     PHOTO UPLOAD
+     ============================================================ */
+
+  let uploadedPhotos =
+    [
+      "",
+      "",
+      "",
+      "",
+      ""
+    ];
+
+  function renderPhotoInputs(){
+
+    $("photoUploadGrid")
+      .innerHTML =
+        uploadedPhotos
+          .map(
+            (
+              photo,
+              index
+            ) => `
+
+              <div class="photoBox">
+
+                ${
+                  photo
+                    ?`
+                      <img
+                        src="${photo}"
+                        alt=""
+                      >
+                    `
+                    :`
+                      <span>
+                        + FOTO
+                        <br>
+                        ${index + 1}
+                      </span>
+                    `
+                }
+
+                <input
+                  type="file"
+                  accept="image/*"
+                  data-photo-index="${index}"
+                >
+
+              </div>
+
+            `
+          )
+          .join("");
+
+    qsa(
+      "[data-photo-index]"
+    )
+      .forEach(
+        input => {
+
+          input.onchange =
+            event => {
+
+              const file =
+                event.target
+                  .files?.[0];
+
+              if(
+                !file
+              ){
+                return;
+              }
+
+              const reader =
+                new FileReader();
+
+              reader.onload =
+                () => {
+
+                  uploadedPhotos[
+                    Number(
+                      input.dataset
+                        .photoIndex
+                    )
+                  ] =
+                    reader.result;
+
+                  renderPhotoInputs();
+                };
+
+              reader.readAsDataURL(
+                file
+              );
+            };
+        }
+      );
+  }
+
+  /* ============================================================
+     POTENTIAL EARNINGS
+     ============================================================ */
+
+  function splitRate(){
+
+    return (
+      Number(
+        store
+          .loaderSplitPercent ||
+        0
+      ) /
+      100
+    );
+  }
+
+  function potentialEarning(
+    price
+  ){
+
+    return (
+      Number(
+        price ||
+        0
+      ) *
+      splitRate()
+    );
+  }
+
+  function updatePotentialPreview(){
+
+    const price =
+      Number(
+        $("productPrice")
+          .value ||
+        0
+      );
+
+    $("potentialEarningValue")
+      .textContent =
+        money(
+          potentialEarning(
+            price
+          )
+        );
+
+    if(
+      store
+        .loaderSplitPercent >
+      0
+    ){
+
+      $("potentialSplitText")
+        .innerHTML =
+          `Tu split<br><strong>${store.loaderSplitPercent}%</strong>`;
+
+    }else{
+
+      $("potentialSplitText")
+        .textContent =
+          "Split no definido";
+    }
+  }
+
+  $("productPrice")
+    .addEventListener(
+      "input",
+      updatePotentialPreview
+    );
+
+  /* ============================================================
+     PRODUCT FORM
+     ============================================================ */
+
+  function resetProductForm(){
+
+    $("productName")
+      .value =
+        "";
+
+    $("productDescription")
+      .value =
+        "";
+
+    $("productPrice")
+      .value =
+        "";
+
+    $("productQuantity")
+      .value =
+        "";
+
+    $("productCategory")
+      .value =
+        "late";
+
+    $("productColors")
+      .value =
+        "";
+
+    qsa(
+      "[data-size]"
+    )
+      .forEach(
+        input => {
+
+          input.checked =
+            false;
+        }
+      );
+
+    uploadedPhotos =
+      [
+        "",
+        "",
+        "",
+        "",
+        ""
+      ];
+
+    renderPhotoInputs();
+
+    updatePotentialPreview();
+  }
+
+  function collectSizes(){
+
+    return qsa(
+      "[data-size]:checked"
+    )
+      .map(
+        input =>
+          input.value
+      );
+  }
+
+  function publishProduct(){
+
+    const name =
+      $("productName")
+        .value
+        .trim();
+
+    const description =
+      $("productDescription")
+        .value
+        .trim();
+
+    const price =
+      Number(
+        $("productPrice")
+          .value ||
+        0
+      );
+
+    const quantity =
+      Number(
+        $("productQuantity")
+          .value ||
+        0
+      );
+
+    if(
+      !name
+    ){
+
+      showToast(
+        "Agrega el nombre del producto."
+      );
+
+      return;
+    }
+
+    if(
+      price <=
+      0
+    ){
+
+      showToast(
+        "Agrega un precio válido."
+      );
+
+      return;
+    }
+
+    const product = {
+
+      id:
+        createId(),
+
+      storeId:
+        store.id,
+
+      name,
+
+      description,
+
+      price,
+
+      quantity,
+
+      category:
+        $("productCategory")
+          .value,
+
+      sizes:
+        collectSizes(),
+
+      colors:
+        $("productColors")
+          .value
+          .split(",")
+          .map(
+            item =>
+              item.trim()
+          )
+          .filter(Boolean),
+
+      photos:
+        uploadedPhotos
+          .filter(Boolean),
+
+      status:
+        "published",
+
+      loaderSplitPercent:
+        Number(
+          store
+            .loaderSplitPercent ||
+          0
+        ),
+
+      potentialEarning:
+        potentialEarning(
+          price
+        ),
+
+      createdAt:
+        new Date()
+          .toISOString()
+    };
+
+    products.unshift(
+      product
+    );
+
+    saveJson(
+      "store-loader-products",
+      products
+    );
+
+    renderAll();
+
+    showPanel(
+      "products"
+    );
+
+    showToast(
+      "Producto publicado."
+    );
+  }
+
+  $("publishProduct")
+    .onclick =
+      publishProduct;
+
+  /* ============================================================
+     PRODUCTS
+     ============================================================ */
+
+  function renderProducts(){
+
+    if(
+      !products.length
+    ){
+
+      $("productList")
+        .innerHTML = `
+
+          <div class="emptyState">
+
+            <div class="emptyStateTitle">
+              Aún no hay productos
+            </div>
+
+            <div class="emptyStateText">
+              Agrega tu primer producto para comenzar.
+            </div>
+
+          </div>
+
+        `;
+
+      return;
+    }
+
+    $("productList")
+      .innerHTML =
+        products
+          .map(
+            product => `
+
+              <article class="productRow">
+
+                <div class="productThumb">
+
+                  ${
+                    product
+                      .photos?.[0]
+                      ?`
+                        <img
+                          src="${product.photos[0]}"
+                          alt=""
+                        >
+                      `
+                      :`
+                        <div class="productThumbPlaceholder">
+                          STORE
+                        </div>
+                      `
+                  }
+
+                </div>
+
+                <div>
+
+                  <div class="productName">
+                    ${escapeHtml(product.name)}
+                  </div>
+
+                  <div class="productMeta">
+
+                    ${money(product.price)}
+
+                    ·
+
+                    ${product.quantity} unidades
+
+                    <br>
+
+                    ${product.sizes?.join(", ") || "Sin talla"}
+
+                  </div>
+
+                  <div class="productEarning">
+                    Potencial:
+                    ${money(
+                      potentialEarning(
+                        product.price
+                      )
+                    )}
+                    por venta
+                  </div>
+
+                </div>
+
+                <div class="productStatus">
+                  Publicado
+                </div>
+
+              </article>
+
+            `
+          )
+          .join("");
+  }
+
+  /* ============================================================
+     INVENTORY
+     ============================================================ */
+
+  function renderInventory(){
+
+    if(
+      !products.length
+    ){
+
+      $("inventoryList")
+        .innerHTML = `
+
+          <div class="emptyState">
+
+            <div class="emptyStateTitle">
+              Sin inventario
+            </div>
+
+            <div class="emptyStateText">
+              Los productos aparecerán aquí.
+            </div>
+
+          </div>
+
+        `;
+
+      return;
+    }
+
+    $("inventoryList")
+      .innerHTML =
+        products
+          .map(
+            product => `
+
+              <div class="inventoryRow">
+
+                <div class="inventoryName">
+                  ${escapeHtml(product.name)}
+                </div>
+
+                <div class="inventoryQty">
+                  ${product.quantity}
+                </div>
+
+                <div class="inventoryState">
+                  ${
+                    product.quantity >
+                    0
+                      ?"Disponible"
+                      :"Agotado"
+                  }
+                </div>
+
+              </div>
+
+            `
+          )
+          .join("");
+  }
+
+  /* ============================================================
+     ORDERS
+     ============================================================ */
+
+  const trackingStatuses = [
+    "new",
+    "processing",
+    "shipped",
+    "delivered"
+  ];
+
+  const trackingLabels = {
+    new:
+      "Nuevo",
+
+    processing:
+      "Procesando",
+
+    shipped:
+      "Enviado",
+
+    delivered:
+      "Entregado"
+  };
+
+  function renderTrackingSteps(
+    currentStatus
+  ){
+
+    const currentIndex =
+      Math.max(
+        0,
+        trackingStatuses
+          .indexOf(
+            currentStatus
+          )
+      );
+
+    return trackingStatuses
+      .map(
+        (
+          status,
+          index
+        ) => `
+
+          <div
+            class="trackingStep ${
+              index <=
+              currentIndex
+                ?"done"
+                :""
+            }"
+          >
+            ${trackingLabels[status]}
+          </div>
+
+        `
+      )
+      .join("");
+  }
+
+  function renderOrders(){
+
+    if(
+      !orders.length
+    ){
+
+      $("orderList")
+        .innerHTML = `
+
+          <div class="emptyState">
+
+            <div class="emptyStateTitle">
+              Aún no hay pedidos
+            </div>
+
+            <div class="emptyStateText">
+              Los pedidos aparecerán aquí cuando comiencen las ventas.
+            </div>
+
+          </div>
+
+        `;
+
+      $("recentOrders")
+        .innerHTML =
+          $("orderList")
+            .innerHTML;
+
+      return;
+    }
+
+    const html =
+      orders
+        .map(
+          order => {
+
+            const loaderEarning =
+              Number(
+                order.total ||
+                0
+              ) *
+              splitRate();
+
+            return `
+
+              <article
+                class="orderCard"
+                data-order="${order.id}"
+              >
+
+                <div class="orderTop">
+
+                  <div class="orderNumber">
+                    Pedido #${escapeHtml(order.number)}
+                  </div>
+
+                  <div class="orderDate">
+                    ${escapeHtml(order.date || "")}
+                  </div>
+
+                </div>
+
+                <div class="orderCustomer">
+                  ${escapeHtml(order.customer || "Cliente")}
+                </div>
+
+                <div class="orderProducts">
+                  ${escapeHtml(order.products || "")}
+                </div>
+
+                <div class="orderMoney">
+
+                  <span>
+                    Total
+                    <strong>
+                      ${money(order.total)}
+                    </strong>
+                  </span>
+
+                  <span>
+                    Tu ganancia
+                    <strong>
+                      ${money(loaderEarning)}
+                    </strong>
+                  </span>
+
+                </div>
+
+                <div class="trackingBlock">
+
+                  <div class="trackingSteps">
+
+                    ${renderTrackingSteps(
+                      order.status ||
+                      "new"
+                    )}
+
+                  </div>
+
+                  <div class="trackingInputs">
+
+                    <select
+                      data-order-status="${order.id}"
+                    >
+
+                      <option
+                        value="new"
+                        ${
+                          order.status ===
+                          "new"
+                            ?"selected"
+                            :""
+                        }
+                      >
+                        Nuevo
+                      </option>
+
+                      <option
+                        value="processing"
+                        ${
+                          order.status ===
+                          "processing"
+                            ?"selected"
+                            :""
+                        }
+                      >
+                        Procesando
+                      </option>
+
+                      <option
+                        value="shipped"
+                        ${
+                          order.status ===
+                          "shipped"
+                            ?"selected"
+                            :""
+                        }
+                      >
+                        Enviado
+                      </option>
+
+                      <option
+                        value="delivered"
+                        ${
+                          order.status ===
+                          "delivered"
+                            ?"selected"
+                            :""
+                        }
+                      >
+                        Entregado
+                      </option>
+
+                    </select>
+
+                    <input
+                      type="text"
+                      placeholder="Transportadora"
+                      value="${escapeHtml(order.carrier || "")}"
+                      data-order-carrier="${order.id}"
+                    >
+
+                  </div>
+
+                  <div class="trackingInputs">
+
+                    <input
+                      type="text"
+                      placeholder="Número de rastreo"
+                      value="${escapeHtml(order.trackingNumber || "")}"
+                      data-order-tracking="${order.id}"
+                    >
+
+                    <button
+                      class="secondaryButton"
+                      type="button"
+                      data-save-tracking="${order.id}"
+                    >
+                      Guardar
+                    </button>
+
+                  </div>
+
+                </div>
+
+              </article>
+
+            `;
+          }
+        )
+        .join("");
+
+    $("orderList")
+      .innerHTML =
+        html;
+
+    $("recentOrders")
+      .innerHTML =
+        orders
+          .slice(
+            0,
+            2
+          )
+          .map(
+            order => `
+
+              <article class="orderCard">
+
+                <div class="orderTop">
+
+                  <div class="orderNumber">
+                    Pedido #${escapeHtml(order.number)}
+                  </div>
+
+                  <div class="orderDate">
+                    ${escapeHtml(order.date || "")}
+                  </div>
+
+                </div>
+
+                <div class="orderCustomer">
+                  ${escapeHtml(order.customer || "Cliente")}
+                </div>
+
+                <div class="orderProducts">
+                  Estado:
+                  ${trackingLabels[
+                    order.status ||
+                    "new"
+                  ]}
+                </div>
+
+              </article>
+
+            `
+          )
+          .join("");
+
+    qsa(
+      "[data-save-tracking]"
+    )
+      .forEach(
+        button => {
+
+          button.onclick =
+            () => {
+
+              saveTracking(
+                button.dataset
+                  .saveTracking
+              );
+
+            };
+
+        }
+      );
+  }
+
+  function saveTracking(
+    orderId
+  ){
+
+    const order =
+      orders.find(
+        item =>
+          String(
+            item.id
+          ) ===
+          String(
+            orderId
+          )
+      );
+
+    if(
+      !order
+    ){
+      return;
+    }
+
+    order.status =
+      document.querySelector(
+        `[data-order-status="${orderId}"]`
+      )?.value ||
+      order.status;
+
+    order.carrier =
+      document.querySelector(
+        `[data-order-carrier="${orderId}"]`
+      )?.value
+        ?.trim() ||
+      "";
+
+    order.trackingNumber =
+      document.querySelector(
+        `[data-order-tracking="${orderId}"]`
+      )?.value
+        ?.trim() ||
+      "";
+
+    saveJson(
+      "store-loader-orders",
+      orders
+    );
+
+    renderAll();
+
+    showToast(
+      "Rastreo actualizado."
+    );
+  }
+
+  /* ============================================================
+     EARNINGS
+     ============================================================ */
+
+  function confirmedEarnings(){
+
+    return orders
+      .filter(
+        order =>
+          order.status ===
+          "delivered"
+      )
+      .reduce(
+        (
+          sum,
+          order
+        ) =>
+          sum +
+          (
+            Number(
+              order.total ||
+              0
+            ) *
+            splitRate()
+          ),
+        0
+      );
+  }
+
+  function totalPotential(){
+
+    return products
+      .reduce(
+        (
+          sum,
+          product
+        ) =>
+          sum +
+          potentialEarning(
+            product.price
+          ),
+        0
+      );
+  }
+
+  function renderEarnings(){
+
+    const earned =
+      confirmedEarnings();
+
+    $("totalEarned")
+      .textContent =
+        money(
+          earned
+        );
+
+    $("dashboardEarned")
+      .textContent =
+        money(
+          earned
+        );
+
+    $("dashboardPotential")
+      .textContent =
+        money(
+          totalPotential()
+        );
+
+    if(
+      store
+        .loaderSplitPercent >
+      0
+    ){
+
+      $("earningsSplitLabel")
+        .textContent =
+          `Tu split actual: ${store.loaderSplitPercent}%`;
+
+    }else{
+
+      $("earningsSplitLabel")
+        .textContent =
+          "Split no definido";
+    }
+
+    if(
+      !products.length
+    ){
+
+      $("potentialProductList")
+        .innerHTML = `
+
+          <div class="emptyState">
+
+            <div class="emptyStateTitle">
+              Sin productos
+            </div>
+
+            <div class="emptyStateText">
+              Agrega productos para calcular ganancias potenciales.
+            </div>
+
+          </div>
+
+        `;
+
+      return;
+    }
+
+    $("potentialProductList")
+      .innerHTML =
+        products
+          .map(
+            product => `
+
+              <div class="earningRow">
+
+                <div>
+
+                  <div class="earningRowLabel">
+                    ${escapeHtml(product.name)}
+                  </div>
+
+                  <div class="earningRowMeta">
+                    Venta:
+                    ${money(product.price)}
+                    ·
+                    Split:
+                    ${store.loaderSplitPercent || 0}%
+                  </div>
+
+                </div>
+
+                <div class="earningRowValue">
+                  ${money(
+                    potentialEarning(
+                      product.price
+                    )
+                  )}
+                </div>
+
+              </div>
+
+            `
+          )
+          .join("");
+  }
+
+  /* ============================================================
+     STORE SETTINGS
+     ============================================================ */
+
+  function renderStoreSettings(){
+
+    $("storeName")
+      .value =
+        store.name ||
+        "";
+
+    $("loaderSplit")
+      .value =
+        store
+          .loaderSplitPercent ||
+        "";
+
+    $("storeSelector")
+      .innerHTML = `
+
+        <option value="${escapeHtml(store.id)}">
+          ${escapeHtml(store.name)}
+        </option>
+
+      `;
+
+    updatePotentialPreview();
+  }
+
+  $("saveStoreSettings")
+    .onclick =
+      () => {
+
+        const name =
+          $("storeName")
+            .value
+            .trim();
+
+        const split =
+          Math.max(
+            0,
+            Math.min(
+              100,
+              Number(
+                $("loaderSplit")
+                  .value ||
+                0
+              )
+            )
+          );
+
+        store = {
+          ...store,
+
+          name:
+            name ||
+            "Mi Tienda",
+
+          loaderSplitPercent:
+            split
+        };
+
+        saveJson(
+          "store-loader-store",
+          store
+        );
+
+        renderAll();
+
+        showToast(
+          "Configuración guardada."
+        );
+      };
+
+  /* ============================================================
+     DASHBOARD
+     ============================================================ */
+
+  function renderDashboard(){
+
+    $("dashboardProducts")
+      .textContent =
+        String(
+          products.length
+        );
+
+    $("dashboardOrders")
+      .textContent =
+        String(
+          orders.length
+        );
+  }
+
+  /* ============================================================
+     FIRST RUN SAMPLE ORDER
+     ============================================================ */
+
+  function seedDemoOrder(){
+
+    if(
+      orders.length
+    ){
+      return;
+    }
+
+    /*
+      Temporary local demonstration so the first loader
+      can see the order-tracking workflow immediately.
+
+      Delete when real orders are connected.
+    */
+
+    orders = [
+      {
+        id:
+          createId(),
+
+        number:
+          "1001",
+
+        date:
+          new Date()
+            .toLocaleDateString(
+              "es-CO"
+            ),
+
+        customer:
+          "Pedido de muestra",
+
+        products:
+          "Ejemplo de seguimiento",
+
+        total:
+          0,
+
+        status:
+          "new",
+
+        carrier:
+          "",
+
+        trackingNumber:
+          ""
+      }
+    ];
+
+    saveJson(
+      "store-loader-orders",
+      orders
+    );
+  }
+
+  /* ============================================================
+     RENDER ALL
+     ============================================================ */
+
+  function renderAll(){
+
+    renderStoreSettings();
+
+    renderDashboard();
+
+    renderProducts();
+
+    renderInventory();
+
+    renderOrders();
+
+    renderEarnings();
+  }
+
+  /* ============================================================
+     START
+     ============================================================ */
+
+  seedDemoOrder();
+
+  renderPhotoInputs();
+
+  renderAll();
+
+})();
+
+</script>
+
+</body>
+
+</html>

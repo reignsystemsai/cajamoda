@@ -1,78 +1,26 @@
 import { createClient, OAuthStrategy } from "@wix/sdk";
 import { products } from "@wix/stores";
 
-const WIX_CLIENT_ID = import.meta.env.VITE_WIX_CLIENT_ID;
-const STORES_APP_ID = "215238eb-22a5-4c36-9e7b-e7c08025e04e";
-const TOKEN_KEY = "cajamoda-wix-session";
+const CLIENT_ID = import.meta.env.VITE_WIX_CLIENT_ID;
 
-const storefrontSources = new Set([
-  "CAJAMODA_STOREFRONT",
-  "CAJAMODA_IFRAME",
-  "MODAPOP_IFRAME"
-]);
-
-let activeResponseSource = "CAJAMODA_WIX";
-let initialized = false;
-let initializing = null;
-let productCache = [];
-
-if (!WIX_CLIENT_ID) {
-  throw new Error(
-    "Missing VITE_WIX_CLIENT_ID in the Render environment."
-  );
+if (!CLIENT_ID) {
+  throw new Error("VITE_WIX_CLIENT_ID is missing.");
 }
 
-function readTokens() {
-  try {
-    const raw = localStorage.getItem(TOKEN_KEY);
-
-    return raw
-      ? JSON.parse(raw)
-      : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-const wixClient = createClient({
-  modules: {
-    products
-  },
-
+const wix = createClient({
+  modules: { products },
   auth: OAuthStrategy({
-    clientId: WIX_CLIENT_ID,
-    tokens: readTokens()
+    clientId: CLIENT_ID
   })
 });
 
-function saveTokens() {
-  try {
-    const tokens =
-      wixClient.auth.getTokens?.();
+let catalog = [];
+let responseSource = "CAJAMODA_WIX";
 
-    if (tokens) {
-      localStorage.setItem(
-        TOKEN_KEY,
-        JSON.stringify(tokens)
-      );
-    }
-  } catch {}
-}
-
-function responseSourceFor(incomingSource) {
-  return incomingSource === "MODAPOP_IFRAME"
-    ? "MODAPOP_WIX"
-    : "CAJAMODA_WIX";
-}
-
-function send(
-  type,
-  payload = {},
-  source = activeResponseSource
-) {
+function send(type, payload = {}) {
   window.postMessage(
     {
-      source,
+      source: responseSource,
       type,
       payload
     },
@@ -80,74 +28,34 @@ function send(
   );
 }
 
-function stripHtml(value = "") {
-  const element =
-    document.createElement("div");
-
-  element.innerHTML =
-    String(value);
-
-  return (
-    element.textContent ||
-    element.innerText ||
-    ""
-  );
+function cleanText(value = "") {
+  const el = document.createElement("div");
+  el.innerHTML = String(value);
+  return el.textContent || "";
 }
 
-function firstValue(...values) {
-  for (const value of values) {
-    if (
-      value !== undefined &&
-      value !== null &&
-      value !== ""
-    ) {
-      return value;
-    }
-  }
-
-  return undefined;
-}
-
-function imageUrlFromMediaItem(item) {
-  return (
-    firstValue(
-      item?.image?.url,
-      item?.url,
-      item?.src,
-      item?.imageUrl,
-      item?.media?.url
-    ) || ""
-  );
-}
-
-function extractMedia(product) {
+function mediaUrls(product) {
   const urls = [];
 
   const main =
-    firstValue(
-      product?.media?.mainMedia?.image?.url,
-      product?.media?.mainMedia?.url,
-      product?.image?.url,
-      product?.imageUrl
-    );
+    product?.media?.mainMedia?.image?.url ||
+    product?.media?.mainMedia?.url ||
+    product?.image?.url ||
+    "";
 
-  if (main) {
-    urls.push(main);
-  }
+  if (main) urls.push(main);
 
   const items =
     product?.media?.items ||
-    product?.media?.mediaItems ||
     [];
 
   for (const item of items) {
     const url =
-      imageUrlFromMediaItem(item);
+      item?.image?.url ||
+      item?.url ||
+      "";
 
-    if (
-      url &&
-      !urls.includes(url)
-    ) {
+    if (url && !urls.includes(url)) {
       urls.push(url);
     }
   }
@@ -155,6 +63,75 @@ function extractMedia(product) {
   return urls;
 }
 
-function extractPrice(product) {
+function productPrice(product) {
   return Number(
-   
+    product?.priceData?.discountedPrice ??
+    product?.priceData?.price ??
+    product?.price?.amount ??
+    product?.price ??
+    0
+  );
+}
+
+function sizeFromChoices(choices = {}) {
+  return (
+    choices.Size ||
+    choices.size ||
+    choices.Talla ||
+    choices.talla ||
+    ""
+  );
+}
+
+function normalizeVariant(productId, variant, price) {
+  const raw =
+    variant?.variant ||
+    variant;
+
+  const choices =
+    variant?.choices ||
+    raw?.choices ||
+    {};
+
+  return {
+    id:
+      variant?._id ||
+      variant?.id ||
+      raw?._id ||
+      raw?.id ||
+      "",
+
+    productId,
+
+    size:
+      sizeFromChoices(choices),
+
+    sku:
+      raw?.sku ||
+      variant?.sku ||
+      "",
+
+    price:
+      Number(
+        raw?.priceData?.price ??
+        variant?.priceData?.price ??
+        price
+      ),
+
+    inStock:
+      raw?.stock?.inStock !== false &&
+      variant?.stock?.inStock !== false
+  };
+}
+
+function normalizeProduct(product) {
+  const id =
+    product?._id ||
+    product?.id ||
+    "";
+
+  const price =
+    productPrice(product);
+
+  const variants =
+    (product

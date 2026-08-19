@@ -7,6 +7,7 @@ export default defineConfig({
       input: {
         home: resolve(import.meta.dirname, "index.html"),
         product: resolve(import.meta.dirname, "product/index.html"),
+        checkout: resolve(import.meta.dirname, "checkout/index.html"),
       },
     },
   },

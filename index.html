@@ -1,0 +1,5473 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<meta name="color-scheme" content="light">
+<title>ModaPop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fff;
+  --ink:#0a0a0a;
+  --ink-2:#323232;
+  --muted:#777;
+  --muted-2:#a0a0a0;
+  --line:rgba(0,0,0,.075);
+  --line-2:rgba(0,0,0,.12);
+  --glass:rgba(255,255,255,.48);
+  --glass-strong:rgba(255,255,255,.72);
+  --glass-solid:rgba(255,255,255,.9);
+  --shadow:0 12px 34px rgba(0,0,0,.065);
+  --shadow-strong:0 22px 60px rgba(0,0,0,.11);
+  --radius:18px;
+  --mobile-max:430px;
+  --nav-h:58px;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;min-height:100%;background:var(--bg);color:var(--ink);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+html{scroll-behavior:smooth}
+body{overflow-x:hidden}
+body.locked{overflow:hidden}
+button,input,textarea{font:inherit;color:inherit}
+button{border:0;background:none;padding:0;margin:0;cursor:pointer}
+button:disabled{cursor:default;opacity:.28}
+input,textarea{border:0;outline:0;background:transparent}
+img{display:block;max-width:100%;user-select:none;-webkit-user-drag:none}
+svg{display:block;pointer-events:none}
+.hidden{display:none!important}
+
+.appShell{
+  position:relative;
+  width:100%;
+  min-height:100dvh;
+  margin:0 auto;
+  padding-bottom:calc(var(--nav-h) + 22px + var(--safe-bottom));
+  background:#fff;
+}
+
+@media(min-width:700px){
+  body{background:#f6f6f6}
+  .appShell,.productScreen{width:min(100%,var(--mobile-max));margin:0 auto;box-shadow:0 0 70px rgba(0,0,0,.08)}
+}
+
+.glass{
+  background:linear-gradient(145deg,rgba(255,255,255,.82),rgba(255,255,255,.35));
+  border:1px solid rgba(255,255,255,.94);
+  box-shadow:0 0 0 1px rgba(0,0,0,.045),inset 0 1px 0 rgba(255,255,255,.98),var(--shadow);
+  backdrop-filter:blur(24px) saturate(160%);
+  -webkit-backdrop-filter:blur(24px) saturate(160%);
+}
+
+.glassStrong{
+  background:linear-gradient(145deg,rgba(255,255,255,.94),rgba(255,255,255,.58));
+  border:1px solid rgba(255,255,255,.98);
+  box-shadow:0 0 0 1px rgba(0,0,0,.055),inset 0 1px 0 #fff,var(--shadow-strong);
+  backdrop-filter:blur(30px) saturate(175%);
+  -webkit-backdrop-filter:blur(30px) saturate(175%);
+}
+
+/* =========================
+   HOME HEADER
+   ========================= */
+.homeHeader{
+  position:relative;
+  height:112px;
+  padding-top:var(--safe-top);
+}
+.homeLogoSlot{
+  position:absolute;
+  left:50%;
+  top:calc(13px + var(--safe-top));
+  transform:translateX(-50%);
+  width:170px;
+  height:68px;
+  pointer-events:none;
+}
+.brandLockup{
+  position:absolute;
+  left:50%;
+  top:calc(13px + var(--safe-top));
+  transform:translateX(-50%);
+  text-align:center;
+  white-space:nowrap;
+  pointer-events:none;
+}
+.brandMonogram{
+  position:relative;
+  height:48px;
+  min-width:92px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:"Times New Roman",Georgia,serif;
+  font-size:51px;
+  line-height:.9;
+  font-weight:400;
+  letter-spacing:-10px;
+  padding-right:9px;
+}
+.brandMonogram .c{position:relative;z-index:2}
+.brandMonogram .m{position:relative;z-index:1;margin-left:-7px}
+.brandName{
+  margin-top:6px;
+  padding-left:6px;
+  font-family:"Times New Roman",Georgia,serif;
+  font-size:10px;
+  line-height:1;
+  font-weight:600;
+  letter-spacing:6px;
+}
+.homeBagTop{
+  position:absolute;
+  top:calc(25px + var(--safe-top));
+  right:14px;
+  width:44px;
+  height:44px;
+  display:grid;
+  place-items:center;
+}
+.homeBagTop svg{width:25px;height:25px;stroke-width:1.55}
+.bagBadge{
+  position:absolute;
+  top:-2px;
+  right:-2px;
+  min-width:19px;
+  height:19px;
+  padding:0 4px;
+  border-radius:999px;
+  background:#090909;
+  color:#fff;
+  border:2px solid #fff;
+  display:grid;
+  place-items:center;
+  font-size:9px;
+  font-weight:800;
+  line-height:1;
+}
+.bagBadge.bump{animation:badgeBump .22s ease}
+@keyframes badgeBump{50%{transform:scale(1.25)}}
+
+.homeContent{padding:0 12px}
+
+/* =========================
+   VIBE HERO
+   ========================= */
+.vibeHero{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:6px;
+  margin-top:2px;
+}
+.vibeCard{
+  position:relative;
+  min-width:0;
+  aspect-ratio:.70;
+  border-radius:10px;
+  overflow:hidden;
+  background:#eee;
+  box-shadow:0 8px 22px rgba(0,0,0,.06);
+  scroll-snap-align:start;
+}
+.vibeCard img{width:100%;height:100%;object-fit:cover}
+.vibeCard::after{content:"";position:absolute;inset:0;background:linear-gradient(to bottom,transparent 42%,rgba(0,0,0,.66) 100%)}
+.vibeCardLabel{
+  position:absolute;
+  z-index:2;
+  left:5px;
+  right:5px;
+  bottom:10px;
+  color:#fff;
+  text-align:center;
+  font-size:10px;
+  line-height:1.05;
+  font-weight:750;
+  text-transform:uppercase;
+}
+.vibeCard.active{outline:1.5px solid rgba(0,0,0,.72);outline-offset:2px}
+
+/* =========================
+   DELIVERY METHODS
+   ========================= */
+.deliverySection{margin-top:9px}
+.deliveryRail{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:6px;
+}
+.deliveryCard{
+  min-width:0;
+  min-height:89px;
+  padding:10px 6px 8px;
+  border-radius:12px;
+  text-align:center;
+  transition:transform .15s ease;
+}
+.deliveryCard:active:not(:disabled){transform:scale(.985)}
+.deliveryIcon{width:25px;height:25px;margin:0 auto 7px}
+.deliveryIcon svg{width:100%;height:100%;stroke-width:1.5}
+.deliveryTitle{font-size:8.6px;line-height:1.22;font-weight:700}
+.deliveryEta{margin-top:3px;font-size:7.8px;line-height:1.2;color:var(--muted)}
+.deliveryInfo{
+  display:none;
+  position:relative;
+  margin-top:7px;
+  min-height:63px;
+  padding:11px 42px 11px 12px;
+  border-radius:15px;
+}
+.deliveryInfo.open{display:block;animation:reveal .16s ease}
+@keyframes reveal{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.deliveryInfoTitle{font-size:10px;font-weight:750}
+.deliveryInfoText{margin-top:4px;font-size:8.5px;line-height:1.45;color:#555}
+.deliveryInfoClose{
+  position:absolute;
+  top:50%;
+  right:8px;
+  transform:translateY(-50%);
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+}
+.deliveryInfoClose svg{width:15px;height:15px;stroke-width:1.5}
+
+/* =========================
+   SEARCH / FILTERS
+   ========================= */
+.searchShell{
+  height:48px;
+  margin-top:10px;
+  border-radius:15px;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:0 11px 0 13px;
+}
+.searchShell>svg{width:19px;height:19px;stroke-width:1.55;flex:0 0 auto}
+.searchInput{flex:1;min-width:0;height:44px;font-size:10px}
+.searchInput::placeholder{color:#999}
+.filterButton{width:32px;height:32px;display:grid;place-items:center;border-radius:50%}
+.filterButton svg{width:18px;height:18px;stroke-width:1.5}
+.typeTabs{
+  display:flex;
+  align-items:center;
+  gap:0;
+  margin-top:7px;
+  overflow-x:auto;
+  scrollbar-width:none;
+  border-bottom:1px solid rgba(0,0,0,.055);
+}
+.typeTabs::-webkit-scrollbar{display:none}
+.typeTab{
+  flex:1 0 auto;
+  min-width:68px;
+  height:38px;
+  padding:0 8px;
+  position:relative;
+  font-size:8.4px;
+  color:#777;
+  text-transform:uppercase;
+}
+.typeTab.active{color:#090909;font-weight:700}
+.typeTab.active::after{content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:2px;background:#111;border-radius:999px}
+
+/* =========================
+   PRODUCT RAILS
+   ========================= */
+.productSection{margin-top:15px}
+.productSectionHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.productSectionTitle{font-size:13px;font-weight:800;letter-spacing:-.15px;text-transform:uppercase}
+.productSectionLink{font-size:8.5px;color:#333}
+.productRail{
+  display:grid;
+  grid-auto-flow:column;
+  grid-auto-columns:calc((100vw - 44px)/3);
+  gap:8px;
+  overflow-x:auto;
+  scroll-snap-type:x mandatory;
+  scrollbar-width:none;
+  padding-bottom:2px;
+}
+.productRail::-webkit-scrollbar{display:none}
+@media(min-width:700px){.productRail{grid-auto-columns:calc((var(--mobile-max) - 44px)/3)}}
+.productCard{min-width:0;scroll-snap-align:start}
+.productCardMedia{position:relative;aspect-ratio:.74;border-radius:10px 10px 0 0;overflow:hidden;background:#eee}
+.productCardMedia img{width:100%;height:100%;object-fit:cover}
+.productHeart{
+  position:absolute;
+  top:5px;
+  right:5px;
+  width:27px;
+  height:27px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:rgba(255,255,255,.88);
+  border:1px solid rgba(255,255,255,.95);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+}
+.productHeart svg{width:15px;height:15px;stroke-width:1.7}
+.productHeart.active{color:#e3182b}
+.productCardInfo{min-height:53px;padding:6px 6px 8px;border:1px solid rgba(0,0,0,.06);border-top:0;border-radius:0 0 10px 10px;background:#fff}
+.productCardName{height:19px;overflow:hidden;font-size:8px;line-height:1.22;font-weight:550}
+.productCardPrice{margin-top:3px;font-size:9.3px;font-weight:800}
+.productDots{height:18px;display:flex;align-items:center;justify-content:center;gap:4px}
+.productDot{width:4px;height:4px;border-radius:50%;background:#ddd}
+.productDot.active{width:13px;border-radius:999px;background:#111}
+
+/* =========================
+   REFINED FIXED BOTTOM NAV
+   ========================= */
+.bottomNav{
+  position:fixed;
+  z-index:90;
+  left:50%;
+  bottom:max(7px,var(--safe-bottom));
+  transform:translateX(-50%);
+  width:min(calc(100% - 20px),410px);
+  height:var(--nav-h);
+  border-radius:19px;
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  align-items:center;
+  padding:3px 5px;
+  background:linear-gradient(145deg,rgba(255,255,255,.60),rgba(255,255,255,.26));
+  border:1px solid rgba(255,255,255,.9);
+  box-shadow:0 0 0 1px rgba(0,0,0,.035),inset 0 1px 0 rgba(255,255,255,.95),0 10px 28px rgba(0,0,0,.08);
+  backdrop-filter:blur(26px) saturate(160%);
+  -webkit-backdrop-filter:blur(26px) saturate(160%);
+}
+.navButton{
+  position:relative;
+  height:48px;
+  border-radius:16px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:2px;
+}
+.navButton svg{width:20px;height:20px;stroke-width:1.5}
+.navButton span{font-size:7.4px;line-height:1}
+.navButton.plusOnly svg{width:24px;height:24px}
+.navButton.plusOnly span{display:none}
+.navButton.active{background:rgba(255,255,255,.74);box-shadow:0 4px 17px rgba(0,0,0,.07)}
+.navBagBadge{position:absolute;top:2px;right:calc(50% - 19px);min-width:16px;height:16px;padding:0 3px;border-radius:999px;background:#090909;color:#fff;border:1.5px solid #fff;display:grid;place-items:center;font-size:7px;font-weight:800}
+
+/* =========================
+   PLUS MENU - FLOATING LINES
+   ========================= */
+.utilityBackdrop{position:fixed;inset:0;z-index:105;display:none;background:rgba(255,255,255,.08);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.utilityBackdrop.open{display:block}
+.utilityLines{
+  position:absolute;
+  left:16px;
+  bottom:calc(var(--nav-h) + 23px + var(--safe-bottom));
+  width:min(280px,calc(100vw - 32px));
+}
+.utilityLine{
+  width:100%;
+  min-height:42px;
+  padding:0 5px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  border-bottom:1px solid rgba(0,0,0,.12);
+  text-align:left;
+  color:#111;
+  background:rgba(255,255,255,.38);
+  backdrop-filter:blur(18px) saturate(150%);
+  -webkit-backdrop-filter:blur(18px) saturate(150%);
+}
+.utilityLine:first-child{border-top:1px solid rgba(0,0,0,.12)}
+.utilityLine span:first-child{font-size:10px;font-weight:600}
+.utilityLine span:last-child{font-size:15px;color:#777}
+.utilityGroupLabel{margin:12px 0 5px 4px;font-size:7.5px;letter-spacing:1.4px;font-weight:800;color:#777}
+
+/* =========================
+   PRODUCT SCREEN
+   ========================= */
+.productScreen{
+  position:fixed;
+  z-index:80;
+  inset:0;
+  background:#fff;
+  overflow:hidden;
+}
+.productPhoto{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center 18%;
+  background:#eee;
+}
+.productShade{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(255,255,255,.08) 0,transparent 18%,transparent 82%,rgba(255,255,255,.08) 100%);pointer-events:none}
+.productTopBar{position:absolute;z-index:4;left:0;right:0;top:0;height:105px;padding-top:var(--safe-top);pointer-events:none}
+.productBack{
+  pointer-events:auto;
+  position:absolute;
+  top:calc(16px + var(--safe-top));
+  left:12px;
+  width:38px;
+  height:38px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+}
+.productBack svg{width:20px;height:20px;stroke-width:1.6}
+.productBrand{top:calc(11px + var(--safe-top))}
+.productBrand .brandMonogram{font-size:43px;height:41px;min-width:80px}
+.productBrand .brandName{font-size:8px;letter-spacing:5px;margin-top:4px}
+
+.productSideTools{
+  position:absolute;
+  z-index:5;
+  right:11px;
+  top:calc(88px + var(--safe-top));
+  width:56px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:7px;
+}
+.thumbStack{display:flex;flex-direction:column;gap:6px}
+.productThumb{width:52px;height:66px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.85);background:rgba(255,255,255,.35);box-shadow:0 4px 14px rgba(0,0,0,.07)}
+.productThumb img{width:100%;height:100%;object-fit:cover}
+.productThumb.active{outline:1.5px solid #111;outline-offset:1px}
+.productNumber{
+  width:43px;
+  height:34px;
+  border-radius:17px;
+  display:grid;
+  place-items:center;
+  font-size:10px;
+  font-weight:700;
+}
+.sideAction{width:39px;height:39px;border-radius:50%;display:grid;place-items:center}
+.sideAction svg{width:20px;height:20px;stroke-width:1.55}
+.sideAction.active{color:#e3182b}
+
+/* =========================
+   COLLAPSED PRICE CAPSULE
+   ========================= */
+.priceCapsule{
+  position:absolute;
+  z-index:6;
+  left:12px;
+  bottom:calc(var(--nav-h) + 17px + var(--safe-bottom));
+  height:45px;
+  min-width:154px;
+  max-width:190px;
+  padding:0 12px 0 15px;
+  border-radius:23px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:11px;
+}
+.priceCapsulePrice{font-size:12px;font-weight:800;white-space:nowrap}
+.priceCapsuleCurrency{font-size:7px;font-weight:600;margin-left:2px}
+.priceCapsule svg{width:17px;height:17px;stroke-width:1.7;flex:0 0 auto}
+
+/* =========================
+   OPEN DETAILS CAPSULE
+   ========================= */
+.detailsCapsule{
+  position:absolute;
+  z-index:7;
+  right:10px;
+  bottom:calc(var(--nav-h) + 17px + var(--safe-bottom));
+  width:min(82vw,340px);
+  max-height:46dvh;
+  overflow:auto;
+  border-radius:22px;
+  padding:12px;
+  display:none;
+  scrollbar-width:none;
+}
+.detailsCapsule::-webkit-scrollbar{display:none}
+.detailsCapsule.open{display:block;animation:detailsOpen .17s ease}
+@keyframes detailsOpen{from{opacity:0;transform:translateY(7px) scale(.98)}to{opacity:1;transform:none}}
+.detailsHeader{display:grid;grid-template-columns:44px 1fr auto;gap:9px;align-items:center}
+.detailsHeader img{width:44px;height:54px;border-radius:9px;object-fit:cover}
+.detailsName{font-size:11px;font-weight:700;line-height:1.2}
+.detailsPrice{margin-top:3px;font-size:11px;font-weight:800}
+.detailsCollapse{width:31px;height:31px;border-radius:50%;display:grid;place-items:center}
+.detailsCollapse svg{width:16px;height:16px;stroke-width:1.7}
+.detailsBag{
+  position:relative;
+  width:37px;
+  height:37px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  margin-left:auto;
+}
+.detailsBag svg{width:20px;height:20px;stroke-width:1.5}
+.detailsBag .bagBadge{top:-4px;right:-4px}
+.detailsDivider{height:1px;background:rgba(0,0,0,.07);margin:9px 0}
+.detailsLabel{font-size:7.4px;font-weight:800;letter-spacing:1.05px;color:#666;text-transform:uppercase}
+.sizeRail{display:flex;gap:6px;margin-top:7px;overflow-x:auto;scrollbar-width:none}
+.sizeRail::-webkit-scrollbar{display:none}
+.sizeButton{flex:0 0 auto;min-width:36px;height:32px;padding:0 8px;border:1px solid rgba(0,0,0,.11);border-radius:16px;background:rgba(255,255,255,.55);font-size:8.5px}
+.sizeButton.active{background:#0a0a0a;color:#fff;border-color:#0a0a0a}
+.inventoryHint{display:none;margin-top:6px;min-height:18px;align-items:center;gap:6px;font-size:7.5px;line-height:1.35;color:#555}
+.inventoryHint.show{display:flex}
+.inventoryHintDot{width:6px;height:6px;border-radius:50%;background:#111;flex:0 0 auto}
+.inventoryHint.low .inventoryHintDot{background:#777}
+.inventoryHint.preorder .inventoryHintDot{background:#111;outline:1px solid rgba(0,0,0,.18);outline-offset:2px}
+.inventoryHint.out .inventoryHintDot{background:#bbb}
+.detailsDelivery{display:flex;gap:5px;margin-top:7px;overflow-x:auto;scrollbar-width:none}
+.detailsDelivery::-webkit-scrollbar{display:none}
+.detailsDeliveryButton{flex:0 0 auto;height:30px;padding:0 9px;border-radius:15px;border:1px solid rgba(0,0,0,.09);background:rgba(255,255,255,.48);font-size:7.8px;white-space:nowrap}
+.detailsDeliveryButton.active{background:#111;color:#fff;border-color:#111}
+.detailsDeliveryInfo{display:none;position:relative;margin-top:6px;padding:8px 31px 8px 9px;border-radius:12px;font-size:7.8px;line-height:1.4;color:#444}
+.detailsDeliveryInfo.open{display:block}
+.detailsDeliveryInfoClose{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:23px;height:23px;border-radius:50%;display:grid;place-items:center}
+.detailsDeliveryInfoClose svg{width:12px;height:12px;stroke-width:1.5}
+.detailsDescription{margin-top:7px;font-size:8px;line-height:1.48;color:#444;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.buyButton{width:100%;height:43px;margin-top:10px;border-radius:13px;background:#090909;color:#fff;font-size:10px;font-weight:750;letter-spacing:.15px}
+.buyButton.working{opacity:.55;pointer-events:none}
+
+/* =========================
+   CART DRAWER
+   ========================= */
+.overlay{position:fixed;inset:0;z-index:130;display:none;background:rgba(0,0,0,.13);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+.overlay.open{display:block}
+.cartDrawer{
+  position:absolute;
+  left:8px;
+  right:8px;
+  bottom:8px;
+  max-height:78dvh;
+  overflow:auto;
+  border-radius:24px;
+  padding:15px 14px calc(16px + var(--safe-bottom));
+}
+.cartHead{display:flex;align-items:center;justify-content:space-between}
+.cartTitle{font-size:16px;font-weight:800}
+.closeCircle{width:32px;height:32px;border-radius:50%;display:grid;place-items:center}
+.closeCircle svg{width:16px;height:16px;stroke-width:1.5}
+.cartItem{display:grid;grid-template-columns:61px 1fr auto;gap:9px;padding:11px 0;border-bottom:1px solid rgba(0,0,0,.07)}
+.cartItem img{width:61px;height:78px;border-radius:10px;object-fit:cover;background:#eee}
+.cartItemName{font-size:9px;font-weight:700;line-height:1.3}
+.cartItemMeta{margin-top:4px;font-size:7.8px;color:#777}
+.qtyRow{display:flex;align-items:center;gap:6px;margin-top:8px}
+.qtyButton{width:25px;height:25px;border-radius:50%;border:1px solid rgba(0,0,0,.12);display:grid;place-items:center;font-size:11px}
+.qtyValue{font-size:8px;min-width:14px;text-align:center}
+.removeLine{margin-top:7px;font-size:7.6px;text-decoration:underline;text-underline-offset:2px;color:#555}
+.cartItemPrice{font-size:8.5px;font-weight:750;white-space:nowrap}
+.cartEmpty{padding:30px 5px;text-align:center;font-size:9.5px;color:#777}
+.cartSummary{margin-top:11px}
+.summaryRow{display:flex;align-items:center;justify-content:space-between;min-height:31px;font-size:9px}
+.summaryRow.total{margin-top:4px;padding-top:9px;border-top:1px solid rgba(0,0,0,.08);font-size:11px;font-weight:800}
+.checkoutButton{width:100%;height:45px;margin-top:10px;border-radius:13px;background:#090909;color:#fff;font-size:10px;font-weight:800}
+
+/* =========================
+   FAVORITES BUBBLE
+   ========================= */
+.favoritesBubble{
+  position:fixed;
+  z-index:115;
+  left:8px;
+  right:8px;
+  bottom:calc(var(--nav-h) + 15px + var(--safe-bottom));
+  display:none;
+  border-radius:23px;
+  padding:12px;
+}
+.favoritesBubble.open{display:block;animation:detailsOpen .17s ease}
+.favoritesHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.favoritesHeadLeft{display:flex;align-items:center;gap:7px}
+.favoritesHeadLeft svg{width:18px;height:18px;stroke-width:1.55}
+.favoritesTitle{font-size:12px;font-weight:800}
+.favoritesCount{font-size:8px;color:#777}
+.favoriteRail{display:flex;gap:7px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+.favoriteRail::-webkit-scrollbar{display:none}
+.favoriteCard{position:relative;flex:0 0 93px;scroll-snap-align:start}
+.favoriteCardMedia{width:93px;height:116px;border-radius:11px;overflow:hidden;background:#eee}
+.favoriteCardMedia img{width:100%;height:100%;object-fit:cover}
+.favoriteRemove{position:absolute;right:4px;top:4px;width:23px;height:23px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.9)}
+.favoriteRemove svg{width:12px;height:12px;stroke-width:1.6}
+.favoriteCardName{margin-top:5px;height:18px;overflow:hidden;font-size:7.5px;line-height:1.2}
+.favoriteCardPrice{margin-top:2px;font-size:8.5px;font-weight:800}
+.favoriteReviewHook{display:none;margin-top:4px;font-size:7px;color:#555;text-decoration:underline}
+.reviewEnabled .favoriteReviewHook{display:inline-block}
+.favoritesDots{height:14px;display:flex;align-items:end;justify-content:center;gap:4px}
+.favoritesDots span{width:4px;height:4px;border-radius:50%;background:#d6d6d6}
+.favoritesDots span.active{background:#111}
+
+/* =========================
+   FILTER SHEET
+   ========================= */
+.filterSheet{position:absolute;left:8px;right:8px;bottom:8px;border-radius:23px;padding:14px 13px calc(16px + var(--safe-bottom))}
+.filterHead{display:flex;align-items:center;justify-content:space-between}
+.filterTitle{font-size:14px;font-weight:800}
+.filterGroup{margin-top:13px}
+.filterGroupTitle{font-size:7.5px;font-weight:800;letter-spacing:1px;color:#777}
+.filterChoices{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.filterChoice{height:32px;padding:0 11px;border-radius:16px;border:1px solid rgba(0,0,0,.1);font-size:8px}
+.filterChoice.active{background:#111;color:#fff;border-color:#111}
+
+/* =========================
+   STATUS / TOAST
+   ========================= */
+.toast{position:fixed;z-index:220;left:50%;bottom:calc(var(--nav-h) + 25px + var(--safe-bottom));transform:translateX(-50%) translateY(8px);max-width:calc(100vw - 36px);padding:9px 13px;border-radius:999px;background:#090909;color:#fff;font-size:8.5px;opacity:0;pointer-events:none;transition:.18s ease}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.workingVeil{position:fixed;inset:0;z-index:210;display:none;place-items:center;background:rgba(255,255,255,.35);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.workingVeil.open{display:grid}
+.workingPill{padding:10px 14px;border-radius:999px;font-size:9px;font-weight:700}
+
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<div id="app" class="appShell">
+  <header class="homeHeader">
+    <div id="homeLogoSlot" class="homeLogoSlot" aria-label="Espacio reservado para el logo de ModaPop"></div>
+
+    <button id="homeBagTop" class="homeBagTop" aria-label="Abrir bolsa">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M6.3 8.4h11.4l1 11H5.3l1-11Z"/>
+        <path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>
+      </svg>
+      <span id="homeTopBagBadge" class="bagBadge">0</span>
+    </button>
+  </header>
+
+  <main class="homeContent">
+    <section id="vibeHero" class="vibeHero" aria-label="Compra por vibra"></section>
+
+    <section class="deliverySection" aria-label="Métodos de compra y entrega">
+      <div id="homeDeliveryRail" class="deliveryRail"></div>
+      <div id="homeDeliveryInfo" class="deliveryInfo glassStrong">
+        <div id="homeDeliveryInfoTitle" class="deliveryInfoTitle"></div>
+        <div id="homeDeliveryInfoText" class="deliveryInfoText"></div>
+        <button id="homeDeliveryInfoClose" class="deliveryInfoClose glass" aria-label="Cerrar explicación">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m7 7 10 10M17 7 7 17"/></svg>
+        </button>
+      </div>
+    </section>
+
+    <div class="searchShell glass">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <circle cx="10.8" cy="10.8" r="6.2"/><path d="m15.5 15.5 4.5 4.5"/>
+      </svg>
+      <input id="searchInput" class="searchInput" type="search" placeholder="Buscar productos, looks y más" autocomplete="off" enterkeyhint="search">
+      <button id="filterButton" class="filterButton" aria-label="Filtros">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path d="M4 7h10M18 7h2"/><circle cx="16" cy="7" r="2"/><path d="M4 17h2M10 17h10"/><circle cx="8" cy="17" r="2"/>
+        </svg>
+      </button>
+    </div>
+
+    <nav id="typeTabs" class="typeTabs" aria-label="Tipos de prendas"></nav>
+    <div id="homeSections"></div>
+  </main>
+</div>
+
+<nav id="bottomNav" class="bottomNav" aria-label="Navegación principal">
+  <button id="navPlus" class="navButton plusOnly" aria-label="Más opciones">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg><span>Más</span>
+  </button>
+  <button id="navFavorites" class="navButton" aria-label="Favoritos">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20.3 5.7a5.2 5.2 0 0 0-7.4 0L12 6.6l-.9-.9a5.2 5.2 0 0 0-7.4 7.4L12 21l8.3-7.9a5.2 5.2 0 0 0 0-7.4Z"/></svg><span>Favoritos</span>
+  </button>
+  <button id="navHome" class="navButton active" aria-label="Inicio">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m4 10 8-6 8 6"/><path d="M6.5 9.5V20h11V9.5"/><path d="M10 20v-6h4v6"/></svg><span>Inicio</span>
+  </button>
+  <button id="navProfile" class="navButton" aria-label="Perfil">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20c.7-4 3-6 6.5-6s5.8 2 6.5 6"/></svg><span>Perfil</span>
+  </button>
+  <button id="navBag" class="navButton" aria-label="Bolsa">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6.3 8.4h11.4l1 11H5.3l1-11Z"/><path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/></svg><span>Bolsa</span>
+    <span id="navBagBadge" class="navBagBadge">0</span>
+  </button>
+</nav>
+
+<div id="utilityBackdrop" class="utilityBackdrop">
+  <div id="utilityLines" class="utilityLines">
+    <button class="utilityLine" data-utility-action="OPEN_WHATSAPP"><span>WhatsApp</span><span>›</span></button>
+    <button class="utilityLine" data-utility-action="OPEN_FAQ"><span>Preguntas frecuentes</span><span>›</span></button>
+    <button class="utilityLine" data-utility-action="OPEN_HELP"><span>Ayuda</span><span>›</span></button>
+    <button class="utilityLine" data-utility-action="OPEN_ABOUT"><span>Sobre nosotros</span><span>›</span></button>
+    <button class="utilityLine" data-utility-action="OPEN_CONTACT"><span>Contáctanos</span><span>›</span></button>
+    <div class="utilityGroupLabel">CRECE CON NOSOTROS</div>
+    <button class="utilityLine" data-utility-action="OPEN_PARTNERS"><span>Asociaciones ModaPop</span><span>›</span></button>
+    <button class="utilityLine" data-utility-action="OPEN_STORE_OWNER_PORTAL"><span>Abre tu propia tienda</span><span>↗</span></button>
+  </div>
+</div>
+
+<section id="productScreen" class="productScreen hidden" aria-hidden="true">
+  <img id="productPhoto" class="productPhoto" alt="Producto">
+  <div class="productShade"></div>
+
+  <header class="productTopBar">
+    <button id="productBack" class="productBack glass" aria-label="Volver">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m15.5 18-6-6 6-6"/></svg>
+    </button>
+    <div class="brandLockup productBrand">
+      <div class="brandMonogram" data-brand-monogram><span class="c">C</span><span class="m">M</span></div>
+      <div class="brandName" data-brand-name>MODAPOP</div>
+    </div>
+  </header>
+
+  <aside id="productSideTools" class="productSideTools" aria-label="Fotos y acciones del producto">
+    <div id="thumbStack" class="thumbStack"></div>
+    <div id="productNumber" class="productNumber glass">1</div>
+    <button id="productHeart" class="sideAction glass" aria-label="Guardar en favoritos"></button>
+    <button id="productShare" class="sideAction glass" aria-label="Compartir">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 15V4"/><path d="m8 8 4-4 4 4"/><path d="M6 12v7h12v-7"/></svg>
+    </button>
+  </aside>
+
+  <button id="priceCapsule" class="priceCapsule glassStrong" aria-label="Abrir detalles del producto">
+    <span><span id="priceCapsulePrice" class="priceCapsulePrice">$0</span><span class="priceCapsuleCurrency">COP</span></span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m9 6 6 6-6 6"/></svg>
+  </button>
+
+  <section id="detailsCapsule" class="detailsCapsule glassStrong" aria-label="Detalles del producto">
+    <div class="detailsHeader">
+      <img id="detailsThumb" alt="Producto">
+      <div>
+        <div id="detailsName" class="detailsName"></div>
+        <div id="detailsPrice" class="detailsPrice"></div>
+      </div>
+      <button id="detailsCollapse" class="detailsCollapse glass" aria-label="Cerrar detalles">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+    </div>
+
+    <div class="detailsDivider"></div>
+
+    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end">
+      <div>
+        <div class="detailsLabel">Talla</div>
+        <div id="sizeRail" class="sizeRail"></div>
+        <div id="inventoryHint" class="inventoryHint">
+          <span class="inventoryHintDot"></span>
+          <span id="inventoryHintText"></span>
+        </div>
+      </div>
+      <button id="detailsBag" class="detailsBag glass" aria-label="Abrir bolsa">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6.3 8.4h11.4l1 11H5.3l1-11Z"/><path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/></svg>
+        <span id="detailsBagBadge" class="bagBadge">0</span>
+      </button>
+    </div>
+
+    <div class="detailsDivider"></div>
+    <div class="detailsLabel">Forma de recibirlo</div>
+    <div id="detailsDelivery" class="detailsDelivery"></div>
+    <div id="detailsDeliveryInfo" class="detailsDeliveryInfo glass">
+      <span id="detailsDeliveryInfoText"></span>
+      <button id="detailsDeliveryInfoClose" class="detailsDeliveryInfoClose glass" aria-label="Cerrar explicación">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m7 7 10 10M17 7 7 17"/></svg>
+      </button>
+    </div>
+
+    <div class="detailsDivider"></div>
+    <div class="detailsLabel">Descripción</div>
+    <div id="detailsDescription" class="detailsDescription"></div>
+
+    <button id="buyButton" class="buyButton">Comprar</button>
+  </section>
+</section>
+
+<div id="cartOverlay" class="overlay">
+  <section id="cartDrawer" class="cartDrawer glassStrong">
+    <div class="cartHead">
+      <div class="cartTitle">Mi bolsa (<span id="cartTitleCount">0</span>)</div>
+      <button id="cartClose" class="closeCircle glass" aria-label="Cerrar bolsa">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m7 7 10 10M17 7 7 17"/></svg>
+      </button>
+    </div>
+    <div id="cartItems"></div>
+    <div id="cartEmpty" class="cartEmpty hidden">Tu bolsa está vacía.</div>
+    <div id="cartSummary" class="cartSummary">
+      <div class="summaryRow"><span>Productos</span><span id="cartQuantity">0</span></div>
+      <div class="summaryRow total"><span>Subtotal</span><span id="cartSubtotal">$0</span></div>
+      <button id="checkoutButton" class="checkoutButton">Finalizar compra</button>
+    </div>
+  </section>
+</div>
+
+<section id="favoritesBubble" class="favoritesBubble glassStrong">
+  <div class="favoritesHead">
+    <div class="favoritesHeadLeft">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20.3 5.7a5.2 5.2 0 0 0-7.4 0L12 6.6l-.9-.9a5.2 5.2 0 0 0-7.4 7.4L12 21l8.3-7.9a5.2 5.2 0 0 0 0-7.4Z"/></svg>
+      <div>
+        <div class="favoritesTitle">Mis favoritos</div>
+        <div id="favoritesCount" class="favoritesCount">0 / 20</div>
+      </div>
+    </div>
+    <button id="favoritesClose" class="closeCircle" aria-label="Cerrar favoritos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m7 7 10 10M17 7 7 17"/></svg>
+    </button>
+  </div>
+  <div id="favoriteRail" class="favoriteRail"></div>
+  <div id="favoritesDots" class="favoritesDots"></div>
+</section>
+
+<div id="filterOverlay" class="overlay">
+  <section class="filterSheet glassStrong">
+    <div class="filterHead">
+      <div class="filterTitle">Filtrar</div>
+      <button id="filterClose" class="closeCircle glass" aria-label="Cerrar filtros">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m7 7 10 10M17 7 7 17"/></svg>
+      </button>
+    </div>
+    <div class="filterGroup">
+      <div class="filterGroupTitle">VIBRA</div>
+      <div id="filterVibes" class="filterChoices"></div>
+    </div>
+    <div class="filterGroup">
+      <div class="filterGroupTitle">TIPO DE PRENDA</div>
+      <div id="filterTypes" class="filterChoices"></div>
+    </div>
+  </section>
+</div>
+
+<div id="workingVeil" class="workingVeil"><div id="workingPill" class="workingPill glassStrong">Procesando…</div></div>
+<div id="toast" class="toast"></div>
+
+<script>
+(() => {
+  "use strict";
+
+  const CONFIG = Object.freeze({
+    bridgeSource: "MODAPOP_IFRAME",
+    acceptedParentSources: ["MODAPOP_WIX", "MODAPOP_WIX"],
+    maxFavorites: 20,
+    maxProductsPerVibe: 20,
+    favoriteAutoCloseMs: 5000,
+    searchDebounceMs: 180,
+    swipeThreshold: 54,
+    swipeDominance: 1.18,
+    impressionThreshold: 0.55,
+    defaultProductType: "Vestidos",
+    cartCatalogAppId: "215238eb-22a5-4c36-9e7b-e7c08025e04e",
+    inventoryFreshnessMs: 60 * 1000,
+    supplyValidationTimeoutMs: 1400,
+    lowStockThreshold: 4,
+    defaultCheckoutMode: "DEFAULT_LOCATION_NATIVE",
+    supportedCheckoutModes: ["DEFAULT_LOCATION_NATIVE", "MULTI_LOCATION_CUSTOM"],
+    exposeSupplierSecretsToClient: false
+  });
+
+  const VIBES = Object.freeze([
+    {id:"late",name:"Noches Largas",image:"https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=800&q=88"},
+    {id:"chill",name:"Días Tranquilos",image:"https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=800&q=88"},
+    {id:"quick",name:"Rápido y Fácil",image:"https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=800&q=88"},
+    {id:"sun",name:"Baño de Sol",image:"https://images.unsplash.com/photo-1524250502761-1ac6f2e30d43?auto=format&fit=crop&w=800&q=88"}
+  ]);
+
+  const PRODUCT_TYPES = Object.freeze(["Todos","Vestidos","Tops","Conjuntos","Enterizos"]);
+
+  const DELIVERY_METHODS = Object.freeze([
+    {id:"pickup",title:"Recoge en tienda",eta:"Local",description:"Compra en línea y recoge localmente cuando confirmemos que tu pedido está listo.",icon:"pin"},
+    {id:"fast",title:"Entrega rápida",eta:"24–48 h",description:"Productos elegibles se procesan con prioridad para una entrega estimada de 24 a 48 horas.",icon:"truck"},
+    {id:"ship",title:"Envíos",eta:"14–21 días",description:"Productos conectados a nuestra red de suministro pueden requerir 14 a 21 días, sujetos a disponibilidad.",icon:"globe"},
+    {id:"reserve",title:"Reserva el lanzamiento",eta:"Sé la primera",description:"Registra tu interés antes del lanzamiento. La reserva no procesa un pago inmediato.",icon:"spark"}
+  ]);
+
+  const DEMO_PHOTOS = Object.freeze([
+    "photo-1566174053879-31528523f8ae","photo-1595777457583-95e059d581b8","photo-1515886657613-9f3515b0c78f",
+    "photo-1539109136881-3be0616acf4b","photo-1509631179647-0177331693ae","photo-1490481651871-ab68de25d43d",
+    "photo-1529139574466-a303027c1d8b","photo-1525507119028-ed4c629a60a3","photo-1551488831-00ddcb6c6bd3",
+    "photo-1485230895905-ec40ba36b9bc","photo-1515372039744-b8f02a3ae446","photo-1523381210434-271e8be1f52b",
+    "photo-1534528741775-53994a69daeb","photo-1517841905240-472988babdf9","photo-1558769132-cb1aea458c5e",
+    "photo-1506629082955-511b1aa562c8","photo-1521572163474-6864f9cf17ab","photo-1496747611176-843222e1e57c",
+    "photo-1485968579580-b6d095142e6e","photo-1542291026-7eec264c27ff"
+  ]);
+
+  const DEMO_NAMES = Object.freeze([
+    "Vestido Eclipse","Vestido Midnight","Conjunto Soft","Top Aura","Enterizo City",
+    "Vestido Arena","Conjunto Noir","Vestido Luna","Top Downtown","Enterizo Clean",
+    "Vestido Sunset","Conjunto Weekend","Vestido Brisa","Top Essential","Enterizo Golden",
+    "Vestido After","Set Minimal","Vestido Easy","Top Calm","Enterizo Light"
+  ]);
+
+  const $ = id => document.getElementById(id);
+  const qs = (selector,root=document) => root.querySelector(selector);
+  const qsa = (selector,root=document) => [...root.querySelectorAll(selector)];
+
+  function createId(){
+    if(window.crypto?.randomUUID)return window.crypto.randomUUID();
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+
+  function getOrCreateLocalId(key){
+    try{
+      const current=localStorage.getItem(key);
+      if(current)return current;
+      const next=createId();
+      localStorage.setItem(key,next);
+      return next;
+    }catch{
+      return createId();
+    }
+  }
+
+  function getOrCreateSessionId(){
+    try{
+      const current=sessionStorage.getItem("modapop-session-id");
+      if(current)return current;
+      const next=createId();
+      sessionStorage.setItem("modapop-session-id",next);
+      return next;
+    }catch{
+      return createId();
+    }
+  }
+
+  function readFavorites(){
+    try{
+      const parsed=JSON.parse(localStorage.getItem("modapop-favorites")||"[]");
+      return Array.isArray(parsed)?parsed.map(String).slice(0,CONFIG.maxFavorites):[];
+    }catch{
+      return [];
+    }
+  }
+
+  function saveFavorites(){
+    try{
+      localStorage.setItem("modapop-favorites",JSON.stringify([...state.favorites]));
+    }catch{}
+  }
+
+  function parentOriginFromReferrer(){
+    try{
+      if(!document.referrer)return "*";
+      return new URL(document.referrer).origin;
+    }catch{
+      return "*";
+    }
+  }
+
+  const params=new URLSearchParams(location.search);
+
+  const state={
+    products:createDemoCatalog(),
+    activeVibe:"late",
+    selectedType:"Todos",
+    searchQuery:"",
+    activeProduct:null,
+    activeProductIndex:0,
+    activeMediaIndex:0,
+    selectedSize:"",
+    selectedVariantId:null,
+    selectedDeliveryMethod:"",
+    homeDeliveryOpen:null,
+    detailDeliveryOpen:null,
+    favorites:new Set(readFavorites()),
+    favoriteTimer:null,
+    reviewFeatureEnabled:false,
+    cart:{items:[],count:0,total:0},
+    pendingCartMutation:null,
+    pendingPurchaseIntent:null,
+    purchaseValidationTimer:null,
+    productOpenedAt:null,
+    impressionsSeen:new Set(),
+    impressionObserver:null,
+    searchTimer:null,
+    touchStartX:0,
+    touchStartY:0,
+    bridge:{ready:false,targetOrigin:parentOriginFromReferrer(),queuedMessages:[]},
+    identity:{
+      guestId:getOrCreateLocalId("modapop-guest-id"),
+      sessionId:getOrCreateSessionId(),
+      visitorId:null,
+      customerId:null,
+      memberId:null
+    },
+    context:{
+      sellerId:"MODAPOP",
+      storefrontId:"MODAPOP",
+      storefrontSlug:params.get("store")||params.get("storefront")||"",
+      campaign:params.get("utm_campaign")||"",
+      source:params.get("utm_source")||document.referrer||"direct",
+      medium:params.get("utm_medium")||"",
+      content:params.get("utm_content")||""
+    },
+    brand:{
+      name:"MODAPOP",
+      monogram:"CM",
+            publicName:"ModaPop"
+    },
+    supply:{
+      enabled:true,
+      checkoutMode:CONFIG.defaultCheckoutMode,
+      defaultLocationId:null,
+      locations:new Map(),
+      inventoryItems:new Map(),
+      inventoryByVariant:new Map(),
+      productSupplyUpdatedAt:new Map(),
+      supportsLocationInventory:false,
+      supportsReservations:false,
+      supportsPreorder:false,
+      supportsCustomMultiLocationCheckout:false,
+      opaqueSupplyRefs:new Map(),
+      lastGlobalSyncAt:null
+    }
+  };
+
+  function unsplash(id,width=1000,quality=86){
+    return `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${width}&q=${quality}`;
+  }
+
+  function createDemoCatalog(){
+    const out=[];
+    VIBES.forEach((vibe,vibeIndex)=>{
+      for(let i=0;i<CONFIG.maxProductsPerVibe;i+=1){
+        const photo=DEMO_PHOTOS[(i+vibeIndex*4)%DEMO_PHOTOS.length];
+        const types=["Vestidos","Tops","Conjuntos","Enterizos"];
+        out.push({
+          id:`demo-${vibe.id}-${i+1}`,
+          masterProductId:null,
+          source:"demo",
+          name:DEMO_NAMES[i%DEMO_NAMES.length],
+          productType:types[i%types.length],
+          vibeId:vibe.id,
+          vibes:[vibe.id],
+          price:69900+(i%7)*10000,
+          media:[unsplash(photo,1200,88),unsplash(photo,1000,84),unsplash(photo,850,80)],
+          sizes:["XS","S","M","L","XL"],
+          variants:[],
+          deliveryModes:i%4===0?["pickup","fast","ship"]:i%3===0?["fast","ship"]:["ship"],
+          inventoryMode:i%4===0?"STOCKED":i%2===0?"PARTNER":"ON_DEMAND",
+          inventoryStatus:"AVAILABLE",
+          inventoryQuantity:null,
+          fulfillmentConfidence:i%4===0?98:i%2===0?92:82,
+          supplyRef:null,
+          defaultLocationId:null,
+          inventoryItems:[],
+          supplySyncAt:null,
+          description:"Una pieza seleccionada para construir el look completo de manera rápida, visual y sencilla.",
+          reviews:[]
+        });
+      }
+    });
+    return out;
+  }
+
+  function escapeHtml(value){
+    return String(value??"")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function money(value){
+    return new Intl.NumberFormat("es-CO",{
+      style:"currency",
+      currency:"COP",
+      maximumFractionDigits:0
+    }).format(Number(value||0));
+  }
+
+  function heartIcon(filled=false){
+    return `<svg viewBox="0 0 24 24" fill="${filled?"currentColor":"none"}" stroke="currentColor"><path d="M20.3 5.7a5.2 5.2 0 0 0-7.4 0L12 6.6l-.9-.9a5.2 5.2 0 0 0-7.4 7.4L12 21l8.3-7.9a5.2 5.2 0 0 0 0-7.4Z"/></svg>`;
+  }
+
+  function deliveryIcon(type){
+    if(type==="pin")return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>`;
+    if(type==="truck")return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 6h11v10H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>`;
+    if(type==="globe")return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 4 6 4 9s-1 6-4 9M12 3c-3 3-4 6-4 9s1 6 4 9"/></svg>`;
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"/><path d="m19 15 .9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9L19 15Z"/></svg>`;
+  }
+
+  function normalizeVibe(value){
+    const v=String(value||"").trim().toLowerCase();
+    if(["late","noches largas","night","night out"].includes(v))return "late";
+    if(v.includes("tranquil")||v.includes("chill"))return "chill";
+    if(v.includes("rápido")||v.includes("rapido")||v.includes("quick"))return "quick";
+    if(v.includes("sol")||v.includes("sun"))return "sun";
+    return "late";
+  }
+
+  function normalizeVariant(variant){
+    const options=variant.options||variant.choices||{};
+    return{
+      ...variant,
+      id:variant.id||variant._id||variant.variantId||"",
+      productId:variant.productId||variant.product_id||null,
+      size:variant.size||variant.name||options.Size||options.size||"",
+      color:variant.color||options.Color||options.color||"",
+      sku:variant.sku||variant.stockKeepingUnit||"",
+      price:Number(variant.price?.amount??variant.price??0),
+      inStock:variant.inStock!==false&&variant.available!==false&&variant.inventoryStatus!=="OUT_OF_STOCK",
+      supplyRef:variant.supplyRef||variant.supply_ref||null
+    };
+  }
+
+  function normalizeStoresLocation(location){
+    const defaultLocation=location.defaultLocation??location.default??location.isDefault??false;
+    return{
+      id:location.id||location._id||location.locationId||location.storesLocationId||"",
+      wixLocationId:location.wixLocationId||location.wix_location_id||null,
+      name:location.name||location.displayName||"Ubicación",
+      defaultLocation:!!defaultLocation,
+      active:location.active!==false&&location.status!=="INACTIVE",
+      country:location.country||location.address?.country||null,
+      city:location.city||location.address?.city||null,
+      locationType:location.locationType||location.type||"INVENTORY",
+      fulfillmentPriority:Number(location.fulfillmentPriority??location.priority??100),
+      publicLabel:location.publicLabel||null
+    };
+  }
+
+  function normalizeInventoryItem(item){
+    const quantityRaw=item.quantity??item.stock?.quantity??item.inventory?.quantity??null;
+    const quantity=quantityRaw==null?null:Number(quantityRaw);
+    const trackingMethod=String(item.trackingMethod||item.tracking_method||(quantityRaw!=null?"QUANTITY":"IN_STOCK"));
+    const availabilityStatus=String(item.availabilityStatus||item.availability_status||item.status||"UNKNOWN");
+    const preorder=item.preorder||item.preorderSettings||item.preorder_settings||null;
+    const locationId=item.locationId||item.location_id||item.storesLocationId||null;
+    const variantId=item.variantId||item.variant_id||null;
+    return{
+      id:item.id||item._id||item.inventoryItemId||`${variantId||"variant"}:${locationId||"location"}`,
+      productId:item.productId||item.product_id||null,
+      variantId,
+      locationId,
+      quantity:Number.isFinite(quantity)?quantity:null,
+      trackingMethod,
+      availabilityStatus,
+      inStock:item.inStock??item.in_stock??null,
+      preorder:preorder?{
+        enabled:preorder.enabled??preorder.preorderEnabled??true,
+        limit:preorder.limit??preorder.preorderLimit??null,
+        message:preorder.message||null
+      }:null,
+      updatedAt:item.updatedAt||item.updatedDate||item.updated_date||null,
+      supplyRef:item.supplyRef||item.supply_ref||null
+    };
+  }
+
+  function normalizeProduct(product){
+    const media=Array.isArray(product.media)
+      ?product.media.map(item=>typeof item==="string"?item:item.url||item.src||item.image?.url||item.imageUrl||"").filter(Boolean)
+      :[product.image||product.imageUrl||""].filter(Boolean);
+    const variants=Array.isArray(product.variants)?product.variants.map(normalizeVariant):[];
+    const sizes=[...new Set([...(Array.isArray(product.sizes)?product.sizes:[]),...variants.map(v=>v.size).filter(Boolean)])];
+    const vibeId=normalizeVibe(product.vibeId||product.vibe||product.vibes?.[0]);
+    const inventoryItems=Array.isArray(product.inventoryItems)?product.inventoryItems.map(normalizeInventoryItem):[];
+
+    return{
+      id:product.id||product._id||createId(),
+      masterProductId:product.masterProductId||product.master_product_id||null,
+      source:product.source||"wix",
+      name:product.name||"Producto",
+      productType:product.productType||product.type||product.category||CONFIG.defaultProductType,
+      vibeId,
+      vibes:[vibeId],
+      price:Number(product.price?.amount??product.price??0),
+      media,
+      sizes,
+      variants,
+      deliveryModes:Array.isArray(product.deliveryModes)&&product.deliveryModes.length?product.deliveryModes:["ship"],
+      inventoryMode:product.inventoryMode||product.inventory_mode||null,
+      inventoryStatus:product.inventoryStatus||product.inventory_status||null,
+      inventoryQuantity:product.inventoryQuantity??product.quantity??null,
+      fulfillmentConfidence:product.fulfillmentConfidence??product.fulfillment_confidence??null,
+      supplyRef:product.supplyRef||product.supply_ref||null,
+      defaultLocationId:product.defaultLocationId||product.default_location_id||null,
+      inventoryItems,
+      supplySyncAt:product.supplySyncAt||product.supply_sync_at||null,
+      description:product.description||product.detail||"",
+      reviews:Array.isArray(product.reviews)?product.reviews:[]
+    };
+  }
+
+  /* ================================================================
+     SUPPLY CLOUD / WIX CATALOG V3 CLIENT BOUNDARY
+     ----------------------------------------------------------------
+     Wix Catalog V3 inventory truth is represented as:
+     PRODUCT -> VARIANT -> INVENTORY ITEM -> LOCATION.
+
+     Every inventory record is keyed by the unique variantId/locationId
+     combination. The browser receives only sellability, quantity,
+     location identifiers, and opaque supply references.
+
+     Supplier credentials, supplier costs, source URLs, procurement APIs,
+     margin calculations, sourcing contacts and warehouse secrets must
+     remain on the Wix backend / Supply Cloud and must never be posted into
+     this HTML element.
+     ================================================================ */
+
+  function inventoryPairKey(variantId,locationId){
+    return `${String(variantId||"")}|${String(locationId||"")}`;
+  }
+
+  function inventoryItemKey(item){
+    return item.id||inventoryPairKey(item.variantId,item.locationId);
+  }
+
+  function upsertStoresLocations(locations=[]){
+    locations.map(normalizeStoresLocation).forEach(location=>{
+      if(!location.id)return;
+      state.supply.locations.set(String(location.id),location);
+      if(location.defaultLocation)state.supply.defaultLocationId=String(location.id);
+    });
+  }
+
+  function rebuildInventoryByVariant(){
+    state.supply.inventoryByVariant.clear();
+    state.supply.inventoryItems.forEach(item=>{
+      if(!item.variantId)return;
+      const key=String(item.variantId);
+      const bucket=state.supply.inventoryByVariant.get(key)||[];
+      bucket.push(item);
+      state.supply.inventoryByVariant.set(key,bucket);
+    });
+  }
+
+  function upsertInventoryItems(items=[],{replaceForProductId=null}={}){
+    if(replaceForProductId){
+      [...state.supply.inventoryItems.entries()].forEach(([key,item])=>{
+        if(String(item.productId||"")===String(replaceForProductId)){
+          state.supply.inventoryItems.delete(key);
+        }
+      });
+    }
+
+    items.map(normalizeInventoryItem).forEach(item=>{
+      if(!item.variantId||!item.locationId)return;
+      const key=inventoryPairKey(item.variantId,item.locationId);
+      state.supply.inventoryItems.set(key,item);
+    });
+
+    rebuildInventoryByVariant();
+  }
+
+  function inventoryItemsForVariant(variantId){
+    return state.supply.inventoryByVariant.get(String(variantId||""))||[];
+  }
+
+  function locationForId(locationId){
+    return state.supply.locations.get(String(locationId||""))||null;
+  }
+
+  function inventoryItemSellable(item){
+    if(!item)return false;
+    const status=String(item.availabilityStatus||"").toUpperCase();
+    const preorderEnabled=!!item.preorder?.enabled;
+
+    if(status.includes("OUT_OF_STOCK")&&!preorderEnabled)return false;
+    if(status.includes("UNAVAILABLE")&&!preorderEnabled)return false;
+
+    if(item.trackingMethod.toUpperCase().includes("QUANTITY")&&item.quantity!=null){
+      return item.quantity>0||preorderEnabled;
+    }
+
+    if(item.inStock===false&&!preorderEnabled)return false;
+    return status!=="OUT_OF_STOCK"||preorderEnabled;
+  }
+
+  function inventoryItemPreorderOnly(item){
+    if(!item?.preorder?.enabled)return false;
+    if(item.quantity!=null)return item.quantity<=0;
+    return item.inStock===false||String(item.availabilityStatus||"").toUpperCase().includes("PREORDER");
+  }
+
+  function variantInventorySummary(variantId){
+    const items=inventoryItemsForVariant(variantId).filter(item=>{
+      const location=locationForId(item.locationId);
+      return !location||location.active;
+    });
+
+    if(!items.length){
+      return{
+        hasLocationData:false,
+        sellable:null,
+        quantity:null,
+        preorderOnly:false,
+        lowStock:false,
+        candidateLocationIds:[],
+        preferredLocationId:null,
+        defaultLocationItem:null,
+        defaultLocationQuantity:null
+      };
+    }
+
+    const sellableItems=items.filter(inventoryItemSellable);
+    const quantityValues=sellableItems.map(item=>item.quantity).filter(Number.isFinite);
+    const quantity=quantityValues.length?quantityValues.reduce((sum,value)=>sum+value,0):null;
+    const preorderOnly=sellableItems.length>0&&sellableItems.every(inventoryItemPreorderOnly);
+    const lowStock=quantity!=null&&quantity>0&&quantity<=CONFIG.lowStockThreshold;
+    const defaultLocationItem=items.find(item=>String(item.locationId)===String(state.supply.defaultLocationId||""))||null;
+
+    const ranked=[...sellableItems].sort((a,b)=>{
+      const aLoc=locationForId(a.locationId);
+      const bLoc=locationForId(b.locationId);
+      const aDefault=String(a.locationId)===String(state.supply.defaultLocationId||"")?0:1;
+      const bDefault=String(b.locationId)===String(state.supply.defaultLocationId||"")?0:1;
+
+      if(aDefault!==bDefault)return aDefault-bDefault;
+
+      const priorityDiff=
+        Number(aLoc?.fulfillmentPriority??100)-
+        Number(bLoc?.fulfillmentPriority??100);
+
+      if(priorityDiff!==0)return priorityDiff;
+      return Number(b.quantity??0)-Number(a.quantity??0);
+    });
+
+    return{
+      hasLocationData:true,
+      sellable:sellableItems.length>0,
+      quantity,
+      preorderOnly,
+      lowStock,
+      candidateLocationIds:ranked.map(item=>String(item.locationId)),
+      preferredLocationId:ranked[0]?.locationId||null,
+      defaultLocationItem,
+      defaultLocationQuantity:defaultLocationItem?.quantity??null
+    };
+  }
+
+  function isSupplySnapshotFresh(productId){
+    const updated=state.supply.productSupplyUpdatedAt.get(String(productId||""));
+    if(!updated)return false;
+    return Date.now()-updated<CONFIG.inventoryFreshnessMs;
+  }
+
+  function requestSupplyContext(){
+    postRaw("REQUEST_SUPPLY_CONTEXT",{
+      storefrontId:state.context.storefrontId,
+      storefrontSlug:state.context.storefrontSlug,
+      requestedModel:"CATALOG_V3_VARIANT_LOCATION"
+    });
+  }
+
+  function requestProductSupply(product,reason="product_view"){
+    if(!product||product.source==="demo")return;
+    post("REQUEST_PRODUCT_SUPPLY",{
+      productId:product.id,
+      masterProductId:product.masterProductId,
+      reason,
+      includeLocations:true,
+      includeInventoryItems:true
+    });
+  }
+
+  function requestVariantInventory(product,variantId,reason="size_select"){
+    if(!product||!variantId||product.source==="demo")return;
+    post("REQUEST_VARIANT_INVENTORY",{
+      productId:product.id,
+      variantId,
+      reason,
+      includeLocations:true
+    });
+  }
+
+  function supplyIntentForSelection(product,variantId){
+    const summary=variantInventorySummary(variantId);
+    const checkoutMode=state.supply.checkoutMode||CONFIG.defaultCheckoutMode;
+    const nativeDefaultOnly=checkoutMode==="DEFAULT_LOCATION_NATIVE";
+
+    return{
+      model:"CATALOG_V3_VARIANT_LOCATION",
+      checkoutMode,
+      productId:product?.id||null,
+      variantId:variantId||null,
+      supplyRef:product?.supplyRef||null,
+      preferredLocationId:summary.preferredLocationId,
+      candidateLocationIds:summary.candidateLocationIds,
+      defaultLocationId:state.supply.defaultLocationId,
+      defaultLocationQuantity:summary.defaultLocationQuantity,
+      locationDataAvailable:summary.hasLocationData,
+      sellableAcrossLocations:summary.sellable,
+      preorderOnly:summary.preorderOnly,
+      nativeCheckoutUsesDefaultLocation:nativeDefaultOnly
+    };
+  }
+
+  function selectedVariantInventorySummary(){
+    return state.selectedVariantId
+      ?variantInventorySummary(state.selectedVariantId)
+      :null;
+  }
+
+  function renderInventoryHint(){
+    const hint=$("inventoryHint");
+    const textNode=$("inventoryHintText");
+
+    if(!hint||!textNode||!state.selectedVariantId){
+      hint?.classList.remove("show","low","preorder","out");
+      return;
+    }
+
+    const summary=variantInventorySummary(state.selectedVariantId);
+    hint.classList.remove("show","low","preorder","out");
+
+    if(!summary.hasLocationData)return;
+
+    hint.classList.add("show");
+
+    if(!summary.sellable){
+      hint.classList.add("out");
+      textNode.textContent="Sin disponibilidad confirmada.";
+      return;
+    }
+
+    if(summary.preorderOnly){
+      hint.classList.add("preorder");
+      textNode.textContent="Disponible por pedido anticipado.";
+      return;
+    }
+
+    if(summary.lowStock){
+      hint.classList.add("low");
+      textNode.textContent="Pocas unidades disponibles.";
+      return;
+    }
+
+    textNode.textContent="Disponibilidad confirmada.";
+  }
+
+  function applySupplyContext(payload={}){
+    state.supply.enabled=payload.enabled!==false;
+
+    const requestedMode=
+      payload.checkoutMode||
+      payload.inventoryCheckoutMode||
+      state.supply.checkoutMode;
+
+    state.supply.checkoutMode=
+      CONFIG.supportedCheckoutModes.includes(requestedMode)
+        ?requestedMode
+        :CONFIG.defaultCheckoutMode;
+
+    state.supply.defaultLocationId=
+      payload.defaultLocationId||
+      state.supply.defaultLocationId;
+
+    state.supply.supportsLocationInventory=
+      payload.supportsLocationInventory!==false;
+
+    state.supply.supportsReservations=
+      !!payload.supportsReservations;
+
+    state.supply.supportsPreorder=
+      !!payload.supportsPreorder;
+
+    state.supply.supportsCustomMultiLocationCheckout=
+      !!payload.supportsCustomMultiLocationCheckout;
+
+    state.supply.lastGlobalSyncAt=
+      payload.lastSyncAt||
+      state.supply.lastGlobalSyncAt;
+
+    if(Array.isArray(payload.locations)){
+      upsertStoresLocations(payload.locations);
+    }
+
+    if(Array.isArray(payload.inventoryItems)){
+      upsertInventoryItems(payload.inventoryItems);
+    }
+
+    track("SUPPLY_CONTEXT_READY",null,{
+      meta:{
+        checkoutMode:state.supply.checkoutMode,
+        locationCount:state.supply.locations.size,
+        supportsLocationInventory:state.supply.supportsLocationInventory
+      }
+    });
+  }
+
+  function applyStoresLocations(payload={}){
+    const locations=payload.locations||payload.items||[];
+    if(!Array.isArray(locations))return;
+
+    upsertStoresLocations(locations);
+
+    if(payload.defaultLocationId){
+      state.supply.defaultLocationId=payload.defaultLocationId;
+    }
+
+    track("STORES_LOCATIONS_SYNC",null,{
+      meta:{count:locations.length}
+    });
+  }
+
+  function applyProductSupply(payload={}){
+    const productId=payload.productId||payload.id;
+    if(!productId)return;
+
+    if(Array.isArray(payload.locations)){
+      upsertStoresLocations(payload.locations);
+    }
+
+    if(Array.isArray(payload.inventoryItems)){
+      upsertInventoryItems(
+        payload.inventoryItems,
+        {replaceForProductId:productId}
+      );
+    }
+
+    state.supply.productSupplyUpdatedAt.set(
+      String(productId),
+      Date.now()
+    );
+
+    state.supply.supportsLocationInventory=true;
+
+    const productIndex=
+      state.products.findIndex(
+        product=>String(product.id)===String(productId)
+      );
+
+    if(productIndex>=0){
+      const current=state.products[productIndex];
+
+      state.products[productIndex]=normalizeProduct({
+        ...current,
+        inventoryMode:
+          payload.inventoryMode??
+          current.inventoryMode,
+        inventoryStatus:
+          payload.inventoryStatus??
+          current.inventoryStatus,
+        fulfillmentConfidence:
+          payload.fulfillmentConfidence??
+          current.fulfillmentConfidence,
+        supplyRef:
+          payload.supplyRef??
+          current.supplyRef,
+        defaultLocationId:
+          payload.defaultLocationId??
+          current.defaultLocationId,
+        supplySyncAt:
+          payload.supplySyncAt||
+          payload.updatedAt||
+          current.supplySyncAt
+      });
+    }
+
+    if(
+      state.activeProduct&&
+      String(state.activeProduct.id)===String(productId)
+    ){
+      state.activeProduct=
+        findProduct(productId)||
+        state.activeProduct;
+
+      renderSizes();
+      renderInventoryHint();
+    }
+
+    track(
+      "PRODUCT_SUPPLY_SYNC",
+      findProduct(productId),
+      {
+        meta:{
+          inventoryItemCount:
+            Array.isArray(payload.inventoryItems)
+              ?payload.inventoryItems.length
+              :0,
+          locationCount:
+            Array.isArray(payload.locations)
+              ?payload.locations.length
+              :0
+        }
+      }
+    );
+  }
+
+  function applyVariantInventory(payload={}){
+    const productId=
+      payload.productId||
+      state.activeProduct?.id;
+
+    const variantId=payload.variantId;
+
+    if(Array.isArray(payload.locations)){
+      upsertStoresLocations(payload.locations);
+    }
+
+    if(Array.isArray(payload.inventoryItems)){
+      upsertInventoryItems(payload.inventoryItems);
+    }
+
+    if(productId){
+      state.supply.productSupplyUpdatedAt.set(
+        String(productId),
+        Date.now()
+      );
+    }
+
+    renderSizes();
+    renderInventoryHint();
+
+    track(
+      "VARIANT_INVENTORY_SYNC",
+      findProduct(productId),
+      {
+        variantId,
+        meta:{
+          inventoryItemCount:
+            Array.isArray(payload.inventoryItems)
+              ?payload.inventoryItems.length
+              :0
+        }
+      }
+    );
+  }
+
+  function applyInventoryPatch(payload={}){
+    const items=
+      payload.inventoryItems||
+      payload.items||
+      [];
+
+    if(!Array.isArray(items))return;
+
+    upsertInventoryItems(items);
+
+    const productIds=[
+      ...new Set(
+        items
+          .map(item=>item.productId)
+          .filter(Boolean)
+          .map(String)
+      )
+    ];
+
+    productIds.forEach(id=>{
+      state.supply.productSupplyUpdatedAt.set(
+        id,
+        Date.now()
+      );
+    });
+
+    if(state.activeProduct){
+      renderSizes();
+      renderInventoryHint();
+    }
+
+    track(
+      "INVENTORY_PATCH_APPLIED",
+      state.activeProduct,
+      {meta:{count:items.length}}
+    );
+  }
+
+  function applyLocationPatch(payload={}){
+    const locations=
+      payload.locations||
+      payload.items||
+      [];
+
+    if(!Array.isArray(locations))return;
+
+    upsertStoresLocations(locations);
+
+    if(payload.defaultLocationId){
+      state.supply.defaultLocationId=
+        payload.defaultLocationId;
+    }
+
+    rebuildInventoryByVariant();
+
+    if(state.activeProduct){
+      renderSizes();
+      renderInventoryHint();
+    }
+  }
+
+  function getVibe(id){
+    return VIBES.find(v=>v.id===id)||VIBES[0];
+  }
+
+  function findProduct(id){
+    return state.products.find(
+      product=>String(product.id)===String(id)
+    )||null;
+  }
+
+  function currentCartCount(){
+    const explicit=Number(state.cart.count);
+    if(Number.isFinite(explicit))return explicit;
+
+    return state.cart.items.reduce(
+      (sum,item)=>sum+Number(item.quantity||1),
+      0
+    );
+  }
+
+  function isFavorite(productId){
+    return state.favorites.has(String(productId));
+  }
+
+  function setBodyLock(){
+    const locked=
+      $("cartOverlay").classList.contains("open")||
+      $("filterOverlay").classList.contains("open")||
+      $("utilityBackdrop").classList.contains("open");
+
+    document.body.classList.toggle(
+      "locked",
+      locked
+    );
+  }
+
+  function showToast(text){
+    const toast=$("toast");
+    toast.textContent=text;
+    toast.classList.add("show");
+
+    clearTimeout(showToast.timer);
+
+    showToast.timer=setTimeout(
+      ()=>toast.classList.remove("show"),
+      1600
+    );
+  }
+
+  function showWorking(text="Procesando…"){
+    $("workingPill").textContent=text;
+    $("workingVeil").classList.add("open");
+  }
+
+  function hideWorking(){
+    $("workingVeil").classList.remove("open");
+  }
+
+  function postRaw(type,payload={}){
+    const message={
+      source:CONFIG.bridgeSource,
+      type,
+      payload
+    };
+        const targetOrigin=
+      state.bridge.targetOrigin||
+      "*";
+
+    try{
+      window.parent.postMessage(
+        message,
+        targetOrigin
+      );
+    }catch{
+      window.parent.postMessage(
+        message,
+        "*"
+      );
+    }
+  }
+
+  function post(
+    type,
+    payload={},
+    {queueUntilReady=false}={}
+  ){
+    if(
+      queueUntilReady&&
+      !state.bridge.ready
+    ){
+      state.bridge.queuedMessages.push({
+        type,
+        payload
+      });
+      return;
+    }
+
+    postRaw(type,payload);
+  }
+
+  function flushBridgeQueue(){
+    const queued=[
+      ...state.bridge.queuedMessages
+    ];
+
+    state.bridge.queuedMessages.length=0;
+
+    queued.forEach(message=>{
+      postRaw(
+        message.type,
+        message.payload
+      );
+    });
+  }
+
+  function track(
+    eventType,
+    product=null,
+    extra={}
+  ){
+    const item=
+      product||
+      state.activeProduct||
+      null;
+
+    const vibe=
+      item
+        ?getVibe(item.vibeId)
+        :null;
+
+    const event={
+      eventId:createId(),
+      eventType,
+      occurredAt:new Date().toISOString(),
+
+      guestId:state.identity.guestId,
+      sessionId:state.identity.sessionId,
+      visitorId:state.identity.visitorId,
+      customerId:state.identity.customerId,
+      memberId:state.identity.memberId,
+
+      sellerId:state.context.sellerId,
+      storefrontId:state.context.storefrontId,
+      storefrontSlug:state.context.storefrontSlug,
+
+      campaign:state.context.campaign,
+      source:state.context.source,
+      medium:state.context.medium,
+      content:state.context.content,
+
+      page:
+        state.activeProduct
+          ?"product"
+          :"home",
+
+      productId:item?.id||null,
+      masterProductId:item?.masterProductId||null,
+      variantId:
+        extra.variantId||
+        state.selectedVariantId||
+        null,
+
+      productType:item?.productType||null,
+      vibeId:item?.vibeId||null,
+      vibeName:vibe?.name||null,
+      price:item?.price??null,
+
+      selectedSize:
+        state.selectedSize||
+        null,
+
+      deliveryMethod:
+        state.selectedDeliveryMethod||
+        null,
+
+      inventoryMode:
+        item?.inventoryMode||
+        null,
+
+      inventoryStatus:
+        item?.inventoryStatus||
+        null,
+
+      inventoryQuantity:
+        item?.inventoryQuantity??
+        null,
+
+      fulfillmentConfidence:
+        item?.fulfillmentConfidence??
+        null,
+
+      supplyRef:
+        item?.supplyRef||
+        null,
+
+      inventoryCheckoutMode:
+        state.supply.checkoutMode,
+
+      defaultLocationId:
+        state.supply.defaultLocationId,
+
+      selectedSupply:
+        state.selectedVariantId
+          ?supplyIntentForSelection(
+              item,
+              state.selectedVariantId
+            )
+          :null,
+
+      supplySyncAt:
+        item?.supplySyncAt||
+        null,
+
+      value:
+        extra.value??
+        null,
+
+      meta:
+        extra.meta||
+        {}
+    };
+
+    post(
+      "TRACK_EVENT",
+      event,
+      {queueUntilReady:true}
+    );
+  }
+
+  function applyBrand(){
+    qsa("[data-brand-name]").forEach(
+      node=>{
+        node.textContent=
+          state.brand.name||
+          "MODAPOP";
+      }
+    );
+
+    document.title=
+      state.brand.publicName||
+      "ModaPop";
+  }
+
+  function renderVibeHero(){
+    $("vibeHero").innerHTML=
+      VIBES.map(vibe=>`
+        <button
+          class="vibeCard ${state.activeVibe===vibe.id?"active":""}"
+          data-vibe="${vibe.id}"
+          aria-label="${escapeHtml(vibe.name)}"
+        >
+          <img
+            src="${escapeHtml(vibe.image)}"
+            alt="${escapeHtml(vibe.name)}"
+            loading="eager"
+          >
+          <span class="vibeCardLabel">
+            ${escapeHtml(vibe.name)}
+          </span>
+        </button>
+      `).join("");
+
+    qsa("[data-vibe]").forEach(button=>{
+      button.onclick=()=>{
+        state.activeVibe=
+          button.dataset.vibe;
+
+        track(
+          "VIBE_SELECT",
+          null,
+          {
+            meta:{
+              vibeId:state.activeVibe,
+              surface:"hero"
+            }
+          }
+        );
+
+        renderHome();
+
+        requestAnimationFrame(()=>{
+          qs(
+            `[data-vibe-section="${state.activeVibe}"]`
+          )?.scrollIntoView({
+            behavior:"smooth",
+            block:"start"
+          });
+        });
+      };
+    });
+  }
+
+  function renderHomeDelivery(){
+    $("homeDeliveryRail").innerHTML=
+      DELIVERY_METHODS.map(method=>`
+        <button
+          class="deliveryCard glass"
+          data-home-delivery="${method.id}"
+        >
+          <div class="deliveryIcon">
+            ${deliveryIcon(method.icon)}
+          </div>
+          <div class="deliveryTitle">
+            ${escapeHtml(method.title)}
+          </div>
+          <div class="deliveryEta">
+            ${escapeHtml(method.eta)}
+          </div>
+        </button>
+      `).join("");
+
+    qsa("[data-home-delivery]").forEach(
+      button=>{
+        button.onclick=()=>{
+          openHomeDeliveryInfo(
+            button.dataset.homeDelivery
+          );
+        };
+      }
+    );
+  }
+
+  function openHomeDeliveryInfo(methodId){
+    const method=
+      DELIVERY_METHODS.find(
+        item=>item.id===methodId
+      );
+
+    if(!method)return;
+
+    state.homeDeliveryOpen=methodId;
+
+    $("homeDeliveryInfoTitle").textContent=
+      method.title;
+
+    $("homeDeliveryInfoText").textContent=
+      method.description;
+
+    $("homeDeliveryInfo").classList.add(
+      "open"
+    );
+
+    track(
+      "DELIVERY_INFO_OPEN",
+      null,
+      {
+        meta:{
+          deliveryMethod:methodId,
+          surface:"home"
+        }
+      }
+    );
+  }
+
+  function closeHomeDeliveryInfo(){
+    if(state.homeDeliveryOpen){
+      track(
+        "DELIVERY_INFO_CLOSE",
+        null,
+        {
+          meta:{
+            deliveryMethod:
+              state.homeDeliveryOpen,
+            surface:"home"
+          }
+        }
+      );
+    }
+
+    state.homeDeliveryOpen=null;
+
+    $("homeDeliveryInfo").classList.remove(
+      "open"
+    );
+  }
+
+  function renderTypeTabs(){
+    $("typeTabs").innerHTML=
+      PRODUCT_TYPES.map(type=>`
+        <button
+          class="typeTab ${state.selectedType===type?"active":""}"
+          data-type="${escapeHtml(type)}"
+        >
+          ${escapeHtml(type)}
+        </button>
+      `).join("");
+
+    qsa("[data-type]").forEach(button=>{
+      button.onclick=()=>{
+        state.selectedType=
+          button.dataset.type;
+
+        track(
+          "TYPE_FILTER",
+          null,
+          {
+            meta:{
+              type:state.selectedType
+            }
+          }
+        );
+
+        renderHome();
+      };
+    });
+  }
+
+  function productMatches(
+    product,
+    vibeId
+  ){
+    if(product.vibeId!==vibeId){
+      return false;
+    }
+
+    if(
+      state.selectedType!=="Todos"&&
+      product.productType!==state.selectedType
+    ){
+      return false;
+    }
+
+    const q=
+      state.searchQuery
+        .trim()
+        .toLowerCase();
+
+    if(!q)return true;
+
+    const haystack=
+      `${product.name} ${product.productType} ${getVibe(product.vibeId).name} ${product.description}`
+        .toLowerCase();
+
+    return haystack.includes(q);
+  }
+
+  function productsForVibe(vibeId){
+    return state.products
+      .filter(
+        product=>
+          productMatches(
+            product,
+            vibeId
+          )
+      )
+      .slice(
+        0,
+        CONFIG.maxProductsPerVibe
+      );
+  }
+
+  function productCardMarkup(product){
+    const favorite=
+      isFavorite(product.id);
+
+    return `
+      <article
+        class="productCard"
+        data-product-card="${escapeHtml(product.id)}"
+      >
+        <div class="productCardMedia">
+          <img
+            src="${escapeHtml(product.media[0]||"")}"
+            alt="${escapeHtml(product.name)}"
+            loading="lazy"
+          >
+          <button
+            class="productHeart ${favorite?"active":""}"
+            data-card-heart="${escapeHtml(product.id)}"
+            aria-label="Favorito"
+          >
+            ${heartIcon(favorite)}
+          </button>
+        </div>
+
+        <div class="productCardInfo">
+          <div class="productCardName">
+            ${escapeHtml(product.name)}
+          </div>
+          <div class="productCardPrice">
+            ${money(product.price)}
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
+  function renderHomeSections(){
+    const order=[
+      state.activeVibe,
+      ...VIBES
+        .map(v=>v.id)
+        .filter(
+          id=>id!==state.activeVibe
+        )
+    ];
+
+    const sections=
+      order.map(vibeId=>{
+        const vibe=getVibe(vibeId);
+        const products=
+          productsForVibe(vibeId);
+
+        if(!products.length)return "";
+
+        return `
+          <section
+            class="productSection"
+            data-vibe-section="${vibeId}"
+          >
+            <div class="productSectionHead">
+              <h2 class="productSectionTitle">
+                ${escapeHtml(vibe.name)}
+              </h2>
+
+              <button
+                class="productSectionLink"
+                data-view-all="${vibeId}"
+              >
+                Ver todo ›
+              </button>
+            </div>
+
+            <div
+              class="productRail"
+              data-product-rail="${vibeId}"
+            >
+              ${products
+                .map(productCardMarkup)
+                .join("")}
+            </div>
+
+            <div class="productDots">
+              <span class="productDot active"></span>
+              <span class="productDot"></span>
+              <span class="productDot"></span>
+            </div>
+          </section>
+        `;
+      }).join("");
+
+    $("homeSections").innerHTML=
+      sections||
+      `<div style="min-height:170px;display:grid;place-items:center;text-align:center;font-size:9px;color:#777">No encontramos productos con esos filtros.</div>`;
+
+    qsa("[data-product-card]").forEach(
+      card=>{
+        card.onclick=event=>{
+          if(
+            event.target.closest(
+              "[data-card-heart]"
+            )
+          ){
+            return;
+          }
+
+          const product=
+            findProduct(
+              card.dataset.productCard
+            );
+
+          if(!product)return;
+
+          track(
+            "PRODUCT_CLICK",
+            product,
+            {
+              meta:{
+                surface:"home"
+              }
+            }
+          );
+
+          openProduct(product);
+        };
+      }
+    );
+
+    qsa("[data-card-heart]").forEach(
+      button=>{
+        button.onclick=event=>{
+          event.stopPropagation();
+
+          toggleFavorite(
+            button.dataset.cardHeart,
+            "home"
+          );
+        };
+      }
+    );
+
+    qsa("[data-view-all]").forEach(
+      button=>{
+        button.onclick=()=>{
+          state.activeVibe=
+            button.dataset.viewAll;
+
+          track(
+            "VIBE_VIEW_ALL",
+            null,
+            {
+              meta:{
+                vibeId:
+                  state.activeVibe
+              }
+            }
+          );
+
+          renderHome();
+        };
+      }
+    );
+
+    qsa("[data-product-rail]").forEach(
+      rail=>{
+        rail.addEventListener(
+          "scroll",
+          ()=>updateRailDots(rail),
+          {passive:true}
+        );
+      }
+    );
+
+    observeProductImpressions();
+  }
+
+  function updateRailDots(rail){
+    const dots=
+      qsa(
+        ".productDot",
+        rail.closest(".productSection")
+      );
+
+    if(!dots.length)return;
+
+    const max=
+      rail.scrollWidth-
+      rail.clientWidth;
+
+    const ratio=
+      max>0
+        ?rail.scrollLeft/max
+        :0;
+
+    const active=
+      Math.min(
+        dots.length-1,
+        Math.round(
+          ratio*(dots.length-1)
+        )
+      );
+
+    dots.forEach(
+      (dot,index)=>
+        dot.classList.toggle(
+          "active",
+          index===active
+        )
+    );
+  }
+
+  function observeProductImpressions(){
+    state.impressionObserver?.disconnect();
+
+    if(
+      !("IntersectionObserver" in window)
+    ){
+      return;
+    }
+
+    state.impressionObserver=
+      new IntersectionObserver(
+        entries=>{
+          entries.forEach(entry=>{
+            if(
+              !entry.isIntersecting||
+              entry.intersectionRatio<
+                CONFIG.impressionThreshold
+            ){
+              return;
+            }
+
+            const productId=
+              entry.target.dataset.productCard;
+
+            const product=
+              findProduct(productId);
+
+            if(!product)return;
+
+            const key=
+              `${product.id}|${state.selectedType}|${state.searchQuery}|${state.activeVibe}`;
+
+            if(
+              state.impressionsSeen.has(key)
+            ){
+              return;
+            }
+
+            state.impressionsSeen.add(key);
+
+            track(
+              "PRODUCT_IMPRESSION",
+              product,
+              {
+                meta:{
+                  surface:"home"
+                }
+              }
+            );
+          });
+        },
+        {
+          threshold:[
+            CONFIG.impressionThreshold
+          ]
+        }
+      );
+
+    qsa("[data-product-card]").forEach(
+      card=>
+        state.impressionObserver.observe(
+          card
+        )
+    );
+  }
+
+  function renderHome(){
+    renderVibeHero();
+    renderTypeTabs();
+    renderHomeSections();
+  }
+
+  function favoriteProducts(){
+    return [
+      ...state.favorites
+    ]
+      .map(findProduct)
+      .filter(Boolean);
+  }
+
+  function toggleFavorite(
+    productId,
+    surface
+  ){
+    const product=
+      findProduct(productId);
+
+    if(!product)return;
+
+    const id=
+      String(product.id);
+
+    if(
+      state.favorites.has(id)
+    ){
+      state.favorites.delete(id);
+
+      track(
+        "HEART_REMOVE",
+        product,
+        {
+          meta:{surface}
+        }
+      );
+    }else{
+      if(
+        state.favorites.size>=
+        CONFIG.maxFavorites
+      ){
+        showToast(
+          "Puedes guardar hasta 20 favoritos."
+        );
+        return;
+      }
+
+      state.favorites.add(id);
+
+      track(
+        "HEART_ADD",
+        product,
+        {
+          meta:{surface}
+        }
+      );
+
+      if(navigator.vibrate){
+        navigator.vibrate(28);
+      }
+    }
+
+    saveFavorites();
+    renderHome();
+    renderProductFavorite();
+    renderFavoritesBubble();
+    openFavoritesBubble();
+  }
+
+  function renderFavoritesBubble(){
+    const products=
+      favoriteProducts();
+
+    $("favoritesCount").textContent=
+      `${products.length} / ${CONFIG.maxFavorites}`;
+
+    $("favoritesBubble").classList.toggle(
+      "reviewEnabled",
+      state.reviewFeatureEnabled
+    );
+
+    $("favoriteRail").innerHTML=
+      products.length
+        ?products.map(product=>`
+          <article
+            class="favoriteCard"
+            data-favorite-card="${escapeHtml(product.id)}"
+          >
+            <div class="favoriteCardMedia">
+              <img
+                src="${escapeHtml(product.media[0]||"")}"
+                alt="${escapeHtml(product.name)}"
+              >
+
+              <button
+                class="favoriteRemove"
+                data-favorite-remove="${escapeHtml(product.id)}"
+                aria-label="Eliminar favorito"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="m7 7 10 10M17 7 7 17"/>
+                </svg>
+              </button>
+            </div>
+
+            <div class="favoriteCardName">
+              ${escapeHtml(product.name)}
+            </div>
+
+            <div class="favoriteCardPrice">
+              ${money(product.price)}
+            </div>
+
+            <button
+              class="favoriteReviewHook"
+              data-review-product="${escapeHtml(product.id)}"
+            >
+              Calificar
+            </button>
+          </article>
+        `).join("")
+        :`<div style="min-height:90px;display:grid;place-items:center;width:100%;font-size:9px;color:#777">Todavía no tienes favoritos.</div>`;
+
+    const dotCount=
+      Math.max(
+        1,
+        Math.min(
+          5,
+          Math.ceil(
+            products.length/4
+          )
+        )
+      );
+
+    $("favoritesDots").innerHTML=
+      Array.from(
+        {length:dotCount},
+        (_,index)=>`
+          <span class="${index===0?"active":""}"></span>
+        `
+      ).join("");
+
+    qsa("[data-favorite-card]").forEach(
+      card=>{
+        card.onclick=event=>{
+          if(
+            event.target.closest(
+              "[data-favorite-remove]"
+            )||
+            event.target.closest(
+              "[data-review-product]"
+            )
+          ){
+            return;
+          }
+
+          const product=
+            findProduct(
+              card.dataset.favoriteCard
+            );
+
+          if(!product)return;
+
+          closeFavoritesBubble();
+          openProduct(product);
+        };
+      }
+    );
+
+    qsa("[data-favorite-remove]").forEach(
+      button=>{
+        button.onclick=event=>{
+          event.stopPropagation();
+
+          toggleFavorite(
+            button.dataset.favoriteRemove,
+            "favorites_bubble"
+          );
+        };
+      }
+    );
+
+    qsa("[data-review-product]").forEach(
+      button=>{
+        button.onclick=event=>{
+          event.stopPropagation();
+
+          const product=
+            findProduct(
+              button.dataset.reviewProduct
+            );
+
+          if(!product)return;
+
+          track(
+            "REVIEW_ENTRY_OPEN",
+            product,
+            {
+              meta:{
+                surface:"favorites_bubble"
+              }
+            }
+          );
+
+          post(
+            "OPEN_REVIEW_COMPOSER",
+            {
+              productId:product.id,
+              masterProductId:
+                product.masterProductId,
+              source:"favorites_bubble"
+            }
+          );
+        };
+      }
+    );
+
+    const rail=
+      $("favoriteRail");
+
+    rail.onscroll=()=>{
+      const dots=
+        qsa(
+          "span",
+          $("favoritesDots")
+        );
+
+      if(!dots.length)return;
+
+      const max=
+        rail.scrollWidth-
+        rail.clientWidth;
+
+      const ratio=
+        max>0
+          ?rail.scrollLeft/max
+          :0;
+
+      const active=
+        Math.min(
+          dots.length-1,
+          Math.round(
+            ratio*(dots.length-1)
+          )
+        );
+
+      dots.forEach(
+        (dot,index)=>
+          dot.classList.toggle(
+            "active",
+            index===active
+          )
+      );
+    };
+  }
+
+  function openFavoritesBubble(){
+    renderFavoritesBubble();
+
+    $("favoritesBubble").classList.add(
+      "open"
+    );
+
+    clearTimeout(
+      state.favoriteTimer
+    );
+
+    state.favoriteTimer=
+      setTimeout(
+        closeFavoritesBubble,
+        CONFIG.favoriteAutoCloseMs
+      );
+
+    setNavActive("favorites");
+
+    track(
+      "FAVORITES_OPEN",
+      state.activeProduct,
+      {
+        meta:{
+          count:
+            state.favorites.size
+        }
+      }
+    );
+  }
+
+  function closeFavoritesBubble(){
+    clearTimeout(
+      state.favoriteTimer
+    );
+
+    $("favoritesBubble").classList.remove(
+      "open"
+    );
+
+    setNavActive("home");
+  }
+
+  function activeProductList(){
+    const filtered=
+      productsForVibe(
+        state.activeVibe
+      );
+
+    if(filtered.length){
+      return filtered;
+    }
+
+    return state.products
+      .filter(
+        product=>
+          product.vibeId===
+          state.activeVibe
+      )
+      .slice(
+        0,
+        CONFIG.maxProductsPerVibe
+      );
+  }
+
+  function startProductDwell(){
+    state.productOpenedAt=
+      performance.now();
+  }
+
+  function flushProductDwell(reason){
+    if(
+      !state.activeProduct||
+      state.productOpenedAt==null
+    ){
+      return;
+    }
+
+    const seconds=
+      Math.max(
+        0,
+        (
+          performance.now()-
+          state.productOpenedAt
+        )/1000
+      );
+
+    track(
+      "PRODUCT_DWELL",
+      state.activeProduct,
+      {
+        value:
+          Number(
+            seconds.toFixed(2)
+          ),
+        meta:{reason}
+      }
+    );
+
+    state.productOpenedAt=null;
+  }
+
+  function openProduct(product){
+    state.activeProduct=product;
+
+    state.activeVibe=
+      product.vibeId||
+      state.activeVibe;
+
+    const list=
+      activeProductList();
+
+    state.activeProductIndex=
+      Math.max(
+        0,
+        list.findIndex(
+          item=>
+            String(item.id)===
+            String(product.id)
+        )
+      );
+
+    state.activeMediaIndex=0;
+    state.selectedSize="";
+    state.selectedVariantId=null;
+    state.selectedDeliveryMethod=
+      product.deliveryModes?.[0]||
+      "";
+    state.detailDeliveryOpen=null;
+
+    $("productScreen").classList.remove(
+      "hidden"
+    );
+
+    $("productScreen").setAttribute(
+      "aria-hidden",
+      "false"
+    );
+
+    $("detailsCapsule").classList.remove(
+      "open"
+    );
+
+    $("priceCapsule").classList.remove(
+      "hidden"
+    );
+
+    $("detailsDeliveryInfo").classList.remove(
+      "open"
+    );
+
+    renderProduct();
+    setNavActive("home");
+    startProductDwell();
+
+    track(
+      "PRODUCT_VIEW",
+      product,
+      {
+        meta:{
+          surface:"product"
+        }
+      }
+    );
+
+    if(product.source!=="demo"){
+      post(
+        "REQUEST_VARIANTS",
+        {
+          productId:product.id
+        }
+      );
+
+      post(
+        "REQUEST_PRODUCT_META",
+        {
+          productId:product.id
+        }
+      );
+
+      requestProductSupply(
+        product,
+        "product_view"
+      );
+    }
+  }
+
+  function closeProduct(reason="back"){
+    flushProductDwell(reason);
+
+    $("productScreen").classList.add(
+      "hidden"
+    );
+
+    $("productScreen").setAttribute(
+      "aria-hidden",
+      "true"
+    );
+
+    state.activeProduct=null;
+    state.selectedSize="";
+    state.selectedVariantId=null;
+
+    renderHome();
+  }
+
+  function renderProduct(){
+    const product=
+      state.activeProduct;
+
+    if(!product)return;
+
+    const list=
+      activeProductList();
+
+    state.activeProductIndex=
+      Math.max(
+        0,
+        list.findIndex(
+          item=>
+            String(item.id)===
+            String(product.id)
+        )
+      );
+
+    $("productPhoto").src=
+      product.media[state.activeMediaIndex]||
+      product.media[0]||
+      "";
+
+    $("productPhoto").alt=
+      product.name;
+
+    $("productNumber").textContent=
+      String(
+        state.activeProductIndex+1
+      );
+
+    $("priceCapsulePrice").textContent=
+      money(product.price)
+        .replace("COP","")
+        .trim();
+
+    $("detailsThumb").src=
+      product.media[0]||
+      "";
+
+    $("detailsThumb").alt=
+      product.name;
+
+    $("detailsName").textContent=
+      product.name;
+
+    $("detailsPrice").textContent=
+      money(product.price);
+
+    $("detailsDescription").textContent=
+      product.description||
+      "Información del producto disponible próximamente.";
+
+    renderProductThumbnails();
+    renderProductFavorite();
+    renderSizes();
+    renderInventoryHint();
+    renderDetailDelivery();
+    updateBuyButtonLabel();
+    syncBagBadges();
+  }
+
+  function renderProductThumbnails(){
+    const product=
+      state.activeProduct;
+
+    if(!product)return;
+
+    $("thumbStack").innerHTML=
+      (product.media||[])
+        .slice(0,5)
+        .map((url,index)=>`
+          <button
+            class="productThumb ${index===state.activeMediaIndex?"active":""}"
+            data-thumb-index="${index}"
+            aria-label="Foto ${index+1}"
+          >
+            <img
+              src="${escapeHtml(url)}"
+              alt="${escapeHtml(product.name)}"
+            >
+          </button>
+        `)
+        .join("");
+
+    qsa("[data-thumb-index]").forEach(
+      button=>{
+        button.onclick=()=>{
+          state.activeMediaIndex=
+            Number(
+              button.dataset.thumbIndex
+            );
+
+          $("productPhoto").src=
+            product.media[state.activeMediaIndex]||
+            product.media[0]||
+            "";
+
+          track(
+            "THUMBNAIL_VIEW",
+            product,
+            {
+              meta:{
+                index:
+                  state.activeMediaIndex
+              }
+            }
+          );
+
+          renderProductThumbnails();
+        };
+      }
+    );
+  }
+
+  function renderProductFavorite(){
+    if(!state.activeProduct)return;
+
+    const active=
+      isFavorite(
+        state.activeProduct.id
+      );
+
+    $("productHeart").classList.toggle(
+      "active",
+      active
+    );
+
+    $("productHeart").innerHTML=
+      heartIcon(active);
+  }
+
+  function buildSizeModels(product){
+    if(
+      Array.isArray(product.variants)&&
+      product.variants.length
+    ){
+      const map=
+        new Map();
+
+      product.variants.forEach(
+        variant=>{
+          if(
+            !variant.size||
+            map.has(variant.size)
+          ){
+            return;
+          }
+
+          const summary=
+            variantInventorySummary(
+              variant.id
+            );
+
+          const locationAvailability=
+            summary.hasLocationData
+              ?summary.sellable
+              :null;
+
+          map.set(
+            variant.size,
+            {
+              size:variant.size,
+              variantId:variant.id,
+              available:
+                locationAvailability==null
+                  ?variant.inStock!==false
+                  :locationAvailability,
+              inventorySummary:summary
+            }
+          );
+        }
+      );
+
+      if(map.size){
+        return [...map.values()];
+      }
+    }
+
+    return(
+      product.sizes||
+      []
+    ).map(
+      size=>({
+        size,
+        variantId:null,
+        available:true,
+        inventorySummary:null
+      })
+    );
+  }
+
+  function renderSizes(){
+    const product=
+      state.activeProduct;
+
+    if(!product)return;
+
+    const sizes=
+      buildSizeModels(product);
+
+    $("sizeRail").innerHTML=
+      sizes.map(model=>`
+        <button
+          class="sizeButton ${state.selectedSize===model.size?"active":""}"
+          data-size="${escapeHtml(model.size)}"
+          data-variant="${escapeHtml(model.variantId||"")}"
+          ${model.available?"":"disabled"}
+        >
+          ${escapeHtml(model.size)}
+        </button>
+      `).join("");
+
+    qsa("[data-size]").forEach(
+      button=>{
+        button.onclick=()=>{
+          selectSize(
+            button.dataset.size,
+            button.dataset.variant||
+            null
+          );
+        };
+      }
+    );
+  }
+
+  function findVariantForSize(product,size){
+    return(
+      product.variants||
+      []
+    ).find(
+      variant=>
+        String(
+          variant.size||
+          ""
+        ).toLowerCase()===
+        String(
+          size||
+          ""
+        ).toLowerCase()
+    )||null;
+  }
+
+  function selectSize(
+    size,
+    explicitVariantId=null
+  ){
+    const product=
+      state.activeProduct;
+
+    if(!product)return;
+
+    const variant=
+      explicitVariantId
+        ?(
+          product.variants||
+          []
+        ).find(
+          item=>
+            String(item.id)===
+            String(explicitVariantId)
+        )||null
+        :findVariantForSize(
+          product,
+          size
+        );
+
+    state.selectedSize=size;
+
+    state.selectedVariantId=
+      explicitVariantId||
+      variant?.id||
+      null;
+
+    renderSizes();
+
+    if(
+      state.selectedVariantId&&
+      !isSupplySnapshotFresh(
+        product.id
+      )
+    ){
+      requestVariantInventory(
+        product,
+        state.selectedVariantId,
+        "size_select"
+      );
+    }
+
+    const inventorySummary=
+      selectedVariantInventorySummary();
+
+    renderInventoryHint();
+
+    if(
+      inventorySummary?.hasLocationData&&
+      inventorySummary.sellable===false
+    ){
+      track(
+        "SIZE_UNAVAILABLE",
+        product,
+        {
+          variantId:
+            state.selectedVariantId,
+          meta:{size}
+        }
+      );
+
+      showToast(
+        "Esta talla no tiene disponibilidad confirmada."
+      );
+
+      return;
+    }
+
+    track(
+      "SIZE_SELECT",
+      product,
+      {
+        variantId:
+          state.selectedVariantId,
+        meta:{
+          size,
+          deliveryMethod:
+            state.selectedDeliveryMethod
+        }
+      }
+    );
+
+    if(product.source==="demo"){
+      showToast(
+        `Talla ${size} seleccionada · producto de demostración`
+      );
+      return;
+    }
+
+    synchronizeSelectedVariant();
+  }
+
+  function findCartLineForProduct(productId){
+    return state.cart.items.find(
+      item=>
+        String(item.productId)===
+        String(productId)
+    )||null;
+  }
+
+  function synchronizeSelectedVariant(){
+    const product=
+      state.activeProduct;
+
+    if(
+      !product||
+      !state.selectedSize
+    ){
+      return;
+    }
+
+    const existingLine=
+      findCartLineForProduct(
+        product.id
+      );
+
+    const existingVariantId=
+      existingLine?.variantId||
+      null;
+
+    const sameVariant=
+      !!existingLine&&
+      String(
+        existingVariantId||
+        ""
+      )===
+      String(
+        state.selectedVariantId||
+        ""
+      );
+
+    const expectedBehavior=
+      existingLine
+        ?(
+          sameVariant
+            ?"NO_DUPLICATE"
+            :"REPLACE_VARIANT"
+        )
+        :"ADD_PRODUCT";
+
+    state.pendingCartMutation={
+      mutationId:createId(),
+      productId:product.id,
+      variantId:
+        state.selectedVariantId,
+      previousVariantId:
+        existingVariantId,
+      size:
+        state.selectedSize,
+      deliveryMethod:
+        state.selectedDeliveryMethod,
+      expectedBehavior,
+      cartCountBefore:
+        currentCartCount(),
+      startedAt:
+        Date.now()
+    };
+
+    const supplyIntent=
+      supplyIntentForSelection(
+        product,
+        state.selectedVariantId
+      );
+
+    post(
+      "SYNC_BAG_SELECTION",
+      {
+        productId:product.id,
+        variantId:
+          state.selectedVariantId,
+        previousVariantId:
+          existingVariantId,
+        lineItemId:
+          existingLine?.id||
+          null,
+        size:
+          state.selectedSize,
+        deliveryMode:
+          state.selectedDeliveryMethod,
+        quantity:1,
+        replaceExistingVariant:
+          !!existingLine&&
+          !sameVariant,
+        preventDuplicate:true,
+        sellerId:
+          state.context.sellerId,
+        storefrontId:
+          state.context.storefrontId,
+        storefrontSlug:
+          state.context.storefrontSlug,
+        supplyIntent
+      }
+    );
+
+    track(
+      "ADD_TO_BAG_INTENT",
+      product,
+      {
+        variantId:
+          state.selectedVariantId,
+        meta:{
+          size:
+            state.selectedSize,
+          expectedBehavior,
+          existingLineItemId:
+            existingLine?.id||
+            null,
+          deliveryMethod:
+            state.selectedDeliveryMethod,
+          supplyIntent
+        }
+      }
+    );
+  }
+
+  function renderDetailDelivery(){
+    const product=
+      state.activeProduct;
+
+    if(!product)return;
+
+    const allowed=
+      new Set(
+        product.deliveryModes||
+        []
+      );
+
+    $("detailsDelivery").innerHTML=
+      DELIVERY_METHODS.map(method=>`
+        <button
+          class="detailsDeliveryButton ${state.selectedDeliveryMethod===method.id?"active":""}"
+          data-detail-delivery="${method.id}"
+          ${allowed.has(method.id)?"":"disabled"}
+        >
+          ${escapeHtml(method.title)}
+        </button>
+      `).join("");
+
+    qsa("[data-detail-delivery]").forEach(
+      button=>{
+        button.onclick=()=>{
+          selectDeliveryMethod(
+            button.dataset.detailDelivery
+          );
+        };
+      }
+    );
+  }
+    function selectDeliveryMethod(methodId) {
+    const product = state.activeProduct;
+    if (!product || !(product.deliveryModes || []).includes(methodId)) return;
+    const method = DELIVERY_METHODS.find(item => item.id === methodId);
+    if (!method) return;
+
+    state.selectedDeliveryMethod = methodId;
+    state.detailDeliveryOpen = methodId;
+    $("detailsDeliveryInfoText").textContent = method.description;
+    $("detailsDeliveryInfo").classList.add("open");
+    renderDetailDelivery();
+    updateBuyButtonLabel();
+
+    track("DELIVERY_METHOD_SELECT", product, { meta: { deliveryMethod: methodId } });
+    track("DELIVERY_INFO_OPEN", product, { meta: { deliveryMethod: methodId, surface: "details_capsule" } });
+
+    if (state.selectedSize && product.source !== "demo") {
+      if (state.selectedVariantId) requestVariantInventory(product, state.selectedVariantId, "delivery_method_change");
+      synchronizeSelectedVariant();
+    }
+  }
+
+  function closeDetailDeliveryInfo() {
+    if (state.detailDeliveryOpen) {
+      track("DELIVERY_INFO_CLOSE", state.activeProduct, { meta: { deliveryMethod: state.detailDeliveryOpen, surface: "details_capsule" } });
+    }
+    state.detailDeliveryOpen = null;
+    $("detailsDeliveryInfo").classList.remove("open");
+  }
+
+  function updateBuyButtonLabel() {
+    const reserve = state.selectedDeliveryMethod === "reserve";
+    $("buyButton").textContent = reserve ? "Reservar lanzamiento" : "Comprar";
+  }
+
+  function openDetailsCapsule() {
+    if (!state.activeProduct) return;
+    $("priceCapsule").classList.add("hidden");
+    $("detailsCapsule").classList.add("open");
+    track("DETAILS_OPEN", state.activeProduct);
+  }
+
+  function closeDetailsCapsule() {
+    $("detailsCapsule").classList.remove("open");
+    $("priceCapsule").classList.remove("hidden");
+    closeDetailDeliveryInfo();
+    track("DETAILS_CLOSE", state.activeProduct);
+  }
+
+  function swipeProduct(direction) {
+    const list = activeProductList();
+    if (!list.length) return;
+    flushProductDwell(direction > 0 ? "swipe_next" : "swipe_previous");
+
+    state.activeProductIndex = (state.activeProductIndex + direction + list.length) % list.length;
+    state.activeProduct = list[state.activeProductIndex];
+    state.activeMediaIndex = 0;
+    state.selectedSize = "";
+    state.selectedVariantId = null;
+    state.selectedDeliveryMethod = state.activeProduct.deliveryModes?.[0] || "";
+    state.detailDeliveryOpen = null;
+    closeDetailsCapsule();
+    renderProduct();
+
+    track("PRODUCT_SWIPE", state.activeProduct, { meta: { direction: direction > 0 ? "next" : "previous" } });
+    track("PRODUCT_VIEW", state.activeProduct, { meta: { surface: "swipe" } });
+    startProductDwell();
+
+    if (state.activeProduct.source !== "demo") {
+      post("REQUEST_VARIANTS", { productId: state.activeProduct.id });
+      post("REQUEST_PRODUCT_META", { productId: state.activeProduct.id });
+      requestProductSupply(state.activeProduct, "product_swipe");
+    }
+  }
+
+  async function shareActiveProduct() {
+    const product = state.activeProduct;
+    if (!product) return;
+    track("SHARE", product, { meta: { surface: "product" } });
+    const shareData = { title: product.name, text: `Mira este look: ${product.name}`, url: location.href };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(location.href);
+        showToast("Enlace copiado");
+      }
+    } catch {}
+  }
+
+  function clearPurchaseValidationTimer() {
+    if (state.purchaseValidationTimer) clearTimeout(state.purchaseValidationTimer);
+    state.purchaseValidationTimer = null;
+  }
+
+  function continuePurchaseWithPath(pathState = {}) {
+    const intent = state.pendingPurchaseIntent;
+    if (!intent) return;
+    clearPurchaseValidationTimer();
+
+    const product = findProduct(intent.productId) || state.activeProduct;
+    if (!product) {
+      state.pendingPurchaseIntent = null;
+      hideWorking();
+      $("buyButton").classList.remove("working");
+      return;
+    }
+
+    if (pathState.sellable === false || pathState.allowed === false) {
+      track("PURCHASE_BLOCKED_BY_SUPPLY", product, {
+        variantId: intent.variantId,
+        meta: { reason: pathState.reason || "SUPPLY_UNAVAILABLE", pathState }
+      });
+
+      state.pendingPurchaseIntent = null;
+      hideWorking();
+      $("buyButton").classList.remove("working");
+      showToast(pathState.message || "No pudimos confirmar disponibilidad para esta talla.");
+      return;
+    }
+
+    const resolvedMode =
+      pathState.checkoutMode ||
+      pathState.mode ||
+      state.supply.checkoutMode ||
+      CONFIG.defaultCheckoutMode;
+
+    const supplyIntent =
+      pathState.supplyIntent ||
+      intent.supplyIntent;
+
+    track("PURCHASE_PATH_CONFIRMED", product, {
+      variantId: intent.variantId,
+      meta: { checkoutMode: resolvedMode, supplyIntent }
+    });
+
+    post("BUY_NOW", {
+      productId: intent.productId,
+      variantId: intent.variantId,
+      size: intent.size,
+      deliveryMode: intent.deliveryMode,
+      quantity: 1,
+      sellerId: state.context.sellerId,
+      storefrontId: state.context.storefrontId,
+      storefrontSlug: state.context.storefrontSlug,
+      checkoutMode: resolvedMode,
+      supplyIntent
+    });
+
+    state.pendingPurchaseIntent = null;
+  }
+
+  function handleBuyNow() {
+    const product = state.activeProduct;
+    if (!product) return;
+
+    if (state.selectedDeliveryMethod === "reserve") {
+      track("RESERVE_RELEASE_START", product, { meta: { size: state.selectedSize || null } });
+
+      post("RESERVE_RELEASE", {
+        productId: product.id,
+        productName: product.name,
+        category: product.productType,
+        size: state.selectedSize || null,
+        sellerId: state.context.sellerId,
+        storefrontId: state.context.storefrontId
+      });
+
+      showWorking("Registrando reserva…");
+      return;
+    }
+
+    if (!state.selectedSize) {
+      showToast("Elige una talla para continuar.");
+      return;
+    }
+
+    if (product.source === "demo") {
+      showToast("Conecta un producto real de Wix para comprar.");
+      return;
+    }
+
+    const summary = selectedVariantInventorySummary();
+
+    if (summary?.hasLocationData && summary.sellable === false) {
+      showToast("No hay disponibilidad confirmada para esta talla.");
+
+      track("PURCHASE_BLOCKED_BY_SUPPLY", product, {
+        variantId: state.selectedVariantId,
+        meta: { reason: "NO_SELLABLE_LOCATION" }
+      });
+
+      return;
+    }
+
+    const supplyIntent =
+      supplyIntentForSelection(
+        product,
+        state.selectedVariantId
+      );
+
+    state.pendingPurchaseIntent = {
+      intentId: createId(),
+      productId: product.id,
+      variantId: state.selectedVariantId,
+      size: state.selectedSize,
+      deliveryMode: state.selectedDeliveryMethod,
+      supplyIntent,
+      createdAt: Date.now()
+    };
+
+    $("buyButton").classList.add("working");
+    showWorking("Confirmando disponibilidad…");
+
+    track("BUY_NOW", product, {
+      variantId: state.selectedVariantId,
+      meta: {
+        size: state.selectedSize,
+        deliveryMethod: state.selectedDeliveryMethod,
+        supplyIntent
+      }
+    });
+
+    post("VALIDATE_PURCHASE_PATH", {
+      ...state.pendingPurchaseIntent,
+      sellerId: state.context.sellerId,
+      storefrontId: state.context.storefrontId,
+      storefrontSlug: state.context.storefrontSlug,
+      requestedCheckoutMode: state.supply.checkoutMode
+    });
+
+    clearPurchaseValidationTimer();
+
+    state.purchaseValidationTimer = setTimeout(() => {
+      if (!state.pendingPurchaseIntent) return;
+
+      if (state.supply.checkoutMode === "DEFAULT_LOCATION_NATIVE") {
+        continuePurchaseWithPath({
+          allowed: true,
+          checkoutMode: "DEFAULT_LOCATION_NATIVE",
+          supplyIntent: state.pendingPurchaseIntent.supplyIntent,
+          fallback: true
+        });
+      } else {
+        state.pendingPurchaseIntent = null;
+        hideWorking();
+        $("buyButton").classList.remove("working");
+        showToast("No pudimos validar la ruta de inventario. Intenta nuevamente.");
+      }
+    }, CONFIG.supplyValidationTimeoutMs);
+  }
+
+  function normalizeCart(payload) {
+    const raw =
+      payload?.cart ||
+      payload ||
+      {};
+
+    const lineItems =
+      raw.items ||
+      raw.lineItems ||
+      [];
+
+    const items = lineItems.map(item => ({
+      id:
+        item.id ||
+        item._id ||
+        item.lineItemId,
+
+      productId:
+        item.productId ||
+        item.catalogReference?.catalogItemId ||
+        item.catalogItemId ||
+        null,
+
+      variantId:
+        item.variantId ||
+        item.catalogReference?.variantId ||
+        item.catalogReference?.options?.variantId ||
+        null,
+
+      name:
+        item.name ||
+        item.productName ||
+        item.itemName ||
+        "Producto",
+
+      image:
+        item.image ||
+        item.media?.url ||
+        item.imageUrl ||
+        "",
+
+      size:
+        item.size ||
+        item.options?.Size ||
+        item.options?.size ||
+        item.selectedOptions?.Size ||
+        item.selectedOptions?.size ||
+        "",
+
+      deliveryMode:
+        item.deliveryMode ||
+        item.mode ||
+        "",
+
+      quantity:
+        Number(
+          item.quantity ||
+          1
+        ),
+
+      price:
+        Number(
+          item.price?.amount ??
+          item.price ??
+          item.lineItemPrice?.amount ??
+          0
+        )
+    }));
+
+    const count =
+      Number(
+        raw.count ??
+        raw.totalQuantity ??
+        items.reduce(
+          (sum,item) =>
+            sum + item.quantity,
+          0
+        )
+      );
+
+    const total =
+      Number(
+        raw.total?.amount ??
+        raw.subtotal?.amount ??
+        raw.total ??
+        items.reduce(
+          (sum,item) =>
+            sum +
+            item.price *
+            item.quantity,
+          0
+        )
+      );
+
+    return {
+      items,
+      count,
+      total
+    };
+  }
+
+  function syncBagBadges(animate = false) {
+    const count = currentCartCount();
+
+    [
+      $("homeTopBagBadge"),
+      $("navBagBadge"),
+      $("detailsBagBadge")
+    ].forEach(badge => {
+      if (!badge) return;
+
+      badge.textContent =
+        String(count);
+
+      if (animate) {
+        badge.classList.remove("bump");
+        void badge.offsetWidth;
+        badge.classList.add("bump");
+      }
+    });
+
+    $("cartTitleCount").textContent =
+      String(count);
+
+    $("cartQuantity").textContent =
+      String(count);
+  }
+    function deliveryTitle(id) {
+    return (
+      DELIVERY_METHODS.find(
+        method =>
+          method.id === id
+      )?.title ||
+      id ||
+      ""
+    );
+  }
+
+  function renderCart() {
+    const items =
+      state.cart.items ||
+      [];
+
+    syncBagBadges();
+
+    $("cartItems").innerHTML =
+      items.map(line => `
+        <article class="cartItem">
+          <img
+            src="${escapeHtml(line.image)}"
+            alt="${escapeHtml(line.name)}"
+          >
+
+          <div>
+            <div class="cartItemName">
+              ${escapeHtml(line.name)}
+            </div>
+
+            <div class="cartItemMeta">
+              ${
+                [
+                  line.size,
+                  deliveryTitle(line.deliveryMode)
+                ]
+                  .filter(Boolean)
+                  .map(escapeHtml)
+                  .join(" · ")
+              }
+            </div>
+
+            <div class="qtyRow">
+              <button
+                class="qtyButton"
+                data-qty-line="${escapeHtml(line.id)}"
+                data-delta="-1"
+              >
+                −
+              </button>
+
+              <span class="qtyValue">
+                ${line.quantity}
+              </span>
+
+              <button
+                class="qtyButton"
+                data-qty-line="${escapeHtml(line.id)}"
+                data-delta="1"
+              >
+                +
+              </button>
+            </div>
+
+            <button
+              class="removeLine"
+              data-remove-line="${escapeHtml(line.id)}"
+            >
+              Eliminar
+            </button>
+          </div>
+
+          <div class="cartItemPrice">
+            ${
+              money(
+                line.price *
+                line.quantity
+              )
+            }
+          </div>
+        </article>
+      `).join("");
+
+    $("cartEmpty").classList.toggle(
+      "hidden",
+      items.length > 0
+    );
+
+    $("cartSummary").classList.toggle(
+      "hidden",
+      items.length === 0
+    );
+
+    $("cartSubtotal").textContent =
+      money(state.cart.total);
+
+    qsa("[data-qty-line]").forEach(
+      button => {
+        button.onclick = () => {
+          const line =
+            items.find(
+              item =>
+                String(item.id) ===
+                String(button.dataset.qtyLine)
+            );
+
+          if (!line) return;
+
+          const nextQuantity =
+            line.quantity +
+            Number(button.dataset.delta);
+
+          if (nextQuantity <= 0) {
+            return removeCartLine(line);
+          }
+
+          post(
+            "UPDATE_BAG_QUANTITY",
+            {
+              lineItemId: line.id,
+              quantity: nextQuantity
+            }
+          );
+
+          track(
+            "CART_QUANTITY_CHANGE",
+            findProduct(line.productId),
+            {
+              variantId: line.variantId,
+              value: nextQuantity,
+              meta: {
+                previousQuantity:
+                  line.quantity,
+                nextQuantity
+              }
+            }
+          );
+        };
+      }
+    );
+
+    qsa("[data-remove-line]").forEach(
+      button => {
+        button.onclick = () => {
+          const line =
+            items.find(
+              item =>
+                String(item.id) ===
+                String(button.dataset.removeLine)
+            );
+
+          if (line) {
+            removeCartLine(line);
+          }
+        };
+      }
+    );
+  }
+
+  function removeCartLine(line) {
+    post(
+      "REMOVE_BAG_ITEM",
+      {
+        lineItemId: line.id
+      }
+    );
+
+    track(
+      "REMOVE_FROM_BAG",
+      findProduct(line.productId),
+      {
+        variantId: line.variantId,
+        value: line.quantity,
+        meta: {
+          size: line.size
+        }
+      }
+    );
+  }
+
+  function openCart() {
+    closeFavoritesBubble();
+
+    post("GET_CART");
+
+    renderCart();
+
+    $("cartOverlay").classList.add(
+      "open"
+    );
+
+    setBodyLock();
+    setNavActive("bag");
+
+    track(
+      "BAG_OPEN",
+      state.activeProduct,
+      {
+        meta: {
+          surface:
+            state.activeProduct
+              ? "product"
+              : "home"
+        }
+      }
+    );
+  }
+
+  function closeCart() {
+    $("cartOverlay").classList.remove(
+      "open"
+    );
+
+    setBodyLock();
+    setNavActive("home");
+  }
+
+  function checkoutCart() {
+    if (!currentCartCount()) {
+      showToast("Tu bolsa está vacía.");
+      return;
+    }
+
+    showWorking(
+      "Abriendo checkout…"
+    );
+
+    track(
+      "CHECKOUT_START",
+      null,
+      {
+        value:
+          state.cart.total,
+        meta: {
+          cartCount:
+            currentCartCount()
+        }
+      }
+    );
+
+    post(
+      "CHECKOUT_BAG",
+      {
+        sellerId:
+          state.context.sellerId,
+
+        storefrontId:
+          state.context.storefrontId,
+
+        storefrontSlug:
+          state.context.storefrontSlug,
+
+        checkoutMode:
+          state.supply.checkoutMode,
+
+        defaultLocationId:
+          state.supply.defaultLocationId,
+
+        inventoryModel:
+          "CATALOG_V3_VARIANT_LOCATION",
+
+        cartSupplyIntents:
+          state.cart.items.map(
+            line => ({
+              lineItemId:
+                line.id,
+
+              productId:
+                line.productId,
+
+              variantId:
+                line.variantId,
+
+              supplyIntent:
+                supplyIntentForSelection(
+                  findProduct(line.productId),
+                  line.variantId
+                )
+            })
+          )
+      }
+    );
+  }
+
+  function resolvePendingCartMutation() {
+    const mutation =
+      state.pendingCartMutation;
+
+    if (!mutation) return;
+
+    const product =
+      findProduct(
+        mutation.productId
+      );
+
+    const nextCount =
+      currentCartCount();
+
+    const updatedLine =
+      findCartLineForProduct(
+        mutation.productId
+      );
+
+    const eventType =
+      mutation.expectedBehavior ===
+      "REPLACE_VARIANT"
+        ? "CART_VARIANT_REPLACED"
+        : mutation.expectedBehavior ===
+          "NO_DUPLICATE"
+          ? "CART_SELECTION_CONFIRMED"
+          : "ADD_TO_BAG";
+
+    track(
+      eventType,
+      product,
+      {
+        variantId:
+          mutation.variantId,
+
+        meta: {
+          size:
+            mutation.size,
+
+          previousVariantId:
+            mutation.previousVariantId,
+
+          deliveryMethod:
+            mutation.deliveryMethod,
+
+          cartCountBefore:
+            mutation.cartCountBefore,
+
+          cartCountAfter:
+            nextCount,
+
+          lineItemId:
+            updatedLine?.id ||
+            null
+        }
+      }
+    );
+
+    if (navigator.vibrate) {
+      navigator.vibrate(28);
+    }
+
+    showToast(
+      mutation.expectedBehavior ===
+      "REPLACE_VARIANT"
+        ? "Talla actualizada"
+        : mutation.expectedBehavior ===
+          "NO_DUPLICATE"
+          ? "Selección confirmada"
+          : "Agregado a tu bolsa"
+    );
+
+    state.pendingCartMutation = null;
+  }
+
+  function renderFilterSheet() {
+    $("filterVibes").innerHTML =
+      VIBES.map(vibe => `
+        <button
+          class="filterChoice ${state.activeVibe === vibe.id ? "active" : ""}"
+          data-filter-vibe="${vibe.id}"
+        >
+          ${escapeHtml(vibe.name)}
+        </button>
+      `).join("");
+
+    $("filterTypes").innerHTML =
+      PRODUCT_TYPES.map(type => `
+        <button
+          class="filterChoice ${state.selectedType === type ? "active" : ""}"
+          data-filter-type="${escapeHtml(type)}"
+        >
+          ${escapeHtml(type)}
+        </button>
+      `).join("");
+
+    qsa("[data-filter-vibe]").forEach(
+      button => {
+        button.onclick = () => {
+          state.activeVibe =
+            button.dataset.filterVibe;
+
+          track(
+            "VIBE_SELECT",
+            null,
+            {
+              meta: {
+                vibeId:
+                  state.activeVibe,
+                surface:
+                  "filter"
+              }
+            }
+          );
+
+          renderFilterSheet();
+          renderHome();
+        };
+      }
+    );
+
+    qsa("[data-filter-type]").forEach(
+      button => {
+        button.onclick = () => {
+          state.selectedType =
+            button.dataset.filterType;
+
+          track(
+            "TYPE_FILTER",
+            null,
+            {
+              meta: {
+                type:
+                  state.selectedType,
+                surface:
+                  "filter"
+              }
+            }
+          );
+
+          renderFilterSheet();
+          renderHome();
+        };
+      }
+    );
+  }
+
+  function openFilters() {
+    renderFilterSheet();
+
+    $("filterOverlay").classList.add(
+      "open"
+    );
+
+    setBodyLock();
+
+    track("FILTER_OPEN");
+  }
+
+  function closeFilters() {
+    $("filterOverlay").classList.remove(
+      "open"
+    );
+
+    setBodyLock();
+  }
+
+  function openUtilityMenu() {
+    closeFavoritesBubble();
+
+    $("utilityBackdrop").classList.add(
+      "open"
+    );
+
+    setBodyLock();
+
+    track("PLUS_MENU_OPEN");
+  }
+
+  function closeUtilityMenu() {
+    $("utilityBackdrop").classList.remove(
+      "open"
+    );
+
+    setBodyLock();
+  }
+
+  function setNavActive(name) {
+    const map = {
+      favorites:
+        $("navFavorites"),
+      home:
+        $("navHome"),
+      profile:
+        $("navProfile"),
+      bag:
+        $("navBag")
+    };
+
+    Object.values(map).forEach(
+      button =>
+        button?.classList.remove(
+          "active"
+        )
+    );
+
+    map[name]?.classList.add(
+      "active"
+    );
+  }
+
+  function applyInit(payload = {}) {
+    if (
+      Array.isArray(payload.products) &&
+      payload.products.length
+    ) {
+      state.products =
+        payload.products.map(
+          normalizeProduct
+        );
+    }
+
+    if (payload.identity) {
+      state.identity.visitorId =
+        payload.identity.visitorId ||
+        state.identity.visitorId;
+
+      state.identity.customerId =
+        payload.identity.customerId ||
+        state.identity.customerId;
+
+      state.identity.memberId =
+        payload.identity.memberId ||
+        state.identity.memberId;
+    }
+
+    if (payload.customerId) {
+      state.identity.customerId =
+        payload.customerId;
+    }
+
+    if (payload.visitorId) {
+      state.identity.visitorId =
+        payload.visitorId;
+    }
+
+    if (payload.memberId) {
+      state.identity.memberId =
+        payload.memberId;
+    }
+
+    if (
+      payload.context &&
+      typeof payload.context === "object"
+    ) {
+      state.context = {
+        ...state.context,
+        ...payload.context
+      };
+    }
+
+    if (payload.sellerId) {
+      state.context.sellerId =
+        payload.sellerId;
+    }
+
+    if (payload.storefrontId) {
+      state.context.storefrontId =
+        payload.storefrontId;
+    }
+
+    if (payload.storefrontSlug) {
+      state.context.storefrontSlug =
+        payload.storefrontSlug;
+    }
+
+    if (
+      payload.brand &&
+      typeof payload.brand === "object"
+    ) {
+      state.brand = {
+        ...state.brand,
+        ...payload.brand
+      };
+    }
+
+    if (payload.targetOrigin) {
+      state.bridge.targetOrigin =
+        payload.targetOrigin;
+    }
+
+    if (payload.cart) {
+      state.cart =
+        normalizeCart(
+          payload.cart
+        );
+    }
+
+    if (payload.supplyContext) {
+      applySupplyContext(
+        payload.supplyContext
+      );
+    }
+
+    if (
+      Array.isArray(
+        payload.storesLocations
+      )
+    ) {
+      applyStoresLocations({
+        locations:
+          payload.storesLocations,
+
+        defaultLocationId:
+          payload.defaultLocationId
+      });
+    }
+
+    if (
+      Array.isArray(
+        payload.inventoryItems
+      )
+    ) {
+      upsertInventoryItems(
+        payload.inventoryItems
+      );
+    }
+
+    if (
+      payload.inventoryCheckoutMode
+    ) {
+      const mode =
+        payload.inventoryCheckoutMode;
+
+      state.supply.checkoutMode =
+        CONFIG.supportedCheckoutModes.includes(
+          mode
+        )
+          ? mode
+          : CONFIG.defaultCheckoutMode;
+    }
+
+    if (payload.defaultLocationId) {
+      state.supply.defaultLocationId =
+        payload.defaultLocationId;
+    }
+
+    state.reviewFeatureEnabled =
+      !!payload.features?.reviewsEnabled;
+
+    state.bridge.ready = true;
+
+    applyBrand();
+    renderHomeDelivery();
+    renderHome();
+    renderFavoritesBubble();
+    renderCart();
+    syncBagBadges();
+    flushBridgeQueue();
+
+    track(
+      "STOREFRONT_READY",
+      null,
+      {
+        meta: {
+          productCount:
+            state.products.length,
+
+          sellerId:
+            state.context.sellerId,
+
+          storefrontId:
+            state.context.storefrontId,
+
+          reviewsEnabled:
+            state.reviewFeatureEnabled
+        }
+      }
+    );
+  }
+
+  function applyVariants(payload = {}) {
+    const productId =
+      payload.productId ||
+      payload.id ||
+      state.activeProduct?.id;
+
+    const variants =
+      payload.variants ||
+      payload.items ||
+      [];
+
+    if (
+      !productId ||
+      !Array.isArray(variants)
+    ) {
+      return;
+    }
+
+    const index =
+      state.products.findIndex(
+        product =>
+          String(product.id) ===
+          String(productId)
+      );
+
+    if (index < 0) return;
+
+    state.products[index].variants =
+      variants.map(
+        normalizeVariant
+      );
+
+    state.products[index].sizes =
+      [
+        ...new Set(
+          state.products[index]
+            .variants
+            .map(
+              variant =>
+                variant.size
+            )
+            .filter(Boolean)
+        )
+      ];
+
+    if (
+      state.activeProduct &&
+      String(state.activeProduct.id) ===
+      String(productId)
+    ) {
+      state.activeProduct =
+        state.products[index];
+
+      renderSizes();
+      renderInventoryHint();
+
+      requestProductSupply(
+        state.activeProduct,
+        "variants_loaded"
+      );
+    }
+  }
+
+  function applyProductMeta(payload = {}) {
+    const productId =
+      payload.productId ||
+      payload.id;
+
+    if (!productId) return;
+
+    const index =
+      state.products.findIndex(
+        product =>
+          String(product.id) ===
+          String(productId)
+      );
+
+    if (index < 0) return;
+
+    state.products[index] =
+      normalizeProduct({
+        ...state.products[index],
+        ...payload
+      });
+
+    if (
+      Array.isArray(
+        payload.inventoryItems
+      )
+    ) {
+      upsertInventoryItems(
+        payload.inventoryItems,
+        {
+          replaceForProductId:
+            productId
+        }
+      );
+
+      state.supply
+        .productSupplyUpdatedAt
+        .set(
+          String(productId),
+          Date.now()
+        );
+    }
+
+    if (
+      Array.isArray(
+        payload.locations
+      )
+    ) {
+      upsertStoresLocations(
+        payload.locations
+      );
+    }
+
+    if (
+      state.activeProduct &&
+      String(state.activeProduct.id) ===
+      String(productId)
+    ) {
+      state.activeProduct =
+        state.products[index];
+
+      renderProduct();
+    }
+  }
+
+  function applyCatalogPatch(payload = {}) {
+    const incoming =
+      Array.isArray(payload.products)
+        ? payload.products.map(
+            normalizeProduct
+          )
+        : [];
+
+    if (!incoming.length) return;
+
+    const map =
+      new Map(
+        state.products.map(
+          product => [
+            String(product.id),
+            product
+          ]
+        )
+      );
+
+    incoming.forEach(
+      product =>
+        map.set(
+          String(product.id),
+          product
+        )
+    );
+
+    state.products =
+      [...map.values()];
+
+    renderHome();
+
+    if (state.activeProduct) {
+      const refreshed =
+        findProduct(
+          state.activeProduct.id
+        );
+
+      if (refreshed) {
+        state.activeProduct =
+          refreshed;
+
+        renderProduct();
+      }
+    }
+  }
+
+  function handleCartState(payload) {
+    const before =
+      currentCartCount();
+
+    state.cart =
+      normalizeCart(payload);
+
+    const after =
+      currentCartCount();
+
+    syncBagBadges(
+      before !== after
+    );
+
+    renderCart();
+    resolvePendingCartMutation();
+  }
+
+  function updateIdentity(payload = {}) {
+    state.identity.visitorId =
+      payload.visitorId ||
+      state.identity.visitorId;
+
+    state.identity.customerId =
+      payload.customerId ||
+      state.identity.customerId;
+
+    state.identity.memberId =
+      payload.memberId ||
+      state.identity.memberId;
+
+    track(
+      "IDENTITY_CONTEXT_UPDATE",
+      null,
+      {
+        meta: {
+          hasVisitorId:
+            !!state.identity.visitorId,
+
+          hasCustomerId:
+            !!state.identity.customerId,
+
+          hasMemberId:
+            !!state.identity.memberId
+        }
+      }
+    );
+  }
+
+  window.addEventListener(
+    "message",
+    event => {
+      const message =
+        event.data ||
+        {};
+
+      if (
+        message.source &&
+        !CONFIG.acceptedParentSources.includes(
+          message.source
+        )
+      ) {
+        return;
+      }
+
+      const payload =
+        message.payload ??
+        message.data ??
+        {};
+
+      switch (message.type) {
+        case "INIT":
+          applyInit(payload);
+          break;
+
+        case "VARIANTS":
+          applyVariants(payload);
+          break;
+
+        case "PRODUCT_META":
+          applyProductMeta(payload);
+          break;
+
+        case "CATALOG_PATCH":
+          applyCatalogPatch(payload);
+          break;
+
+        case "SUPPLY_CONTEXT":
+          applySupplyContext(payload);
+          break;
+
+        case "STORES_LOCATIONS":
+        case "LOCATIONS_STATE":
+          applyStoresLocations(payload);
+          break;
+
+        case "PRODUCT_SUPPLY":
+          applyProductSupply(payload);
+          break;
+
+        case "VARIANT_INVENTORY":
+          applyVariantInventory(payload);
+          break;
+
+        case "INVENTORY_PATCH":
+        case "INVENTORY_STATE_PATCH":
+          applyInventoryPatch(payload);
+          break;
+
+        case "LOCATION_PATCH":
+          applyLocationPatch(payload);
+          break;
+
+        case "PURCHASE_PATH_STATE":
+          continuePurchaseWithPath(payload);
+          break;
+
+        case "SUPPLY_ERROR":
+          track(
+            "SUPPLY_ERROR",
+            state.activeProduct,
+            {
+              meta: payload
+            }
+          );
+
+          if (payload.message) {
+            showToast(
+              payload.message
+            );
+          }
+
+          break;
+
+        case "CART_STATE":
+          handleCartState(payload);
+          break;
+
+        case "CART_COUNT":
+          state.cart.count =
+            Number(
+              payload.count ??
+              payload ??
+              0
+            );
+
+          syncBagBadges();
+          break;
+
+        case "CUSTOMER_CONTEXT":
+        case "IDENTITY_CONTEXT":
+          updateIdentity(payload);
+          break;
+
+        case "REVIEW_FEATURE_STATE":
+          state.reviewFeatureEnabled =
+            !!payload.enabled;
+
+          renderFavoritesBubble();
+          break;
+
+        case "CART_WORKING":
+        case "BUY_WORKING":
+          showWorking(
+            payload.message ||
+            "Procesando…"
+          );
+          break;
+
+        case "CART_ERROR":
+        case "BUY_ERROR":
+          clearPurchaseValidationTimer();
+
+          state.pendingPurchaseIntent =
+            null;
+
+          hideWorking();
+
+          $("buyButton").classList.remove(
+            "working"
+          );
+
+          state.pendingCartMutation =
+            null;
+
+          showToast(
+            payload.message ||
+            "No pudimos completar la operación."
+          );
+
+          break;
+
+        case "BUY_SUCCESS":
+          clearPurchaseValidationTimer();
+
+          state.pendingPurchaseIntent =
+            null;
+
+          hideWorking();
+
+          $("buyButton").classList.remove(
+            "working"
+          );
+
+          break;
+
+        case "RESERVE_SUCCESS":
+          hideWorking();
+
+          showToast(
+            "Tu interés quedó registrado."
+          );
+
+          break;
+
+        case "RESERVE_ERROR":
+          hideWorking();
+
+          showToast(
+            payload.message ||
+            "No pudimos registrar la reserva."
+          );
+
+          break;
+
+        case "REVIEW_SUBMITTED":
+          showToast(
+            "Gracias por tu reseña."
+          );
+
+          break;
+
+        default:
+          break;
+      }
+    }
+  );
+
+  $("homeDeliveryInfoClose").onclick =
+    closeHomeDeliveryInfo;
+
+  $("filterButton").onclick =
+    openFilters;
+
+  $("filterClose").onclick =
+    closeFilters;
+
+  $("filterOverlay").onclick =
+    event => {
+      if (
+        event.target ===
+        $("filterOverlay")
+      ) {
+        closeFilters();
+      }
+    };
+
+  $("searchInput").addEventListener(
+    "input",
+    event => {
+      state.searchQuery =
+        event.target.value;
+
+      clearTimeout(
+        state.searchTimer
+      );
+
+      state.searchTimer =
+        setTimeout(
+          renderHome,
+          CONFIG.searchDebounceMs
+        );
+    }
+  );
+
+  $("searchInput").addEventListener(
+    "change",
+    () => {
+      track(
+        "SEARCH",
+        null,
+        {
+          meta: {
+            query:
+              state.searchQuery
+          }
+        }
+      );
+    }
+  );
+
+  $("searchInput").addEventListener(
+    "search",
+    () => {
+      track(
+        "SEARCH",
+        null,
+        {
+          meta: {
+            query:
+              state.searchQuery
+          }
+        }
+      );
+
+      renderHome();
+    }
+  );
+
+  $("navPlus").onclick =
+    openUtilityMenu;
+
+  $("utilityBackdrop").onclick =
+    event => {
+      if (
+        event.target ===
+        $("utilityBackdrop")
+      ) {
+        closeUtilityMenu();
+      }
+    };
+
+  qsa("[data-utility-action]").forEach(
+    button => {
+      button.onclick = () => {
+        const action =
+          button.dataset.utilityAction;
+
+        track(
+          "PLUS_MENU_ACTION",
+          null,
+          {
+            meta: {
+              action
+            }
+          }
+        );
+
+        closeUtilityMenu();
+
+        const productContext =
+          state.activeProduct
+            ? {
+                productId:
+                  state.activeProduct.id,
+
+                productName:
+                  state.activeProduct.name,
+
+                variantId:
+                  state.selectedVariantId ||
+                  null,
+
+                size:
+                  state.selectedSize ||
+                  null,
+
+                price:
+                  state.activeProduct.price
+              }
+            : null;
+
+        post(
+          action,
+          {
+            sellerId:
+              state.context.sellerId,
+
+            storefrontId:
+              state.context.storefrontId,
+
+            storefrontSlug:
+              state.context.storefrontSlug,
+
+            guestId:
+              state.identity.guestId,
+
+            sessionId:
+              state.identity.sessionId,
+
+            productContext,
+
+            channel:
+              action === "OPEN_WHATSAPP"
+                ? "WHATSAPP"
+                : null
+          }
+        );
+      };
+    }
+  );
+
+  $("navFavorites").onclick =
+    openFavoritesBubble;
+
+  $("favoritesClose").onclick =
+    closeFavoritesBubble;
+
+  $("favoritesBubble").addEventListener(
+    "pointerdown",
+    () =>
+      clearTimeout(
+        state.favoriteTimer
+      )
+  );
+
+  $("favoriteRail").addEventListener(
+    "scroll",
+    () =>
+      clearTimeout(
+        state.favoriteTimer
+      ),
+    {
+      passive: true
+    }
+  );
+
+  $("navHome").onclick =
+    () => {
+      closeFavoritesBubble();
+      closeUtilityMenu();
+
+      if (state.activeProduct) {
+        closeProduct(
+          "home_navigation"
+        );
+      }
+
+      setNavActive("home");
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+    };
+
+  $("navProfile").onclick =
+    () => {
+      setNavActive(
+        "profile"
+      );
+
+      track(
+        "PROFILE_OPEN",
+        null,
+        {
+          meta: {
+            destination:
+              "customer_login_signup"
+          }
+        }
+      );
+
+      post(
+        "OPEN_PROFILE",
+        {
+          destination:
+            "customer_login_signup",
+
+          reason:
+            "customer_loyalty_account"
+        }
+      );
+    };
+
+  $("navBag").onclick =
+    openCart;
+
+  $("homeBagTop").onclick =
+    openCart;
+
+  $("detailsBag").onclick =
+    openCart;
+
+  $("cartClose").onclick =
+    closeCart;
+
+  $("cartOverlay").onclick =
+    event => {
+      if (
+        event.target ===
+        $("cartOverlay")
+      ) {
+        closeCart();
+      }
+    };
+
+  $("checkoutButton").onclick =
+    checkoutCart;
+
+  $("productBack").onclick =
+    () =>
+      closeProduct(
+        "back_button"
+      );
+
+  $("productHeart").onclick =
+    () =>
+      state.activeProduct &&
+      toggleFavorite(
+        state.activeProduct.id,
+        "product"
+      );
+
+  $("productShare").onclick =
+    shareActiveProduct;
+
+  $("priceCapsule").onclick =
+    openDetailsCapsule;
+
+  $("detailsCollapse").onclick =
+    closeDetailsCapsule;
+
+  $("detailsDeliveryInfoClose").onclick =
+    closeDetailDeliveryInfo;
+
+  $("buyButton").onclick =
+    handleBuyNow;
+
+  $("productScreen").addEventListener(
+    "touchstart",
+    event => {
+      const touch =
+        event.touches[0];
+
+      state.touchStartX =
+        touch.clientX;
+
+      state.touchStartY =
+        touch.clientY;
+    },
+    {
+      passive: true
+    }
+  );
+
+  $("productScreen").addEventListener(
+    "touchend",
+    event => {
+      if (
+        event.target.closest("button") ||
+        event.target.closest(
+          ".detailsCapsule"
+        )
+      ) {
+        return;
+      }
+
+      const touch =
+        event.changedTouches[0];
+
+      const dx =
+        touch.clientX -
+        state.touchStartX;
+
+      const dy =
+        touch.clientY -
+        state.touchStartY;
+
+      if (
+        Math.abs(dx) >
+          CONFIG.swipeThreshold &&
+        Math.abs(dx) >
+          Math.abs(dy) *
+          CONFIG.swipeDominance
+      ) {
+        swipeProduct(
+          dx < 0
+            ? 1
+            : -1
+        );
+      }
+    },
+    {
+      passive: true
+    }
+  );
+
+  document.addEventListener(
+    "visibilitychange",
+    () => {
+      if (!state.activeProduct) {
+        return;
+      }
+
+      if (document.hidden) {
+        flushProductDwell(
+          "visibility_hidden"
+        );
+      } else {
+        startProductDwell();
+      }
+    }
+  );
+
+  window.addEventListener(
+    "beforeunload",
+    () =>
+      flushProductDwell(
+        "page_exit"
+      )
+  );
+
+  applyBrand();
+  renderHomeDelivery();
+  renderHome();
+  renderFavoritesBubble();
+  renderCart();
+  syncBagBadges();
+
+  postRaw(
+    "READY",
+    {
+      brand:
+        "MODAPOP",
+
+      storefrontVersion:
+        "MODAPOP_WORLD_CLASS_V1",
+
+      guestId:
+        state.identity.guestId,
+
+      sessionId:
+        state.identity.sessionId,
+
+      storefrontSlug:
+        state.context.storefrontSlug,
+
+      capabilities: [
+        "SPANISH_ONLY_UI",
+        "WHITE_BACKGROUND",
+        "INTER_FONT",
+
+        "VIBE_FIRST_MERCHANDISING",
+        "NOCHES_LARGAS",
+        "DIAS_TRANQUILOS",
+        "RAPIDO_Y_FACIL",
+        "BANO_DE_SOL",
+
+        "TWENTY_PRODUCTS_PER_VIBE",
+        "THREE_PRODUCT_CARDS_VISIBLE",
+
+        "IPHONE_PORTRAIT_PRODUCT_STAGE",
+        "OBJECT_FIT_COVER_NO_STRETCH",
+        "PERSISTENT_RIGHT_THUMBNAILS",
+        "PRODUCT_SEQUENCE_SINGLE_NUMBER",
+
+        "HEART_ON_PHOTO",
+        "SHARE_ON_PHOTO",
+
+        "COLLAPSED_PRICE_ONLY_CAPSULE",
+        "COMPACT_OPEN_DETAILS_CAPSULE",
+        "OPEN_CAPSULE_DOWN_ARROW",
+        "DETAILS_BAG_BADGE",
+
+        "SIZE_TO_REAL_CART_SYNC",
+        "VARIANT_REPLACEMENT_NO_DUPLICATE",
+        "CART_QUANTITY_UPDATE",
+        "CART_REMOVE",
+
+        "NATIVE_WIX_CHECKOUT_HANDOFF",
+
+        "CLICKABLE_DELIVERY_METHODS",
+        "COLLAPSIBLE_DELIVERY_EXPLANATIONS",
+
+        "RESERVE_RELEASE_FLOW",
+
+        "MAX_TWENTY_FAVORITES",
+        "SWIPEABLE_FAVORITES_BUBBLE",
+        "FAVORITE_REMOVE",
+
+        "WIX_REVIEW_INTEGRATION_HOOK",
+
+        "GUEST_IDENTITY",
+        "SESSION_IDENTITY",
+        "CUSTOMER_IDENTITY_UPGRADE",
+
+        "PRODUCT_IMPRESSIONS",
+        "PRODUCT_CLICKS",
+        "PRODUCT_VIEWS",
+        "PRODUCT_DWELL",
+        "PRODUCT_SWIPES",
+        "THUMBNAIL_VIEWS",
+
+        "HEART_ANALYTICS",
+        "SHARE_ANALYTICS",
+        "SEARCH_ANALYTICS",
+        "FILTER_ANALYTICS",
+        "SIZE_ANALYTICS",
+        "DELIVERY_ANALYTICS",
+        "CART_ANALYTICS",
+        "CHECKOUT_ANALYTICS",
+
+        "SELLER_ATTRIBUTION",
+        "STOREFRONT_ATTRIBUTION",
+        "WHITE_LABEL_BRANDING",
+
+        "SUPPLY_CLOUD_PRODUCT_FIELDS",
+        "MASTER_PRODUCT_ID",
+        "OPAQUE_SUPPLY_REFERENCE",
+
+        "CATALOG_V3_VARIANT_LOCATION_INVENTORY",
+        "VARIANT_LOCATION_UNIQUE_PAIR",
+
+        "STORES_LOCATIONS_CONTEXT",
+        "DEFAULT_LOCATION_AWARENESS",
+        "MULTI_LOCATION_INVENTORY_READINESS",
+
+        "DEFAULT_LOCATION_NATIVE_CHECKOUT_MODE",
+        "MULTI_LOCATION_CUSTOM_CHECKOUT_MODE",
+
+        "PURCHASE_PATH_VALIDATION",
+
+        "PRODUCT_SUPPLY_SNAPSHOTS",
+        "VARIANT_INVENTORY_SNAPSHOTS",
+
+        "INVENTORY_PATCHING",
+        "LOCATION_PATCHING",
+
+        "PREORDER_AWARENESS",
+        "LOW_STOCK_AWARENESS",
+
+        "INVENTORY_MODE",
+        "INVENTORY_STATUS",
+        "FULFILLMENT_CONFIDENCE",
+        "SUPPLY_SYNC_TIMESTAMP",
+
+        "CATALOG_PATCHING",
+
+        "SEPARATE_STORE_OWNER_PORTAL",
+
+        "WHATSAPP_PLUS_MENU",
+        "WHATSAPP_PRODUCT_CONTEXT",
+
+        "SUPPLIER_SECRETS_SERVER_SIDE_ONLY",
+        "SECURE_PARENT_ORIGIN_SUPPORT"
+      ]
+    }
+  );
+
+  /* ================================================================
+     REQUIRED WIX BRIDGE / BACKEND CONTRACT
+     ----------------------------------------------------------------
+     IFRAME -> WIX
+
+       READY
+       REQUEST_VARIANTS
+       REQUEST_PRODUCT_META
+
+       REQUEST_SUPPLY_CONTEXT
+       REQUEST_PRODUCT_SUPPLY
+       REQUEST_VARIANT_INVENTORY
+       VALIDATE_PURCHASE_PATH
+
+       SYNC_BAG_SELECTION
+       UPDATE_BAG_QUANTITY
+       REMOVE_BAG_ITEM
+       GET_CART
+
+       BUY_NOW
+       CHECKOUT_BAG
+
+       OPEN_PROFILE
+       OPEN_WHATSAPP
+       OPEN_FAQ
+       OPEN_HELP
+       OPEN_ABOUT
+       OPEN_CONTACT
+       OPEN_PARTNERS
+       OPEN_STORE_OWNER_PORTAL
+
+       RESERVE_RELEASE
+       OPEN_REVIEW_COMPOSER
+       TRACK_EVENT
+
+     WIX -> IFRAME
+
+       INIT
+       VARIANTS
+       PRODUCT_META
+       CATALOG_PATCH
+
+       SUPPLY_CONTEXT
+       STORES_LOCATIONS
+       PRODUCT_SUPPLY
+       VARIANT_INVENTORY
+       INVENTORY_PATCH
+       LOCATION_PATCH
+       PURCHASE_PATH_STATE
+
+       CART_STATE
+       CART_COUNT
+
+       CUSTOMER_CONTEXT
+       IDENTITY_CONTEXT
+
+       REVIEW_FEATURE_STATE
+
+       BUY_WORKING
+       BUY_SUCCESS
+       BUY_ERROR
+
+       CART_WORKING
+       CART_ERROR
+
+       RESERVE_SUCCESS
+       RESERVE_ERROR
+
+       REVIEW_SUBMITTED
+       SUPPLY_ERROR
+
+     BACKEND LAW
+
+       1. Catalog/product creation and Catalog V3 inventory writes happen
+          only on secure Wix backend code or a trusted external integration
+          service.
+
+       2. Never expose supplier API keys, supplier costs, procurement URLs,
+          purchasing credentials, private warehouse contacts, margin logic,
+          or private supplier identifiers to this HTML component.
+
+       3. Translate private supplier and sourcing records into opaque
+          supplyRef values before they enter the storefront.
+
+       4. Inventory truth is synchronized by the unique:
+
+              variantId + locationId
+
+          pair.
+
+       5. Product-level inventory totals are never allowed to replace the
+          variant/location truth required for sourcing and fulfillment.
+
+       6. Wix native checkout may remain the primary fast checkout path when
+          inventory strategy uses the Wix default inventory location.
+
+       7. If ModaPop needs a specific non-default supplier warehouse,
+          regional distribution center, partner stock location, or other
+          inventory location to be decremented, the backend must explicitly
+          validate and select the multi-location purchase path.
+
+       8. The storefront can request inventory context, but allocation,
+          reservations, supplier routing, warehouse selection, authorization,
+          order sourcing, and inventory mutation remain backend operations.
+
+       9. Guest behavior events must retain guestId + sessionId so anonymous
+          activity can later be joined to customer/member identity when the
+          user logs in, signs up, begins checkout, or otherwise identifies
+          themselves.
+
+      10. Every analytics event carries sellerId + storefrontId so ModaPop
+          can operate one central commerce engine while supporting future
+          seller URLs, white-label storefronts, commission attribution, and
+          network-wide demand intelligence.
+
+      11. WhatsApp is a first-class South American customer channel. The
+          OPEN_WHATSAPP action carries storefront, guest/session and current
+          product context so the Wix layer can create a useful customer
+          conversation without exposing protected supply information.
+
+      12. The future Supply Cloud importer can ingest supplier databases,
+          APIs, files or warehouse feeds, normalize them with AI, map them to
+          ModaPop master products and Wix Catalog V3 variants, then maintain
+          the corresponding variant/location inventory records without
+          changing this storefront architecture.
+     ================================================================ */
+
+  requestSupplyContext();
+  postRaw("GET_CART");
+
+})();
+</script>
+</body>
+</html>

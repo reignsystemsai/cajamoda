@@ -281,6 +281,9 @@ svg{
    PRODUCT CATEGORY NAVIGATION
    OVER PHOTO — NO SEPARATE WHITE HEADER
    ============================================================ */
+/* ============================================================
+   MINIMAL PRODUCT CATEGORY HEADER
+   ============================================================ */
 
 .productCategoryNav{
 
@@ -288,55 +291,47 @@ svg{
 
   z-index:30;
 
-  top:
+  top:0;
+
+  left:0;
+
+  right:0;
+
+  height:
     calc(
-      10px +
+      54px +
       var(--safe-top)
     );
 
-  left:12px;
-
-  right:12px;
-
-  height:42px;
+  padding:
+    var(--safe-top)
+    16px
+    0;
 
   display:flex;
 
   align-items:center;
 
-  gap:20px;
+  justify-content:space-between;
 
-  padding:
-    0 14px;
+  gap:18px;
 
   overflow-x:auto;
 
   overflow-y:hidden;
 
-  border-radius:15px;
-
   background:
-    linear-gradient(
-      145deg,
-      rgba(255,255,255,.76),
-      rgba(255,255,255,.42)
-    );
+    rgba(255,255,255,.96);
 
-  border:
-    1px solid
-    rgba(255,255,255,.94);
+  border:0;
 
-  box-shadow:
-    0 8px 25px
-    rgba(0,0,0,.07);
+  border-radius:0;
 
-  backdrop-filter:
-    blur(24px)
-    saturate(160%);
+  box-shadow:none;
 
-  -webkit-backdrop-filter:
-    blur(24px)
-    saturate(160%);
+  backdrop-filter:none;
+
+  -webkit-backdrop-filter:none;
 
   scrollbar-width:none;
 
@@ -355,33 +350,36 @@ svg{
 
   height:100%;
 
+  padding:0 2px;
+
   display:flex;
 
   align-items:center;
 
+  justify-content:center;
+
   white-space:nowrap;
 
-  color:
-    rgba(0,0,0,.56);
+  color:rgba(0,0,0,.48);
 
   font-size:7px;
 
-  font-weight:600;
+  font-weight:500;
 
-  letter-spacing:.05px;
+  letter-spacing:.08px;
 
   text-transform:uppercase;
 
   transition:
-    color .16s ease,
-    transform .16s ease;
+    color .18s ease,
+    transform .18s ease;
 }
 
 .productCategoryButton.active{
 
   color:#080808;
 
-  font-weight:800;
+  font-weight:700;
 }
 
 .productCategoryButton.active::after{
@@ -394,7 +392,7 @@ svg{
 
   right:0;
 
-  bottom:3px;
+  bottom:5px;
 
   height:2px;
 
@@ -404,19 +402,13 @@ svg{
 }
 
 .productCategoryButton:active{
-
-  transform:
-    scale(.94);
+  transform:scale(.95);
 }
 
 @media(hover:hover){
 
   .productCategoryButton:hover{
-
     color:#080808;
-
-    transform:
-      translateY(-1px);
   }
 }
 

@@ -2,10 +2,12 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
+
 <meta
   name="viewport"
   content="width=device-width,initial-scale=1,viewport-fit=cover"
 >
+
 <meta name="theme-color" content="#ffffff">
 <meta name="color-scheme" content="light">
 
@@ -13,39 +15,56 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
 <link
-  href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+  href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500;6..96,600&family=Inter:wght@300;400;500;600;700;800&display=swap"
   rel="stylesheet"
 >
 
 <style>
-:root{
-  --bg:#ffffff;
-  --ink:#090909;
-  --ink-soft:#303030;
-  --muted:#747474;
-  --muted-light:#9d9d9d;
 
-  --line:rgba(0,0,0,.065);
-  --line-strong:rgba(0,0,0,.11);
+/* ============================================================
+   CAJAMODA HOME
+   FREEZE V3
+   ============================================================ */
+
+:root{
+
+  --bg:#ffffff;
+
+  --ink:#080808;
+
+  --ink-soft:#333333;
+
+  --muted:#747474;
+
+  --muted-light:#a1a1a1;
+
+  --line:
+    rgba(0,0,0,.065);
+
+  --line-black:
+    rgba(0,0,0,.16);
 
   --glass:
-    rgba(255,255,255,.52);
+    rgba(255,255,255,.48);
 
   --glass-strong:
     rgba(255,255,255,.78);
 
   --shadow:
-    0 10px 28px
+    0 9px 28px
     rgba(0,0,0,.055);
 
   --shadow-hover:
-    0 17px 38px
-    rgba(0,0,0,.10);
+    0 18px 42px
+    rgba(0,0,0,.115);
 
-  --mobile-max:430px;
+  --mobile-max:
+    430px;
 
-  --nav-h:54px;
+  --nav-h:
+    51px;
 
   --safe-top:
     env(
@@ -60,28 +79,42 @@
     );
 }
 
+/* ============================================================
+   RESET
+   ============================================================ */
+
 *{
   box-sizing:border-box;
 }
 
 html{
+
   width:100%;
+
   min-height:100%;
 
   margin:0;
 
+  background:#fff;
+
   scroll-behavior:smooth;
 
-  background:#fff;
+  -webkit-text-size-adjust:100%;
 }
 
 body{
+
   width:100%;
+
   min-height:100%;
 
   margin:0;
 
   overflow-x:hidden;
+
+  overflow-y:auto;
+
+  overscroll-behavior-y:auto;
 
   background:#fff;
 
@@ -96,7 +129,16 @@ body{
 
   -webkit-font-smoothing:
     antialiased;
+
+  -webkit-overflow-scrolling:
+    touch;
 }
+
+/*
+  IMPORTANT:
+  Only lock body while an overlay is actually open.
+  Normal storefront scrolling stays untouched.
+*/
 
 body.locked{
   overflow:hidden;
@@ -109,24 +151,32 @@ input{
 }
 
 button{
+
   border:0;
 
   margin:0;
+
   padding:0;
 
   background:none;
 
   cursor:pointer;
+
+  -webkit-tap-highlight-color:
+    transparent;
 }
 
 input{
+
   border:0;
+
   outline:0;
 
   background:transparent;
 }
 
 img{
+
   display:block;
 
   max-width:100%;
@@ -137,6 +187,7 @@ img{
 }
 
 svg{
+
   display:block;
 
   pointer-events:none;
@@ -151,9 +202,11 @@ svg{
    ============================================================ */
 
 .appShell{
+
   position:relative;
 
   width:100%;
+
   min-height:100dvh;
 
   margin:0 auto;
@@ -161,7 +214,7 @@ svg{
   padding-bottom:
     calc(
       var(--nav-h) +
-      27px +
+      28px +
       var(--safe-bottom)
     );
 
@@ -175,27 +228,29 @@ svg{
   }
 
   .appShell{
+
     width:min(
       100%,
       var(--mobile-max)
     );
 
     box-shadow:
-      0 0 70px
+      0 0 68px
       rgba(0,0,0,.075);
   }
 }
 
 /* ============================================================
-   GLASS SYSTEM
+   GLASS
    ============================================================ */
 
 .glass{
+
   background:
     linear-gradient(
       145deg,
-      rgba(255,255,255,.79),
-      rgba(255,255,255,.33)
+      rgba(255,255,255,.83),
+      rgba(255,255,255,.36)
     );
 
   border:
@@ -203,54 +258,55 @@ svg{
     rgba(255,255,255,.96);
 
   box-shadow:
+
     0 0 0 1px
-      rgba(0,0,0,.027),
+    rgba(0,0,0,.026),
 
     inset 0 1px 0
-      rgba(255,255,255,1),
+    rgba(255,255,255,1),
 
-    inset 0 -1px 0
-      rgba(255,255,255,.38),
-
-    var(--shadow);
+    0 8px 24px
+    rgba(0,0,0,.055);
 
   backdrop-filter:
-    blur(26px)
-    saturate(168%);
+    blur(25px)
+    saturate(165%);
 
   -webkit-backdrop-filter:
-    blur(26px)
-    saturate(168%);
+    blur(25px)
+    saturate(165%);
 }
 
 .glassStrong{
+
   background:
     linear-gradient(
       145deg,
-      rgba(255,255,255,.93),
-      rgba(255,255,255,.54)
+      rgba(255,255,255,.95),
+      rgba(255,255,255,.60)
     );
 
   border:
     1px solid
-    rgba(255,255,255,.99);
+    rgba(255,255,255,.98);
 
   box-shadow:
+
     0 0 0 1px
-      rgba(0,0,0,.038),
+    rgba(0,0,0,.04),
 
     inset 0 1px 0
-      #fff,
+    #fff,
 
-    0 18px 44px
-      rgba(0,0,0,.10);
+    0 20px 48px
+    rgba(0,0,0,.10);
 
   backdrop-filter:
-    blur(30px)
+    blur(31px)
     saturate(178%);
 
   -webkit-backdrop-filter:
-    blur(30px)
+    blur(31px)
     saturate(178%);
 }
 
@@ -259,22 +315,24 @@ svg{
    ============================================================ */
 
 .homeHeader{
+
   position:relative;
 
-  height:121px;
+  height:116px;
 
   padding-top:
     var(--safe-top);
 }
 
 /* ============================================================
-   TOP + BUTTON
+   HEADER PLUS
    ============================================================ */
 
 .headerPlus{
+
   position:absolute;
 
-  z-index:3;
+  z-index:4;
 
   left:14px;
 
@@ -284,61 +342,67 @@ svg{
       var(--safe-top)
     );
 
-  width:39px;
-  height:39px;
+  width:38px;
+
+  height:38px;
 
   border-radius:50%;
 
   display:grid;
+
   place-items:center;
 
   transition:
     transform .18s ease,
-    box-shadow .18s ease,
-    background .18s ease;
+    box-shadow .18s ease;
 }
 
 .headerPlus svg{
+
   width:20px;
+
   height:20px;
 
-  stroke-width:1.4;
+  stroke-width:1.35;
 }
 
 @media(hover:hover){
 
   .headerPlus:hover{
+
     transform:
       translateY(-2px)
       scale(1.035);
 
     box-shadow:
-      0 15px 32px
-      rgba(0,0,0,.11);
+      0 15px 30px
+      rgba(0,0,0,.105);
   }
 }
 
 .headerPlus:active{
+
   transform:
     scale(.94);
 }
 
 /* ============================================================
-   IMPROVED CAJAMODA LOGO
+   REFINED CM LOGO
    ============================================================ */
 
 .brandLockup{
+
   position:absolute;
 
   z-index:2;
 
-  left:50%;
-
   top:
     calc(
-      7px +
+      4px +
       var(--safe-top)
     );
+
+  left:50%;
 
   transform:
     translateX(-50%);
@@ -346,99 +410,128 @@ svg{
   width:190px;
 
   display:flex;
+
   flex-direction:column;
+
   align-items:center;
 
   pointer-events:none;
 }
 
+/*
+  CM mark:
+  Bodoni instead of generic Times.
+  Thin/high-contrast letterforms.
+*/
+
 .brandMonogram{
+
   position:relative;
 
-  width:105px;
-  height:58px;
+  width:100px;
+
+  height:57px;
 
   font-family:
-    "Times New Roman",
-    Georgia,
+    "Bodoni Moda",
+    Didot,
     serif;
 }
 
 .brandC{
+
   position:absolute;
 
-  left:6px;
-  top:-7px;
+  left:7px;
 
-  font-size:71px;
+  top:-12px;
+
+  font-size:74px;
+
   line-height:1;
 
   font-weight:400;
 
+  letter-spacing:-8px;
+
   transform:
-    scaleX(.82);
+    scaleX(.89);
 }
 
 .brandM{
+
   position:absolute;
 
-  left:44px;
+  left:43px;
+
   top:8px;
 
-  font-size:53px;
+  font-size:52px;
+
   line-height:1;
 
   font-weight:400;
 
+  letter-spacing:-5px;
+
   transform:
-    scaleX(.83);
+    scaleX(.90);
 }
 
 /*
-  Fine sweep through the C/M.
-  Gives the logo more of the custom fashion-mark feeling.
+  Subtle lower sweep.
+  Thin enough to feel like part of the letterform.
 */
 
-.brandSweep{
+.brandMonogram::after{
+
+  content:"";
+
   position:absolute;
 
   left:18px;
+
   top:39px;
 
   width:72px;
-  height:21px;
+
+  height:20px;
 
   border-top:
-    1.15px solid #111;
+    1px solid
+    rgba(0,0,0,.88);
 
   border-radius:50%;
 
   transform:
-    rotate(7deg);
+    rotate(5deg);
 }
 
 .brandWord{
+
   margin-top:-2px;
 
-  padding-left:5px;
+  padding-left:6px;
 
   font-family:
-    "Times New Roman",
-    Georgia,
+    "Bodoni Moda",
+    Didot,
     serif;
 
-  font-size:10.5px;
+  font-size:11px;
+
   line-height:1;
 
   font-weight:500;
 
-  letter-spacing:5.2px;
+  letter-spacing:5.4px;
 }
 
 .brandCountryRow{
-  width:144px;
 
-  margin-top:6px;
+  width:145px;
+
+  margin-top:7px;
 
   display:grid;
 
@@ -451,31 +544,37 @@ svg{
 }
 
 .brandCountryLine{
+
   height:1px;
 
   background:
-    rgba(0,0,0,.48);
+    rgba(0,0,0,.42);
 }
 
 .brandCountry{
+
   padding-left:3px;
 
-  font-size:6.2px;
+  font-size:6px;
+
   line-height:1;
 
-  font-weight:650;
+  font-weight:600;
 
-  letter-spacing:3px;
+  letter-spacing:3.1px;
 }
 
 /* ============================================================
-   BAG TOP
+   TOP BAG
    ============================================================ */
 
 .homeBagTop{
+
   position:absolute;
 
-  z-index:3;
+  z-index:4;
+
+  right:14px;
 
   top:
     calc(
@@ -483,14 +582,14 @@ svg{
       var(--safe-top)
     );
 
-  right:14px;
+  width:39px;
 
-  width:41px;
-  height:41px;
+  height:39px;
 
   border-radius:50%;
 
   display:grid;
+
   place-items:center;
 
   transition:
@@ -499,78 +598,88 @@ svg{
 }
 
 .homeBagTop svg{
-  width:24px;
-  height:24px;
 
-  stroke-width:1.48;
+  width:23px;
+
+  height:23px;
+
+  stroke-width:1.45;
 }
 
 @media(hover:hover){
 
   .homeBagTop:hover{
+
     transform:
       translateY(-2px);
 
     box-shadow:
-      0 13px 28px
+      0 14px 29px
       rgba(0,0,0,.09);
   }
 }
 
 .bagBadge{
+
   position:absolute;
 
   top:-2px;
+
   right:-2px;
 
   min-width:18px;
+
   height:18px;
 
   padding:0 4px;
 
   border-radius:999px;
 
-  background:#090909;
+  background:#080808;
+
   color:#fff;
 
   border:
     2px solid #fff;
 
   display:grid;
+
   place-items:center;
 
   font-size:8px;
-  line-height:1;
 
   font-weight:800;
 }
 
 .bagBadge.bump{
+
   animation:
-    badgeBump .22s ease;
+    bagBump .22s ease;
 }
 
-@keyframes badgeBump{
+@keyframes bagBump{
 
   50%{
-    transform:
-      scale(1.25);
+    transform:scale(1.25);
   }
 }
 
 /* ============================================================
-   CONTENT
+   HOME CONTENT
    ============================================================ */
 
 .homeContent{
-  padding:0 12px;
+
+  padding:
+    0 12px;
 }
 
 /* ============================================================
-   CATEGORY ANCHORS
+   FOUR CATEGORY ANCHORS
    ============================================================ */
 
 .categoryAnchors{
+
   display:grid;
 
   grid-template-columns:
@@ -585,6 +694,7 @@ svg{
 }
 
 .categoryAnchor{
+
   position:relative;
 
   min-width:0;
@@ -595,61 +705,67 @@ svg{
 
   border-radius:10px;
 
-  background:#ededed;
+  background:#ececec;
 
   box-shadow:
-    0 7px 21px
+    0 7px 20px
     rgba(0,0,0,.06);
 
   transition:
-    transform .2s ease,
-    box-shadow .2s ease,
-    filter .2s ease;
+    transform .22s ease,
+    box-shadow .22s ease,
+    filter .22s ease;
 }
 
 .categoryAnchor img{
+
   width:100%;
+
   height:100%;
 
   object-fit:cover;
 
   transition:
-    transform .35s ease,
-    filter .35s ease;
+    transform .38s ease,
+    filter .38s ease;
 }
 
 .categoryAnchor::after{
+
   content:"";
 
   position:absolute;
 
   inset:0;
 
+  pointer-events:none;
+
   background:
     linear-gradient(
       to bottom,
-      transparent 38%,
-      rgba(0,0,0,.69) 100%
+      transparent 37%,
+      rgba(0,0,0,.70) 100%
     );
-
-  pointer-events:none;
 }
 
 .categoryAnchorLabel{
+
   position:absolute;
 
   z-index:2;
 
   left:4px;
+
   right:4px;
 
   bottom:10px;
 
-  text-align:center;
-
   color:#fff;
 
-  font-size:8.8px;
+  text-align:center;
+
+  font-size:8.7px;
+
   line-height:1.05;
 
   font-weight:800;
@@ -658,44 +774,55 @@ svg{
 
   text-shadow:
     0 1px 7px
-    rgba(0,0,0,.28);
+    rgba(0,0,0,.35);
 }
+
+/*
+  Hover:
+  lift + subtle image zoom.
+*/
 
 @media(hover:hover){
 
   .categoryAnchor:hover{
+
     transform:
-      translateY(-4px);
+      translateY(-5px)
+      scale(1.012);
 
     box-shadow:
-      0 16px 35px
-      rgba(0,0,0,.12);
+      0 18px 38px
+      rgba(0,0,0,.14);
   }
 
   .categoryAnchor:hover img{
+
     transform:
-      scale(1.035);
+      scale(1.055);
 
     filter:
-      contrast(1.025)
-      saturate(1.035);
+      saturate(1.05)
+      contrast(1.025);
   }
 }
 
 .categoryAnchor:active{
+
   transform:
     scale(.985);
 }
 
 /* ============================================================
-   DELIVERY GLASS
+   DELIVERY SECTION
    ============================================================ */
 
 .deliverySection{
+
   margin-top:10px;
 }
 
 .deliveryRail{
+
   display:grid;
 
   grid-template-columns:
@@ -707,49 +834,57 @@ svg{
   gap:6px;
 }
 
+/*
+  Clear frost.
+  Very thin black hairline.
+*/
+
 .deliveryCard{
+
   position:relative;
 
+  overflow:hidden;
+
   min-width:0;
+
   min-height:91px;
 
   padding:
     10px 5px 9px;
 
-  overflow:hidden;
-
-  border-radius:14px;
+  border-radius:13px;
 
   display:flex;
+
   flex-direction:column;
-  align-items:center;
+
   justify-content:center;
+
+  align-items:center;
 
   text-align:center;
 
   background:
     linear-gradient(
       145deg,
-      rgba(255,255,255,.77),
-      rgba(255,255,255,.24)
+      rgba(255,255,255,.70),
+      rgba(255,255,255,.22)
     );
 
   border:
-    1px solid
-    rgba(255,255,255,.98);
+    .65px solid
+    rgba(0,0,0,.18);
 
   box-shadow:
-    0 0 0 1px
-      rgba(0,0,0,.024),
 
     inset 0 1px 0
-      rgba(255,255,255,1),
+    rgba(255,255,255,.96),
 
     inset 0 -1px 0
-      rgba(255,255,255,.36),
+    rgba(255,255,255,.38),
 
-    0 8px 23px
-      rgba(0,0,0,.055);
+    0 7px 21px
+    rgba(0,0,0,.047);
 
   backdrop-filter:
     blur(28px)
@@ -760,57 +895,63 @@ svg{
     saturate(175%);
 
   transition:
-    transform .2s ease,
-    box-shadow .2s ease,
-    background .2s ease;
+    transform .20s ease,
+    box-shadow .20s ease,
+    background .20s ease;
 }
 
 .deliveryCard::before{
+
   content:"";
 
   position:absolute;
 
-  width:68px;
-  height:68px;
+  top:-33px;
 
-  left:-24px;
-  top:-30px;
+  left:-28px;
+
+  width:76px;
+
+  height:76px;
 
   border-radius:50%;
 
   background:
-    rgba(255,255,255,.83);
+    rgba(255,255,255,.90);
 
   filter:
-    blur(10px);
+    blur(13px);
 
-  opacity:.6;
+  opacity:.63;
 
   pointer-events:none;
 }
 
 .deliveryCard::after{
+
   content:"";
 
   position:absolute;
 
   inset:1px;
 
-  border-radius:13px;
+  border-radius:12px;
 
   border:
     1px solid
-    rgba(255,255,255,.37);
+    rgba(255,255,255,.48);
 
   pointer-events:none;
 }
 
 .deliveryIcon{
+
   position:relative;
 
   z-index:2;
 
   width:26px;
+
   height:26px;
 
   margin:
@@ -818,31 +959,37 @@ svg{
 }
 
 .deliveryIcon svg{
+
   width:100%;
+
   height:100%;
 
-  stroke-width:1.45;
+  stroke-width:1.4;
 }
 
 .deliveryTitle{
+
   position:relative;
 
   z-index:2;
 
-  font-size:8.2px;
+  font-size:8px;
+
   line-height:1.2;
 
   font-weight:700;
 }
 
 .deliveryEta{
+
   position:relative;
 
   z-index:2;
 
   margin-top:3px;
 
-  font-size:7.3px;
+  font-size:7.2px;
+
   line-height:1.2;
 
   color:var(--muted);
@@ -851,35 +998,32 @@ svg{
 @media(hover:hover){
 
   .deliveryCard:hover{
+
     transform:
-      translateY(-4px)
-      scale(1.012);
+      translateY(-4px);
 
     background:
       linear-gradient(
         145deg,
         rgba(255,255,255,.93),
-        rgba(255,255,255,.41)
+        rgba(255,255,255,.37)
       );
 
     box-shadow:
-      0 0 0 1px
-        rgba(0,0,0,.024),
-
-      inset 0 1px 0
-        #fff,
-
-      0 17px 37px
-        rgba(0,0,0,.11);
+      inset 0 1px 0 #fff,
+      0 17px 36px
+      rgba(0,0,0,.11);
   }
 }
 
 .deliveryCard:active{
+
   transform:
-    scale(.98);
+    scale(.985);
 }
 
 .deliveryInfo{
+
   display:none;
 
   position:relative;
@@ -887,12 +1031,17 @@ svg{
   margin-top:8px;
 
   padding:
-    11px 39px 11px 12px;
+    11px 40px 11px 12px;
 
   border-radius:15px;
+
+  border:
+    .65px solid
+    rgba(0,0,0,.13);
 }
 
 .deliveryInfo.open{
+
   display:block;
 
   animation:
@@ -902,6 +1051,7 @@ svg{
 @keyframes deliveryReveal{
 
   from{
+
     opacity:0;
 
     transform:
@@ -909,6 +1059,7 @@ svg{
   }
 
   to{
+
     opacity:1;
 
     transform:none;
@@ -916,40 +1067,49 @@ svg{
 }
 
 .deliveryInfoTitle{
+
   font-size:9.5px;
 
   font-weight:800;
 }
 
 .deliveryInfoText{
+
   margin-top:4px;
 
   font-size:8px;
+
   line-height:1.45;
 
   color:#555;
 }
 
 .deliveryInfoClose{
+
   position:absolute;
 
-  top:50%;
   right:7px;
+
+  top:50%;
 
   transform:
     translateY(-50%);
 
   width:28px;
+
   height:28px;
 
   border-radius:50%;
 
   display:grid;
+
   place-items:center;
 }
 
 .deliveryInfoClose svg{
+
   width:14px;
+
   height:14px;
 
   stroke-width:1.5;
@@ -960,13 +1120,15 @@ svg{
    ============================================================ */
 
 .searchShell{
-  height:48px;
+
+  height:47px;
 
   margin-top:11px;
 
   border-radius:15px;
 
   display:flex;
+
   align-items:center;
 
   gap:9px;
@@ -975,48 +1137,56 @@ svg{
     0 10px 0 13px;
 
   transition:
-    transform .18s ease,
-    box-shadow .18s ease;
+    box-shadow .18s ease,
+    transform .18s ease;
 }
 
 @media(hover:hover){
 
   .searchShell:hover{
+
     transform:
       translateY(-1px);
 
     box-shadow:
-      0 12px 28px
+      0 13px 28px
       rgba(0,0,0,.075);
   }
 }
 
 .searchIcon{
+
   width:19px;
+
   height:19px;
 
-  flex:0 0 auto;
-
   stroke-width:1.5;
+
+  flex:0 0 auto;
 }
 
 .searchInput{
+
   flex:1;
 
   min-width:0;
-  height:44px;
 
-  font-size:9.5px;
+  height:43px;
+
+  font-size:9.4px;
 }
 
 .searchInput::placeholder{
+
   color:#999;
 }
 
 .searchClear{
+
   display:none;
 
   width:27px;
+
   height:27px;
 
   border-radius:50%;
@@ -1025,49 +1195,43 @@ svg{
 }
 
 .searchClear.show{
+
   display:grid;
 }
 
 .searchClear svg{
+
   width:13px;
+
   height:13px;
 
   stroke-width:1.5;
 }
 
 .filterButton{
-  width:31px;
-  height:31px;
+
+  width:30px;
+
+  height:30px;
 
   border-radius:50%;
 
   display:grid;
-  place-items:center;
 
-  transition:
-    background .18s ease,
-    transform .18s ease;
+  place-items:center;
 }
 
 .filterButton svg{
-  width:18px;
-  height:18px;
 
-  stroke-width:1.5;
-}
+  width:17px;
 
-@media(hover:hover){
+  height:17px;
 
-  .filterButton:hover{
-    background:
-      rgba(0,0,0,.045);
-
-    transform:
-      scale(1.05);
-  }
+  stroke-width:1.45;
 }
 
 .searchStatus{
+
   display:none;
 
   margin-top:7px;
@@ -1089,20 +1253,28 @@ svg{
 }
 
 .searchStatus.show{
+
   display:block;
 }
 
 /* ============================================================
-   CATEGORY TABS
+   CATEGORY LINE
+   TODOS / LONG NIGHTS / QUIET DAYS / QUICK AND EASY / SUNBATHING
    ============================================================ */
 
 .categoryTabs{
+
   display:flex;
+
   align-items:center;
+
+  width:100%;
 
   margin-top:8px;
 
   overflow-x:auto;
+
+  overflow-y:hidden;
 
   border-bottom:
     1px solid
@@ -1110,53 +1282,72 @@ svg{
 
   scrollbar-width:none;
 
-  -webkit-overflow-scrolling:touch;
+  -webkit-overflow-scrolling:
+    touch;
+
+  /*
+    AUTO is important.
+    Do NOT force pan-x here.
+    It allows vertical scrolling to begin
+    even if the user's finger lands on this row.
+  */
+
+  touch-action:auto;
 }
 
 .categoryTabs::-webkit-scrollbar{
+
   display:none;
 }
 
 .categoryTab{
+
   position:relative;
 
   flex:0 0 auto;
 
-  min-width:78px;
-  height:39px;
+  height:38px;
 
   padding:
-    0 8px;
+    0 11px;
 
   white-space:nowrap;
 
-  font-size:7.7px;
+  font-size:7.1px;
 
-  text-transform:uppercase;
+  font-weight:500;
 
   color:#777;
+
+  text-transform:uppercase;
 
   transition:
     color .18s ease;
 }
 
 .categoryTab.all{
-  min-width:56px;
+
+  padding-left:8px;
+
+  min-width:53px;
 }
 
 .categoryTab.active{
+
   color:#080808;
 
   font-weight:800;
 }
 
 .categoryTab.active::after{
+
   content:"";
 
   position:absolute;
 
-  left:8px;
-  right:8px;
+  left:9px;
+
+  right:9px;
 
   bottom:-1px;
 
@@ -1170,6 +1361,7 @@ svg{
 @media(hover:hover){
 
   .categoryTab:hover{
+
     color:#111;
   }
 }
@@ -1179,64 +1371,62 @@ svg{
    ============================================================ */
 
 .productSection{
+
   margin-top:17px;
 
   scroll-margin-top:10px;
 }
 
 .productSectionHead{
-  margin-bottom:8px;
 
   display:flex;
+
   align-items:center;
+
   justify-content:space-between;
+
+  margin-bottom:8px;
 }
 
 .productSectionTitle{
+
   margin:0;
 
   font-family:
-    "Times New Roman",
-    Georgia,
+    "Bodoni Moda",
+    Didot,
     serif;
 
   font-size:14px;
 
   font-weight:600;
 
-  letter-spacing:.15px;
+  letter-spacing:.1px;
 
   text-transform:uppercase;
 }
 
 .productSectionMeta{
+
   display:flex;
+
   align-items:center;
 
   gap:8px;
 }
 
 .liveCount{
-  font-size:6.8px;
+
+  font-size:6.7px;
 
   color:#aaa;
 }
 
 .viewAll{
+
   font-size:8px;
 
   color:#333;
-
-  transition:
-    transform .17s ease;
-}
-
-@media(hover:hover){
-
-  .viewAll:hover{
-    transform:
-      translateX(2px);
-  }
 }
 
 /* ============================================================
@@ -1244,6 +1434,7 @@ svg{
    ============================================================ */
 
 .productRail{
+
   display:grid;
 
   grid-auto-flow:column;
@@ -1257,6 +1448,7 @@ svg{
   gap:8px;
 
   overflow-x:auto;
+
   overflow-y:hidden;
 
   padding-bottom:3px;
@@ -1264,24 +1456,36 @@ svg{
   scroll-snap-type:
     x mandatory;
 
-  overscroll-behavior-x:
-    contain;
-
-  touch-action:pan-x;
+  scrollbar-width:none;
 
   -webkit-overflow-scrolling:
     touch;
 
-  scrollbar-width:none;
+  /*
+    This is the main scrolling correction.
+    Previous forced pan-x behavior can make
+    vertical page scrolling feel sticky.
+
+    AUTO lets the browser naturally determine
+    whether the user wants vertical page scroll
+    or horizontal product scroll.
+  */
+
+  touch-action:auto;
+
+  overscroll-behavior-inline:
+    contain;
 }
 
 .productRail::-webkit-scrollbar{
+
   display:none;
 }
 
 @media(min-width:700px){
 
   .productRail{
+
     grid-auto-columns:
       calc(
         (
@@ -1298,6 +1502,7 @@ svg{
    ============================================================ */
 
 .productCard{
+
   min-width:0;
 
   overflow:hidden;
@@ -1320,6 +1525,7 @@ svg{
 @media(hover:hover){
 
   .productCard:not(.placeholderCard):hover{
+
     transform:
       translateY(-5px);
 
@@ -1330,6 +1536,7 @@ svg{
 }
 
 .productMedia{
+
   position:relative;
 
   aspect-ratio:.74;
@@ -1340,7 +1547,9 @@ svg{
 }
 
 .productMedia img{
+
   width:100%;
+
   height:100%;
 
   object-fit:cover;
@@ -1353,25 +1562,30 @@ svg{
 
   .productCard:hover
   .productMedia img{
+
     transform:
-      scale(1.035);
+      scale(1.04);
   }
 }
 
 .productHeart{
+
   position:absolute;
 
   z-index:3;
 
   top:5px;
+
   right:5px;
 
   width:27px;
+
   height:27px;
 
   border-radius:50%;
 
   display:grid;
+
   place-items:center;
 
   background:
@@ -1392,25 +1606,30 @@ svg{
 }
 
 .productHeart svg{
+
   width:15px;
+
   height:15px;
 
   stroke-width:1.7;
 }
 
 .productHeart.active{
+
   color:#df1732;
 }
 
 @media(hover:hover){
 
   .productHeart:hover{
+
     transform:
-      scale(1.1);
+      scale(1.10);
   }
 }
 
 .productInfo{
+
   min-height:54px;
 
   padding:
@@ -1426,52 +1645,60 @@ svg{
 }
 
 .productName{
+
   height:19px;
 
   overflow:hidden;
 
   font-size:7.8px;
+
   line-height:1.2;
 
   font-weight:550;
 }
 
 .productPrice{
+
   margin-top:3px;
 
-  font-size:9.5px;
+  font-size:9.4px;
 
   font-weight:800;
 }
 
 /* ============================================================
-   PLACEHOLDERS
+   EMPTY PRODUCT PLACEHOLDERS
    ============================================================ */
 
 .placeholderCard{
+
   pointer-events:none;
 
   box-shadow:none;
 }
 
 .placeholderMedia{
+
   position:relative;
 
   width:100%;
+
   height:100%;
 
   display:grid;
+
   place-items:center;
 
   background:
     linear-gradient(
       145deg,
-      #f7f7f7,
+      #f8f8f8,
       #eeeeee
     );
 }
 
 .placeholderMedia::after{
+
   content:"";
 
   position:absolute;
@@ -1479,13 +1706,14 @@ svg{
   inset:9px;
 
   border:
-    1px dashed
-    rgba(0,0,0,.13);
+    .8px dashed
+    rgba(0,0,0,.15);
 
   border-radius:9px;
 }
 
 .placeholderInner{
+
   position:relative;
 
   z-index:2;
@@ -1495,48 +1723,54 @@ svg{
   color:#999;
 }
 
-.placeholderPlus{
-  width:29px;
-  height:29px;
+.placeholderNumber{
 
-  margin:
-    0 auto 6px;
+  font-family:
+    "Bodoni Moda",
+    Didot,
+    serif;
 
-  border-radius:50%;
+  font-size:22px;
 
-  display:grid;
-  place-items:center;
+  line-height:1;
 
-  background:
-    rgba(255,255,255,.8);
-
-  box-shadow:
-    0 2px 8px
-    rgba(0,0,0,.04);
-
-  font-size:17px;
-  font-weight:300;
+  color:#8c8c8c;
 }
 
 .placeholderLabel{
-  font-size:6.2px;
 
-  letter-spacing:.5px;
+  margin-top:5px;
+
+  font-size:5.9px;
+
+  font-weight:700;
+
+  letter-spacing:1px;
 
   text-transform:uppercase;
+}
 
-  font-weight:650;
+.placeholderHint{
+
+  margin-top:3px;
+
+  font-size:5.4px;
+
+  color:#aaa;
 }
 
 .placeholderCard .productInfo{
+
   background:#fafafa;
 }
 
 .placeholderCard .productName{
+
   color:#999;
 }
 
 .placeholderCard .productPrice{
+
   color:#bbb;
 
   font-weight:500;
@@ -1547,17 +1781,22 @@ svg{
    ============================================================ */
 
 .railDots{
+
   height:18px;
 
   display:flex;
+
   align-items:center;
+
   justify-content:center;
 
   gap:4px;
 }
 
 .railDot{
+
   width:4px;
+
   height:4px;
 
   border-radius:50%;
@@ -1570,6 +1809,7 @@ svg{
 }
 
 .railDot.active{
+
   width:13px;
 
   border-radius:999px;
@@ -1582,27 +1822,31 @@ svg{
    ============================================================ */
 
 .emptySearch{
+
   min-height:180px;
 
   padding:
     30px 20px;
 
   display:grid;
+
   place-items:center;
 
   text-align:center;
 
   font-size:8.5px;
+
   line-height:1.55;
 
   color:#777;
 }
 
 /* ============================================================
-   SLIMMER BOTTOM NAV
+   SLIM BOTTOM BAR
    ============================================================ */
 
 .bottomNav{
+
   position:fixed;
 
   z-index:90;
@@ -1620,8 +1864,8 @@ svg{
 
   width:
     min(
-      calc(100% - 25px),
-      402px
+      calc(100% - 27px),
+      398px
     );
 
   height:
@@ -1630,7 +1874,7 @@ svg{
   padding:
     2px 5px;
 
-  border-radius:18px;
+  border-radius:17px;
 
   display:grid;
 
@@ -1646,7 +1890,7 @@ svg{
     linear-gradient(
       145deg,
       rgba(255,255,255,.64),
-      rgba(255,255,255,.26)
+      rgba(255,255,255,.25)
     );
 
   border:
@@ -1654,14 +1898,15 @@ svg{
     rgba(255,255,255,.92);
 
   box-shadow:
+
     0 0 0 1px
-      rgba(0,0,0,.028),
+    rgba(0,0,0,.027),
 
     inset 0 1px 0
-      rgba(255,255,255,.98),
+    rgba(255,255,255,.98),
 
-    0 8px 25px
-      rgba(0,0,0,.075);
+    0 8px 24px
+    rgba(0,0,0,.075);
 
   backdrop-filter:
     blur(29px)
@@ -1673,16 +1918,19 @@ svg{
 }
 
 .navButton{
+
   position:relative;
 
-  height:44px;
+  height:43px;
 
-  border-radius:15px;
+  border-radius:14px;
 
   display:flex;
+
   flex-direction:column;
 
   align-items:center;
+
   justify-content:center;
 
   gap:1px;
@@ -1694,28 +1942,33 @@ svg{
 }
 
 .navButton svg{
+
   width:18px;
+
   height:18px;
 
-  stroke-width:1.45;
+  stroke-width:1.4;
 }
 
 .navButton span{
-  font-size:6.8px;
+
+  font-size:6.7px;
 }
 
 .navButton.active{
+
   background:
     rgba(255,255,255,.78);
 
   box-shadow:
-    0 4px 14px
-    rgba(0,0,0,.06);
+    0 3px 13px
+    rgba(0,0,0,.055);
 }
 
 @media(hover:hover){
 
   .navButton:hover{
+
     transform:
       translateY(-2px);
 
@@ -1725,32 +1978,40 @@ svg{
 }
 
 .navPlusOrb{
-  width:30px;
-  height:30px;
+
+  width:29px;
+
+  height:29px;
 
   border-radius:50%;
 
   display:grid;
+
   place-items:center;
 
   background:#111;
+
   color:#fff;
 
   box-shadow:
-    0 6px 17px
+    0 6px 16px
     rgba(0,0,0,.15);
 }
 
 .navPlusOrb svg{
-  width:16px;
-  height:16px;
+
+  width:15px;
+
+  height:15px;
 }
 
 .navPlusLabel{
+
   display:none;
 }
 
 .navBagBadge{
+
   position:absolute;
 
   top:0;
@@ -1761,6 +2022,7 @@ svg{
     );
 
   min-width:15px;
+
   height:15px;
 
   padding:
@@ -1769,24 +2031,27 @@ svg{
   border-radius:999px;
 
   background:#090909;
+
   color:#fff;
 
   border:
     1.5px solid #fff;
 
   display:grid;
+
   place-items:center;
 
-  font-size:6.5px!important;
+  font-size:6.3px!important;
 
   font-weight:800;
 }
 
 /* ============================================================
-   OVERLAYS
+   GENERAL OVERLAY
    ============================================================ */
 
 .overlay{
+
   position:fixed;
 
   inset:0;
@@ -1806,29 +2071,55 @@ svg{
 }
 
 .overlay.open{
+
   display:block;
 }
 
-.panel{
+/* ============================================================
+   SLIM PLUS MENU
+   ============================================================ */
+
+.plusPanel{
+
   position:absolute;
 
-  left:9px;
-  right:9px;
+  left:12px;
+
+  right:12px;
 
   bottom:
     calc(
       var(--nav-h) +
-      17px +
+      18px +
       var(--safe-bottom)
     );
 
-  border-radius:23px;
+  border-radius:20px;
 
-  padding:14px;
+  padding:
+    12px;
+}
+
+.plusHeader{
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:space-between;
+
+  padding:
+    0 2px 7px;
+}
+
+.plusTitleBlock{
+
+  min-width:0;
 }
 
 .panelEyebrow{
-  font-size:6.8px;
+
+  font-size:6.4px;
 
   color:#888;
 
@@ -1840,150 +2131,439 @@ svg{
 }
 
 .panelTitle{
-  margin-top:4px;
 
-  font-size:15px;
+  margin-top:3px;
 
-  font-weight:800;
-}
-
-.closeCircle{
-  width:30px;
-  height:30px;
-
-  border-radius:50%;
-
-  display:grid;
-  place-items:center;
-}
-
-.closeCircle svg{
-  width:14px;
-  height:14px;
-
-  stroke-width:1.5;
-}
-
-/* ============================================================
-   PLUS PANEL
-   ============================================================ */
-
-.plusGrid{
-  display:grid;
-
-  grid-template-columns:
-    repeat(
-      2,
-      minmax(0,1fr)
-    );
-
-  gap:7px;
-
-  margin-top:12px;
-}
-
-.plusTile{
-  min-height:66px;
-
-  padding:10px;
-
-  border-radius:17px;
-
-  text-align:left;
-
-  display:flex;
-  flex-direction:column;
-
-  align-items:flex-start;
-  justify-content:space-between;
-
-  background:
-    rgba(255,255,255,.52);
-
-  border:
-    1px solid
-    rgba(0,0,0,.052);
-
-  transition:
-    transform .18s ease,
-    box-shadow .18s ease;
-}
-
-@media(hover:hover){
-
-  .plusTile:hover{
-    transform:
-      translateY(-3px);
-
-    box-shadow:
-      0 12px 25px
-      rgba(0,0,0,.08);
-  }
-}
-
-.plusTileIcon{
-  width:28px;
-  height:28px;
-
-  border-radius:50%;
-
-  display:grid;
-  place-items:center;
-
-  background:
-    rgba(0,0,0,.05);
-}
-
-.plusTileIcon svg{
-  width:15px;
-  height:15px;
-
-  stroke-width:1.5;
-}
-
-.plusTileText{
-  margin-top:7px;
-
-  font-size:8.4px;
-
-  font-weight:700;
-}
-
-.plusWide{
-  grid-column:
-    1 / -1;
-
-  min-height:51px;
-
-  flex-direction:row;
-  align-items:center;
-}
-
-.plusWide .plusTileText{
-  flex:1;
-
-  margin:
-    0 0 0 8px;
-}
-
-/* ============================================================
-   FAVORITES PANEL
-   ============================================================ */
-
-.panelHead{
-  display:flex;
-
-  align-items:center;
-  justify-content:space-between;
-}
-
-.panelHeadTitle{
   font-size:13px;
 
   font-weight:800;
 }
 
+.closeCircle{
+
+  width:29px;
+
+  height:29px;
+
+  border-radius:50%;
+
+  display:grid;
+
+  place-items:center;
+
+  background:
+    rgba(255,255,255,.55);
+
+  border:
+    1px solid
+    rgba(0,0,0,.06);
+}
+
+.closeCircle svg{
+
+  width:14px;
+
+  height:14px;
+
+  stroke-width:1.5;
+}
+
+.plusList{
+
+  display:flex;
+
+  flex-direction:column;
+
+  border-top:
+    1px solid
+    rgba(0,0,0,.06);
+}
+
+.plusItem{
+
+  min-height:45px;
+
+  width:100%;
+
+  display:grid;
+
+  grid-template-columns:
+    31px 1fr auto;
+
+  align-items:center;
+
+  gap:8px;
+
+  border-bottom:
+    1px solid
+    rgba(0,0,0,.065);
+
+  text-align:left;
+
+  transition:
+    transform .17s ease,
+    background .17s ease;
+}
+
+.plusItem:last-child{
+
+  border-bottom:0;
+}
+
+.plusItemIcon{
+
+  width:28px;
+
+  height:28px;
+
+  border-radius:50%;
+
+  display:grid;
+
+  place-items:center;
+
+  background:
+    rgba(255,255,255,.64);
+
+  border:
+    1px solid
+    rgba(0,0,0,.055);
+}
+
+.plusItemIcon svg{
+
+  width:14px;
+
+  height:14px;
+
+  stroke-width:1.45;
+}
+
+.plusItemText{
+
+  font-size:8.5px;
+
+  font-weight:650;
+}
+
+.plusArrow{
+
+  padding-right:2px;
+
+  color:#777;
+
+  font-size:14px;
+}
+
+@media(hover:hover){
+
+  .plusItem:hover{
+
+    transform:
+      translateX(2px);
+
+    background:
+      rgba(255,255,255,.35);
+  }
+}
+
+/* ============================================================
+   PROFILE
+   ============================================================ */
+
+.profilePanel{
+
+  position:absolute;
+
+  left:10px;
+
+  right:10px;
+
+  bottom:
+    calc(
+      var(--nav-h) +
+      17px +
+      var(--safe-bottom)
+    );
+
+  border-radius:22px;
+
+  padding:14px;
+}
+
+.panelHead{
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:space-between;
+}
+
+.panelHeadTitle{
+
+  font-size:13px;
+
+  font-weight:800;
+}
+
+.profileOffer{
+
+  margin-top:11px;
+
+  padding:
+    12px;
+
+  border-radius:15px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.78),
+      rgba(255,255,255,.31)
+    );
+
+  border:
+    .65px solid
+    rgba(0,0,0,.12);
+}
+
+.profileOfferTop{
+
+  font-family:
+    "Bodoni Moda",
+    Didot,
+    serif;
+
+  font-size:17px;
+
+  line-height:1.1;
+
+  font-weight:600;
+}
+
+.profileOfferText{
+
+  margin-top:5px;
+
+  font-size:7.7px;
+
+  line-height:1.48;
+
+  color:#555;
+}
+
+.profileBenefits{
+
+  display:grid;
+
+  grid-template-columns:
+    repeat(
+      3,
+      1fr
+    );
+
+  gap:5px;
+
+  margin-top:9px;
+}
+
+.profileBenefit{
+
+  min-height:53px;
+
+  padding:
+    7px 5px;
+
+  border-radius:11px;
+
+  text-align:center;
+
+  border:
+    1px solid
+    rgba(0,0,0,.055);
+
+  background:
+    rgba(255,255,255,.44);
+}
+
+.profileBenefitStrong{
+
+  font-size:7px;
+
+  font-weight:800;
+}
+
+.profileBenefitText{
+
+  margin-top:3px;
+
+  font-size:6.2px;
+
+  line-height:1.3;
+
+  color:#777;
+}
+
+.fieldLabel{
+
+  display:block;
+
+  margin:
+    10px 0 5px;
+
+  font-size:6.5px;
+
+  letter-spacing:.85px;
+
+  font-weight:800;
+
+  color:#666;
+
+  text-transform:uppercase;
+}
+
+.profileInput{
+
+  width:100%;
+
+  height:41px;
+
+  padding:
+    0 11px;
+
+  border-radius:12px;
+
+  border:
+    1px solid
+    rgba(0,0,0,.09);
+
+  background:
+    rgba(255,255,255,.58);
+
+  font-size:8.8px;
+}
+
+.profileMarketing{
+
+  display:flex;
+
+  align-items:flex-start;
+
+  gap:8px;
+
+  margin-top:9px;
+
+  font-size:7px;
+
+  line-height:1.42;
+
+  color:#666;
+}
+
+.profileMarketing input{
+
+  width:14px;
+
+  height:14px;
+
+  margin-top:1px;
+
+  flex:
+    0 0 auto;
+}
+
+.profileActions{
+
+  display:grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap:7px;
+
+  margin-top:11px;
+}
+
+.profileButton{
+
+  min-height:40px;
+
+  padding:
+    0 8px;
+
+  border-radius:12px;
+
+  font-size:8.2px;
+
+  font-weight:750;
+}
+
+.profileButton.secondary{
+
+  border:
+    1px solid
+    rgba(0,0,0,.10);
+
+  background:
+    rgba(255,255,255,.45);
+}
+
+.profileButton.primary{
+
+  background:#111;
+
+  color:#fff;
+}
+
+.profileTrack{
+
+  width:100%;
+
+  height:38px;
+
+  margin-top:7px;
+
+  border-radius:12px;
+
+  border:
+    1px solid
+    rgba(0,0,0,.10);
+
+  background:
+    rgba(255,255,255,.48);
+
+  font-size:7.8px;
+
+  font-weight:700;
+}
+
+/* ============================================================
+   FAVORITES
+   ============================================================ */
+
+.favoritesPanel{
+
+  position:absolute;
+
+  left:9px;
+
+  right:9px;
+
+  bottom:
+    calc(
+      var(--nav-h) +
+      16px +
+      var(--safe-bottom)
+    );
+
+  border-radius:22px;
+
+  padding:13px;
+}
+
 .favoriteRail{
+
   display:flex;
 
   gap:7px;
@@ -1996,13 +2576,20 @@ svg{
     x mandatory;
 
   scrollbar-width:none;
+
+  -webkit-overflow-scrolling:
+    touch;
+
+  touch-action:auto;
 }
 
 .favoriteRail::-webkit-scrollbar{
+
   display:none;
 }
 
 .favoriteMini{
+
   flex:
     0 0 93px;
 
@@ -2010,7 +2597,9 @@ svg{
 }
 
 .favoriteMiniImage{
+
   width:93px;
+
   height:116px;
 
   overflow:hidden;
@@ -2021,20 +2610,25 @@ svg{
 }
 
 .favoriteMiniImage img{
+
   width:100%;
+
   height:100%;
 
   object-fit:cover;
 }
 
 .favoriteMiniName{
+
   margin-top:5px;
 
   font-size:7px;
+
   line-height:1.25;
 }
 
 .favoriteMiniPrice{
+
   margin-top:2px;
 
   font-size:8px;
@@ -2043,10 +2637,13 @@ svg{
 }
 
 .favoriteEmpty{
+
   width:100%;
+
   min-height:90px;
 
   display:grid;
+
   place-items:center;
 
   text-align:center;
@@ -2057,108 +2654,333 @@ svg{
 }
 
 /* ============================================================
-   PROFILE
+   BAG DRAWER
    ============================================================ */
 
-.profileIntro{
-  margin-top:7px;
+.bagDrawer{
 
-  font-size:8px;
-  line-height:1.5;
+  position:absolute;
 
-  color:#666;
+  left:8px;
+
+  right:8px;
+
+  bottom:8px;
+
+  max-height:
+    79dvh;
+
+  overflow-y:auto;
+
+  -webkit-overflow-scrolling:
+    touch;
+
+  border-radius:23px;
+
+  padding:
+    14px 13px
+    calc(
+      15px +
+      var(--safe-bottom)
+    );
 }
 
-.fieldLabel{
-  display:block;
+.bagHeader{
 
-  margin:
-    11px 0 5px;
+  display:flex;
+
+  align-items:center;
+
+  justify-content:space-between;
+
+  position:sticky;
+
+  top:0;
+
+  z-index:4;
+
+  padding-bottom:6px;
+}
+
+.bagTitle{
+
+  font-family:
+    "Bodoni Moda",
+    Didot,
+    serif;
+
+  font-size:17px;
+
+  font-weight:600;
+}
+
+.bagSubtitle{
+
+  margin-top:2px;
 
   font-size:6.8px;
 
-  letter-spacing:.8px;
-
-  font-weight:800;
-
-  color:#666;
-
-  text-transform:uppercase;
+  color:#888;
 }
 
-.profileInput{
-  width:100%;
-  height:43px;
+.bagItems{
 
-  padding:
-    0 11px;
-
-  border-radius:13px;
-
-  border:
-    1px solid
-    rgba(0,0,0,.09);
-
-  background:
-    rgba(255,255,255,.6);
-
-  font-size:9px;
+  margin-top:4px;
 }
 
-.profileMarketing{
-  display:flex;
+.bagItem{
 
-  align-items:flex-start;
-
-  gap:8px;
-
-  margin-top:10px;
-
-  font-size:7.4px;
-  line-height:1.45;
-
-  color:#666;
-}
-
-.profileMarketing input{
-  width:14px;
-  height:14px;
-
-  margin-top:1px;
-
-  flex:0 0 auto;
-}
-
-.profileActions{
   display:grid;
 
   grid-template-columns:
-    1fr 1fr;
+    61px 1fr auto;
 
-  gap:7px;
+  gap:9px;
 
-  margin-top:12px;
+  padding:
+    10px 0;
+
+  border-bottom:
+    1px solid
+    rgba(0,0,0,.07);
 }
 
-.profileButton{
-  height:41px;
+.bagItemImage{
 
-  border-radius:13px;
+  width:61px;
+
+  height:78px;
+
+  border-radius:10px;
+
+  overflow:hidden;
+
+  background:#eee;
+}
+
+.bagItemImage img{
+
+  width:100%;
+
+  height:100%;
+
+  object-fit:cover;
+}
+
+.bagItemName{
+
+  font-size:8.8px;
+
+  font-weight:700;
+
+  line-height:1.3;
+}
+
+.bagItemMeta{
+
+  margin-top:4px;
+
+  font-size:7px;
+
+  color:#777;
+}
+
+.bagQty{
+
+  display:flex;
+
+  align-items:center;
+
+  gap:6px;
+
+  margin-top:8px;
+}
+
+.bagQtyButton{
+
+  width:24px;
+
+  height:24px;
+
+  border-radius:50%;
+
+  border:
+    1px solid
+    rgba(0,0,0,.12);
+
+  display:grid;
+
+  place-items:center;
+
+  font-size:11px;
+}
+
+.bagQtyValue{
+
+  min-width:14px;
+
+  text-align:center;
+
+  font-size:7.5px;
+}
+
+.bagRemove{
+
+  margin-top:7px;
+
+  font-size:6.8px;
+
+  color:#555;
+
+  text-decoration:underline;
+
+  text-underline-offset:2px;
+}
+
+.bagItemPrice{
+
+  font-size:8.2px;
+
+  font-weight:750;
+
+  white-space:nowrap;
+}
+
+.bagEmpty{
+
+  min-height:150px;
+
+  display:grid;
+
+  place-items:center;
+
+  text-align:center;
+
+  padding:20px;
+
+  color:#777;
 
   font-size:8.5px;
 
-  font-weight:750;
+  line-height:1.5;
 }
 
-.profileButton.secondary{
-  border:
+.bagSummary{
+
+  margin-top:11px;
+}
+
+.summaryRow{
+
+  min-height:28px;
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:space-between;
+
+  font-size:8.3px;
+}
+
+.summaryRow.total{
+
+  margin-top:5px;
+
+  padding-top:9px;
+
+  border-top:
     1px solid
-    rgba(0,0,0,.1);
+    rgba(0,0,0,.08);
+
+  font-size:10px;
+
+  font-weight:800;
 }
 
-.profileButton.primary{
-  background:#111;
+.checkoutButton{
+
+  width:100%;
+
+  height:44px;
+
+  margin-top:10px;
+
+  border-radius:13px;
+
+  background:#090909;
+
   color:#fff;
+
+  font-size:9px;
+
+  font-weight:800;
+
+  transition:
+    transform .17s ease;
+}
+
+@media(hover:hover){
+
+  .checkoutButton:hover{
+
+    transform:
+      translateY(-2px);
+  }
+}
+
+/* ============================================================
+   CONTACT SMALL SHEET
+   ============================================================ */
+
+.contactPanel{
+
+  position:absolute;
+
+  left:11px;
+
+  right:11px;
+
+  bottom:
+    calc(
+      var(--nav-h) +
+      17px +
+      var(--safe-bottom)
+    );
+
+  border-radius:21px;
+
+  padding:14px;
+}
+
+.contactText{
+
+  margin-top:8px;
+
+  font-size:7.7px;
+
+  line-height:1.5;
+
+  color:#555;
+}
+
+.contactButton{
+
+  width:100%;
+
+  height:40px;
+
+  margin-top:10px;
+
+  border-radius:12px;
+
+  background:#111;
+
+  color:#fff;
+
+  font-size:8px;
+
+  font-weight:750;
 }
 
 /* ============================================================
@@ -2166,6 +2988,7 @@ svg{
    ============================================================ */
 
 .toast{
+
   position:fixed;
 
   z-index:220;
@@ -2175,7 +2998,7 @@ svg{
   bottom:
     calc(
       var(--nav-h) +
-      24px +
+      23px +
       var(--safe-bottom)
     );
 
@@ -2195,6 +3018,7 @@ svg{
   border-radius:999px;
 
   background:#090909;
+
   color:#fff;
 
   font-size:8px;
@@ -2207,6 +3031,7 @@ svg{
 }
 
 .toast.show{
+
   opacity:1;
 
   transform:
@@ -2219,6 +3044,7 @@ svg{
   *,
   *::before,
   *::after{
+
     scroll-behavior:auto!important;
 
     animation-duration:
@@ -2228,6 +3054,7 @@ svg{
       .01ms!important;
   }
 }
+
 </style>
 </head>
 
@@ -2238,6 +3065,10 @@ svg{
   class="appShell"
 >
 
+<!-- ============================================================
+     HEADER
+     ============================================================ -->
+
 <header class="homeHeader">
 
   <button
@@ -2245,6 +3076,7 @@ svg{
     class="headerPlus glass"
     aria-label="Más"
   >
+
     <svg
       viewBox="0 0 24 24"
       fill="none"
@@ -2252,6 +3084,7 @@ svg{
     >
       <path d="M12 5v14M5 12h14"/>
     </svg>
+
   </button>
 
   <div
@@ -2260,9 +3093,15 @@ svg{
   >
 
     <div class="brandMonogram">
-      <span class="brandC">C</span>
-      <span class="brandM">M</span>
-      <span class="brandSweep"></span>
+
+      <span class="brandC">
+        C
+      </span>
+
+      <span class="brandM">
+        M
+      </span>
+
     </div>
 
     <div class="brandWord">
@@ -2270,11 +3109,15 @@ svg{
     </div>
 
     <div class="brandCountryRow">
+
       <span class="brandCountryLine"></span>
+
       <span class="brandCountry">
         COLOMBIA
       </span>
+
       <span class="brandCountryLine"></span>
+
     </div>
 
   </div>
@@ -2305,14 +3148,18 @@ svg{
 
 </header>
 
+<!-- ============================================================
+     HOME
+     ============================================================ -->
+
 <main class="homeContent">
 
-  <!-- CATEGORY ANCHORS -->
+  <!-- FOUR IMAGE ANCHORS -->
 
   <section
     id="categoryAnchors"
     class="categoryAnchors"
-    aria-label="Categorías"
+    aria-label="Categorías CajaModa"
   ></section>
 
   <!-- DELIVERY -->
@@ -2386,6 +3233,7 @@ svg{
       class="searchClear"
       aria-label="Limpiar búsqueda"
     >
+
       <svg
         viewBox="0 0 24 24"
         fill="none"
@@ -2393,6 +3241,7 @@ svg{
       >
         <path d="m7 7 10 10M17 7 7 17"/>
       </svg>
+
     </button>
 
     <button
@@ -2400,6 +3249,7 @@ svg{
       class="filterButton"
       aria-label="Categorías"
     >
+
       <svg
         viewBox="0 0 24 24"
         fill="none"
@@ -2410,6 +3260,7 @@ svg{
         <path d="M4 17h2M10 17h10"/>
         <circle cx="8" cy="17" r="2"/>
       </svg>
+
     </button>
 
   </div>
@@ -2419,24 +3270,26 @@ svg{
     class="searchStatus"
   ></div>
 
-  <!-- CATEGORY FILTER LINE -->
+  <!-- CATEGORY LINE -->
 
   <nav
     id="categoryTabs"
     class="categoryTabs"
-    aria-label="Tipos"
+    aria-label="Categorías"
   ></nav>
 
-  <!-- PRODUCTS -->
+  <!-- PRODUCT SECTIONS -->
 
-  <div id="homeSections"></div>
+  <div
+    id="homeSections"
+  ></div>
 
 </main>
 
 </div>
 
 <!-- ============================================================
-     SLIM BOTTOM NAV
+     BOTTOM NAV
      ============================================================ -->
 
 <nav
@@ -2449,7 +3302,9 @@ svg{
     class="navButton"
     aria-label="Más"
   >
+
     <span class="navPlusOrb">
+
       <svg
         viewBox="0 0 24 24"
         fill="none"
@@ -2457,10 +3312,13 @@ svg{
       >
         <path d="M12 5v14M5 12h14"/>
       </svg>
+
     </span>
+
     <span class="navPlusLabel">
       Más
     </span>
+
   </button>
 
   <button
@@ -2477,7 +3335,9 @@ svg{
       <path d="M20.3 5.7a5.2 5.2 0 0 0-7.4 0L12 6.6l-.9-.9a5.2 5.2 0 0 0-7.4 7.4L12 21l8.3-7.9a5.2 5.2 0 0 0 0-7.4Z"/>
     </svg>
 
-    <span>Favoritos</span>
+    <span>
+      Favoritos
+    </span>
 
   </button>
 
@@ -2497,7 +3357,9 @@ svg{
       <path d="M10 20v-6h4v6"/>
     </svg>
 
-    <span>Home</span>
+    <span>
+      Home
+    </span>
 
   </button>
 
@@ -2516,7 +3378,9 @@ svg{
       <path d="M5.5 20c.7-4 3-6 6.5-6s5.8 2 6.5 6"/>
     </svg>
 
-    <span>Perfil</span>
+    <span>
+      Perfil
+    </span>
 
   </button>
 
@@ -2535,7 +3399,9 @@ svg{
       <path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>
     </svg>
 
-    <span>Bolsa</span>
+    <span>
+      Bolsa
+    </span>
 
     <span
       id="navBagBadge"
@@ -2549,7 +3415,7 @@ svg{
 </nav>
 
 <!-- ============================================================
-     PLUS OVERLAY
+     PLUS MENU
      ============================================================ -->
 
 <div
@@ -2557,91 +3423,83 @@ svg{
   class="overlay"
 >
 
-  <section class="panel glassStrong">
+  <section
+    class="plusPanel glassStrong"
+  >
 
-    <div class="panelEyebrow">
-      CAJAMODA
-    </div>
+    <header class="plusHeader">
 
-    <div class="panelTitle">
-      Más
-    </div>
+      <div class="plusTitleBlock">
 
-    <div class="plusGrid">
+        <div class="panelEyebrow">
+          CAJAMODA
+        </div>
+
+        <div class="panelTitle">
+          ¿Cómo podemos ayudarte?
+        </div>
+
+      </div>
 
       <button
-        class="plusTile"
-        data-action="OPEN_WHATSAPP"
+        id="plusClose"
+        class="closeCircle"
+        aria-label="Cerrar"
       >
 
-        <span class="plusTileIcon">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+        >
+          <path d="m7 7 10 10M17 7 7 17"/>
+        </svg>
+
+      </button>
+
+    </header>
+
+    <div class="plusList">
+
+      <!-- WHATSAPP -->
+
+      <button
+        class="plusItem"
+        data-plus-action="whatsapp"
+      >
+
+        <span class="plusItemIcon">
+
           <svg
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
           >
             <path d="M5 19l1-3a8 8 0 1 1 3 3l-4 0Z"/>
-            <path d="M9 9c.7 2 2 3.3 4 4"/>
+            <path d="M9 9c.8 2 2 3.3 4 4"/>
           </svg>
+
         </span>
 
-        <span class="plusTileText">
-          WhatsApp
+        <span class="plusItemText">
+          WhatsApp · Mensajes y pedidos
+        </span>
+
+        <span class="plusArrow">
+          ›
         </span>
 
       </button>
 
-      <button
-        class="plusTile"
-        data-action="OPEN_HELP"
-      >
-
-        <span class="plusTileIcon">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-          >
-            <circle cx="12" cy="12" r="9"/>
-            <path d="M9.8 9a2.5 2.5 0 0 1 4.7 1.2c0 1.8-2.5 2.1-2.5 4"/>
-            <path d="M12 18h.01"/>
-          </svg>
-        </span>
-
-        <span class="plusTileText">
-          Ayuda
-        </span>
-
-      </button>
+      <!-- CONTACT -->
 
       <button
-        class="plusTile"
-        data-action="OPEN_ABOUT"
+        class="plusItem"
+        data-plus-action="contact"
       >
 
-        <span class="plusTileIcon">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-          >
-            <circle cx="12" cy="12" r="9"/>
-            <path d="M12 10v6M12 7h.01"/>
-          </svg>
-        </span>
+        <span class="plusItemIcon">
 
-        <span class="plusTileText">
-          Sobre CajaModa
-        </span>
-
-      </button>
-
-      <button
-        class="plusTile"
-        data-action="OPEN_CONTACT"
-      >
-
-        <span class="plusTileIcon">
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -2650,90 +3508,83 @@ svg{
             <path d="M4 6h16v12H4z"/>
             <path d="m4 7 8 6 8-6"/>
           </svg>
+
         </span>
 
-        <span class="plusTileText">
-          Contacto
+        <span class="plusItemText">
+          Contáctanos
+        </span>
+
+        <span class="plusArrow">
+          ›
         </span>
 
       </button>
 
+      <!-- TRACK -->
+
       <button
-        class="plusTile plusWide"
-        data-action="OPEN_STORE_OWNER_PORTAL"
+        class="plusItem"
+        data-plus-action="track"
       >
 
-        <span class="plusTileIcon">
+        <span class="plusItemIcon">
+
           <svg
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
           >
-            <path d="M5 10h14v10H5z"/>
-            <path d="M3 10l2-5h14l2 5"/>
-            <path d="M9 20v-5h6v5"/>
+            <path d="M3 6h11v10H3z"/>
+            <path d="M14 10h4l3 3v3h-7"/>
+            <circle cx="7" cy="18" r="2"/>
+            <circle cx="18" cy="18" r="2"/>
           </svg>
+
         </span>
 
-        <span class="plusTileText">
-          Store Owner Portal
+        <span class="plusItemText">
+          Rastrear mi pedido
         </span>
 
-        <span>↗</span>
+        <span class="plusArrow">
+          ›
+        </span>
 
       </button>
 
-    </div>
-
-  </section>
-
-</div>
-
-<!-- ============================================================
-     FAVORITES
-     ============================================================ -->
-
-<div
-  id="favoritesOverlay"
-  class="overlay"
->
-
-  <section class="panel glassStrong">
-
-    <div class="panelHead">
-
-      <div>
-
-        <div class="panelEyebrow">
-          GUARDADO
-        </div>
-
-        <div class="panelHeadTitle">
-          Favoritos
-        </div>
-
-      </div>
+      <!-- HELP -->
 
       <button
-        id="favoritesClose"
-        class="closeCircle"
-        aria-label="Cerrar"
+        class="plusItem"
+        data-plus-action="help"
       >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-        >
-          <path d="m7 7 10 10M17 7 7 17"/>
-        </svg>
+
+        <span class="plusItemIcon">
+
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+          >
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M9.7 9a2.6 2.6 0 0 1 4.8 1.3c0 1.8-2.5 2-2.5 4"/>
+            <path d="M12 18h.01"/>
+          </svg>
+
+        </span>
+
+        <span class="plusItemText">
+          Ayuda
+        </span>
+
+        <span class="plusArrow">
+          ›
+        </span>
+
       </button>
 
     </div>
-
-    <div
-      id="favoriteRail"
-      class="favoriteRail"
-    ></div>
 
   </section>
 
@@ -2748,9 +3599,11 @@ svg{
   class="overlay"
 >
 
-  <section class="panel glassStrong">
+  <section
+    class="profilePanel glassStrong"
+  >
 
-    <div class="panelHead">
+    <header class="panelHead">
 
       <div>
 
@@ -2769,6 +3622,7 @@ svg{
         class="closeCircle"
         aria-label="Cerrar"
       >
+
         <svg
           viewBox="0 0 24 24"
           fill="none"
@@ -2776,13 +3630,64 @@ svg{
         >
           <path d="m7 7 10 10M17 7 7 17"/>
         </svg>
+
       </button>
 
-    </div>
+    </header>
 
-    <div class="profileIntro">
-      Inicia sesión o crea tu membresía CajaModa para conectar
-      compras, seguimiento de pedidos, descuentos y ofertas.
+    <div class="profileOffer">
+
+      <div class="profileOfferTop">
+        Únete y recibe 10% OFF
+      </div>
+
+      <div class="profileOfferText">
+        Crea tu perfil CajaModa y recibe un código promocional
+        para tu primera compra. Tu cuenta también te permite
+        mantener tus pedidos juntos, rastrear tus compras y
+        recibir acceso anticipado a nuevos lanzamientos.
+      </div>
+
+      <div class="profileBenefits">
+
+        <div class="profileBenefit">
+
+          <div class="profileBenefitStrong">
+            10% OFF
+          </div>
+
+          <div class="profileBenefitText">
+            Primera orden
+          </div>
+
+        </div>
+
+        <div class="profileBenefit">
+
+          <div class="profileBenefitStrong">
+            TRACK
+          </div>
+
+          <div class="profileBenefitText">
+            Tus pedidos
+          </div>
+
+        </div>
+
+        <div class="profileBenefit">
+
+          <div class="profileBenefitStrong">
+            EARLY
+          </div>
+
+          <div class="profileBenefitText">
+            Lanzamientos
+          </div>
+
+        </div>
+
+      </div>
+
     </div>
 
     <label
@@ -2824,7 +3729,8 @@ svg{
       >
 
       <span>
-        Envíame cupones, descuentos y nuevos lanzamientos de CajaModa.
+        Quiero recibir mi código de bienvenida,
+        descuentos y noticias de lanzamientos CajaModa.
       </span>
 
     </label>
@@ -2842,7 +3748,176 @@ svg{
         id="profileCreate"
         class="profileButton primary"
       >
-        Crear membresía
+        Crear perfil + 10%
+      </button>
+
+    </div>
+
+    <button
+      id="profileTrack"
+      class="profileTrack"
+    >
+      Rastrear mis pedidos ›
+    </button>
+
+  </section>
+
+</div>
+
+<!-- ============================================================
+     FAVORITES
+     ============================================================ -->
+
+<div
+  id="favoritesOverlay"
+  class="overlay"
+>
+
+  <section
+    class="favoritesPanel glassStrong"
+  >
+
+    <header class="panelHead">
+
+      <div>
+
+        <div class="panelEyebrow">
+          GUARDADO
+        </div>
+
+        <div class="panelHeadTitle">
+          Favoritos
+        </div>
+
+      </div>
+
+      <button
+        id="favoritesClose"
+        class="closeCircle"
+        aria-label="Cerrar"
+      >
+
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+        >
+          <path d="m7 7 10 10M17 7 7 17"/>
+        </svg>
+
+      </button>
+
+    </header>
+
+    <div
+      id="favoriteRail"
+      class="favoriteRail"
+    ></div>
+
+  </section>
+
+</div>
+
+<!-- ============================================================
+     BAG
+     ============================================================ -->
+
+<div
+  id="bagOverlay"
+  class="overlay"
+>
+
+  <section
+    class="bagDrawer glassStrong"
+  >
+
+    <header class="bagHeader">
+
+      <div>
+
+        <div
+          id="bagTitle"
+          class="bagTitle"
+        >
+          Mi bolsa
+        </div>
+
+        <div class="bagSubtitle">
+          Revisa tus productos antes de pagar.
+        </div>
+
+      </div>
+
+      <button
+        id="bagClose"
+        class="closeCircle"
+        aria-label="Cerrar bolsa"
+      >
+
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+        >
+          <path d="m7 7 10 10M17 7 7 17"/>
+        </svg>
+
+      </button>
+
+    </header>
+
+    <div
+      id="bagItems"
+      class="bagItems"
+    ></div>
+
+    <div
+      id="bagEmpty"
+      class="bagEmpty hidden"
+    >
+      Tu bolsa está vacía.
+      <br>
+      Encuentra algo que te encante.
+    </div>
+
+    <div
+      id="bagSummary"
+      class="bagSummary"
+    >
+
+      <div class="summaryRow">
+
+        <span>
+          Productos
+        </span>
+
+        <span
+          id="bagQuantity"
+        >
+          0
+        </span>
+
+      </div>
+
+      <div class="summaryRow total">
+
+        <span>
+          Subtotal
+        </span>
+
+        <span
+          id="bagSubtotal"
+        >
+          $0
+        </span>
+
+      </div>
+
+      <button
+        id="checkoutButton"
+        class="checkoutButton"
+      >
+        Ir a checkout
       </button>
 
     </div>
@@ -2851,18 +3926,85 @@ svg{
 
 </div>
 
+<!-- ============================================================
+     CONTACT
+     ============================================================ -->
+
+<div
+  id="contactOverlay"
+  class="overlay"
+>
+
+  <section
+    class="contactPanel glassStrong"
+  >
+
+    <header class="panelHead">
+
+      <div>
+
+        <div class="panelEyebrow">
+          CAJAMODA
+        </div>
+
+        <div class="panelHeadTitle">
+          Contáctanos
+        </div>
+
+      </div>
+
+      <button
+        id="contactClose"
+        class="closeCircle"
+        aria-label="Cerrar"
+      >
+
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+        >
+          <path d="m7 7 10 10M17 7 7 17"/>
+        </svg>
+
+      </button>
+
+    </header>
+
+    <div class="contactText">
+      ¿Tienes una pregunta sobre un producto o pedido?
+      Envíanos un mensaje y mantendremos el contexto de tu
+      sesión para que podamos ayudarte más rápido.
+    </div>
+
+    <button
+      id="contactMessage"
+      class="contactButton"
+    >
+      Enviar mensaje
+    </button>
+
+  </section>
+
+</div>
+
+<!-- ============================================================
+     TOAST
+     ============================================================ -->
+
 <div
   id="toast"
   class="toast"
 ></div>
 
 <script>
+
 (() => {
 
   "use strict";
 
   /* ============================================================
-     HOME FREEZE CONFIGURATION
+     CONFIG
      ============================================================ */
 
   const CONFIG =
@@ -2873,6 +4015,20 @@ svg{
 
       bridgeSource:
         "CAJAMODA_IFRAME",
+
+      /*
+        Accept CajaModa plus the legacy bridge names
+        so the current Wix/main.js connection is not broken.
+        Legacy identifiers are not displayed to customers.
+      */
+
+      acceptedSources:[
+        "CAJAMODA_STOREFRONT",
+        "CAJAMODA_IFRAME",
+        "CAJAMODA_WIX",
+        "MODAPOP_IFRAME",
+        "MODAPOP_WIX"
+      ],
 
       maxSlotsPerCategory:
         10,
@@ -2887,11 +4043,29 @@ svg{
         "/checkout/",
 
       searchDebounceMs:
-        160
+        160,
+
+      /*
+        Add the business WhatsApp number later
+        in international format without +.
+
+        Example:
+        "573001234567"
+
+        With this blank, WhatsApp still opens
+        with the prewritten order message and
+        allows the customer to choose a contact.
+      */
+
+      whatsappNumber:
+        "",
+
+      welcomePromoCode:
+        "CAJA10"
     });
 
   /* ============================================================
-     CATEGORY STRUCTURE
+     CATEGORY LAW
      ============================================================ */
 
   const CATEGORIES =
@@ -2901,24 +4075,22 @@ svg{
         id:
           "late",
 
-        type:
-          "Vestidos",
-
         name:
-          "Noches Largas",
+          "Long Nights",
 
         image:
           "https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=900&q=88",
 
         terms:[
-          "noches largas",
-          "vestido",
-          "vestidos",
+          "long nights",
+          "night",
+          "evening",
+          "party",
           "dress",
           "dresses",
-          "gown",
-          "evening",
-          "party"
+          "vestido",
+          "vestidos",
+          "gown"
         ]
       },
 
@@ -2926,21 +4098,19 @@ svg{
         id:
           "chill",
 
-        type:
-          "Tops",
-
         name:
-          "Días Tranquilos",
+          "Quiet Days",
 
         image:
           "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=900&q=88",
 
         terms:[
-          "dias tranquilos",
+          "quiet days",
+          "quiet",
+          "casual",
           "top",
           "tops",
           "shirt",
-          "shirts",
           "blouse",
           "blusa",
           "camisa",
@@ -2952,23 +4122,21 @@ svg{
         id:
           "quick",
 
-        type:
-          "Conjuntos",
-
         name:
-          "Rápido y Fácil",
+          "Quick and Easy",
 
         image:
           "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=900&q=88",
 
         terms:[
-          "rapido y facil",
-          "conjunto",
-          "conjuntos",
+          "quick and easy",
+          "quick",
           "set",
           "sets",
           "matching set",
           "two piece",
+          "conjunto",
+          "conjuntos",
           "outfit"
         ]
       },
@@ -2977,17 +4145,15 @@ svg{
         id:
           "sun",
 
-        type:
-          "Enterizos",
-
         name:
-          "Baño de Sol",
+          "Sunbathing",
 
         image:
           "https://images.unsplash.com/photo-1524250502761-1ac6f2e30d43?auto=format&fit=crop&w=900&q=88",
 
         terms:[
-          "bano de sol",
+          "sunbathing",
+          "sun",
           "bikini",
           "bikinis",
           "swim",
@@ -3002,6 +4168,10 @@ svg{
       }
 
     ]);
+
+  /* ============================================================
+     DELIVERY
+     ============================================================ */
 
   const DELIVERY_METHODS =
     Object.freeze([
@@ -3034,7 +4204,7 @@ svg{
           "24–48 h",
 
         description:
-          "Productos elegibles se procesan con prioridad para entrega estimada entre 24 y 48 horas.",
+          "Productos elegibles se procesan con prioridad para una entrega estimada entre 24 y 48 horas.",
 
         icon:
           "truck"
@@ -3051,7 +4221,7 @@ svg{
           "14–21 días",
 
         description:
-          "Productos conectados a nuestra red de suministro pueden requerir aproximadamente 14 a 21 días.",
+          "Algunos productos conectados a nuestra red de suministro pueden requerir aproximadamente 14 a 21 días.",
 
         icon:
           "globe"
@@ -3076,6 +4246,10 @@ svg{
 
     ]);
 
+  /* ============================================================
+     DOM HELPERS
+     ============================================================ */
+
   const $ =
     id =>
       document.getElementById(
@@ -3093,14 +4267,17 @@ svg{
         )
       ];
 
+  /* ============================================================
+     STATE
+     ============================================================ */
+
   const state = {
 
     products:
       [],
 
     /*
-      IMPORTANT:
-      Home begins on TODOS.
+      ALWAYS starts on TODOS.
     */
 
     activeFilter:
@@ -3200,46 +4377,32 @@ svg{
     );
   }
 
-  function readBag(){
+  function readCart(){
 
-    return readJson(
-      "cajamoda-cart",
-      {
-        items:[],
-        count:0,
-        total:0
-      }
+    const stored =
+      readJson(
+        "cajamoda-cart",
+        {
+          items:[],
+          count:0,
+          total:0
+        }
+      );
+
+    return normalizeCart(
+      stored
     );
   }
 
-  function readBagCount(){
+  function saveCart(
+    cart
+  ){
 
-    const cart =
-      readBag();
-
-    if(
-      Array.isArray(
-        cart.items
+    saveJson(
+      "cajamoda-cart",
+      normalizeCart(
+        cart
       )
-    ){
-
-      return cart.items.reduce(
-        (
-          total,
-          item
-        ) =>
-          total +
-          Number(
-            item.quantity ||
-            0
-          ),
-        0
-      );
-    }
-
-    return Number(
-      cart.count ||
-      0
     );
   }
 
@@ -3250,8 +4413,7 @@ svg{
   function createId(){
 
     if(
-      window.crypto
-        ?.randomUUID
+      window.crypto?.randomUUID
     ){
       return window.crypto
         .randomUUID();
@@ -3358,6 +4520,22 @@ svg{
       ) ||
       CATEGORIES[0]
     );
+  }
+
+  function findProduct(
+    productId
+  ){
+
+    return state.products.find(
+      product =>
+        String(
+          product.id
+        ) ===
+        String(
+          productId
+        )
+    ) ||
+    null;
   }
 
   function heartIcon(
@@ -3470,14 +4648,18 @@ svg{
     product
   ){
 
+    /*
+      First honor explicit vibe/category data.
+    */
+
     const explicit =
       normalizeText(
         [
           product.vibeId,
           product.vibe,
+          product.category,
           product.productType,
-          product.type,
-          product.category
+          product.type
         ]
           .filter(Boolean)
           .join(
@@ -3486,57 +4668,43 @@ svg{
       );
 
     if(
-      explicit.includes(
-        "late"
-      ) ||
-      explicit.includes(
-        "vestido"
-      ) ||
-      explicit.includes(
-        "dress"
-      )
+      explicit.includes("late") ||
+      explicit.includes("long night") ||
+      explicit.includes("vestido") ||
+      explicit.includes("dress")
     ){
       return "late";
     }
 
     if(
-      explicit.includes(
-        "chill"
-      ) ||
-      explicit.includes(
-        "top"
-      )
+      explicit.includes("chill") ||
+      explicit.includes("quiet day") ||
+      explicit.includes("top") ||
+      explicit.includes("blusa")
     ){
       return "chill";
     }
 
     if(
-      explicit.includes(
-        "quick"
-      ) ||
-      explicit.includes(
-        "conjunto"
-      ) ||
-      explicit.includes(
-        "set"
-      )
+      explicit.includes("quick") ||
+      explicit.includes("conjunto") ||
+      explicit.includes("set")
     ){
       return "quick";
     }
 
     if(
-      explicit.includes(
-        "sun"
-      ) ||
-      explicit.includes(
-        "enterizo"
-      ) ||
-      explicit.includes(
-        "bikini"
-      )
+      explicit.includes("sun") ||
+      explicit.includes("enterizo") ||
+      explicit.includes("bikini") ||
+      explicit.includes("swim")
     ){
       return "sun";
     }
+
+    /*
+      Then infer from the searchable product text.
+    */
 
     const text =
       normalizeText(
@@ -3546,6 +4714,7 @@ svg{
           product.productType,
           product.type,
           product.category,
+          product.collectionName,
           product.tags
         ]
           .flat()
@@ -3645,7 +4814,6 @@ svg{
         product.description,
         product.productType,
         category.name,
-        category.type,
         category.terms
       ]
         .flat()
@@ -3670,7 +4838,7 @@ svg{
       return true;
     }
 
-    const terms =
+    const tokens =
       query
         .split(
           " "
@@ -3682,12 +4850,137 @@ svg{
         product
       );
 
-    return terms.every(
-      term =>
+    return tokens.every(
+      token =>
         haystack.includes(
-          term
+          token
         )
     );
+  }
+
+  /* ============================================================
+     CART NORMALIZATION
+     ============================================================ */
+
+  function normalizeCart(
+    payload
+  ){
+
+    const raw =
+      payload?.cart ||
+      payload ||
+      {};
+
+    const sourceItems =
+      raw.items ||
+      raw.lineItems ||
+      [];
+
+    const items =
+      sourceItems.map(
+        item => {
+
+          const productId =
+            item.productId ||
+            item.catalogReference
+              ?.catalogItemId ||
+            item.catalogItemId ||
+            null;
+
+          const product =
+            findProduct(
+              productId
+            );
+
+          return{
+
+            id:
+              item.id ||
+              item._id ||
+              item.lineItemId ||
+              createId(),
+
+            productId,
+
+            variantId:
+              item.variantId ||
+              item.catalogReference
+                ?.variantId ||
+              null,
+
+            name:
+              item.name ||
+              item.productName ||
+              product?.name ||
+              "Producto",
+
+            image:
+              item.image ||
+              item.imageUrl ||
+              item.media?.url ||
+              product?.image ||
+              "",
+
+            size:
+              item.size ||
+              item.options?.Size ||
+              item.options?.size ||
+              item.selectedOptions?.Size ||
+              item.selectedOptions?.size ||
+              "",
+
+            quantity:
+              Math.max(
+                1,
+                Number(
+                  item.quantity ||
+                  1
+                )
+              ),
+
+            price:
+              Number(
+                item.price?.amount ??
+                item.price ??
+                item.lineItemPrice
+                  ?.amount ??
+                product?.price ??
+                0
+              )
+          };
+        }
+      );
+
+    const count =
+      items.reduce(
+        (
+          sum,
+          item
+        ) =>
+          sum +
+          item.quantity,
+        0
+      );
+
+    const total =
+      items.reduce(
+        (
+          sum,
+          item
+        ) =>
+          sum +
+          (
+            item.price *
+            item.quantity
+          ),
+        0
+      );
+
+    return{
+      items,
+      count,
+      total
+    };
   }
 
   /* ============================================================
@@ -3745,7 +5038,7 @@ svg{
   }
 
   /* ============================================================
-     CATEGORY ANCHORS
+     CATEGORY HERO
      ============================================================ */
 
   function renderAnchors(){
@@ -3755,13 +5048,9 @@ svg{
         CATEGORIES.map(
           category => `
             <button
-              class="categoryAnchor ${
-                state.activeAnchor ===
-                category.id
-                  ?"active"
-                  :""
-              }"
+              class="categoryAnchor"
               data-anchor="${category.id}"
+              aria-label="${escapeHtml(category.name)}"
             >
 
               <img
@@ -3788,32 +5077,33 @@ svg{
         button.onclick =
           () => {
 
-            const categoryId =
+            const id =
               button.dataset
                 .anchor;
 
             state.activeAnchor =
-              categoryId;
+              id;
 
             state.activeFilter =
-              categoryId;
+              id;
 
-            renderAnchors();
             renderTabs();
 
             track(
               "CATEGORY_ANCHOR_CLICK",
               {
-                categoryId
+                categoryId:
+                  id
               }
             );
 
             requestAnimationFrame(
               () => {
 
-                document.querySelector(
-                  `[data-section="${categoryId}"]`
-                )
+                document
+                  .querySelector(
+                    `[data-section="${id}"]`
+                  )
                   ?.scrollIntoView({
                     behavior:
                       "smooth",
@@ -3919,6 +5209,7 @@ svg{
   function renderTabs(){
 
     const tabs = [
+
       {
         id:
           "all",
@@ -3933,9 +5224,10 @@ svg{
             category.id,
 
           name:
-            category.type
+            category.name
         })
       )
+
     ];
 
     $("categoryTabs")
@@ -3972,7 +5264,8 @@ svg{
           () => {
 
             const id =
-              button.dataset.tab;
+              button.dataset
+                .tab;
 
             state.activeFilter =
               id;
@@ -3985,15 +5278,11 @@ svg{
               state.activeAnchor =
                 null;
 
-              renderAnchors();
               renderTabs();
 
               window.scrollTo({
-                top:
-                  0,
-
-                behavior:
-                  "smooth"
+                top:0,
+                behavior:"smooth"
               });
 
               track(
@@ -4010,12 +5299,12 @@ svg{
             state.activeAnchor =
               id;
 
-            renderAnchors();
             renderTabs();
 
-            document.querySelector(
-              `[data-section="${id}"]`
-            )
+            document
+              .querySelector(
+                `[data-section="${id}"]`
+              )
               ?.scrollIntoView({
                 behavior:
                   "smooth",
@@ -4060,9 +5349,26 @@ svg{
       );
   }
 
+  /*
+    Placeholder designed as an actual photo position,
+    not a random "empty slot" box.
+
+    When no real product occupies the space, the
+    first three visible cards clearly show where
+    product photography belongs.
+  */
+
   function placeholderCard(
     slot
   ){
+
+    const number =
+      String(
+        slot
+      ).padStart(
+        2,
+        "0"
+      );
 
     return `
       <article
@@ -4076,12 +5382,16 @@ svg{
 
             <div class="placeholderInner">
 
-              <div class="placeholderPlus">
-                +
+              <div class="placeholderNumber">
+                ${number}
               </div>
 
               <div class="placeholderLabel">
-                Slot ${slot}
+                PRODUCT PHOTO
+              </div>
+
+              <div class="placeholderHint">
+                Image ready
               </div>
 
             </div>
@@ -4093,11 +5403,11 @@ svg{
         <div class="productInfo">
 
           <div class="productName">
-            Ready for product
+            Product coming soon
           </div>
 
           <div class="productPrice">
-            Coming soon
+            CajaModa
           </div>
 
         </div>
@@ -4136,14 +5446,19 @@ svg{
               `
               :`
                 <div class="placeholderMedia">
+
                   <div class="placeholderInner">
-                    <div class="placeholderPlus">
-                      +
+
+                    <div class="placeholderNumber">
+                      01
                     </div>
+
                     <div class="placeholderLabel">
-                      Photo
+                      PRODUCT PHOTO
                     </div>
+
                   </div>
+
                 </div>
               `
           }
@@ -4157,7 +5472,9 @@ svg{
             data-favorite="${escapeHtml(product.id)}"
             aria-label="Favorito"
           >
+
             ${heartIcon(favorite)}
+
           </button>
 
         </div>
@@ -4213,6 +5530,14 @@ svg{
               products.map(
                 productCard
               );
+
+            /*
+              Always maintain capacity for 10.
+
+              If there are only 0, 1, or 2 products,
+              the first three visible positions still
+              clearly show the structure of the store.
+            */
 
             if(
               !searching
@@ -4275,14 +5600,21 @@ svg{
                   class="productRail"
                   data-rail="${category.id}"
                 >
+
                   ${cards.join("")}
+
                 </div>
 
                 <div class="railDots">
+
                   <span class="railDot active"></span>
+
                   <span class="railDot"></span>
+
                   <span class="railDot"></span>
+
                   <span class="railDot"></span>
+
                 </div>
 
               </section>
@@ -4301,15 +5633,18 @@ svg{
         .innerHTML =
           `
             <div class="emptySearch">
-              No encontramos productos para “${escapeHtml(state.search)}”.
+              No encontramos productos para
+              “${escapeHtml(state.search)}”.
               <br><br>
-              Prueba vestidos, tops, bikinis, conjuntos o enterizos.
+              Prueba otro nombre, estilo o categoría.
             </div>
           `;
     }
 
     bindProductCards();
+
     bindRails();
+
     renderSearchStatus();
   }
 
@@ -4332,15 +5667,9 @@ svg{
             }
 
             const product =
-              state.products.find(
-                item =>
-                  String(
-                    item.id
-                  ) ===
-                  String(
-                    card.dataset
-                      .product
-                  )
+              findProduct(
+                card.dataset
+                  .product
               );
 
             if(
@@ -4350,14 +5679,19 @@ svg{
             }
 
             /*
-              ROUTE TO PRODUCT PAGE.
+              Store the selected product too.
 
-              We pass:
-              productId
-              category
+              This gives the future Product page
+              two ways to resolve the product:
 
-              The Product page will read this.
+              1. URL productId
+              2. shared local product snapshot
             */
+
+            saveJson(
+              "cajamoda-active-product",
+              product
+            );
 
             const url =
               new URL(
@@ -4430,24 +5764,25 @@ svg{
             state.activeAnchor =
               id;
 
-            renderAnchors();
             renderTabs();
 
-            document.querySelector(
-              `[data-section="${id}"]`
-            )
+            document
+              .querySelector(
+                `[data-section="${id}"]`
+              )
               ?.scrollIntoView({
-                behavior:
-                  "smooth",
-
-                block:
-                  "start"
+                behavior:"smooth",
+                block:"start"
               });
 
           };
       }
     );
   }
+
+  /* ============================================================
+     HORIZONTAL RAIL
+     ============================================================ */
 
   function bindRails(){
 
@@ -4476,8 +5811,7 @@ svg{
               rail.clientWidth;
 
             const ratio =
-              max >
-              0
+              max > 0
                 ?rail.scrollLeft /
                  max
                 :0;
@@ -4513,8 +5847,7 @@ svg{
 
           },
           {
-            passive:
-              true
+            passive:true
           }
         );
 
@@ -4618,7 +5951,21 @@ svg{
     saveFavorites();
 
     renderSections();
+
     renderFavorites();
+
+    track(
+      "FAVORITE_TOGGLE",
+      {
+        productId:
+          id,
+
+        active:
+          state.favorites.has(
+            id
+          )
+      }
+    );
   }
 
   function renderFavorites(){
@@ -4686,15 +6033,9 @@ svg{
           () => {
 
             const product =
-              state.products.find(
-                item =>
-                  String(
-                    item.id
-                  ) ===
-                  String(
-                    button.dataset
-                      .favoriteOpen
-                  )
+              findProduct(
+                button.dataset
+                  .favoriteOpen
               );
 
             if(
@@ -4702,6 +6043,11 @@ svg{
             ){
               return;
             }
+
+            saveJson(
+              "cajamoda-active-product",
+              product
+            );
 
             const url =
               new URL(
@@ -4728,15 +6074,21 @@ svg{
   }
 
   /* ============================================================
-     BAG
+     CART
      ============================================================ */
+
+  function cartCount(){
+
+    return readCart()
+      .count;
+  }
 
   function syncBagCount(
     animate=false
   ){
 
     const count =
-      readBagCount();
+      cartCount();
 
     [
       $("topBagBadge"),
@@ -4768,18 +6120,347 @@ svg{
     );
   }
 
-  function openCheckout(){
+  function renderBag(){
+
+    const cart =
+      readCart();
+
+    $("bagTitle")
+      .textContent =
+        `Mi bolsa (${cart.count})`;
+
+    $("bagQuantity")
+      .textContent =
+        String(
+          cart.count
+        );
+
+    $("bagSubtotal")
+      .textContent =
+        money(
+          cart.total
+        );
+
+    $("bagItems")
+      .innerHTML =
+        cart.items.map(
+          line => `
+            <article class="bagItem">
+
+              <div class="bagItemImage">
+
+                ${
+                  line.image
+                    ?`
+                      <img
+                        src="${escapeHtml(line.image)}"
+                        alt="${escapeHtml(line.name)}"
+                      >
+                    `
+                    :""
+                }
+
+              </div>
+
+              <div>
+
+                <div class="bagItemName">
+                  ${escapeHtml(line.name)}
+                </div>
+
+                <div class="bagItemMeta">
+                  ${
+                    [
+                      line.size
+                        ?`Talla ${line.size}`
+                        :"",
+
+                      `Cantidad ${line.quantity}`
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")
+                  }
+                </div>
+
+                <div class="bagQty">
+
+                  <button
+                    class="bagQtyButton"
+                    data-cart-line="${escapeHtml(line.id)}"
+                    data-cart-delta="-1"
+                  >
+                    −
+                  </button>
+
+                  <span class="bagQtyValue">
+                    ${line.quantity}
+                  </span>
+
+                  <button
+                    class="bagQtyButton"
+                    data-cart-line="${escapeHtml(line.id)}"
+                    data-cart-delta="1"
+                  >
+                    +
+                  </button>
+
+                </div>
+
+                <button
+                  class="bagRemove"
+                  data-cart-remove="${escapeHtml(line.id)}"
+                >
+                  Eliminar
+                </button>
+
+              </div>
+
+              <div class="bagItemPrice">
+                ${
+                  money(
+                    line.price *
+                    line.quantity
+                  )
+                }
+              </div>
+
+            </article>
+          `
+        ).join(
+          ""
+        );
+
+    $("bagEmpty")
+      .classList
+      .toggle(
+        "hidden",
+        cart.items.length >
+        0
+      );
+
+    $("bagSummary")
+      .classList
+      .toggle(
+        "hidden",
+        cart.items.length ===
+        0
+      );
+
+    qsa(
+      "[data-cart-line]"
+    ).forEach(
+      button => {
+
+        button.onclick =
+          () => {
+
+            const delta =
+              Number(
+                button.dataset
+                  .cartDelta
+              );
+
+            changeCartQuantity(
+              button.dataset
+                .cartLine,
+              delta
+            );
+
+          };
+      }
+    );
+
+    qsa(
+      "[data-cart-remove]"
+    ).forEach(
+      button => {
+
+        button.onclick =
+          () => {
+
+            removeCartLine(
+              button.dataset
+                .cartRemove
+            );
+
+          };
+      }
+    );
+  }
+
+  function changeCartQuantity(
+    lineId,
+    delta
+  ){
+
+    const cart =
+      readCart();
+
+    const line =
+      cart.items.find(
+        item =>
+          String(
+            item.id
+          ) ===
+          String(
+            lineId
+          )
+      );
+
+    if(
+      !line
+    ){
+      return;
+    }
+
+    const next =
+      line.quantity +
+      Number(
+        delta
+      );
+
+    if(
+      next <=
+      0
+    ){
+
+      removeCartLine(
+        lineId
+      );
+
+      return;
+    }
 
     /*
-      Checkout gets the same shared cajamoda-cart
-      storage used by Product.
+      Update local shared state immediately.
     */
+
+    line.quantity =
+      next;
+
+    saveCart(
+      cart
+    );
+
+    /*
+      Also tell Wix/main.js.
+    */
+
+    sendBridge(
+      "UPDATE_BAG_QUANTITY",
+      {
+        lineItemId:
+          line.id,
+
+        quantity:
+          next
+      }
+    );
+
+    renderBag();
+
+    syncBagCount(
+      true
+    );
+  }
+
+  function removeCartLine(
+    lineId
+  ){
+
+    const cart =
+      readCart();
+
+    const nextItems =
+      cart.items.filter(
+        item =>
+          String(
+            item.id
+          ) !==
+          String(
+            lineId
+          )
+      );
+
+    saveCart({
+      items:
+        nextItems
+    });
+
+    sendBridge(
+      "REMOVE_BAG_ITEM",
+      {
+        lineItemId:
+          lineId
+      }
+    );
+
+    renderBag();
+
+    syncBagCount(
+      true
+    );
+  }
+
+  function openBag(){
+
+    /*
+      Ask Wix for its latest cart state first.
+    */
+
+    sendBridge(
+      "GET_CART"
+    );
+
+    renderBag();
+
+    openOverlay(
+      $("bagOverlay")
+    );
+
+    track(
+      "BAG_OPEN",
+      {
+        cartCount:
+          cartCount()
+      }
+    );
+  }
+
+  function goToCheckout(){
+
+    const cart =
+      readCart();
+
+    if(
+      !cart.count
+    ){
+
+      showToast(
+        "Tu bolsa está vacía."
+      );
+
+      return;
+    }
+
+    /*
+      Save a checkout snapshot.
+      Product + Checkout pages can read the same data.
+    */
+
+    saveJson(
+      "cajamoda-checkout-cart",
+      cart
+    );
 
     track(
       "CHECKOUT_ROUTE",
       {
         cartCount:
-          readBagCount()
+          cart.count,
+
+        cartTotal:
+          cart.total
       }
     );
 
@@ -4844,7 +6525,20 @@ svg{
       return;
     }
 
+    const existing =
+      readJson(
+        "cajamoda-member-profile",
+        {}
+      );
+
+    const isNewMember =
+      mode ===
+      "signup" &&
+      !existing.email;
+
     const profile = {
+
+      ...existing,
 
       name,
 
@@ -4853,6 +6547,14 @@ svg{
       marketingOptIn:
         $("profileMarketing")
           .checked,
+
+      welcomePromo:
+        existing.welcomePromo ||
+        (
+          isNewMember
+            ?CONFIG.welcomePromoCode
+            :null
+        ),
 
       updatedAt:
         new Date()
@@ -4868,19 +6570,175 @@ svg{
       "MEMBER_AUTH_REQUEST",
       {
         mode,
+
         ...profile
       }
     );
 
-    showToast(
-      mode ===
-      "signup"
-        ?"Membresía guardada."
-        :"Inicio de sesión solicitado."
-    );
+    if(
+      isNewMember
+    ){
+
+      saveJson(
+        "cajamoda-promo",
+        {
+          code:
+            CONFIG.welcomePromoCode,
+
+          discountPercent:
+            10,
+
+          purpose:
+            "FIRST_ORDER",
+
+          createdAt:
+            new Date()
+              .toISOString()
+        }
+      );
+
+      showToast(
+        `Bienvenida · Código ${CONFIG.welcomePromoCode}`
+      );
+
+    }else{
+
+      showToast(
+        mode ===
+        "signup"
+          ?"Perfil actualizado."
+          :"Inicio de sesión solicitado."
+      );
+    }
 
     closeOverlay(
       $("profileOverlay")
+    );
+  }
+
+  function trackOrders(){
+
+    closeOverlay(
+      $("profileOverlay")
+    );
+
+    location.href =
+      `${CONFIG.checkoutPage}?track=1`;
+  }
+
+  /* ============================================================
+     PLUS MENU
+     ============================================================ */
+
+  function openWhatsApp(){
+
+    closeOverlay(
+      $("plusOverlay")
+    );
+
+    const cart =
+      readCart();
+
+    const text =
+      cart.count
+        ?`Hola CajaModa. Quiero ayuda con mi pedido. Tengo ${cart.count} artículo${cart.count===1?"":"s"} en mi bolsa.`
+        :"Hola CajaModa. Quiero ayuda con un producto o pedido.";
+
+    sendBridge(
+      "OPEN_WHATSAPP",
+      {
+        cartCount:
+          cart.count,
+
+        message:
+          text
+      }
+    );
+
+    /*
+      Browser fallback.
+      If whatsappNumber is added later,
+      it will open the business directly.
+    */
+
+    const number =
+      CONFIG.whatsappNumber
+        .replace(
+          /\D/g,
+          ""
+        );
+
+    const url =
+      number
+        ?`https://wa.me/${number}?text=${encodeURIComponent(text)}`
+        :`https://wa.me/?text=${encodeURIComponent(text)}`;
+
+    window.open(
+      url,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  }
+
+  function openContact(){
+
+    closeOverlay(
+      $("plusOverlay")
+    );
+
+    openOverlay(
+      $("contactOverlay")
+    );
+  }
+
+  function contactMessage(){
+
+    closeOverlay(
+      $("contactOverlay")
+    );
+
+    sendBridge(
+      "OPEN_CONTACT",
+      {
+        page:
+          "home",
+
+        cartCount:
+          cartCount()
+      }
+    );
+
+    showToast(
+      "Abriendo contacto CajaModa…"
+    );
+  }
+
+  function openTrack(){
+
+    closeOverlay(
+      $("plusOverlay")
+    );
+
+    location.href =
+      `${CONFIG.checkoutPage}?track=1`;
+  }
+
+  function openHelp(){
+
+    closeOverlay(
+      $("plusOverlay")
+    );
+
+    sendBridge(
+      "OPEN_HELP",
+      {
+        page:
+          "home"
+      }
+    );
+
+    showToast(
+      "Abriendo ayuda…"
     );
   }
 
@@ -4891,6 +6749,20 @@ svg{
   function openOverlay(
     element
   ){
+
+    /*
+      Close anything else first.
+    */
+
+    qsa(
+      ".overlay.open"
+    ).forEach(
+      overlay =>
+        overlay.classList
+          .remove(
+            "open"
+          )
+    );
 
     element.classList.add(
       "open"
@@ -4949,17 +6821,20 @@ svg{
 
     showToast.timer =
       setTimeout(
-        () =>
+        () => {
+
           toast.classList
             .remove(
               "show"
-            ),
-        1600
+            );
+
+        },
+        1700
       );
   }
 
   /* ============================================================
-     WIX / MAIN.JS MESSAGES
+     INCOMING WIX / MAIN.JS EVENTS
      ============================================================ */
 
   window.addEventListener(
@@ -4970,12 +6845,15 @@ svg{
         event.data ||
         {};
 
+      /*
+        If source exists, enforce known bridge sources.
+        Allows the current legacy Wix bridge to survive
+        while customer-facing naming stays CajaModa.
+      */
+
       if(
-        ![
-          "CAJAMODA_STOREFRONT",
-          "CAJAMODA_IFRAME",
-          "CAJAMODA_WIX"
-        ].includes(
+        message.source &&
+        !CONFIG.acceptedSources.includes(
           message.source
         )
       ){
@@ -5005,7 +6883,17 @@ svg{
                   normalizeProduct
                 );
 
+            /*
+              Cache the catalog for Product page.
+            */
+
+            saveJson(
+              "cajamoda-catalog",
+              state.products
+            );
+
             renderSections();
+
             renderFavorites();
           }
 
@@ -5013,8 +6901,7 @@ svg{
             payload.cart
           ){
 
-            saveJson(
-              "cajamoda-cart",
+            saveCart(
               payload.cart
             );
 
@@ -5060,11 +6947,18 @@ svg{
                 }
               );
 
-            state.products = [
-              ...map.values()
-            ];
+            state.products =
+              [
+                ...map.values()
+              ];
+
+            saveJson(
+              "cajamoda-catalog",
+              state.products
+            );
 
             renderSections();
+
             renderFavorites();
           }
 
@@ -5072,8 +6966,7 @@ svg{
 
         case "CART_STATE":
 
-          saveJson(
-            "cajamoda-cart",
+          saveCart(
             payload.cart ||
             payload
           );
@@ -5082,26 +6975,50 @@ svg{
             true
           );
 
+          if(
+            $("bagOverlay")
+              .classList
+              .contains(
+                "open"
+              )
+          ){
+            renderBag();
+          }
+
           break;
 
         case "CART_COUNT":
 
           {
 
-            const current =
-              readBag();
+            const cart =
+              readCart();
 
-            current.count =
+            const nextCount =
               Number(
                 payload.count ??
                 payload ??
                 0
               );
 
-            saveJson(
-              "cajamoda-cart",
-              current
-            );
+            /*
+              If we do not have item details yet,
+              preserve count without fabricating products.
+            */
+
+            if(
+              !cart.items.length
+            ){
+
+              saveJson(
+                "cajamoda-cart",
+                {
+                  ...cart,
+                  count:
+                    nextCount
+                }
+              );
+            }
 
             syncBagCount(
               true
@@ -5118,17 +7035,20 @@ svg{
   );
 
   /* ============================================================
-     EVENTS
+     HOME EVENTS
      ============================================================ */
 
   $("deliveryInfoClose")
     .onclick =
-      () =>
+      () => {
+
         $("deliveryInfo")
           .classList
           .remove(
             "open"
           );
+
+      };
 
   $("searchInput")
     .addEventListener(
@@ -5185,19 +7105,24 @@ svg{
 
         $("categoryTabs")
           .scrollIntoView({
-            behavior:
-              "smooth",
-
-            block:
-              "center"
+            behavior:"smooth",
+            block:"center"
           });
 
       };
+
+  /* ============================================================
+     PLUS EVENTS
+     ============================================================ */
 
   function openPlus(){
 
     openOverlay(
       $("plusOverlay")
+    );
+
+    track(
+      "PLUS_MENU_OPEN"
     );
   }
 
@@ -5208,6 +7133,13 @@ svg{
   $("navPlus")
     .onclick =
       openPlus;
+
+  $("plusClose")
+    .onclick =
+      () =>
+        closeOverlay(
+          $("plusOverlay")
+        );
 
   $("plusOverlay")
     .onclick =
@@ -5226,7 +7158,7 @@ svg{
       };
 
   qsa(
-    "[data-action]"
+    "[data-plus-action]"
   ).forEach(
     button => {
 
@@ -5235,23 +7167,75 @@ svg{
 
           const action =
             button.dataset
-              .action;
+              .plusAction;
 
-          closeOverlay(
-            $("plusOverlay")
-          );
+          if(
+            action ===
+            "whatsapp"
+          ){
 
-          sendBridge(
-            action,
-            {
-              brand:
-                "CAJAMODA"
-            }
-          );
+            openWhatsApp();
+
+          }else if(
+            action ===
+            "contact"
+          ){
+
+            openContact();
+
+          }else if(
+            action ===
+            "track"
+          ){
+
+            openTrack();
+
+          }else if(
+            action ===
+            "help"
+          ){
+
+            openHelp();
+          }
 
         };
     }
   );
+
+  /* ============================================================
+     CONTACT EVENTS
+     ============================================================ */
+
+  $("contactClose")
+    .onclick =
+      () =>
+        closeOverlay(
+          $("contactOverlay")
+        );
+
+  $("contactOverlay")
+    .onclick =
+      event => {
+
+        if(
+          event.target ===
+          $("contactOverlay")
+        ){
+
+          closeOverlay(
+            $("contactOverlay")
+          );
+        }
+
+      };
+
+  $("contactMessage")
+    .onclick =
+      contactMessage;
+
+  /* ============================================================
+     FAVORITES EVENTS
+     ============================================================ */
 
   $("navFavorites")
     .onclick =
@@ -5288,6 +7272,10 @@ svg{
 
       };
 
+  /* ============================================================
+     PROFILE EVENTS
+     ============================================================ */
+
   $("navProfile")
     .onclick =
       () => {
@@ -5296,6 +7284,10 @@ svg{
 
         openOverlay(
           $("profileOverlay")
+        );
+
+        track(
+          "PROFILE_OPEN"
         );
 
       };
@@ -5337,9 +7329,61 @@ svg{
           "signup"
         );
 
+  $("profileTrack")
+    .onclick =
+      trackOrders;
+
+  /* ============================================================
+     BAG EVENTS
+     ============================================================ */
+
+  $("navBag")
+    .onclick =
+      openBag;
+
+  $("homeBagTop")
+    .onclick =
+      openBag;
+
+  $("bagClose")
+    .onclick =
+      () =>
+        closeOverlay(
+          $("bagOverlay")
+        );
+
+  $("bagOverlay")
+    .onclick =
+      event => {
+
+        if(
+          event.target ===
+          $("bagOverlay")
+        ){
+
+          closeOverlay(
+            $("bagOverlay")
+          );
+        }
+
+      };
+
+  $("checkoutButton")
+    .onclick =
+      goToCheckout;
+
+  /* ============================================================
+     HOME BUTTON
+     ============================================================ */
+
   $("navHome")
     .onclick =
       () => {
+
+        /*
+          Restore TODOS whenever customer
+          explicitly returns Home.
+        */
 
         state.activeFilter =
           "all";
@@ -5348,25 +7392,17 @@ svg{
           null;
 
         renderTabs();
-        renderAnchors();
 
         window.scrollTo({
-          top:
-            0,
-
-          behavior:
-            "smooth"
+          top:0,
+          behavior:"smooth"
         });
 
       };
 
-  $("navBag")
-    .onclick =
-      openCheckout;
-
-  $("homeBagTop")
-    .onclick =
-      openCheckout;
+  /* ============================================================
+     CROSS-PAGE STORAGE SYNC
+     ============================================================ */
 
   window.addEventListener(
     "storage",
@@ -5376,7 +7412,19 @@ svg{
         event.key ===
         "cajamoda-cart"
       ){
+
         syncBagCount();
+
+        if(
+          $("bagOverlay")
+            .classList
+            .contains(
+              "open"
+            )
+        ){
+
+          renderBag();
+        }
       }
 
       if(
@@ -5390,6 +7438,7 @@ svg{
           );
 
         renderSections();
+
         renderFavorites();
       }
 
@@ -5400,6 +7449,11 @@ svg{
     "pageshow",
     () => {
 
+      /*
+        Product page may have changed the bag
+        while Home was in browser history.
+      */
+
       syncBagCount();
 
       state.favorites =
@@ -5407,30 +7461,97 @@ svg{
           readFavorites()
         );
 
+      /*
+        Use cached catalog while Wix refreshes.
+      */
+
+      const cached =
+        readJson(
+          "cajamoda-catalog",
+          []
+        );
+
+      if(
+        !state.products.length &&
+        Array.isArray(
+          cached
+        ) &&
+        cached.length
+      ){
+
+        state.products =
+          cached.map(
+            normalizeProduct
+          );
+      }
+
       renderSections();
+
+      renderFavorites();
 
     }
   );
 
   /* ============================================================
-     INITIAL RENDER
+     INITIALIZE
      ============================================================ */
 
+  /*
+    Load cached products first.
+    This makes navigation between separate pages
+    feel immediate instead of waiting every time.
+  */
+
+  const cachedCatalog =
+    readJson(
+      "cajamoda-catalog",
+      []
+    );
+
+  if(
+    Array.isArray(
+      cachedCatalog
+    ) &&
+    cachedCatalog.length
+  ){
+
+    state.products =
+      cachedCatalog.map(
+        normalizeProduct
+      );
+  }
+
   renderAnchors();
+
   renderDelivery();
+
   renderTabs();
+
   renderSections();
+
   renderFavorites();
+
   loadProfile();
+
   syncBagCount();
 
   /*
-    Tell /src/main.js this Home page is ready.
+    HOME begins on TODOS.
   */
+
+  state.activeFilter =
+    "all";
+
+  renderTabs();
+
+  /* ============================================================
+     READY
+     ============================================================ */
 
   sendBridge(
     "READY",
     {
+
       brand:
         "CAJAMODA",
 
@@ -5438,40 +7559,96 @@ svg{
         "HOME",
 
       version:
-        "CAJAMODA_HOME_FREEZE_V2",
+        "CAJAMODA_HOME_FREEZE_V3",
 
       capabilities:[
 
+        "SMOOTH_VERTICAL_SCROLL",
+
         "TODOS_DEFAULT",
 
-        "ANCHOR_CATEGORY_SCROLL",
+        "LONG_NIGHTS",
 
-        "TEN_SLOTS_PER_CATEGORY",
+        "QUIET_DAYS",
 
-        "HORIZONTAL_RAILS",
+        "QUICK_AND_EASY",
 
-        "WIX_CATALOG",
+        "SUNBATHING",
 
-        "PRODUCT_ROUTING",
+        "FOUR_CATEGORY_ANCHORS",
 
-        "CHECKOUT_ROUTING",
+        "CATEGORY_HOVER",
+
+        "ANCHOR_SCROLL",
+
+        "CLEAR_FROST_DELIVERY",
+
+        "DELIVERY_HAIRLINE_BORDER",
+
+        "TEN_PRODUCT_POSITIONS",
+
+        "THREE_VISIBLE_POSITIONS",
+
+        "PHOTO_PLACEHOLDERS",
+
+        "HORIZONTAL_PRODUCT_SCROLL",
+
+        "PRODUCT_ROUTE",
+
+        "FUNCTIONAL_SEARCH",
+
+        "FAVORITES",
+
+        "SLIM_NAVIGATION",
+
+        "WHATSAPP",
+
+        "CONTACT",
+
+        "TRACK_ORDER_ROUTE",
+
+        "HELP",
+
+        "MEMBERSHIP",
+
+        "WELCOME_10_PERCENT",
+
+        "EARLY_RELEASE_SIGNUP",
+
+        "BAG_DRAWER",
+
+        "BAG_QUANTITY",
+
+        "BAG_REMOVE",
+
+        "CHECKOUT_ROUTE",
+
+        "SHARED_CATALOG_STORAGE",
 
         "SHARED_CART_STORAGE",
 
-        "SHARED_FAVORITES_STORAGE",
+        "SHARED_PROFILE_STORAGE",
 
-        "SHARED_PROFILE_STORAGE"
+        "SHARED_FAVORITES_STORAGE"
       ]
     }
   );
 
+  /*
+    Ask for fresh Wix cart.
+  */
+
+  sendBridge(
+    "GET_CART"
+  );
+
 })();
+
 </script>
 
-<!--
-  KEEP THE EXISTING WIX HEADLESS BRIDGE.
-  Home receives the real catalog through this file.
--->
+<!-- ============================================================
+     EXISTING WIX HEADLESS CONNECTION
+     ============================================================ -->
 
 <script
   type="module"

@@ -5931,25 +5931,47 @@ svg{
           break;
 
         case "CART_STATE":
+{
 
-          saveCart(
-            payload.cart ||
-            payload
-          );
+  const incoming =
+    payload.cart ||
+    payload;
 
-          syncBagCount(
-            true
-          );
+  const incomingItems =
+    incoming.items ||
+    incoming.lineItems ||
+    [];
 
-          if(
-            $("bagOverlay")
-              .classList
-              .contains("open")
-          ){
-            renderBag();
-          }
+  /*
+    Do not let an empty Wix cart response
+    erase the customer's saved CajaModa bag.
+  */
 
-          break;
+  if(
+    Array.isArray(incomingItems) &&
+    incomingItems.length > 0
+  ){
+
+    saveCart(
+      incoming
+    );
+  }
+
+  syncBagCount(
+    true
+  );
+
+  if(
+    $("bagOverlay")
+      .classList
+      .contains("open")
+  ){
+
+    renderBag();
+  }
+
+  break;
+}
 
         case "CART_COUNT":
 

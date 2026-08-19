@@ -13,14 +13,11 @@ const wix = createClient({
 });
 
 let catalog = [];
+let responseSource = "CAJAMODA_WIX";
 
 function send(type, payload = {}) {
   window.postMessage(
-    {
-      source: "MODAPOP_WIX",
-      type,
-      payload
-    },
+    { source: responseSource, type, payload },
     window.location.origin
   );
 }
@@ -36,6 +33,7 @@ function getPrice(product) {
     product?.priceData?.discountedPrice ??
     product?.priceData?.price ??
     product?.price?.amount ??
+    product?.price ??
     0
   );
 }
@@ -52,10 +50,12 @@ function getImages(product) {
   add(product?.media?.mainMedia?.image?.url);
   add(product?.media?.mainMedia?.url);
   add(product?.image?.url);
+  add(product?.imageUrl);
 
   for (const item of product?.media?.items || []) {
     add(item?.image?.url);
     add(item?.url);
+    add(item?.imageUrl);
   }
 
   return urls;
@@ -166,13 +166,12 @@ function normalizeProduct(product) {
       product?.stock?.quantity ?? null,
 
     description:
-      cleanText(product?.description),
+      cleanText(product?.description || ""),
 
     inventoryItems: [],
     reviews: []
   };
 }
-
 function sendInit() {
   send("INIT", {
     products: catalog,
@@ -247,6 +246,11 @@ window.addEventListener("message", event => {
     return;
   }
 
+  responseSource =
+    message.source === "MODAPOP_IFRAME"
+      ? "MODAPOP_WIX"
+      : "CAJAMODA_WIX";
+
   const payload = message.payload || {};
 
   switch (message.type) {
@@ -255,8 +259,7 @@ window.addEventListener("message", event => {
       break;
 
     case "REQUEST_VARIANTS": {
-      const product =
-        findProduct(payload.productId);
+      const product = findProduct(payload.productId);
 
       if (product) {
         send("VARIANTS", {
@@ -269,8 +272,7 @@ window.addEventListener("message", event => {
     }
 
     case "REQUEST_PRODUCT_META": {
-      const product =
-        findProduct(payload.productId);
+      const product = findProduct(payload.productId);
 
       if (product) {
         send("PRODUCT_META", product);
@@ -282,15 +284,13 @@ window.addEventListener("message", event => {
     case "REQUEST_SUPPLY_CONTEXT":
       send("SUPPLY_CONTEXT", {
         enabled: true,
-        checkoutMode:
-          "DEFAULT_LOCATION_NATIVE",
+        checkoutMode: "DEFAULT_LOCATION_NATIVE",
         supportsLocationInventory: false,
         locations: [],
         inventoryItems: []
       });
       break;
-
-    case "REQUEST_PRODUCT_SUPPLY":
+          case "REQUEST_PRODUCT_SUPPLY":
       send("PRODUCT_SUPPLY", {
         productId: payload.productId,
         locations: [],
@@ -311,8 +311,32 @@ window.addEventListener("message", event => {
       send("PURCHASE_PATH_STATE", {
         allowed: true,
         sellable: true,
-        checkoutMode:
-          "DEFAULT_LOCATION_NATIVE",
-        supplyIntent:
-          payload.supplyIntent || null
+        checkoutMode: "DEFAULT_LOCATION_NATIVE",
+        supplyIntent: payload.supplyIntent || null
       });
+      break;
+
+    case "GET_CART":
+      send("CART_STATE", {
+        items: [],
+        count: 0,
+        total: 0
+      });
+      break;
+
+    default:
+      break;
+  }
+});
+
+loadCatalog().catch(error => {
+  console.error(
+    "[CajaModa] Wix catalog error:",
+    error
+  );
+
+  send("SUPPLY_ERROR", {
+    message:
+      "No pudimos cargar los productos de CajaModa."
+  });
+});

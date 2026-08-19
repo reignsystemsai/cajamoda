@@ -2,7 +2,10 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1,viewport-fit=cover"
+>
 <meta name="theme-color" content="#ffffff">
 <meta name="color-scheme" content="light">
 
@@ -10,25 +13,51 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+  rel="stylesheet"
+>
 
 <style>
 :root{
   --bg:#ffffff;
   --ink:#090909;
-  --ink-soft:#343434;
-  --muted:#777777;
-  --muted-light:#a0a0a0;
-  --line:rgba(0,0,0,.07);
-  --line-strong:rgba(0,0,0,.12);
-  --glass:rgba(255,255,255,.62);
-  --glass-strong:rgba(255,255,255,.88);
-  --shadow:0 12px 35px rgba(0,0,0,.065);
-  --shadow-strong:0 22px 55px rgba(0,0,0,.11);
+  --ink-soft:#303030;
+  --muted:#747474;
+  --muted-light:#9d9d9d;
+
+  --line:rgba(0,0,0,.065);
+  --line-strong:rgba(0,0,0,.11);
+
+  --glass:
+    rgba(255,255,255,.52);
+
+  --glass-strong:
+    rgba(255,255,255,.78);
+
+  --shadow:
+    0 10px 28px
+    rgba(0,0,0,.055);
+
+  --shadow-hover:
+    0 17px 38px
+    rgba(0,0,0,.10);
+
   --mobile-max:430px;
-  --nav-h:62px;
-  --safe-top:env(safe-area-inset-top,0px);
-  --safe-bottom:env(safe-area-inset-bottom,0px);
+
+  --nav-h:54px;
+
+  --safe-top:
+    env(
+      safe-area-inset-top,
+      0px
+    );
+
+  --safe-bottom:
+    env(
+      safe-area-inset-bottom,
+      0px
+    );
 }
 
 *{
@@ -36,22 +65,37 @@
 }
 
 html{
-  margin:0;
   width:100%;
   min-height:100%;
+
+  margin:0;
+
   scroll-behavior:smooth;
+
   background:#fff;
 }
 
 body{
-  margin:0;
   width:100%;
   min-height:100%;
+
+  margin:0;
+
   overflow-x:hidden;
+
   background:#fff;
+
   color:var(--ink);
-  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  -webkit-font-smoothing:antialiased;
+
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  -webkit-font-smoothing:
+    antialiased;
 }
 
 body.locked{
@@ -66,27 +110,35 @@ input{
 
 button{
   border:0;
+
   margin:0;
   padding:0;
+
   background:none;
+
   cursor:pointer;
 }
 
 input{
   border:0;
   outline:0;
-  background:none;
+
+  background:transparent;
 }
 
 img{
   display:block;
+
   max-width:100%;
+
   user-select:none;
+
   -webkit-user-drag:none;
 }
 
 svg{
   display:block;
+
   pointer-events:none;
 }
 
@@ -94,79 +146,146 @@ svg{
   display:none!important;
 }
 
+/* ============================================================
+   PAGE SHELL
+   ============================================================ */
+
 .appShell{
   position:relative;
+
   width:100%;
   min-height:100dvh;
+
   margin:0 auto;
-  padding-bottom:calc(var(--nav-h) + 28px + var(--safe-bottom));
+
+  padding-bottom:
+    calc(
+      var(--nav-h) +
+      27px +
+      var(--safe-bottom)
+    );
+
   background:#fff;
 }
 
 @media(min-width:700px){
+
   body{
     background:#f5f5f5;
   }
 
   .appShell{
-    width:min(100%,var(--mobile-max));
-    box-shadow:0 0 70px rgba(0,0,0,.08);
+    width:min(
+      100%,
+      var(--mobile-max)
+    );
+
+    box-shadow:
+      0 0 70px
+      rgba(0,0,0,.075);
   }
 }
 
-.glass{
-  background:linear-gradient(
-    145deg,
-    rgba(255,255,255,.87),
-    rgba(255,255,255,.45)
-  );
+/* ============================================================
+   GLASS SYSTEM
+   ============================================================ */
 
-  border:1px solid rgba(255,255,255,.95);
+.glass{
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.79),
+      rgba(255,255,255,.33)
+    );
+
+  border:
+    1px solid
+    rgba(255,255,255,.96);
 
   box-shadow:
-    0 0 0 1px rgba(0,0,0,.035),
-    inset 0 1px 0 rgba(255,255,255,.98),
+    0 0 0 1px
+      rgba(0,0,0,.027),
+
+    inset 0 1px 0
+      rgba(255,255,255,1),
+
+    inset 0 -1px 0
+      rgba(255,255,255,.38),
+
     var(--shadow);
 
-  backdrop-filter:blur(24px) saturate(160%);
-  -webkit-backdrop-filter:blur(24px) saturate(160%);
+  backdrop-filter:
+    blur(26px)
+    saturate(168%);
+
+  -webkit-backdrop-filter:
+    blur(26px)
+    saturate(168%);
 }
 
 .glassStrong{
-  background:linear-gradient(
-    145deg,
-    rgba(255,255,255,.96),
-    rgba(255,255,255,.68)
-  );
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.93),
+      rgba(255,255,255,.54)
+    );
 
-  border:1px solid rgba(255,255,255,.98);
+  border:
+    1px solid
+    rgba(255,255,255,.99);
 
   box-shadow:
-    0 0 0 1px rgba(0,0,0,.05),
-    inset 0 1px 0 #fff,
-    var(--shadow-strong);
+    0 0 0 1px
+      rgba(0,0,0,.038),
 
-  backdrop-filter:blur(30px) saturate(175%);
-  -webkit-backdrop-filter:blur(30px) saturate(175%);
+    inset 0 1px 0
+      #fff,
+
+    0 18px 44px
+      rgba(0,0,0,.10);
+
+  backdrop-filter:
+    blur(30px)
+    saturate(178%);
+
+  -webkit-backdrop-filter:
+    blur(30px)
+    saturate(178%);
 }
 
-/* =========================================================
+/* ============================================================
    HEADER
-   ========================================================= */
+   ============================================================ */
 
 .homeHeader{
   position:relative;
-  height:118px;
-  padding-top:var(--safe-top);
+
+  height:121px;
+
+  padding-top:
+    var(--safe-top);
 }
+
+/* ============================================================
+   TOP + BUTTON
+   ============================================================ */
 
 .headerPlus{
   position:absolute;
-  left:15px;
-  top:calc(27px + var(--safe-top));
 
-  width:40px;
-  height:40px;
+  z-index:3;
+
+  left:14px;
+
+  top:
+    calc(
+      27px +
+      var(--safe-top)
+    );
+
+  width:39px;
+  height:39px;
 
   border-radius:50%;
 
@@ -174,29 +293,55 @@ svg{
   place-items:center;
 
   transition:
-    transform .16s ease,
-    background .16s ease;
-}
-
-.headerPlus:active{
-  transform:scale(.94);
+    transform .18s ease,
+    box-shadow .18s ease,
+    background .18s ease;
 }
 
 .headerPlus svg{
-  width:21px;
-  height:21px;
-  stroke-width:1.45;
+  width:20px;
+  height:20px;
+
+  stroke-width:1.4;
 }
 
-/* =========================================================
-   CAJAMODA LOGO
-   ========================================================= */
+@media(hover:hover){
+
+  .headerPlus:hover{
+    transform:
+      translateY(-2px)
+      scale(1.035);
+
+    box-shadow:
+      0 15px 32px
+      rgba(0,0,0,.11);
+  }
+}
+
+.headerPlus:active{
+  transform:
+    scale(.94);
+}
+
+/* ============================================================
+   IMPROVED CAJAMODA LOGO
+   ============================================================ */
 
 .brandLockup{
   position:absolute;
-  top:calc(8px + var(--safe-top));
+
+  z-index:2;
+
   left:50%;
-  transform:translateX(-50%);
+
+  top:
+    calc(
+      7px +
+      var(--safe-top)
+    );
+
+  transform:
+    translateX(-50%);
 
   width:190px;
 
@@ -210,58 +355,96 @@ svg{
 .brandMonogram{
   position:relative;
 
-  width:104px;
-  height:56px;
+  width:105px;
+  height:58px;
 
-  font-family:"Times New Roman",Georgia,serif;
+  font-family:
+    "Times New Roman",
+    Georgia,
+    serif;
 }
 
 .brandC{
   position:absolute;
-  left:11px;
-  top:-5px;
 
-  font-size:65px;
+  left:6px;
+  top:-7px;
+
+  font-size:71px;
   line-height:1;
+
   font-weight:400;
 
-  transform:scaleX(.88);
+  transform:
+    scaleX(.82);
 }
 
 .brandM{
   position:absolute;
-  left:43px;
-  top:7px;
+
+  left:44px;
+  top:8px;
 
   font-size:53px;
   line-height:1;
+
   font-weight:400;
 
-  transform:scaleX(.84);
+  transform:
+    scaleX(.83);
+}
+
+/*
+  Fine sweep through the C/M.
+  Gives the logo more of the custom fashion-mark feeling.
+*/
+
+.brandSweep{
+  position:absolute;
+
+  left:18px;
+  top:39px;
+
+  width:72px;
+  height:21px;
+
+  border-top:
+    1.15px solid #111;
+
+  border-radius:50%;
+
+  transform:
+    rotate(7deg);
 }
 
 .brandWord{
-  margin-top:-1px;
+  margin-top:-2px;
 
-  font-family:"Times New Roman",Georgia,serif;
+  padding-left:5px;
 
-  font-size:10px;
+  font-family:
+    "Times New Roman",
+    Georgia,
+    serif;
+
+  font-size:10.5px;
   line-height:1;
 
   font-weight:500;
 
-  letter-spacing:4.8px;
-
-  padding-left:5px;
+  letter-spacing:5.2px;
 }
 
 .brandCountryRow{
-  width:145px;
+  width:144px;
 
   margin-top:6px;
 
   display:grid;
-  grid-template-columns:1fr auto 1fr;
+
+  grid-template-columns:
+    1fr auto 1fr;
+
   align-items:center;
 
   gap:8px;
@@ -269,43 +452,69 @@ svg{
 
 .brandCountryLine{
   height:1px;
-  background:rgba(0,0,0,.58);
+
+  background:
+    rgba(0,0,0,.48);
 }
 
 .brandCountry{
-  font-size:6.5px;
+  padding-left:3px;
+
+  font-size:6.2px;
   line-height:1;
 
-  font-weight:600;
+  font-weight:650;
 
-  letter-spacing:3.1px;
-
-  padding-left:3px;
+  letter-spacing:3px;
 }
 
-/* =========================================================
+/* ============================================================
    BAG TOP
-   ========================================================= */
+   ============================================================ */
 
 .homeBagTop{
   position:absolute;
 
-  top:calc(27px + var(--safe-top));
+  z-index:3;
+
+  top:
+    calc(
+      27px +
+      var(--safe-top)
+    );
+
   right:14px;
 
-  width:42px;
-  height:42px;
+  width:41px;
+  height:41px;
+
+  border-radius:50%;
 
   display:grid;
   place-items:center;
 
-  border-radius:50%;
+  transition:
+    transform .18s ease,
+    box-shadow .18s ease;
 }
 
 .homeBagTop svg{
   width:24px;
   height:24px;
-  stroke-width:1.5;
+
+  stroke-width:1.48;
+}
+
+@media(hover:hover){
+
+  .homeBagTop:hover{
+    transform:
+      translateY(-2px);
+
+    box-shadow:
+      0 13px 28px
+      rgba(0,0,0,.09);
+  }
 }
 
 .bagBadge{
@@ -319,35 +528,56 @@ svg{
 
   padding:0 4px;
 
-  display:grid;
-  place-items:center;
-
   border-radius:999px;
 
   background:#090909;
   color:#fff;
 
-  border:2px solid #fff;
+  border:
+    2px solid #fff;
+
+  display:grid;
+  place-items:center;
 
   font-size:8px;
+  line-height:1;
+
   font-weight:800;
 }
 
-/* =========================================================
-   HOME CONTENT
-   ========================================================= */
+.bagBadge.bump{
+  animation:
+    badgeBump .22s ease;
+}
+
+@keyframes badgeBump{
+
+  50%{
+    transform:
+      scale(1.25);
+  }
+}
+
+/* ============================================================
+   CONTENT
+   ============================================================ */
 
 .homeContent{
   padding:0 12px;
 }
 
-/* =========================================================
-   CATEGORY ANCHOR PHOTOS
-   ========================================================= */
+/* ============================================================
+   CATEGORY ANCHORS
+   ============================================================ */
 
 .categoryAnchors{
   display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
+
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0,1fr)
+    );
 
   gap:6px;
 
@@ -357,6 +587,8 @@ svg{
 .categoryAnchor{
   position:relative;
 
+  min-width:0;
+
   aspect-ratio:.70;
 
   overflow:hidden;
@@ -365,15 +597,14 @@ svg{
 
   background:#ededed;
 
-  box-shadow:0 7px 20px rgba(0,0,0,.065);
+  box-shadow:
+    0 7px 21px
+    rgba(0,0,0,.06);
 
   transition:
-    transform .16s ease,
-    outline-color .16s ease;
-}
-
-.categoryAnchor:active{
-  transform:scale(.98);
+    transform .2s ease,
+    box-shadow .2s ease,
+    filter .2s ease;
 }
 
 .categoryAnchor img{
@@ -381,68 +612,113 @@ svg{
   height:100%;
 
   object-fit:cover;
+
+  transition:
+    transform .35s ease,
+    filter .35s ease;
 }
 
 .categoryAnchor::after{
   content:"";
 
   position:absolute;
+
   inset:0;
 
-  background:linear-gradient(
-    to bottom,
-    transparent 40%,
-    rgba(0,0,0,.68) 100%
-  );
+  background:
+    linear-gradient(
+      to bottom,
+      transparent 38%,
+      rgba(0,0,0,.69) 100%
+    );
+
+  pointer-events:none;
 }
 
 .categoryAnchorLabel{
   position:absolute;
+
   z-index:2;
 
   left:4px;
   right:4px;
+
   bottom:10px;
 
   text-align:center;
 
   color:#fff;
 
-  font-size:9px;
-  line-height:1.03;
+  font-size:8.8px;
+  line-height:1.05;
 
   font-weight:800;
 
   text-transform:uppercase;
+
+  text-shadow:
+    0 1px 7px
+    rgba(0,0,0,.28);
 }
 
-.categoryAnchor.active{
-  outline:1.5px solid rgba(0,0,0,.72);
-  outline-offset:2px;
+@media(hover:hover){
+
+  .categoryAnchor:hover{
+    transform:
+      translateY(-4px);
+
+    box-shadow:
+      0 16px 35px
+      rgba(0,0,0,.12);
+  }
+
+  .categoryAnchor:hover img{
+    transform:
+      scale(1.035);
+
+    filter:
+      contrast(1.025)
+      saturate(1.035);
+  }
 }
 
-/* =========================================================
-   DELIVERY
-   ========================================================= */
+.categoryAnchor:active{
+  transform:
+    scale(.985);
+}
+
+/* ============================================================
+   DELIVERY GLASS
+   ============================================================ */
 
 .deliverySection{
-  margin-top:9px;
+  margin-top:10px;
 }
 
 .deliveryRail{
   display:grid;
 
-  grid-template-columns:repeat(4,minmax(0,1fr));
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0,1fr)
+    );
 
   gap:6px;
 }
 
 .deliveryCard{
-  min-height:90px;
+  position:relative;
 
-  padding:10px 6px 8px;
+  min-width:0;
+  min-height:91px;
 
-  border-radius:13px;
+  padding:
+    10px 5px 9px;
+
+  overflow:hidden;
+
+  border-radius:14px;
 
   display:flex;
   flex-direction:column;
@@ -450,34 +726,157 @@ svg{
   justify-content:center;
 
   text-align:center;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.77),
+      rgba(255,255,255,.24)
+    );
+
+  border:
+    1px solid
+    rgba(255,255,255,.98);
+
+  box-shadow:
+    0 0 0 1px
+      rgba(0,0,0,.024),
+
+    inset 0 1px 0
+      rgba(255,255,255,1),
+
+    inset 0 -1px 0
+      rgba(255,255,255,.36),
+
+    0 8px 23px
+      rgba(0,0,0,.055);
+
+  backdrop-filter:
+    blur(28px)
+    saturate(175%);
+
+  -webkit-backdrop-filter:
+    blur(28px)
+    saturate(175%);
+
+  transition:
+    transform .2s ease,
+    box-shadow .2s ease,
+    background .2s ease;
+}
+
+.deliveryCard::before{
+  content:"";
+
+  position:absolute;
+
+  width:68px;
+  height:68px;
+
+  left:-24px;
+  top:-30px;
+
+  border-radius:50%;
+
+  background:
+    rgba(255,255,255,.83);
+
+  filter:
+    blur(10px);
+
+  opacity:.6;
+
+  pointer-events:none;
+}
+
+.deliveryCard::after{
+  content:"";
+
+  position:absolute;
+
+  inset:1px;
+
+  border-radius:13px;
+
+  border:
+    1px solid
+    rgba(255,255,255,.37);
+
+  pointer-events:none;
 }
 
 .deliveryIcon{
+  position:relative;
+
+  z-index:2;
+
   width:26px;
   height:26px;
 
-  margin-bottom:7px;
+  margin:
+    0 auto 7px;
 }
 
 .deliveryIcon svg{
   width:100%;
   height:100%;
-  stroke-width:1.5;
+
+  stroke-width:1.45;
 }
 
 .deliveryTitle{
-  font-size:8.3px;
+  position:relative;
+
+  z-index:2;
+
+  font-size:8.2px;
   line-height:1.2;
+
   font-weight:700;
 }
 
 .deliveryEta{
+  position:relative;
+
+  z-index:2;
+
   margin-top:3px;
 
-  font-size:7.4px;
+  font-size:7.3px;
   line-height:1.2;
 
   color:var(--muted);
+}
+
+@media(hover:hover){
+
+  .deliveryCard:hover{
+    transform:
+      translateY(-4px)
+      scale(1.012);
+
+    background:
+      linear-gradient(
+        145deg,
+        rgba(255,255,255,.93),
+        rgba(255,255,255,.41)
+      );
+
+    box-shadow:
+      0 0 0 1px
+        rgba(0,0,0,.024),
+
+      inset 0 1px 0
+        #fff,
+
+      0 17px 37px
+        rgba(0,0,0,.11);
+  }
+}
+
+.deliveryCard:active{
+  transform:
+    scale(.98);
 }
 
 .deliveryInfo{
@@ -485,19 +884,40 @@ svg{
 
   position:relative;
 
-  margin-top:7px;
+  margin-top:8px;
 
-  padding:11px 38px 11px 12px;
+  padding:
+    11px 39px 11px 12px;
 
   border-radius:15px;
 }
 
 .deliveryInfo.open{
   display:block;
+
+  animation:
+    deliveryReveal .17s ease;
+}
+
+@keyframes deliveryReveal{
+
+  from{
+    opacity:0;
+
+    transform:
+      translateY(-4px);
+  }
+
+  to{
+    opacity:1;
+
+    transform:none;
+  }
 }
 
 .deliveryInfoTitle{
   font-size:9.5px;
+
   font-weight:800;
 }
 
@@ -513,10 +933,11 @@ svg{
 .deliveryInfoClose{
   position:absolute;
 
-  right:7px;
   top:50%;
+  right:7px;
 
-  transform:translateY(-50%);
+  transform:
+    translateY(-50%);
 
   width:28px;
   height:28px;
@@ -530,17 +951,18 @@ svg{
 .deliveryInfoClose svg{
   width:14px;
   height:14px;
+
   stroke-width:1.5;
 }
 
-/* =========================================================
+/* ============================================================
    SEARCH
-   ========================================================= */
+   ============================================================ */
 
 .searchShell{
   height:48px;
 
-  margin-top:10px;
+  margin-top:11px;
 
   border-radius:15px;
 
@@ -549,7 +971,24 @@ svg{
 
   gap:9px;
 
-  padding:0 10px 0 13px;
+  padding:
+    0 10px 0 13px;
+
+  transition:
+    transform .18s ease,
+    box-shadow .18s ease;
+}
+
+@media(hover:hover){
+
+  .searchShell:hover{
+    transform:
+      translateY(-1px);
+
+    box-shadow:
+      0 12px 28px
+      rgba(0,0,0,.075);
+  }
 }
 
 .searchIcon{
@@ -565,7 +1004,6 @@ svg{
   flex:1;
 
   min-width:0;
-
   height:44px;
 
   font-size:9.5px;
@@ -578,8 +1016,8 @@ svg{
 .searchClear{
   display:none;
 
-  width:28px;
-  height:28px;
+  width:27px;
+  height:27px;
 
   border-radius:50%;
 
@@ -593,6 +1031,7 @@ svg{
 .searchClear svg{
   width:13px;
   height:13px;
+
   stroke-width:1.5;
 }
 
@@ -604,12 +1043,28 @@ svg{
 
   display:grid;
   place-items:center;
+
+  transition:
+    background .18s ease,
+    transform .18s ease;
 }
 
 .filterButton svg{
   width:18px;
   height:18px;
+
   stroke-width:1.5;
+}
+
+@media(hover:hover){
+
+  .filterButton:hover{
+    background:
+      rgba(0,0,0,.045);
+
+    transform:
+      scale(1.05);
+  }
 }
 
 .searchStatus{
@@ -617,13 +1072,16 @@ svg{
 
   margin-top:7px;
 
-  padding:7px 9px;
+  padding:
+    7px 9px;
 
   border-radius:10px;
 
   background:#fafafa;
 
-  border:1px solid rgba(0,0,0,.05);
+  border:
+    1px solid
+    rgba(0,0,0,.05);
 
   font-size:7.5px;
 
@@ -634,19 +1092,21 @@ svg{
   display:block;
 }
 
-/* =========================================================
+/* ============================================================
    CATEGORY TABS
-   ========================================================= */
+   ============================================================ */
 
 .categoryTabs{
   display:flex;
   align-items:center;
 
-  margin-top:7px;
+  margin-top:8px;
 
   overflow-x:auto;
 
-  border-bottom:1px solid rgba(0,0,0,.055);
+  border-bottom:
+    1px solid
+    rgba(0,0,0,.052);
 
   scrollbar-width:none;
 
@@ -662,29 +1122,32 @@ svg{
 
   flex:0 0 auto;
 
-  min-width:92px;
-
+  min-width:78px;
   height:39px;
 
-  padding:0 9px;
+  padding:
+    0 8px;
 
   white-space:nowrap;
 
-  font-size:7.9px;
+  font-size:7.7px;
 
   text-transform:uppercase;
 
   color:#777;
+
+  transition:
+    color .18s ease;
 }
 
 .categoryTab.all{
-  min-width:55px;
+  min-width:56px;
 }
 
 .categoryTab.active{
-  color:#090909;
+  color:#080808;
 
-  font-weight:750;
+  font-weight:800;
 }
 
 .categoryTab.active::after{
@@ -692,8 +1155,9 @@ svg{
 
   position:absolute;
 
-  left:10px;
-  right:10px;
+  left:8px;
+  right:8px;
+
   bottom:-1px;
 
   height:2px;
@@ -703,14 +1167,21 @@ svg{
   background:#111;
 }
 
-/* =========================================================
+@media(hover:hover){
+
+  .categoryTab:hover{
+    color:#111;
+  }
+}
+
+/* ============================================================
    PRODUCT SECTIONS
-   ========================================================= */
+   ============================================================ */
 
 .productSection{
-  margin-top:16px;
+  margin-top:17px;
 
-  scroll-margin-top:8px;
+  scroll-margin-top:10px;
 }
 
 .productSectionHead{
@@ -724,11 +1195,16 @@ svg{
 .productSectionTitle{
   margin:0;
 
-  font-size:13px;
+  font-family:
+    "Times New Roman",
+    Georgia,
+    serif;
 
-  font-weight:800;
+  font-size:14px;
 
-  letter-spacing:-.15px;
+  font-weight:600;
+
+  letter-spacing:.15px;
 
   text-transform:uppercase;
 }
@@ -741,38 +1217,60 @@ svg{
 }
 
 .liveCount{
-  font-size:7px;
+  font-size:6.8px;
 
-  color:#999;
+  color:#aaa;
 }
 
 .viewAll{
   font-size:8px;
 
   color:#333;
+
+  transition:
+    transform .17s ease;
 }
+
+@media(hover:hover){
+
+  .viewAll:hover{
+    transform:
+      translateX(2px);
+  }
+}
+
+/* ============================================================
+   PRODUCT RAIL
+   ============================================================ */
 
 .productRail{
   display:grid;
 
   grid-auto-flow:column;
 
-  grid-auto-columns:calc((100vw - 44px) / 3);
+  grid-auto-columns:
+    calc(
+      (100vw - 44px) /
+      3
+    );
 
   gap:8px;
 
   overflow-x:auto;
   overflow-y:hidden;
 
-  padding-bottom:2px;
+  padding-bottom:3px;
 
-  scroll-snap-type:x mandatory;
+  scroll-snap-type:
+    x mandatory;
 
-  overscroll-behavior-x:contain;
+  overscroll-behavior-x:
+    contain;
 
   touch-action:pan-x;
 
-  -webkit-overflow-scrolling:touch;
+  -webkit-overflow-scrolling:
+    touch;
 
   scrollbar-width:none;
 }
@@ -782,27 +1280,53 @@ svg{
 }
 
 @media(min-width:700px){
+
   .productRail{
-    grid-auto-columns:calc((var(--mobile-max) - 44px) / 3);
+    grid-auto-columns:
+      calc(
+        (
+          var(--mobile-max) -
+          44px
+        ) /
+        3
+      );
   }
 }
 
-/* =========================================================
+/* ============================================================
    PRODUCT CARD
-   ========================================================= */
+   ============================================================ */
 
 .productCard{
   min-width:0;
 
-  scroll-snap-align:start;
+  overflow:hidden;
 
   border-radius:11px;
 
-  overflow:hidden;
+  scroll-snap-align:start;
 
   background:#fff;
 
-  box-shadow:0 5px 18px rgba(0,0,0,.045);
+  box-shadow:
+    0 5px 17px
+    rgba(0,0,0,.046);
+
+  transition:
+    transform .21s ease,
+    box-shadow .21s ease;
+}
+
+@media(hover:hover){
+
+  .productCard:not(.placeholderCard):hover{
+    transform:
+      translateY(-5px);
+
+    box-shadow:
+      0 17px 34px
+      rgba(0,0,0,.105);
+  }
 }
 
 .productMedia{
@@ -820,13 +1344,27 @@ svg{
   height:100%;
 
   object-fit:cover;
+
+  transition:
+    transform .38s ease;
+}
+
+@media(hover:hover){
+
+  .productCard:hover
+  .productMedia img{
+    transform:
+      scale(1.035);
+  }
 }
 
 .productHeart{
   position:absolute;
 
-  right:5px;
+  z-index:3;
+
   top:5px;
+  right:5px;
 
   width:27px;
   height:27px;
@@ -836,12 +1374,21 @@ svg{
   display:grid;
   place-items:center;
 
-  background:rgba(255,255,255,.9);
+  background:
+    rgba(255,255,255,.88);
 
-  border:1px solid rgba(255,255,255,.96);
+  border:
+    1px solid
+    rgba(255,255,255,.97);
 
-  backdrop-filter:blur(10px);
-  -webkit-backdrop-filter:blur(10px);
+  backdrop-filter:
+    blur(12px);
+
+  -webkit-backdrop-filter:
+    blur(12px);
+
+  transition:
+    transform .17s ease;
 }
 
 .productHeart svg{
@@ -852,15 +1399,28 @@ svg{
 }
 
 .productHeart.active{
-  color:#df1531;
+  color:#df1732;
+}
+
+@media(hover:hover){
+
+  .productHeart:hover{
+    transform:
+      scale(1.1);
+  }
 }
 
 .productInfo{
   min-height:54px;
 
-  padding:6px 6px 8px;
+  padding:
+    6px 6px 8px;
 
-  border:1px solid rgba(0,0,0,.055);
+  background:#fff;
+
+  border:
+    1px solid
+    rgba(0,0,0,.052);
 
   border-top:0;
 }
@@ -879,14 +1439,14 @@ svg{
 .productPrice{
   margin-top:3px;
 
-  font-size:9.3px;
+  font-size:9.5px;
 
   font-weight:800;
 }
 
-/* =========================================================
-   PLACEHOLDER CARD
-   ========================================================= */
+/* ============================================================
+   PLACEHOLDERS
+   ============================================================ */
 
 .placeholderCard{
   pointer-events:none;
@@ -903,11 +1463,12 @@ svg{
   display:grid;
   place-items:center;
 
-  background:linear-gradient(
-    145deg,
-    #f7f7f7,
-    #ededed
-  );
+  background:
+    linear-gradient(
+      145deg,
+      #f7f7f7,
+      #eeeeee
+    );
 }
 
 .placeholderMedia::after{
@@ -917,7 +1478,9 @@ svg{
 
   inset:9px;
 
-  border:1px dashed rgba(0,0,0,.13);
+  border:
+    1px dashed
+    rgba(0,0,0,.13);
 
   border-radius:9px;
 }
@@ -929,30 +1492,34 @@ svg{
 
   text-align:center;
 
-  color:#9a9a9a;
+  color:#999;
 }
 
 .placeholderPlus{
   width:29px;
   height:29px;
 
-  margin:0 auto 6px;
+  margin:
+    0 auto 6px;
 
   border-radius:50%;
 
   display:grid;
   place-items:center;
 
-  background:rgba(255,255,255,.78);
+  background:
+    rgba(255,255,255,.8);
 
-  box-shadow:0 2px 8px rgba(0,0,0,.04);
+  box-shadow:
+    0 2px 8px
+    rgba(0,0,0,.04);
 
   font-size:17px;
   font-weight:300;
 }
 
 .placeholderLabel{
-  font-size:6.3px;
+  font-size:6.2px;
 
   letter-spacing:.5px;
 
@@ -975,9 +1542,9 @@ svg{
   font-weight:500;
 }
 
-/* =========================================================
+/* ============================================================
    RAIL DOTS
-   ========================================================= */
+   ============================================================ */
 
 .railDots{
   height:18px;
@@ -996,6 +1563,10 @@ svg{
   border-radius:50%;
 
   background:#ddd;
+
+  transition:
+    width .17s ease,
+    background .17s ease;
 }
 
 .railDot.active{
@@ -1006,14 +1577,15 @@ svg{
   background:#111;
 }
 
-/* =========================================================
+/* ============================================================
    EMPTY SEARCH
-   ========================================================= */
+   ============================================================ */
 
 .emptySearch{
   min-height:180px;
 
-  padding:30px 20px;
+  padding:
+    30px 20px;
 
   display:grid;
   place-items:center;
@@ -1026,9 +1598,9 @@ svg{
   color:#777;
 }
 
-/* =========================================================
-   BOTTOM NAV
-   ========================================================= */
+/* ============================================================
+   SLIMMER BOTTOM NAV
+   ============================================================ */
 
 .bottomNav{
   position:fixed;
@@ -1037,47 +1609,75 @@ svg{
 
   left:50%;
 
-  bottom:max(7px,var(--safe-bottom));
+  bottom:
+    max(
+      7px,
+      var(--safe-bottom)
+    );
 
-  transform:translateX(-50%);
+  transform:
+    translateX(-50%);
 
-  width:min(calc(100% - 20px),410px);
+  width:
+    min(
+      calc(100% - 25px),
+      402px
+    );
 
-  height:var(--nav-h);
+  height:
+    var(--nav-h);
 
-  padding:4px 5px;
+  padding:
+    2px 5px;
 
-  border-radius:21px;
+  border-radius:18px;
 
   display:grid;
 
-  grid-template-columns:repeat(5,1fr);
+  grid-template-columns:
+    repeat(
+      5,
+      1fr
+    );
 
   align-items:center;
 
-  background:linear-gradient(
-    145deg,
-    rgba(255,255,255,.66),
-    rgba(255,255,255,.30)
-  );
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.64),
+      rgba(255,255,255,.26)
+    );
 
-  border:1px solid rgba(255,255,255,.92);
+  border:
+    1px solid
+    rgba(255,255,255,.92);
 
   box-shadow:
-    0 0 0 1px rgba(0,0,0,.035),
-    inset 0 1px 0 rgba(255,255,255,.96),
-    0 10px 30px rgba(0,0,0,.085);
+    0 0 0 1px
+      rgba(0,0,0,.028),
 
-  backdrop-filter:blur(27px) saturate(165%);
-  -webkit-backdrop-filter:blur(27px) saturate(165%);
+    inset 0 1px 0
+      rgba(255,255,255,.98),
+
+    0 8px 25px
+      rgba(0,0,0,.075);
+
+  backdrop-filter:
+    blur(29px)
+    saturate(170%);
+
+  -webkit-backdrop-filter:
+    blur(29px)
+    saturate(170%);
 }
 
 .navButton{
   position:relative;
 
-  height:50px;
+  height:44px;
 
-  border-radius:17px;
+  border-radius:15px;
 
   display:flex;
   flex-direction:column;
@@ -1085,49 +1685,65 @@ svg{
   align-items:center;
   justify-content:center;
 
-  gap:2px;
+  gap:1px;
+
+  transition:
+    transform .17s ease,
+    background .17s ease,
+    box-shadow .17s ease;
 }
 
 .navButton svg{
-  width:20px;
-  height:20px;
+  width:18px;
+  height:18px;
 
-  stroke-width:1.5;
+  stroke-width:1.45;
 }
 
 .navButton span{
-  font-size:7.2px;
+  font-size:6.8px;
 }
 
 .navButton.active{
-  background:rgba(255,255,255,.78);
+  background:
+    rgba(255,255,255,.78);
 
-  box-shadow:0 4px 17px rgba(0,0,0,.07);
+  box-shadow:
+    0 4px 14px
+    rgba(0,0,0,.06);
 }
 
-.navHome.active{
-  transform:translateY(-1px);
+@media(hover:hover){
+
+  .navButton:hover{
+    transform:
+      translateY(-2px);
+
+    background:
+      rgba(255,255,255,.65);
+  }
 }
 
 .navPlusOrb{
-  width:31px;
-  height:31px;
+  width:30px;
+  height:30px;
+
+  border-radius:50%;
 
   display:grid;
   place-items:center;
 
-  border-radius:50%;
-
   background:#111;
-
   color:#fff;
 
-  box-shadow:0 7px 20px rgba(0,0,0,.15);
+  box-shadow:
+    0 6px 17px
+    rgba(0,0,0,.15);
 }
 
 .navPlusOrb svg{
-  width:17px;
-  height:17px;
+  width:16px;
+  height:16px;
 }
 
 .navPlusLabel{
@@ -1137,33 +1753,38 @@ svg{
 .navBagBadge{
   position:absolute;
 
-  top:1px;
+  top:0;
 
-  right:calc(50% - 20px);
+  right:
+    calc(
+      50% - 18px
+    );
 
-  min-width:16px;
-  height:16px;
+  min-width:15px;
+  height:15px;
 
-  padding:0 3px;
+  padding:
+    0 3px;
 
   border-radius:999px;
 
   background:#090909;
   color:#fff;
 
-  border:1.5px solid #fff;
+  border:
+    1.5px solid #fff;
 
   display:grid;
   place-items:center;
 
-  font-size:7px!important;
+  font-size:6.5px!important;
 
   font-weight:800;
 }
 
-/* =========================================================
-   OVERLAY
-   ========================================================= */
+/* ============================================================
+   OVERLAYS
+   ============================================================ */
 
 .overlay{
   position:fixed;
@@ -1174,31 +1795,36 @@ svg{
 
   display:none;
 
-  background:rgba(0,0,0,.12);
+  background:
+    rgba(0,0,0,.10);
 
-  backdrop-filter:blur(5px);
-  -webkit-backdrop-filter:blur(5px);
+  backdrop-filter:
+    blur(6px);
+
+  -webkit-backdrop-filter:
+    blur(6px);
 }
 
 .overlay.open{
   display:block;
 }
 
-/* =========================================================
-   PLUS MENU
-   ========================================================= */
-
-.plusPanel{
+.panel{
   position:absolute;
 
-  left:10px;
-  right:10px;
+  left:9px;
+  right:9px;
 
-  bottom:calc(var(--nav-h) + 18px + var(--safe-bottom));
+  bottom:
+    calc(
+      var(--nav-h) +
+      17px +
+      var(--safe-bottom)
+    );
+
+  border-radius:23px;
 
   padding:14px;
-
-  border-radius:24px;
 }
 
 .panelEyebrow{
@@ -1221,10 +1847,35 @@ svg{
   font-weight:800;
 }
 
+.closeCircle{
+  width:30px;
+  height:30px;
+
+  border-radius:50%;
+
+  display:grid;
+  place-items:center;
+}
+
+.closeCircle svg{
+  width:14px;
+  height:14px;
+
+  stroke-width:1.5;
+}
+
+/* ============================================================
+   PLUS PANEL
+   ============================================================ */
+
 .plusGrid{
   display:grid;
 
-  grid-template-columns:repeat(2,minmax(0,1fr));
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0,1fr)
+    );
 
   gap:7px;
 
@@ -1232,7 +1883,7 @@ svg{
 }
 
 .plusTile{
-  min-height:68px;
+  min-height:66px;
 
   padding:10px;
 
@@ -1241,16 +1892,33 @@ svg{
   text-align:left;
 
   display:flex;
-
   flex-direction:column;
 
   align-items:flex-start;
-
   justify-content:space-between;
 
-  background:rgba(255,255,255,.58);
+  background:
+    rgba(255,255,255,.52);
 
-  border:1px solid rgba(0,0,0,.055);
+  border:
+    1px solid
+    rgba(0,0,0,.052);
+
+  transition:
+    transform .18s ease,
+    box-shadow .18s ease;
+}
+
+@media(hover:hover){
+
+  .plusTile:hover{
+    transform:
+      translateY(-3px);
+
+    box-shadow:
+      0 12px 25px
+      rgba(0,0,0,.08);
+  }
 }
 
 .plusTileIcon{
@@ -1262,7 +1930,8 @@ svg{
   display:grid;
   place-items:center;
 
-  background:rgba(0,0,0,.055);
+  background:
+    rgba(0,0,0,.05);
 }
 
 .plusTileIcon svg{
@@ -1275,43 +1944,31 @@ svg{
 .plusTileText{
   margin-top:7px;
 
-  font-size:8.5px;
+  font-size:8.4px;
 
   font-weight:700;
 }
 
 .plusWide{
-  grid-column:1 / -1;
+  grid-column:
+    1 / -1;
 
-  min-height:52px;
+  min-height:51px;
 
   flex-direction:row;
-
   align-items:center;
 }
 
 .plusWide .plusTileText{
-  margin:0 0 0 8px;
-
   flex:1;
+
+  margin:
+    0 0 0 8px;
 }
 
-/* =========================================================
+/* ============================================================
    FAVORITES PANEL
-   ========================================================= */
-
-.favoritesPanel{
-  position:absolute;
-
-  left:8px;
-  right:8px;
-
-  bottom:calc(var(--nav-h) + 15px + var(--safe-bottom));
-
-  padding:13px;
-
-  border-radius:23px;
-}
+   ============================================================ */
 
 .panelHead{
   display:flex;
@@ -1326,23 +1983,6 @@ svg{
   font-weight:800;
 }
 
-.closeCircle{
-  width:31px;
-  height:31px;
-
-  border-radius:50%;
-
-  display:grid;
-  place-items:center;
-}
-
-.closeCircle svg{
-  width:15px;
-  height:15px;
-
-  stroke-width:1.5;
-}
-
 .favoriteRail{
   display:flex;
 
@@ -1352,9 +1992,10 @@ svg{
 
   overflow-x:auto;
 
-  scrollbar-width:none;
+  scroll-snap-type:
+    x mandatory;
 
-  scroll-snap-type:x mandatory;
+  scrollbar-width:none;
 }
 
 .favoriteRail::-webkit-scrollbar{
@@ -1362,14 +2003,13 @@ svg{
 }
 
 .favoriteMini{
-  flex:0 0 93px;
+  flex:
+    0 0 93px;
 
   scroll-snap-align:start;
 }
 
 .favoriteMiniImage{
-  position:relative;
-
   width:93px;
   height:116px;
 
@@ -1391,7 +2031,6 @@ svg{
   margin-top:5px;
 
   font-size:7px;
-
   line-height:1.25;
 }
 
@@ -1404,12 +2043,11 @@ svg{
 }
 
 .favoriteEmpty{
+  width:100%;
   min-height:90px;
 
   display:grid;
   place-items:center;
-
-  width:100%;
 
   text-align:center;
 
@@ -1418,21 +2056,9 @@ svg{
   font-size:8.5px;
 }
 
-/* =========================================================
-   PROFILE PANEL
-   ========================================================= */
-
-.profilePanel{
-  position:absolute;
-
-  left:8px;
-  right:8px;
-  bottom:8px;
-
-  padding:15px 14px calc(17px + var(--safe-bottom));
-
-  border-radius:24px;
-}
+/* ============================================================
+   PROFILE
+   ============================================================ */
 
 .profileIntro{
   margin-top:7px;
@@ -1446,7 +2072,8 @@ svg{
 .fieldLabel{
   display:block;
 
-  margin:11px 0 5px;
+  margin:
+    11px 0 5px;
 
   font-size:6.8px;
 
@@ -1463,13 +2090,17 @@ svg{
   width:100%;
   height:43px;
 
-  padding:0 11px;
+  padding:
+    0 11px;
 
   border-radius:13px;
 
-  border:1px solid rgba(0,0,0,.09);
+  border:
+    1px solid
+    rgba(0,0,0,.09);
 
-  background:rgba(255,255,255,.6);
+  background:
+    rgba(255,255,255,.6);
 
   font-size:9px;
 }
@@ -1501,7 +2132,8 @@ svg{
 .profileActions{
   display:grid;
 
-  grid-template-columns:1fr 1fr;
+  grid-template-columns:
+    1fr 1fr;
 
   gap:7px;
 
@@ -1519,7 +2151,9 @@ svg{
 }
 
 .profileButton.secondary{
-  border:1px solid rgba(0,0,0,.1);
+  border:
+    1px solid
+    rgba(0,0,0,.1);
 }
 
 .profileButton.primary{
@@ -1527,9 +2161,9 @@ svg{
   color:#fff;
 }
 
-/* =========================================================
+/* ============================================================
    TOAST
-   ========================================================= */
+   ============================================================ */
 
 .toast{
   position:fixed;
@@ -1538,13 +2172,25 @@ svg{
 
   left:50%;
 
-  bottom:calc(var(--nav-h) + 25px + var(--safe-bottom));
+  bottom:
+    calc(
+      var(--nav-h) +
+      24px +
+      var(--safe-bottom)
+    );
 
-  transform:translateX(-50%) translateY(8px);
+  transform:
+    translateX(-50%)
+    translateY(8px);
 
-  max-width:calc(100vw - 36px);
+  max-width:
+    calc(
+      100vw -
+      36px
+    );
 
-  padding:9px 13px;
+  padding:
+    9px 13px;
 
   border-radius:999px;
 
@@ -1563,16 +2209,23 @@ svg{
 .toast.show{
   opacity:1;
 
-  transform:translateX(-50%) translateY(0);
+  transform:
+    translateX(-50%)
+    translateY(0);
 }
 
 @media(prefers-reduced-motion:reduce){
+
   *,
   *::before,
   *::after{
     scroll-behavior:auto!important;
-    animation-duration:.01ms!important;
-    transition-duration:.01ms!important;
+
+    animation-duration:
+      .01ms!important;
+
+    transition-duration:
+      .01ms!important;
   }
 }
 </style>
@@ -1580,252 +2233,309 @@ svg{
 
 <body>
 
-<div id="app" class="appShell">
+<div
+  id="app"
+  class="appShell"
+>
 
-  <!-- =======================================================
-       HEADER
-       ======================================================= -->
+<header class="homeHeader">
 
-  <header class="homeHeader">
-
-    <button
-      id="headerPlus"
-      class="headerPlus glass"
-      aria-label="More"
+  <button
+    id="headerPlus"
+    class="headerPlus glass"
+    aria-label="Más"
+  >
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
     >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-        <path d="M12 5v14M5 12h14"/>
-      </svg>
-    </button>
+      <path d="M12 5v14M5 12h14"/>
+    </svg>
+  </button>
 
-    <div class="brandLockup" aria-label="CajaModa Colombia">
+  <div
+    class="brandLockup"
+    aria-label="CajaModa Colombia"
+  >
 
-      <div class="brandMonogram">
-        <span class="brandC">C</span>
-        <span class="brandM">M</span>
-      </div>
-
-      <div class="brandWord">
-        CAJAMODA
-      </div>
-
-      <div class="brandCountryRow">
-        <span class="brandCountryLine"></span>
-        <span class="brandCountry">COLOMBIA</span>
-        <span class="brandCountryLine"></span>
-      </div>
-
+    <div class="brandMonogram">
+      <span class="brandC">C</span>
+      <span class="brandM">M</span>
+      <span class="brandSweep"></span>
     </div>
 
-    <button
-      id="homeBagTop"
-      class="homeBagTop"
-      aria-label="Bag"
+    <div class="brandWord">
+      CAJAMODA
+    </div>
+
+    <div class="brandCountryRow">
+      <span class="brandCountryLine"></span>
+      <span class="brandCountry">
+        COLOMBIA
+      </span>
+      <span class="brandCountryLine"></span>
+    </div>
+
+  </div>
+
+  <button
+    id="homeBagTop"
+    class="homeBagTop glass"
+    aria-label="Bolsa"
+  >
+
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
     >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-        <path d="M6.3 8.4h11.4l1 11H5.3l1-11Z"/>
-        <path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>
-      </svg>
+      <path d="M6.3 8.4h11.4l1 11H5.3l1-11Z"/>
+      <path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>
+    </svg>
 
-      <span id="topBagBadge" class="bagBadge">0</span>
-    </button>
+    <span
+      id="topBagBadge"
+      class="bagBadge"
+    >
+      0
+    </span>
 
-  </header>
+  </button>
 
-  <main class="homeContent">
+</header>
 
-    <!-- =====================================================
-         CATEGORY ANCHORS
-         ===================================================== -->
+<main class="homeContent">
 
-    <section
-      id="categoryAnchors"
-      class="categoryAnchors"
-      aria-label="Shop categories"
-    ></section>
+  <!-- CATEGORY ANCHORS -->
 
-    <!-- =====================================================
-         DELIVERY
-         ===================================================== -->
+  <section
+    id="categoryAnchors"
+    class="categoryAnchors"
+    aria-label="Categorías"
+  ></section>
 
-    <section class="deliverySection">
+  <!-- DELIVERY -->
+
+  <section class="deliverySection">
+
+    <div
+      id="deliveryRail"
+      class="deliveryRail"
+    ></div>
+
+    <div
+      id="deliveryInfo"
+      class="deliveryInfo glassStrong"
+    >
 
       <div
-        id="deliveryRail"
-        class="deliveryRail"
+        id="deliveryInfoTitle"
+        class="deliveryInfoTitle"
       ></div>
 
       <div
-        id="deliveryInfo"
-        class="deliveryInfo glassStrong"
+        id="deliveryInfoText"
+        class="deliveryInfoText"
+      ></div>
+
+      <button
+        id="deliveryInfoClose"
+        class="deliveryInfoClose glass"
+        aria-label="Cerrar"
       >
-        <div
-          id="deliveryInfoTitle"
-          class="deliveryInfoTitle"
-        ></div>
 
-        <div
-          id="deliveryInfoText"
-          class="deliveryInfoText"
-        ></div>
-
-        <button
-          id="deliveryInfoClose"
-          class="deliveryInfoClose glass"
-          aria-label="Close"
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="m7 7 10 10M17 7 7 17"/>
-          </svg>
-        </button>
-      </div>
+          <path d="m7 7 10 10M17 7 7 17"/>
+        </svg>
 
-    </section>
+      </button>
 
-    <!-- =====================================================
-         SEARCH
-         ===================================================== -->
+    </div>
 
-    <div class="searchShell glass">
+  </section>
 
+  <!-- SEARCH -->
+
+  <div class="searchShell glass">
+
+    <svg
+      class="searchIcon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+    >
+      <circle cx="10.8" cy="10.8" r="6.2"/>
+      <path d="m15.5 15.5 4.5 4.5"/>
+    </svg>
+
+    <input
+      id="searchInput"
+      class="searchInput"
+      type="search"
+      placeholder="Buscar productos, looks y más"
+      autocomplete="off"
+    >
+
+    <button
+      id="searchClear"
+      class="searchClear"
+      aria-label="Limpiar búsqueda"
+    >
       <svg
-        class="searchIcon"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
       >
-        <circle cx="10.8" cy="10.8" r="6.2"/>
-        <path d="m15.5 15.5 4.5 4.5"/>
+        <path d="m7 7 10 10M17 7 7 17"/>
       </svg>
+    </button>
 
-      <input
-        id="searchInput"
-        class="searchInput"
-        type="search"
-        placeholder="Search dresses, tops, bikinis, sets..."
-        autocomplete="off"
+    <button
+      id="filterButton"
+      class="filterButton"
+      aria-label="Categorías"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
       >
+        <path d="M4 7h10M18 7h2"/>
+        <circle cx="16" cy="7" r="2"/>
+        <path d="M4 17h2M10 17h10"/>
+        <circle cx="8" cy="17" r="2"/>
+      </svg>
+    </button>
 
-      <button
-        id="searchClear"
-        class="searchClear"
-        aria-label="Clear search"
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path d="m7 7 10 10M17 7 7 17"/>
-        </svg>
-      </button>
+  </div>
 
-      <button
-        id="filterButton"
-        class="filterButton"
-        aria-label="Categories"
-      >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path d="M4 7h10M18 7h2"/>
-          <circle cx="16" cy="7" r="2"/>
-          <path d="M4 17h2M10 17h10"/>
-          <circle cx="8" cy="17" r="2"/>
-        </svg>
-      </button>
+  <div
+    id="searchStatus"
+    class="searchStatus"
+  ></div>
 
-    </div>
+  <!-- CATEGORY FILTER LINE -->
 
-    <div
-      id="searchStatus"
-      class="searchStatus"
-    ></div>
+  <nav
+    id="categoryTabs"
+    class="categoryTabs"
+    aria-label="Tipos"
+  ></nav>
 
-    <!-- =====================================================
-         CATEGORY TABS
-         ===================================================== -->
+  <!-- PRODUCTS -->
 
-    <nav
-      id="categoryTabs"
-      class="categoryTabs"
-      aria-label="Categories"
-    ></nav>
+  <div id="homeSections"></div>
 
-    <!-- =====================================================
-         PRODUCT SECTIONS
-         ===================================================== -->
-
-    <div id="homeSections"></div>
-
-  </main>
+</main>
 
 </div>
 
-<!-- =========================================================
-     BOTTOM NAVIGATION
-     ========================================================= -->
+<!-- ============================================================
+     SLIM BOTTOM NAV
+     ============================================================ -->
 
 <nav
-  id="bottomNav"
   class="bottomNav"
-  aria-label="Main navigation"
+  aria-label="Navegación principal"
 >
 
   <button
     id="navPlus"
     class="navButton"
-    aria-label="More"
+    aria-label="Más"
   >
     <span class="navPlusOrb">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+      >
         <path d="M12 5v14M5 12h14"/>
       </svg>
     </span>
-    <span class="navPlusLabel">More</span>
+    <span class="navPlusLabel">
+      Más
+    </span>
   </button>
 
   <button
     id="navFavorites"
     class="navButton"
-    aria-label="Favorites"
+    aria-label="Favoritos"
   >
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+    >
       <path d="M20.3 5.7a5.2 5.2 0 0 0-7.4 0L12 6.6l-.9-.9a5.2 5.2 0 0 0-7.4 7.4L12 21l8.3-7.9a5.2 5.2 0 0 0 0-7.4Z"/>
     </svg>
-    <span>Favorites</span>
+
+    <span>Favoritos</span>
+
   </button>
 
   <button
     id="navHome"
-    class="navButton navHome active"
+    class="navButton active"
     aria-label="Home"
   >
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+    >
       <path d="m4 10 8-6 8 6"/>
       <path d="M6.5 9.5V20h11V9.5"/>
       <path d="M10 20v-6h4v6"/>
     </svg>
+
     <span>Home</span>
+
   </button>
 
   <button
     id="navProfile"
     class="navButton"
-    aria-label="Profile"
+    aria-label="Perfil"
   >
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+    >
       <circle cx="12" cy="8" r="3.5"/>
       <path d="M5.5 20c.7-4 3-6 6.5-6s5.8 2 6.5 6"/>
     </svg>
-    <span>Profile</span>
+
+    <span>Perfil</span>
+
   </button>
 
   <button
     id="navBag"
     class="navButton"
-    aria-label="Bag"
+    aria-label="Bolsa"
   >
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+    >
       <path d="M6.3 8.4h11.4l1 11H5.3l1-11Z"/>
       <path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>
     </svg>
 
-    <span>Bag</span>
+    <span>Bolsa</span>
 
     <span
       id="navBagBadge"
@@ -1833,27 +2543,28 @@ svg{
     >
       0
     </span>
+
   </button>
 
 </nav>
 
-<!-- =========================================================
-     PLUS MENU
-     ========================================================= -->
+<!-- ============================================================
+     PLUS OVERLAY
+     ============================================================ -->
 
 <div
   id="plusOverlay"
   class="overlay"
 >
 
-  <section class="plusPanel glassStrong">
+  <section class="panel glassStrong">
 
     <div class="panelEyebrow">
       CAJAMODA
     </div>
 
     <div class="panelTitle">
-      More
+      Más
     </div>
 
     <div class="plusGrid">
@@ -1862,8 +2573,13 @@ svg{
         class="plusTile"
         data-action="OPEN_WHATSAPP"
       >
+
         <span class="plusTileIcon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+          >
             <path d="M5 19l1-3a8 8 0 1 1 3 3l-4 0Z"/>
             <path d="M9 9c.7 2 2 3.3 4 4"/>
           </svg>
@@ -1872,14 +2588,20 @@ svg{
         <span class="plusTileText">
           WhatsApp
         </span>
+
       </button>
 
       <button
         class="plusTile"
         data-action="OPEN_HELP"
       >
+
         <span class="plusTileIcon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+          >
             <circle cx="12" cy="12" r="9"/>
             <path d="M9.8 9a2.5 2.5 0 0 1 4.7 1.2c0 1.8-2.5 2.1-2.5 4"/>
             <path d="M12 18h.01"/>
@@ -1887,48 +2609,66 @@ svg{
         </span>
 
         <span class="plusTileText">
-          Help
+          Ayuda
         </span>
+
       </button>
 
       <button
         class="plusTile"
         data-action="OPEN_ABOUT"
       >
+
         <span class="plusTileIcon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+          >
             <circle cx="12" cy="12" r="9"/>
             <path d="M12 10v6M12 7h.01"/>
           </svg>
         </span>
 
         <span class="plusTileText">
-          About
+          Sobre CajaModa
         </span>
+
       </button>
 
       <button
         class="plusTile"
         data-action="OPEN_CONTACT"
       >
+
         <span class="plusTileIcon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+          >
             <path d="M4 6h16v12H4z"/>
             <path d="m4 7 8 6 8-6"/>
           </svg>
         </span>
 
         <span class="plusTileText">
-          Contact
+          Contacto
         </span>
+
       </button>
 
       <button
         class="plusTile plusWide"
         data-action="OPEN_STORE_OWNER_PORTAL"
       >
+
         <span class="plusTileIcon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+          >
             <path d="M5 10h14v10H5z"/>
             <path d="M3 10l2-5h14l2 5"/>
             <path d="M9 20v-5h6v5"/>
@@ -1940,6 +2680,7 @@ svg{
         </span>
 
         <span>↗</span>
+
       </button>
 
     </div>
@@ -1948,35 +2689,41 @@ svg{
 
 </div>
 
-<!-- =========================================================
+<!-- ============================================================
      FAVORITES
-     ========================================================= -->
+     ============================================================ -->
 
 <div
   id="favoritesOverlay"
   class="overlay"
 >
 
-  <section class="favoritesPanel glassStrong">
+  <section class="panel glassStrong">
 
     <div class="panelHead">
 
       <div>
+
         <div class="panelEyebrow">
-          SAVED
+          GUARDADO
         </div>
 
         <div class="panelHeadTitle">
-          Favorites
+          Favoritos
         </div>
+
       </div>
 
       <button
         id="favoritesClose"
         class="closeCircle"
-        aria-label="Close favorites"
+        aria-label="Cerrar"
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+        >
           <path d="m7 7 10 10M17 7 7 17"/>
         </svg>
       </button>
@@ -1992,35 +2739,41 @@ svg{
 
 </div>
 
-<!-- =========================================================
+<!-- ============================================================
      PROFILE
-     ========================================================= -->
+     ============================================================ -->
 
 <div
   id="profileOverlay"
   class="overlay"
 >
 
-  <section class="profilePanel glassStrong">
+  <section class="panel glassStrong">
 
     <div class="panelHead">
 
       <div>
+
         <div class="panelEyebrow">
           CAJAMODA MEMBERS
         </div>
 
         <div class="panelHeadTitle">
-          Your profile
+          Tu perfil
         </div>
+
       </div>
 
       <button
         id="profileClose"
         class="closeCircle"
-        aria-label="Close profile"
+        aria-label="Cerrar"
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+        >
           <path d="m7 7 10 10M17 7 7 17"/>
         </svg>
       </button>
@@ -2028,12 +2781,15 @@ svg{
     </div>
 
     <div class="profileIntro">
-      Sign in or create your CajaModa membership to connect purchases,
-      order tracking, discounts and member offers.
+      Inicia sesión o crea tu membresía CajaModa para conectar
+      compras, seguimiento de pedidos, descuentos y ofertas.
     </div>
 
-    <label class="fieldLabel" for="profileName">
-      Name
+    <label
+      class="fieldLabel"
+      for="profileName"
+    >
+      Nombre
     </label>
 
     <input
@@ -2041,10 +2797,13 @@ svg{
       class="profileInput"
       type="text"
       autocomplete="name"
-      placeholder="Your name"
+      placeholder="Tu nombre"
     >
 
-    <label class="fieldLabel" for="profileEmail">
+    <label
+      class="fieldLabel"
+      for="profileEmail"
+    >
       Email
     </label>
 
@@ -2053,10 +2812,11 @@ svg{
       class="profileInput"
       type="email"
       autocomplete="email"
-      placeholder="you@example.com"
+      placeholder="tu@email.com"
     >
 
     <label class="profileMarketing">
+
       <input
         id="profileMarketing"
         type="checkbox"
@@ -2064,8 +2824,9 @@ svg{
       >
 
       <span>
-        Send me CajaModa coupons, discounts and new arrivals.
+        Envíame cupones, descuentos y nuevos lanzamientos de CajaModa.
       </span>
+
     </label>
 
     <div class="profileActions">
@@ -2074,14 +2835,14 @@ svg{
         id="profileLogin"
         class="profileButton secondary"
       >
-        Sign in
+        Iniciar sesión
       </button>
 
       <button
         id="profileCreate"
         class="profileButton primary"
       >
-        Create membership
+        Crear membresía
       </button>
 
     </div>
@@ -2090,210 +2851,230 @@ svg{
 
 </div>
 
-<div id="toast" class="toast"></div>
+<div
+  id="toast"
+  class="toast"
+></div>
 
 <script>
 (() => {
 
   "use strict";
 
-  /* =========================================================
-     MAIN PAGE CONFIGURATION
-     ========================================================= */
+  /* ============================================================
+     HOME FREEZE CONFIGURATION
+     ============================================================ */
 
-  const CONFIG = Object.freeze({
+  const CONFIG =
+    Object.freeze({
 
-    brand:
-      "CAJAMODA",
+      brand:
+        "CAJAMODA",
 
-    bridgeSource:
-      "CAJAMODA_IFRAME",
+      bridgeSource:
+        "CAJAMODA_IFRAME",
 
-    maxSlotsPerCategory:
-      10,
+      maxSlotsPerCategory:
+        10,
 
-    maxFavorites:
-      20,
+      maxFavorites:
+        20,
 
-    productPage:
-      "/product/",
+      productPage:
+        "/product/",
 
-    checkoutPage:
-      "/checkout/",
+      checkoutPage:
+        "/checkout/",
 
-    searchDebounceMs:
-      160
+      searchDebounceMs:
+        160
+    });
 
-  });
+  /* ============================================================
+     CATEGORY STRUCTURE
+     ============================================================ */
 
-  const CATEGORIES = Object.freeze([
+  const CATEGORIES =
+    Object.freeze([
 
-    {
-      id:
-        "late",
+      {
+        id:
+          "late",
 
-      name:
-        "Long Nights",
+        type:
+          "Vestidos",
 
-      image:
-        "https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=900&q=88",
+        name:
+          "Noches Largas",
 
-      terms:[
-        "long nights",
-        "dress",
-        "dresses",
-        "vestido",
-        "vestidos",
-        "gown",
-        "evening",
-        "party"
-      ]
-    },
+        image:
+          "https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=900&q=88",
 
-    {
-      id:
-        "chill",
+        terms:[
+          "noches largas",
+          "vestido",
+          "vestidos",
+          "dress",
+          "dresses",
+          "gown",
+          "evening",
+          "party"
+        ]
+      },
 
-      name:
-        "Quiet Days",
+      {
+        id:
+          "chill",
 
-      image:
-        "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=900&q=88",
+        type:
+          "Tops",
 
-      terms:[
-        "quiet days",
-        "top",
-        "tops",
-        "shirt",
-        "shirts",
-        "blouse",
-        "blouses",
-        "tee",
-        "camisa",
-        "blusa"
-      ]
-    },
+        name:
+          "Días Tranquilos",
 
-    {
-      id:
-        "quick",
+        image:
+          "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=900&q=88",
 
-      name:
-        "Quick and Easy",
+        terms:[
+          "dias tranquilos",
+          "top",
+          "tops",
+          "shirt",
+          "shirts",
+          "blouse",
+          "blusa",
+          "camisa",
+          "tee"
+        ]
+      },
 
-      image:
-        "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=900&q=88",
+      {
+        id:
+          "quick",
 
-      terms:[
-        "quick and easy",
-        "set",
-        "sets",
-        "matching set",
-        "two piece",
-        "two-piece",
-        "conjunto",
-        "conjuntos",
-        "outfit"
-      ]
-    },
+        type:
+          "Conjuntos",
 
-    {
-      id:
-        "sun",
+        name:
+          "Rápido y Fácil",
 
-      name:
-        "Sunbathing",
+        image:
+          "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=900&q=88",
 
-      image:
-        "https://images.unsplash.com/photo-1524250502761-1ac6f2e30d43?auto=format&fit=crop&w=900&q=88",
+        terms:[
+          "rapido y facil",
+          "conjunto",
+          "conjuntos",
+          "set",
+          "sets",
+          "matching set",
+          "two piece",
+          "outfit"
+        ]
+      },
 
-      terms:[
-        "sunbathing",
-        "bikini",
-        "bikinis",
-        "swim",
-        "swimsuit",
-        "swimwear",
-        "beach",
-        "jumpsuit",
-        "romper",
-        "enterizo"
-      ]
-    }
+      {
+        id:
+          "sun",
 
-  ]);
+        type:
+          "Enterizos",
 
-  const DELIVERY_METHODS = Object.freeze([
+        name:
+          "Baño de Sol",
 
-    {
-      id:
-        "pickup",
+        image:
+          "https://images.unsplash.com/photo-1524250502761-1ac6f2e30d43?auto=format&fit=crop&w=900&q=88",
 
-      title:
-        "Recoge en tienda",
+        terms:[
+          "bano de sol",
+          "bikini",
+          "bikinis",
+          "swim",
+          "swimsuit",
+          "swimwear",
+          "beach",
+          "enterizo",
+          "enterizos",
+          "jumpsuit",
+          "romper"
+        ]
+      }
 
-      eta:
-        "Local",
+    ]);
 
-      description:
-        "Compra en línea y recoge localmente cuando confirmemos que tu pedido está listo.",
+  const DELIVERY_METHODS =
+    Object.freeze([
 
-      icon:
-        "pin"
-    },
+      {
+        id:
+          "pickup",
 
-    {
-      id:
-        "fast",
+        title:
+          "Recoge en tienda",
 
-      title:
-        "Entrega rápida",
+        eta:
+          "Local",
 
-      eta:
-        "24–48 h",
+        description:
+          "Compra en línea y recoge localmente cuando confirmemos que tu pedido está listo.",
 
-      description:
-        "Productos elegibles se procesan con prioridad para una entrega estimada de 24 a 48 horas.",
+        icon:
+          "pin"
+      },
 
-      icon:
-        "truck"
-    },
+      {
+        id:
+          "fast",
 
-    {
-      id:
-        "ship",
+        title:
+          "Entrega rápida",
 
-      title:
-        "Envíos",
+        eta:
+          "24–48 h",
 
-      eta:
-        "14–21 días",
+        description:
+          "Productos elegibles se procesan con prioridad para entrega estimada entre 24 y 48 horas.",
 
-      description:
-        "Los productos conectados a nuestra red de suministro pueden requerir 14 a 21 días.",
+        icon:
+          "truck"
+      },
 
-      icon:
-        "globe"
-    },
+      {
+        id:
+          "ship",
 
-    {
-      id:
-        "reserve",
+        title:
+          "Envíos",
 
-      title:
-        "Reserva el lanzamiento",
+        eta:
+          "14–21 días",
 
-      eta:
-        "Sé la primera",
+        description:
+          "Productos conectados a nuestra red de suministro pueden requerir aproximadamente 14 a 21 días.",
 
-      description:
-        "Registra tu interés antes del lanzamiento para recibir noticias cuando el producto esté disponible.",
+        icon:
+          "globe"
+      },
 
-      icon:
-        "spark"
-    }
+      {
+        id:
+          "reserve",
 
-  ]);
+        title:
+          "Reserva el lanzamiento",
+
+        eta:
+          "Sé la primera",
+
+        description:
+          "Registra tu interés antes del lanzamiento para recibir noticias cuando el producto esté disponible.",
+
+        icon:
+          "spark"
+      }
+
+    ]);
 
   const $ =
     id =>
@@ -2317,25 +3098,32 @@ svg{
     products:
       [],
 
-    activeCategory:
-      "late",
+    /*
+      IMPORTANT:
+      Home begins on TODOS.
+    */
+
+    activeFilter:
+      "all",
+
+    activeAnchor:
+      null,
 
     search:
       "",
 
+    searchTimer:
+      null,
+
     favorites:
       new Set(
         readFavorites()
-      ),
-
-    searchTimer:
-      null
-
+      )
   };
 
-  /* =========================================================
+  /* ============================================================
      STORAGE
-     ========================================================= */
+     ============================================================ */
 
   function readJson(
     key,
@@ -2412,13 +3200,22 @@ svg{
     );
   }
 
+  function readBag(){
+
+    return readJson(
+      "cajamoda-cart",
+      {
+        items:[],
+        count:0,
+        total:0
+      }
+    );
+  }
+
   function readBagCount(){
 
     const cart =
-      readJson(
-        "cajamoda-cart",
-        {}
-      );
+      readBag();
 
     if(
       Array.isArray(
@@ -2428,10 +3225,10 @@ svg{
 
       return cart.items.reduce(
         (
-          sum,
+          total,
           item
         ) =>
-          sum +
+          total +
           Number(
             item.quantity ||
             0
@@ -2446,14 +3243,15 @@ svg{
     );
   }
 
-  /* =========================================================
-     HELPERS
-     ========================================================= */
+  /* ============================================================
+     GENERAL HELPERS
+     ============================================================ */
 
   function createId(){
 
     if(
-      window.crypto?.randomUUID
+      window.crypto
+        ?.randomUUID
     ){
       return window.crypto
         .randomUUID();
@@ -2475,11 +3273,26 @@ svg{
       value ??
       ""
     )
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
+      .replaceAll(
+        "&",
+        "&amp;"
+      )
+      .replaceAll(
+        "<",
+        "&lt;"
+      )
+      .replaceAll(
+        ">",
+        "&gt;"
+      )
+      .replaceAll(
+        '"',
+        "&quot;"
+      )
+      .replaceAll(
+        "'",
+        "&#039;"
+      );
   }
 
   function normalizeText(
@@ -2533,6 +3346,20 @@ svg{
     );
   }
 
+  function categoryById(
+    id
+  ){
+
+    return (
+      CATEGORIES.find(
+        category =>
+          category.id ===
+          id
+      ) ||
+      CATEGORIES[0]
+    );
+  }
+
   function heartIcon(
     filled=false
   ){
@@ -2556,6 +3383,7 @@ svg{
       type ===
       "pin"
     ){
+
       return `
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/>
@@ -2568,6 +3396,7 @@ svg{
       type ===
       "truck"
     ){
+
       return `
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path d="M3 6h11v10H3z"/>
@@ -2582,6 +3411,7 @@ svg{
       type ===
       "globe"
     ){
+
       return `
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <circle cx="12" cy="12" r="9"/>
@@ -2600,18 +3430,40 @@ svg{
     `;
   }
 
-  function categoryById(
-    id
+  /* ============================================================
+     PRODUCT NORMALIZATION
+     ============================================================ */
+
+  function normalizeMedia(
+    product
   ){
 
-    return (
-      CATEGORIES.find(
-        category =>
-          category.id ===
-          id
-      ) ||
-      CATEGORIES[0]
-    );
+    if(
+      Array.isArray(
+        product.media
+      )
+    ){
+
+      return product.media
+        .map(
+          item =>
+            typeof item ===
+            "string"
+              ?item
+              :item.url ||
+               item.src ||
+               item.imageUrl ||
+               item.image?.url ||
+               ""
+        )
+        .filter(Boolean);
+    }
+
+    return [
+      product.image ||
+      product.imageUrl ||
+      ""
+    ].filter(Boolean);
   }
 
   function inferCategory(
@@ -2620,30 +3472,70 @@ svg{
 
     const explicit =
       normalizeText(
-        product.vibeId ||
-        product.vibe ||
-        product.category ||
-        product.productType ||
-        ""
+        [
+          product.vibeId,
+          product.vibe,
+          product.productType,
+          product.type,
+          product.category
+        ]
+          .filter(Boolean)
+          .join(
+            " "
+          )
       );
 
-    for(
-      const category
-      of CATEGORIES
+    if(
+      explicit.includes(
+        "late"
+      ) ||
+      explicit.includes(
+        "vestido"
+      ) ||
+      explicit.includes(
+        "dress"
+      )
     ){
+      return "late";
+    }
 
-      if(
-        explicit ===
-        normalizeText(
-          category.id
-        ) ||
-        explicit ===
-        normalizeText(
-          category.name
-        )
-      ){
-        return category.id;
-      }
+    if(
+      explicit.includes(
+        "chill"
+      ) ||
+      explicit.includes(
+        "top"
+      )
+    ){
+      return "chill";
+    }
+
+    if(
+      explicit.includes(
+        "quick"
+      ) ||
+      explicit.includes(
+        "conjunto"
+      ) ||
+      explicit.includes(
+        "set"
+      )
+    ){
+      return "quick";
+    }
+
+    if(
+      explicit.includes(
+        "sun"
+      ) ||
+      explicit.includes(
+        "enterizo"
+      ) ||
+      explicit.includes(
+        "bikini"
+      )
+    ){
+      return "sun";
     }
 
     const text =
@@ -2654,9 +3546,7 @@ svg{
           product.productType,
           product.type,
           product.category,
-          product.collectionName,
-          product.tags,
-          product.ribbon
+          product.tags
         ]
           .flat()
           .filter(Boolean)
@@ -2687,53 +3577,16 @@ svg{
     return "late";
   }
 
-  function normalizeMedia(
-    product
-  ){
-
-    if(
-      Array.isArray(
-        product.media
-      )
-    ){
-
-      return product.media
-        .map(
-          media =>
-            typeof media ===
-            "string"
-              ?media
-              :media.url ||
-               media.src ||
-               media.imageUrl ||
-               media.image?.url ||
-               ""
-        )
-        .filter(Boolean);
-    }
-
-    return [
-      product.image ||
-      product.imageUrl ||
-      ""
-    ].filter(Boolean);
-  }
-
   function normalizeProduct(
     product
   ){
-
-    const category =
-      inferCategory(
-        product
-      );
 
     const media =
       normalizeMedia(
         product
       );
 
-    return {
+    return{
 
       id:
         product.id ||
@@ -2744,6 +3597,16 @@ svg{
         product.name ||
         "CajaModa Product",
 
+      category:
+        inferCategory(
+          product
+        ),
+
+      productType:
+        product.productType ||
+        product.type ||
+        "",
+
       price:
         Number(
           product.price?.amount ??
@@ -2752,26 +3615,18 @@ svg{
           0
         ),
 
-      category,
-
-      media,
-
       image:
         media[0] ||
         "",
+
+      media,
 
       description:
         product.description ||
         "",
 
-      productType:
-        product.productType ||
-        product.type ||
-        "",
-
       raw:
         product
-
     };
   }
 
@@ -2790,6 +3645,7 @@ svg{
         product.description,
         product.productType,
         category.name,
+        category.type,
         category.terms
       ]
         .flat()
@@ -2814,50 +3670,46 @@ svg{
       return true;
     }
 
-    const tokens =
+    const terms =
       query
         .split(
           " "
         )
         .filter(Boolean);
 
-    const text =
+    const haystack =
       productSearchText(
         product
       );
 
-    return tokens.every(
-      token =>
-        text.includes(
-          token
+    return terms.every(
+      term =>
+        haystack.includes(
+          term
         )
     );
   }
 
-  /* =========================================================
+  /* ============================================================
      BRIDGE
-     ========================================================= */
+     ============================================================ */
 
   function sendBridge(
     type,
     payload={}
   ){
 
-    const message = {
-
-      source:
-        CONFIG.bridgeSource,
-
-      type,
-
-      payload
-
-    };
-
     try{
 
       window.parent.postMessage(
-        message,
+        {
+          source:
+            CONFIG.bridgeSource,
+
+          type,
+
+          payload
+        },
         "*"
       );
 
@@ -2866,7 +3718,7 @@ svg{
 
   function track(
     eventType,
-    extra={}
+    payload={}
   ){
 
     sendBridge(
@@ -2887,107 +3739,49 @@ svg{
         brand:
           "CAJAMODA",
 
-        ...extra
+        ...payload
       }
     );
   }
 
-  /* =========================================================
+  /* ============================================================
      CATEGORY ANCHORS
-     ========================================================= */
+     ============================================================ */
 
-  function renderCategoryAnchors(){
+  function renderAnchors(){
 
-    $("categoryAnchors").innerHTML =
-      CATEGORIES.map(
-        category => `
-          <button
-            class="categoryAnchor ${
-              state.activeCategory ===
-              category.id
-                ?"active"
-                :""
-            }"
-            data-anchor-category="${category.id}"
-            aria-label="${escapeHtml(category.name)}"
-          >
-
-            <img
-              src="${escapeHtml(category.image)}"
-              alt="${escapeHtml(category.name)}"
-              loading="eager"
+    $("categoryAnchors")
+      .innerHTML =
+        CATEGORIES.map(
+          category => `
+            <button
+              class="categoryAnchor ${
+                state.activeAnchor ===
+                category.id
+                  ?"active"
+                  :""
+              }"
+              data-anchor="${category.id}"
             >
 
-            <span class="categoryAnchorLabel">
-              ${escapeHtml(category.name)}
-            </span>
+              <img
+                src="${escapeHtml(category.image)}"
+                alt="${escapeHtml(category.name)}"
+                loading="eager"
+              >
 
-          </button>
-        `
-      ).join(
-        ""
-      );
+              <span class="categoryAnchorLabel">
+                ${escapeHtml(category.name)}
+              </span>
 
-    qsa(
-      "[data-anchor-category]"
-    ).forEach(
-      button => {
-
-        button.onclick =
-          () => {
-
-            activateCategory(
-              button.dataset
-                .anchorCategory,
-              "anchor_photo"
-            );
-
-          };
-      }
-    );
-  }
-
-  function renderCategoryTabs(){
-
-    const tabs = [
-      {
-        id:
-          "all",
-
-        name:
-          "Todos"
-      },
-      ...CATEGORIES
-    ];
-
-    $("categoryTabs").innerHTML =
-      tabs.map(
-        tab => `
-          <button
-            class="categoryTab ${
-              tab.id ===
-              "all"
-                ?"all"
-                :""
-            } ${
-              (
-                tab.id ===
-                state.activeCategory
-              )
-                ?"active"
-                :""
-            }"
-            data-tab-category="${tab.id}"
-          >
-            ${escapeHtml(tab.name)}
-          </button>
-        `
-      ).join(
-        ""
-      );
+            </button>
+          `
+        ).join(
+          ""
+        );
 
     qsa(
-      "[data-tab-category]"
+      "[data-anchor]"
     ).forEach(
       button => {
 
@@ -2996,33 +3790,39 @@ svg{
 
             const categoryId =
               button.dataset
-                .tabCategory;
+                .anchor;
 
-            if(
-              categoryId ===
-              "all"
-            ){
+            state.activeAnchor =
+              categoryId;
 
-              state.activeCategory =
-                "late";
+            state.activeFilter =
+              categoryId;
 
-              renderCategoryAnchors();
-              renderCategoryTabs();
+            renderAnchors();
+            renderTabs();
 
-              window.scrollTo({
-                top:
-                  0,
+            track(
+              "CATEGORY_ANCHOR_CLICK",
+              {
+                categoryId
+              }
+            );
 
-                behavior:
-                  "smooth"
-              });
+            requestAnimationFrame(
+              () => {
 
-              return;
-            }
+                document.querySelector(
+                  `[data-section="${categoryId}"]`
+                )
+                  ?.scrollIntoView({
+                    behavior:
+                      "smooth",
 
-            activateCategory(
-              categoryId,
-              "category_tab"
+                    block:
+                      "start"
+                  });
+
+              }
             );
 
           };
@@ -3030,76 +3830,38 @@ svg{
     );
   }
 
-  function activateCategory(
-    categoryId,
-    source
-  ){
-
-    state.activeCategory =
-      categoryId;
-
-    renderCategoryAnchors();
-    renderCategoryTabs();
-
-    track(
-      "CATEGORY_SELECT",
-      {
-        categoryId,
-        source
-      }
-    );
-
-    requestAnimationFrame(
-      () => {
-
-        const section =
-          document.querySelector(
-            `[data-category-section="${categoryId}"]`
-          );
-
-        section?.scrollIntoView({
-          behavior:
-            "smooth",
-
-          block:
-            "start"
-        });
-
-      }
-    );
-  }
-
-  /* =========================================================
+  /* ============================================================
      DELIVERY
-     ========================================================= */
+     ============================================================ */
 
   function renderDelivery(){
 
-    $("deliveryRail").innerHTML =
-      DELIVERY_METHODS.map(
-        method => `
-          <button
-            class="deliveryCard glass"
-            data-delivery="${method.id}"
-          >
+    $("deliveryRail")
+      .innerHTML =
+        DELIVERY_METHODS.map(
+          method => `
+            <button
+              class="deliveryCard"
+              data-delivery="${method.id}"
+            >
 
-            <div class="deliveryIcon">
-              ${deliveryIcon(method.icon)}
-            </div>
+              <div class="deliveryIcon">
+                ${deliveryIcon(method.icon)}
+              </div>
 
-            <div class="deliveryTitle">
-              ${escapeHtml(method.title)}
-            </div>
+              <div class="deliveryTitle">
+                ${escapeHtml(method.title)}
+              </div>
 
-            <div class="deliveryEta">
-              ${escapeHtml(method.eta)}
-            </div>
+              <div class="deliveryEta">
+                ${escapeHtml(method.eta)}
+              </div>
 
-          </button>
-        `
-      ).join(
-        ""
-      );
+            </button>
+          `
+        ).join(
+          ""
+        );
 
     qsa(
       "[data-delivery]"
@@ -3113,7 +3875,8 @@ svg{
               DELIVERY_METHODS.find(
                 item =>
                   item.id ===
-                  button.dataset.delivery
+                  button.dataset
+                    .delivery
               );
 
             if(
@@ -3136,14 +3899,147 @@ svg{
                 "open"
               );
 
+            track(
+              "DELIVERY_INFO_OPEN",
+              {
+                methodId:
+                  method.id
+              }
+            );
+
           };
       }
     );
   }
 
-  /* =========================================================
-     PRODUCT SLOTS
-     ========================================================= */
+  /* ============================================================
+     CATEGORY TABS
+     ============================================================ */
+
+  function renderTabs(){
+
+    const tabs = [
+      {
+        id:
+          "all",
+
+        name:
+          "Todos"
+      },
+
+      ...CATEGORIES.map(
+        category => ({
+          id:
+            category.id,
+
+          name:
+            category.type
+        })
+      )
+    ];
+
+    $("categoryTabs")
+      .innerHTML =
+        tabs.map(
+          tab => `
+            <button
+              class="categoryTab ${
+                tab.id ===
+                "all"
+                  ?"all"
+                  :""
+              } ${
+                state.activeFilter ===
+                tab.id
+                  ?"active"
+                  :""
+              }"
+              data-tab="${tab.id}"
+            >
+              ${escapeHtml(tab.name)}
+            </button>
+          `
+        ).join(
+          ""
+        );
+
+    qsa(
+      "[data-tab]"
+    ).forEach(
+      button => {
+
+        button.onclick =
+          () => {
+
+            const id =
+              button.dataset.tab;
+
+            state.activeFilter =
+              id;
+
+            if(
+              id ===
+              "all"
+            ){
+
+              state.activeAnchor =
+                null;
+
+              renderAnchors();
+              renderTabs();
+
+              window.scrollTo({
+                top:
+                  0,
+
+                behavior:
+                  "smooth"
+              });
+
+              track(
+                "CATEGORY_FILTER",
+                {
+                  categoryId:
+                    "all"
+                }
+              );
+
+              return;
+            }
+
+            state.activeAnchor =
+              id;
+
+            renderAnchors();
+            renderTabs();
+
+            document.querySelector(
+              `[data-section="${id}"]`
+            )
+              ?.scrollIntoView({
+                behavior:
+                  "smooth",
+
+                block:
+                  "start"
+              });
+
+            track(
+              "CATEGORY_FILTER",
+              {
+                categoryId:
+                  id
+              }
+            );
+
+          };
+      }
+    );
+  }
+
+  /* ============================================================
+     PRODUCTS
+     ============================================================ */
 
   function productsForCategory(
     categoryId
@@ -3164,8 +4060,7 @@ svg{
       );
   }
 
-  function placeholderMarkup(
-    categoryId,
+  function placeholderCard(
     slot
   ){
 
@@ -3211,7 +4106,7 @@ svg{
     `;
   }
 
-  function productMarkup(
+  function productCard(
     product
   ){
 
@@ -3259,8 +4154,8 @@ svg{
                 ?"active"
                 :""
             }"
-            data-favorite-product="${escapeHtml(product.id)}"
-            aria-label="Favorite"
+            data-favorite="${escapeHtml(product.id)}"
+            aria-label="Favorito"
           >
             ${heartIcon(favorite)}
           </button>
@@ -3283,147 +4178,142 @@ svg{
     `;
   }
 
-  function dotsMarkup(){
-
-    return `
-      <span class="railDot active"></span>
-      <span class="railDot"></span>
-      <span class="railDot"></span>
-      <span class="railDot"></span>
-    `;
-  }
-
-  function renderHomeSections(){
+  function renderSections(){
 
     const searching =
       !!normalizeText(
         state.search
       );
 
-    let renderedSections =
+    let visibleSections =
       0;
 
-    $("homeSections").innerHTML =
-      CATEGORIES.map(
-        category => {
+    $("homeSections")
+      .innerHTML =
+        CATEGORIES.map(
+          category => {
 
-          const products =
-            productsForCategory(
-              category.id
-            );
+            const products =
+              productsForCategory(
+                category.id
+              );
 
-          if(
-            searching &&
-            products.length ===
-            0
-          ){
-            return "";
-          }
+            if(
+              searching &&
+              products.length ===
+              0
+            ){
+              return "";
+            }
 
-          renderedSections +=
-            1;
+            visibleSections +=
+              1;
 
-          const cards = [
-            ...products.map(
-              productMarkup
-            )
-          ];
+            const cards =
+              products.map(
+                productCard
+              );
 
-          if(
-            !searching
-          ){
-
-            for(
-              let slot =
-                products.length +
-                1;
-              slot <=
-                CONFIG.maxSlotsPerCategory;
-              slot +=
-                1
+            if(
+              !searching
             ){
 
-              cards.push(
-                placeholderMarkup(
-                  category.id,
-                  slot
-                )
-              );
+              for(
+                let slot =
+                  products.length +
+                  1;
+
+                slot <=
+                  CONFIG.maxSlotsPerCategory;
+
+                slot +=
+                  1
+              ){
+
+                cards.push(
+                  placeholderCard(
+                    slot
+                  )
+                );
+              }
             }
-          }
 
-          return `
-            <section
-              class="productSection"
-              data-category-section="${category.id}"
-            >
+            return `
+              <section
+                class="productSection"
+                data-section="${category.id}"
+              >
 
-              <div class="productSectionHead">
+                <div class="productSectionHead">
 
-                <h2 class="productSectionTitle">
-                  ${escapeHtml(category.name)}
-                </h2>
+                  <h2 class="productSectionTitle">
+                    ${escapeHtml(category.name)}
+                  </h2>
 
-                <div class="productSectionMeta">
+                  <div class="productSectionMeta">
 
-                  <span class="liveCount">
-                    ${
-                      searching
-                        ?`${products.length} found`
-                        :`${products.length} / ${CONFIG.maxSlotsPerCategory} live`
-                    }
-                  </span>
+                    <span class="liveCount">
+                      ${
+                        searching
+                          ?`${products.length} found`
+                          :`${products.length} / ${CONFIG.maxSlotsPerCategory}`
+                      }
+                    </span>
 
-                  <button
-                    class="viewAll"
-                    data-view-category="${category.id}"
-                  >
-                    View all ›
-                  </button>
+                    <button
+                      class="viewAll"
+                      data-view="${category.id}"
+                    >
+                      Ver todo ›
+                    </button>
+
+                  </div>
 
                 </div>
 
-              </div>
+                <div
+                  class="productRail"
+                  data-rail="${category.id}"
+                >
+                  ${cards.join("")}
+                </div>
 
-              <div
-                class="productRail"
-                data-product-rail="${category.id}"
-              >
-                ${cards.join("")}
-              </div>
+                <div class="railDots">
+                  <span class="railDot active"></span>
+                  <span class="railDot"></span>
+                  <span class="railDot"></span>
+                  <span class="railDot"></span>
+                </div>
 
-              <div class="railDots">
-                ${dotsMarkup()}
-              </div>
-
-            </section>
-          `;
-        }
-      ).join(
-        ""
-      );
+              </section>
+            `;
+          }
+        ).join(
+          ""
+        );
 
     if(
-      renderedSections ===
+      visibleSections ===
       0
     ){
 
-      $("homeSections").innerHTML =
-        `
-          <div class="emptySearch">
-            No products matched “${escapeHtml(state.search)}”.
-            <br><br>
-            Try a product name, dress, top, bikini, set or jumpsuit.
-          </div>
-        `;
+      $("homeSections")
+        .innerHTML =
+          `
+            <div class="emptySearch">
+              No encontramos productos para “${escapeHtml(state.search)}”.
+              <br><br>
+              Prueba vestidos, tops, bikinis, conjuntos o enterizos.
+            </div>
+          `;
     }
 
-    bindProductEvents();
+    bindProductCards();
     bindRails();
     renderSearchStatus();
   }
 
-  function bindProductEvents(){
+  function bindProductCards(){
 
     qsa(
       "[data-product]"
@@ -3435,7 +4325,7 @@ svg{
 
             if(
               event.target.closest(
-                "[data-favorite-product]"
+                "[data-favorite]"
               )
             ){
               return;
@@ -3448,7 +4338,8 @@ svg{
                     item.id
                   ) ===
                   String(
-                    card.dataset.product
+                    card.dataset
+                      .product
                   )
               );
 
@@ -3458,16 +4349,15 @@ svg{
               return;
             }
 
-            track(
-              "PRODUCT_CLICK",
-              {
-                productId:
-                  product.id,
+            /*
+              ROUTE TO PRODUCT PAGE.
 
-                categoryId:
-                  product.category
-              }
-            );
+              We pass:
+              productId
+              category
+
+              The Product page will read this.
+            */
 
             const url =
               new URL(
@@ -3485,6 +4375,17 @@ svg{
               product.category
             );
 
+            track(
+              "PRODUCT_CLICK",
+              {
+                productId:
+                  product.id,
+
+                categoryId:
+                  product.category
+              }
+            );
+
             location.href =
               url.toString();
 
@@ -3493,7 +4394,7 @@ svg{
     );
 
     qsa(
-      "[data-favorite-product]"
+      "[data-favorite]"
     ).forEach(
       button => {
 
@@ -3504,7 +4405,7 @@ svg{
 
             toggleFavorite(
               button.dataset
-                .favoriteProduct
+                .favorite
             );
 
           };
@@ -3512,18 +4413,36 @@ svg{
     );
 
     qsa(
-      "[data-view-category]"
+      "[data-view]"
     ).forEach(
       button => {
 
         button.onclick =
           () => {
 
-            activateCategory(
+            const id =
               button.dataset
-                .viewCategory,
-              "view_all"
-            );
+                .view;
+
+            state.activeFilter =
+              id;
+
+            state.activeAnchor =
+              id;
+
+            renderAnchors();
+            renderTabs();
+
+            document.querySelector(
+              `[data-section="${id}"]`
+            )
+              ?.scrollIntoView({
+                behavior:
+                  "smooth",
+
+                block:
+                  "start"
+              });
 
           };
       }
@@ -3533,7 +4452,7 @@ svg{
   function bindRails(){
 
     qsa(
-      "[data-product-rail]"
+      "[data-rail]"
     ).forEach(
       rail => {
 
@@ -3567,6 +4486,7 @@ svg{
               Math.min(
                 dots.length -
                 1,
+
                 Math.round(
                   ratio *
                   (
@@ -3602,9 +4522,60 @@ svg{
     );
   }
 
-  /* =========================================================
+  /* ============================================================
+     SEARCH
+     ============================================================ */
+
+  function renderSearchStatus(){
+
+    const query =
+      state.search.trim();
+
+    $("searchClear")
+      .classList
+      .toggle(
+        "show",
+        !!query
+      );
+
+    if(
+      !query
+    ){
+
+      $("searchStatus")
+        .classList
+        .remove(
+          "show"
+        );
+
+      $("searchStatus")
+        .textContent =
+          "";
+
+      return;
+    }
+
+    const count =
+      state.products
+        .filter(
+          matchesSearch
+        )
+        .length;
+
+    $("searchStatus")
+      .textContent =
+        `${count} producto${count===1?"":"s"} encontrado${count===1?"":"s"} para “${query}”`;
+
+    $("searchStatus")
+      .classList
+      .add(
+        "show"
+      );
+  }
+
+  /* ============================================================
      FAVORITES
-     ========================================================= */
+     ============================================================ */
 
   function toggleFavorite(
     productId
@@ -3633,7 +4604,7 @@ svg{
       ){
 
         showToast(
-          "Maximum 20 favorites."
+          "Máximo 20 favoritos."
         );
 
         return;
@@ -3646,21 +4617,8 @@ svg{
 
     saveFavorites();
 
-    renderHomeSections();
+    renderSections();
     renderFavorites();
-
-    track(
-      "FAVORITE_TOGGLE",
-      {
-        productId:
-          id,
-
-        active:
-          state.favorites.has(
-            id
-          )
-      }
-    );
   }
 
   function renderFavorites(){
@@ -3675,48 +4633,49 @@ svg{
           )
       );
 
-    $("favoriteRail").innerHTML =
-      products.length
-        ?products.map(
-          product => `
-            <button
-              class="favoriteMini"
-              data-favorite-open="${escapeHtml(product.id)}"
-            >
+    $("favoriteRail")
+      .innerHTML =
+        products.length
+          ?products.map(
+            product => `
+              <button
+                class="favoriteMini"
+                data-favorite-open="${escapeHtml(product.id)}"
+              >
 
-              <div class="favoriteMiniImage">
+                <div class="favoriteMiniImage">
 
-                ${
-                  product.image
-                    ?`
-                      <img
-                        src="${escapeHtml(product.image)}"
-                        alt="${escapeHtml(product.name)}"
-                      >
-                    `
-                    :""
-                }
+                  ${
+                    product.image
+                      ?`
+                        <img
+                          src="${escapeHtml(product.image)}"
+                          alt="${escapeHtml(product.name)}"
+                        >
+                      `
+                      :""
+                  }
 
-              </div>
+                </div>
 
-              <div class="favoriteMiniName">
-                ${escapeHtml(product.name)}
-              </div>
+                <div class="favoriteMiniName">
+                  ${escapeHtml(product.name)}
+                </div>
 
-              <div class="favoriteMiniPrice">
-                ${money(product.price)}
-              </div>
+                <div class="favoriteMiniPrice">
+                  ${money(product.price)}
+                </div>
 
-            </button>
-          `
-        ).join(
-          ""
-        )
-        :`
-          <div class="favoriteEmpty">
-            Your saved products will appear here.
-          </div>
-        `;
+              </button>
+            `
+          ).join(
+            ""
+          )
+          :`
+            <div class="favoriteEmpty">
+              Tus productos guardados aparecerán aquí.
+            </div>
+          `;
 
     qsa(
       "[data-favorite-open]"
@@ -3768,81 +4727,56 @@ svg{
     );
   }
 
-  /* =========================================================
-     SEARCH
-     ========================================================= */
-
-  function renderSearchStatus(){
-
-    const query =
-      state.search.trim();
-
-    $("searchClear")
-      .classList
-      .toggle(
-        "show",
-        !!query
-      );
-
-    if(
-      !query
-    ){
-
-      $("searchStatus")
-        .classList
-        .remove(
-          "show"
-        );
-
-      $("searchStatus")
-        .textContent =
-          "";
-
-      return;
-    }
-
-    const count =
-      state.products.filter(
-        matchesSearch
-      ).length;
-
-    $("searchStatus")
-      .textContent =
-        `${count} product${count===1?"":"s"} found for “${query}”`;
-
-    $("searchStatus")
-      .classList
-      .add(
-        "show"
-      );
-  }
-
-  /* =========================================================
+  /* ============================================================
      BAG
-     ========================================================= */
+     ============================================================ */
 
-  function syncBagCount(){
+  function syncBagCount(
+    animate=false
+  ){
 
     const count =
       readBagCount();
 
-    $("topBagBadge")
-      .textContent =
-        String(
-          count
-        );
+    [
+      $("topBagBadge"),
+      $("navBagBadge")
+    ].forEach(
+      badge => {
 
-    $("navBagBadge")
-      .textContent =
-        String(
-          count
-        );
+        badge.textContent =
+          String(
+            count
+          );
+
+        if(
+          animate
+        ){
+
+          badge.classList.remove(
+            "bump"
+          );
+
+          void badge.offsetWidth;
+
+          badge.classList.add(
+            "bump"
+          );
+        }
+
+      }
+    );
   }
 
   function openCheckout(){
 
+    /*
+      Checkout gets the same shared cajamoda-cart
+      storage used by Product.
+    */
+
     track(
-      "BAG_OPEN",
+      "CHECKOUT_ROUTE",
       {
         cartCount:
           readBagCount()
@@ -3853,9 +4787,9 @@ svg{
       CONFIG.checkoutPage;
   }
 
-  /* =========================================================
+  /* ============================================================
      PROFILE
-     ========================================================= */
+     ============================================================ */
 
   function loadProfile(){
 
@@ -3865,17 +4799,20 @@ svg{
         {}
       );
 
-    $("profileName").value =
-      profile.name ||
-      "";
+    $("profileName")
+      .value =
+        profile.name ||
+        "";
 
-    $("profileEmail").value =
-      profile.email ||
-      "";
+    $("profileEmail")
+      .value =
+        profile.email ||
+        "";
 
-    $("profileMarketing").checked =
-      profile.marketingOptIn !==
-      false;
+    $("profileMarketing")
+      .checked =
+        profile.marketingOptIn !==
+        false;
   }
 
   function submitProfile(
@@ -3901,7 +4838,7 @@ svg{
     ){
 
       showToast(
-        "Enter a valid email."
+        "Ingresa un email válido."
       );
 
       return;
@@ -3920,7 +4857,6 @@ svg{
       updatedAt:
         new Date()
           .toISOString()
-
     };
 
     saveJson(
@@ -3939,8 +4875,8 @@ svg{
     showToast(
       mode ===
       "signup"
-        ?"Membership saved."
-        :"Sign-in requested."
+        ?"Membresía guardada."
+        :"Inicio de sesión solicitado."
     );
 
     closeOverlay(
@@ -3948,9 +4884,9 @@ svg{
     );
   }
 
-  /* =========================================================
+  /* ============================================================
      OVERLAYS
-     ========================================================= */
+     ============================================================ */
 
   function openOverlay(
     element
@@ -3989,9 +4925,9 @@ svg{
     }
   }
 
-  /* =========================================================
+  /* ============================================================
      TOAST
-     ========================================================= */
+     ============================================================ */
 
   function showToast(
     text
@@ -4022,24 +4958,9 @@ svg{
       );
   }
 
-  /* =========================================================
-     MAIN RENDER
-     ========================================================= */
-
-  function renderAll(){
-
-    renderCategoryAnchors();
-    renderDelivery();
-    renderCategoryTabs();
-    renderHomeSections();
-    renderFavorites();
-    syncBagCount();
-    loadProfile();
-  }
-
-  /* =========================================================
-     WIX / SRC MAIN.JS DATA
-     ========================================================= */
+  /* ============================================================
+     WIX / MAIN.JS MESSAGES
+     ============================================================ */
 
   window.addEventListener(
     "message",
@@ -4079,13 +5000,13 @@ svg{
           ){
 
             state.products =
-              payload.products.map(
-                normalizeProduct
-              );
+              payload.products
+                .map(
+                  normalizeProduct
+                );
 
-            renderHomeSections();
+            renderSections();
             renderFavorites();
-
           }
 
           if(
@@ -4098,7 +5019,6 @@ svg{
             );
 
             syncBagCount();
-
           }
 
           break;
@@ -4144,9 +5064,8 @@ svg{
               ...map.values()
             ];
 
-            renderHomeSections();
+            renderSections();
             renderFavorites();
-
           }
 
           break;
@@ -4159,18 +5078,18 @@ svg{
             payload
           );
 
-          syncBagCount();
+          syncBagCount(
+            true
+          );
 
           break;
 
         case "CART_COUNT":
 
           {
+
             const current =
-              readJson(
-                "cajamoda-cart",
-                {}
-              );
+              readBag();
 
             current.count =
               Number(
@@ -4184,7 +5103,9 @@ svg{
               current
             );
 
-            syncBagCount();
+            syncBagCount(
+              true
+            );
           }
 
           break;
@@ -4196,9 +5117,9 @@ svg{
     }
   );
 
-  /* =========================================================
+  /* ============================================================
      EVENTS
-     ========================================================= */
+     ============================================================ */
 
   $("deliveryInfoClose")
     .onclick =
@@ -4226,7 +5147,7 @@ svg{
           setTimeout(
             () => {
 
-              renderHomeSections();
+              renderSections();
 
               track(
                 "SEARCH",
@@ -4250,10 +5171,11 @@ svg{
         state.search =
           "";
 
-        $("searchInput").value =
-          "";
+        $("searchInput")
+          .value =
+            "";
 
-        renderHomeSections();
+        renderSections();
 
       };
 
@@ -4312,7 +5234,8 @@ svg{
         () => {
 
           const action =
-            button.dataset.action;
+            button.dataset
+              .action;
 
           closeOverlay(
             $("plusOverlay")
@@ -4323,13 +5246,6 @@ svg{
             {
               brand:
                 "CAJAMODA"
-            }
-          );
-
-          track(
-            "PLUS_ACTION",
-            {
-              action
             }
           );
 
@@ -4423,7 +5339,17 @@ svg{
 
   $("navHome")
     .onclick =
-      () =>
+      () => {
+
+        state.activeFilter =
+          "all";
+
+        state.activeAnchor =
+          null;
+
+        renderTabs();
+        renderAnchors();
+
         window.scrollTo({
           top:
             0,
@@ -4431,6 +5357,8 @@ svg{
           behavior:
             "smooth"
         });
+
+      };
 
   $("navBag")
     .onclick =
@@ -4448,7 +5376,6 @@ svg{
         event.key ===
         "cajamoda-cart"
       ){
-
         syncBagCount();
       }
 
@@ -4462,7 +5389,7 @@ svg{
             readFavorites()
           );
 
-        renderHomeSections();
+        renderSections();
         renderFavorites();
       }
 
@@ -4480,15 +5407,26 @@ svg{
           readFavorites()
         );
 
-      renderHomeSections();
+      renderSections();
+
     }
   );
 
-  /* =========================================================
-     START
-     ========================================================= */
+  /* ============================================================
+     INITIAL RENDER
+     ============================================================ */
 
-  renderAll();
+  renderAnchors();
+  renderDelivery();
+  renderTabs();
+  renderSections();
+  renderFavorites();
+  loadProfile();
+  syncBagCount();
+
+  /*
+    Tell /src/main.js this Home page is ready.
+  */
 
   sendBridge(
     "READY",
@@ -4500,57 +5438,40 @@ svg{
         "HOME",
 
       version:
-        "CAJAMODA_HOME_FREEZE_V1",
+        "CAJAMODA_HOME_FREEZE_V2",
 
       capabilities:[
 
-        "CAJAMODA_COLOMBIA_HEADER",
+        "TODOS_DEFAULT",
 
-        "CM_LOGO",
-
-        "FOUR_CATEGORY_ANCHORS",
-
-        "ANCHOR_SCROLLING",
-
-        "LONG_NIGHTS",
-
-        "QUIET_DAYS",
-
-        "QUICK_AND_EASY",
-
-        "SUNBATHING",
+        "ANCHOR_CATEGORY_SCROLL",
 
         "TEN_SLOTS_PER_CATEGORY",
 
-        "PLACEHOLDER_SLOTS",
+        "HORIZONTAL_RAILS",
 
-        "THREE_PRODUCTS_VISIBLE",
+        "WIX_CATALOG",
 
-        "HORIZONTAL_PRODUCT_RAILS",
+        "PRODUCT_ROUTING",
 
-        "LIVE_WIX_PRODUCTS",
+        "CHECKOUT_ROUTING",
 
-        "FUNCTIONAL_SEARCH",
+        "SHARED_CART_STORAGE",
 
-        "PRODUCT_ROUTE",
+        "SHARED_FAVORITES_STORAGE",
 
-        "CHECKOUT_ROUTE",
-
-        "LOCAL_FAVORITES",
-
-        "MEMBER_PROFILE",
-
-        "HOME_NAVIGATION",
-
-        "STORE_OWNER_PORTAL",
-
-        "CAJAMODA_ONLY_BRANDING"
+        "SHARED_PROFILE_STORAGE"
       ]
     }
   );
 
 })();
 </script>
+
+<!--
+  KEEP THE EXISTING WIX HEADLESS BRIDGE.
+  Home receives the real catalog through this file.
+-->
 
 <script
   type="module"

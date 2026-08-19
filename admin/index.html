@@ -883,15 +883,6 @@ img{
   color:#fff;
 }
 
-.earningPreviewTop{
-
-  display:flex;
-
-  justify-content:space-between;
-
-  gap:12px;
-}
-
 .earningPreviewLabel{
 
   color:
@@ -911,18 +902,6 @@ img{
   font-weight:800;
 
   letter-spacing:-.6px;
-}
-
-.earningPreviewSplit{
-
-  text-align:right;
-
-  color:
-    rgba(255,255,255,.70);
-
-  font-size:6.5px;
-
-  line-height:1.5;
 }
 
 /* ============================================================
@@ -1173,15 +1152,6 @@ img{
   background:#fff;
 
   font-size:6.5px;
-}
-
-.trackingActions{
-
-  display:flex;
-
-  gap:7px;
-
-  margin-top:7px;
 }
 
 /* ============================================================
@@ -1517,7 +1487,7 @@ img{
   </h1>
 
   <p class="pageIntro">
-    Carga productos, sigue pedidos y conoce cuánto puedes ganar con tu split.
+    Carga productos, sigue pedidos y conoce cuánto puedes ganar con cada venta.
   </p>
 
   <div class="metricGrid">
@@ -1907,30 +1877,15 @@ img{
       class="earningPreview"
     >
 
-      <div class="earningPreviewTop">
+      <div class="earningPreviewLabel">
+        Ganancia potencial por venta
+      </div>
 
-        <div>
-
-          <div class="earningPreviewLabel">
-            Ganancia potencial por venta
-          </div>
-
-          <div
-            id="potentialEarningValue"
-            class="earningPreviewValue"
-          >
-            $0
-          </div>
-
-        </div>
-
-        <div
-          id="potentialSplitText"
-          class="earningPreviewSplit"
-        >
-          Split no definido
-        </div>
-
+      <div
+        id="potentialEarningValue"
+        class="earningPreviewValue"
+      >
+        $0
       </div>
 
     </div>
@@ -2017,7 +1972,7 @@ img{
   </h1>
 
   <p class="pageIntro">
-    Tus ganancias dependen del valor vendido y del split asignado a tu tienda.
+    Consulta tus ganancias confirmadas y el potencial de los productos de tu tienda.
   </p>
 
   <div class="earningSummary">
@@ -2033,11 +1988,8 @@ img{
       $0
     </div>
 
-    <div
-      id="earningsSplitLabel"
-      class="earningSummarySub"
-    >
-      Split no definido
+    <div class="earningSummarySub">
+      Calculadas automáticamente por la plataforma.
     </div>
 
   </div>
@@ -2074,7 +2026,7 @@ img{
   </h1>
 
   <p class="pageIntro">
-    Configuración básica de la tienda y del split de ganancias.
+    Administra la identidad básica de tu tienda.
   </p>
 
   <div class="settingsCard">
@@ -2084,7 +2036,7 @@ img{
     </div>
 
     <div class="settingsText">
-      Esta información identifica la tienda dentro de Store Loader.
+      Esta información identifica tu tienda dentro de Store Loader.
     </div>
 
     <div class="formGrid">
@@ -2103,45 +2055,12 @@ img{
 
       </div>
 
-    </div>
-
-  </div>
-
-  <div class="settingsCard">
-
-    <div class="settingsTitle">
-      Split
-    </div>
-
-    <div class="settingsText">
-      Este porcentaje determina cuánto gana esta tienda por cada venta. Más adelante este valor será asignado por la plataforma y no editable por el loader.
-    </div>
-
-    <div class="formGrid">
-
-      <div class="field">
-
-        <label for="loaderSplit">
-          Porcentaje de la tienda
-        </label>
-
-        <input
-          id="loaderSplit"
-          type="number"
-          min="0"
-          max="100"
-          step="1"
-          placeholder="Ej. 40"
-        >
-
-      </div>
-
       <button
         id="saveStoreSettings"
         class="primaryButton fullButton"
         type="button"
       >
-        Guardar configuración
+        Guardar tienda
       </button>
 
     </div>
@@ -2347,15 +2266,55 @@ img{
     name:
       "Carolize Boutique",
 
-    loaderSplitPercent:
+    /*
+      PLATFORM-ONLY VALUE.
+
+      This is temporary local prototype storage.
+
+      Later this number will come from the protected
+      platform backend and will never be editable
+      or visible to a Store Loader.
+    */
+
+    platformEarningPercent:
       0
   };
 
-  let store =
+  const storedStore =
     readJson(
       "store-loader-store",
       defaultStore
     );
+
+  /*
+    Preserve an older prototype percentage if one
+    was previously saved, while removing it from
+    the Store Loader interface.
+  */
+
+  let store = {
+    ...defaultStore,
+    ...storedStore,
+
+    platformEarningPercent:
+      Number(
+        storedStore
+          ?.platformEarningPercent ??
+
+        storedStore
+          ?.loaderSplitPercent ??
+
+        0
+      )
+  };
+
+  delete store
+    .loaderSplitPercent;
+
+  saveJson(
+    "store-loader-store",
+    store
+  );
 
   let products =
     readJson(
@@ -2580,15 +2539,15 @@ img{
   }
 
   /* ============================================================
-     POTENTIAL EARNINGS
+     PLATFORM EARNINGS
      ============================================================ */
 
-  function splitRate(){
+  function earningRate(){
 
     return (
       Number(
         store
-          .loaderSplitPercent ||
+          .platformEarningPercent ||
         0
       ) /
       100
@@ -2604,7 +2563,7 @@ img{
         price ||
         0
       ) *
-      splitRate()
+      earningRate()
     );
   }
 
@@ -2624,23 +2583,6 @@ img{
             price
           )
         );
-
-    if(
-      store
-        .loaderSplitPercent >
-      0
-    ){
-
-      $("potentialSplitText")
-        .innerHTML =
-          `Tu split<br><strong>${store.loaderSplitPercent}%</strong>`;
-
-    }else{
-
-      $("potentialSplitText")
-        .textContent =
-          "Split no definido";
-    }
   }
 
   $("productPrice")
@@ -2803,18 +2745,6 @@ img{
 
       status:
         "published",
-
-      loaderSplitPercent:
-        Number(
-          store
-            .loaderSplitPercent ||
-          0
-        ),
-
-      potentialEarning:
-        potentialEarning(
-          price
-        ),
 
       createdAt:
         new Date()
@@ -3020,6 +2950,7 @@ img{
   ];
 
   const trackingLabels = {
+
     new:
       "Nuevo",
 
@@ -3110,7 +3041,7 @@ img{
                 order.total ||
                 0
               ) *
-              splitRate();
+              earningRate();
 
             return `
 
@@ -3233,7 +3164,10 @@ img{
 
                   </div>
 
-                  <div class="trackingInputs">
+                  <div
+                    class="trackingInputs"
+                    style="margin-top:7px"
+                  >
 
                     <input
                       type="text"
@@ -3403,7 +3337,7 @@ img{
               order.total ||
               0
             ) *
-            splitRate()
+            earningRate()
           ),
         0
       );
@@ -3449,23 +3383,6 @@ img{
         );
 
     if(
-      store
-        .loaderSplitPercent >
-      0
-    ){
-
-      $("earningsSplitLabel")
-        .textContent =
-          `Tu split actual: ${store.loaderSplitPercent}%`;
-
-    }else{
-
-      $("earningsSplitLabel")
-        .textContent =
-          "Split no definido";
-    }
-
-    if(
       !products.length
     ){
 
@@ -3506,9 +3423,6 @@ img{
                   <div class="earningRowMeta">
                     Venta:
                     ${money(product.price)}
-                    ·
-                    Split:
-                    ${store.loaderSplitPercent || 0}%
                   </div>
 
                 </div>
@@ -3539,12 +3453,6 @@ img{
         store.name ||
         "";
 
-    $("loaderSplit")
-      .value =
-        store
-          .loaderSplitPercent ||
-        "";
-
     $("storeSelector")
       .innerHTML = `
 
@@ -3566,28 +3474,12 @@ img{
             .value
             .trim();
 
-        const split =
-          Math.max(
-            0,
-            Math.min(
-              100,
-              Number(
-                $("loaderSplit")
-                  .value ||
-                0
-              )
-            )
-          );
-
         store = {
           ...store,
 
           name:
             name ||
-            "Mi Tienda",
-
-          loaderSplitPercent:
-            split
+            "Mi Tienda"
         };
 
         saveJson(
@@ -3598,7 +3490,7 @@ img{
         renderAll();
 
         showToast(
-          "Configuración guardada."
+          "Tienda guardada."
         );
       };
 
@@ -3634,10 +3526,10 @@ img{
     }
 
     /*
-      Temporary local demonstration so the first loader
-      can see the order-tracking workflow immediately.
+      Temporary demonstration order.
 
-      Delete when real orders are connected.
+      This will be removed when Store Loader
+      is connected to real platform orders.
     */
 
     orders = [

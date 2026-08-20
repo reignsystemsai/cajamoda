@@ -1010,7 +1010,49 @@ img{
       1600
     );
   }
+function normalizePrice(...candidates){
+  function readCandidate(candidate){
+    if(
+      candidate === null ||
+      candidate === undefined ||
+      candidate === ""
+    ){
+      return null;
+    }
 
+    if(typeof candidate === "object"){
+      const nestedCandidates=[
+        candidate.amount,
+        candidate.value,
+        candidate.discountedPrice,
+        candidate.price
+      ];
+
+      for(const nestedCandidate of nestedCandidates){
+        const nested=readCandidate(nestedCandidate);
+
+        if(nested !== null){
+          return nested;
+        }
+      }
+
+      return null;
+    }
+
+    const numeric=Number(candidate);
+    return Number.isFinite(numeric) ? numeric : null;
+  }
+
+  for(const candidate of candidates){
+    const numeric=readCandidate(candidate);
+
+    if(numeric !== null){
+      return numeric;
+    }
+  }
+
+  return 0;
+}
   function normalizeCart(cart){
     const sourceItems=
       Array.isArray(cart?.items)
@@ -1034,7 +1076,7 @@ img{
 
         variantId:
           item.variantId ||
-          item.catalogReference?.variantId ||
+          item.catalogReference?.options?.variantId ||
           null,
 
         name:
@@ -1066,13 +1108,19 @@ img{
             Number(item.quantity || 1)
           ),
 
-        price:
-          Number(
-            item.price?.amount ??
-            item.price ??
-            item.lineItemPrice?.amount ??
-            0
-          ),
+        unitPrice:
+  normalizePrice(
+    item.unitPrice,
+    item.price,
+    item.lineItemPrice
+  ),
+
+price:
+  normalizePrice(
+    item.unitPrice,
+    item.price,
+    item.lineItemPrice
+  ),
 
         autoSelected:item.autoSelected === true
       })
@@ -1084,7 +1132,7 @@ img{
     );
 
     const total=items.reduce(
-      (sum,item) => sum + item.price * item.quantity,
+      (sum,item) => sum + item.unitprice * item.quantity,
       0
     );
 
@@ -1251,7 +1299,7 @@ img{
 
             <div class="cartBottom">
               <div class="cartPrice">
-                ${money(item.price)}
+                ${money(item.unitprice)}
               </div>
 
               <div class="quantityControl">

@@ -810,20 +810,19 @@ function normalizeLocalCart(
             )
           ),
 
-        price:
-          Number(
-            item
-              ?.price
-              ?.amount ??
+  unitPrice:
+  normalizePrice(
+    item.unitPrice,
+    item.price,
+    item.lineItemPrice
+  ),
 
-            item.price ??
-
-            item
-              ?.lineItemPrice
-              ?.amount ??
-
-            0
-          ),
+price:
+  normalizePrice(
+    item.unitPrice,
+    item.price,
+    item.lineItemPrice
+  ),
 
         autoSelected:
           item.autoSelected ===
@@ -850,7 +849,7 @@ function normalizeLocalCart(
       ) =>
         subtotal +
         (
-          item.price *
+          item.unitPrice *
           item.quantity
         ),
       0
@@ -933,7 +932,34 @@ function normalizeChoice(
     .toLowerCase()
     .trim();
 }
+function cartLineKey(
+  item
+) {
+  const productId =
+    String(
+      item?.productId ||
+      ""
+    );
 
+  const variantId =
+    String(
+      item?.variantId ||
+      ""
+    );
+
+  if (
+    variantId
+  ) {
+    return `${productId}:variant:${variantId}`;
+  }
+
+  return [
+    productId,
+    "options",
+    normalizeChoice(item?.size),
+    normalizeChoice(item?.color)
+  ].join(":");
+}
 function findVariant(
   product,
   item

@@ -2123,6 +2123,146 @@ async function handleGetOrders(
     }
   );
 }
+async function handleTrackOrder(
+  request,
+  response,
+  url
+) {
+
+  const orderNumber =
+    safeText(
+      url.searchParams.get(
+        "order"
+      ),
+      100
+    ).trim();
+
+  const email =
+    safeText(
+      url.searchParams.get(
+        "email"
+      ),
+      250
+    )
+      .trim()
+      .toLowerCase();
+
+  if(
+    !orderNumber ||
+    !email
+  ){
+
+    sendError(
+      response,
+      400,
+      "Ingresa tu número de pedido y correo electrónico."
+    );
+
+    return;
+  }
+
+  const result =
+    await wix
+      .orders
+      .searchOrders(
+        {
+          filter: {
+            number:
+              orderNumber
+          },
+
+          cursorPaging: {
+            limit:
+              10
+          }
+        }
+      );
+
+  const wixOrders =
+    Array.isArray(
+      result?.orders
+    )
+      ? result.orders
+      : [];
+
+  const matchedOrder =
+    wixOrders.find(
+      order => {
+
+        const orderEmail =
+          safeText(
+            order
+              ?.buyerInfo
+              ?.email,
+            250
+          )
+            .trim()
+            .toLowerCase();
+
+        return (
+          safeText(
+            order?.number,
+            100
+          ) === orderNumber &&
+          orderEmail === email
+        );
+      }
+    );
+
+  if(
+    !matchedOrder
+  ){
+
+    sendError(
+      response,
+      404,
+      "No pudimos encontrar un pedido con esos datos."
+    );
+
+    return;
+  }
+
+  const order =
+    normalizeWixOrder(
+      matchedOrder
+    );
+
+  sendJson(
+    response,
+    200,
+    {
+      ok:
+        true,
+
+      order: {
+        number:
+          order.number,
+
+        date:
+          order.date,
+
+        products:
+          order.products,
+
+        total:
+          order.total,
+
+        status:
+          order.status,
+
+        fulfillmentStatus:
+          order.fulfillmentStatus,
+
+        carrier:
+          order.carrier,
+
+        trackingNumber:
+          order.trackingNumber
+      }
+    }
+  );
+}
+
 /* ============================================================
    REAL WIX INVENTORY
    ============================================================ */

@@ -14,6 +14,10 @@ import {
   files
 } from "@wix/media";
 
+import {
+  orders as ecomOrders
+} from "@wix/ecom";
+
 /* ============================================================
    STORE LOADER BACKEND
    ------------------------------------------------------------
@@ -102,7 +106,10 @@ const wix =
 
           productsV3,
 
-          files
+          files,
+
+          orders:
+            ecomOrders
         }
       })
 
@@ -110,11 +117,6 @@ const wix =
 
 /* ============================================================
    TEMPORARY STORE LOADER SESSIONS
-   ------------------------------------------------------------
-   This is our first-loader authentication layer.
-
-   Later this will be replaced by the permanent multi-store
-   account system.
    ============================================================ */
 
 const sessions =
@@ -218,6 +220,9 @@ function setCors(
 
     origin ===
       ALLOWED_ORIGIN ||
+
+    origin ===
+      "https://admin.cajamoda.com" ||
 
     origin ===
       "http://localhost:5173" ||
@@ -1042,13 +1047,6 @@ function buildVariantChoices(
 
 /* ============================================================
    VARIANTS
-   ------------------------------------------------------------
-   At this first stage the Store Loader tells Wix whether the
-   merchandise is available.
-
-   Exact per-size/per-color quantities will later come from the
-   platform inventory layer rather than being controlled by the
-   Store Loader.
    ============================================================ */
 
 function buildVariants(
@@ -1287,11 +1285,6 @@ async function createWixProduct(
         : undefined
   };
 
-  /*
-    Wix creates the product and its purchasable inventory
-    records in one operation.
-  */
-
   const result =
     await wix
       .productsV3
@@ -1527,6 +1520,427 @@ async function handleCreateProduct(
 }
 
 /* ============================================================
+   REAL WIX ORDERS
+   ============================================================ */
+
+function getContactDetails(
+  order
+) {
+
+  return (
+    order
+      ?.billingInfo
+      ?.contactDetails ||
+
+    order
+      ?.shippingInfo
+      ?.logistics
+      ?.shippingDestination
+      ?.contactDetails ||
+
+    {}
+  );
+}
+
+function getOrderCustomerName(
+  order
+) {
+
+  const contact =
+    getContactDetails(
+      order
+    );
+
+  const directName =
+    safeText(
+      contact.fullName,
+      200
+    );
+
+  if (
+    directName
+  ) {
+
+    return directName;
+  }
+
+  const combined =
+    [
+      safeText(
+        contact.firstName,
+        100
+      ),
+
+      safeText(
+        contact.lastName,
+        100
+      )
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+  if (
+    combined
+  ) {
+
+    return combined;
+  }
+
+  return (
+    safeText(
+      order
+        ?.buyerInfo
+        ?.email,
+      250
+    ) ||
+    "Cliente"
+  );
+}
+
+function getLineItemName(
+  item
+) {
+
+  return (
+    safeText(
+      item
+        ?.productName
+        ?.translated,
+      300
+    ) ||
+
+    safeText(
+      item
+        ?.productName
+        ?.original,
+      300
+    ) ||
+
+    safeText(
+      item
+        ?.productName,
+      300
+    ) ||
+
+    "Producto"
+  );
+}
+
+function getOrderProductsText(
+  order
+) {
+
+  const lineItems =
+    Array.isArray(
+      order?.lineItems
+    )
+      ? order.lineItems
+      : [];
+
+  return lineItems
+    .map(
+      item => {
+
+        const quantity =
+          Math.max(
+            1,
+            Number(
+              item?.quantity ||
+              1
+            )
+          );
+
+        return (
+          `${quantity} × ${getLineItemName(item)}`
+        );
+      }
+    )
+    .join(", ");
+}
+
+function getOrderTotal(
+  order
+) {
+
+  const amount =
+    order
+      ?.priceSummary
+      ?.total
+      ?.amount;
+
+  const value =
+    Number(
+      amount ||
+      0
+    );
+
+  return Number.isFinite(
+    value
+  )
+    ? value
+    : 0;
+}
+
+function getLocalOrderStatus(
+  order
+) {
+
+  const fulfillmentStatus =
+    String(
+      order
+        ?.fulfillmentStatus ||
+      ""
+    )
+      .toUpperCase();
+
+  const paymentStatus =
+    String(
+      order
+        ?.paymentStatus ||
+      ""
+    )
+      .toUpperCase();
+
+  if (
+    fulfillmentStatus ===
+    "FULFILLED"
+  ) {
+
+    return "delivered";
+  }
+
+  if (
+    fulfillmentStatus ===
+    "PARTIALLY_FULFILLED"
+  ) {
+
+    return "shipped";
+  }
+
+  if (
+    paymentStatus ===
+    "PAID" ||
+    paymentStatus ===
+    "PARTIALLY_PAID"
+  ) {
+
+    return "processing";
+  }
+
+  return "new";
+}
+
+function getFirstTrackingInfo(
+  order
+) {
+
+  const fulfillments =
+    Array.isArray(
+      order?.fulfillments
+    )
+      ? order.fulfillments
+      : [];
+
+  for (
+    const fulfillment
+    of fulfillments
+  ) {
+
+    const trackingInfo =
+      fulfillment
+        ?.trackingInfo;
+
+    if (
+      trackingInfo
+    ) {
+
+      return trackingInfo;
+    }
+  }
+
+  return {};
+}
+
+function normalizeWixOrder(
+  order
+) {
+
+  const trackingInfo =
+    getFirstTrackingInfo(
+      order
+    );
+
+  return {
+
+    id:
+      safeText(
+        order?._id ||
+        order?.id,
+        150
+      ),
+
+    number:
+      safeText(
+        order?.number,
+        100
+      ),
+
+    date:
+      safeText(
+        order?.createdDate,
+        100
+      ),
+
+    customer:
+      getOrderCustomerName(
+        order
+      ),
+
+    email:
+      safeText(
+        order
+          ?.buyerInfo
+          ?.email,
+        250
+      ),
+
+    products:
+      getOrderProductsText(
+        order
+      ),
+
+    total:
+      getOrderTotal(
+        order
+      ),
+
+    status:
+      getLocalOrderStatus(
+        order
+      ),
+
+    paymentStatus:
+      safeText(
+        order
+          ?.paymentStatus,
+        100
+      ),
+
+    fulfillmentStatus:
+      safeText(
+        order
+          ?.fulfillmentStatus,
+        100
+      ),
+
+    carrier:
+      safeText(
+        trackingInfo
+          ?.shippingProvider,
+        200
+      ),
+
+    trackingNumber:
+      safeText(
+        trackingInfo
+          ?.trackingNumber,
+        300
+      )
+  };
+}
+
+async function getWixOrders() {
+
+  if (
+    !wix
+  ) {
+
+    throw new Error(
+      "El servidor todavía no está conectado a Wix."
+    );
+  }
+
+  const search = {
+
+    sort: [
+      {
+        fieldName:
+          "createdDate",
+
+        order:
+          "DESC"
+      }
+    ],
+
+    cursorPaging: {
+
+      limit:
+        50
+    }
+  };
+
+  const result =
+    await wix
+      .orders
+      .searchOrders(
+        search
+      );
+
+  const orderList =
+    Array.isArray(
+      result?.orders
+    )
+      ? result.orders
+      : [];
+
+  return orderList
+    .map(
+      normalizeWixOrder
+    )
+    .filter(
+      order =>
+        order.id
+    );
+}
+
+async function handleGetOrders(
+  request,
+  response
+) {
+
+  if (
+    !isAuthorized(
+      request
+    )
+  ) {
+
+    sendError(
+      response,
+      401,
+      "Inicia sesión en Store Loader."
+    );
+
+    return;
+  }
+
+  const orderList =
+    await getWixOrders();
+
+  sendJson(
+    response,
+    200,
+    {
+
+      ok:
+        true,
+
+      orders:
+        orderList
+    }
+  );
+}
+
+/* ============================================================
    SERVER
    ============================================================ */
 
@@ -1632,6 +2046,25 @@ const server =
         ) {
 
           await handleCreateProduct(
+            request,
+            response
+          );
+
+          return;
+        }
+
+        /* ------------------------------------------------------
+           REAL ORDERS
+           ------------------------------------------------------ */
+
+        if (
+          request.method ===
+            "GET" &&
+          url.pathname ===
+            "/api/orders"
+        ) {
+
+          await handleGetOrders(
             request,
             response
           );

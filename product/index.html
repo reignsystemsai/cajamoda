@@ -4144,7 +4144,120 @@ svg{
   /* ============================================================
      CART
      ============================================================ */
+function normalizePrice(
+  ...candidates
+){
 
+  function readCandidate(
+    candidate
+  ){
+
+    if(
+      candidate === null ||
+      candidate === undefined ||
+      candidate === ""
+    ){
+      return null;
+    }
+
+    if(
+      typeof candidate ===
+      "object"
+    ){
+
+      const nestedCandidates = [
+        candidate.amount,
+        candidate.value,
+        candidate.discountedPrice,
+        candidate.price
+      ];
+
+      for(
+        const nestedCandidate
+        of nestedCandidates
+      ){
+
+        const nested =
+          readCandidate(
+            nestedCandidate
+          );
+
+        if(
+          nested !== null
+        ){
+          return nested;
+        }
+      }
+
+      return null;
+    }
+
+    const numeric =
+      Number(candidate);
+
+    return Number.isFinite(
+      numeric
+    )
+      ?numeric
+      :null;
+  }
+
+  for(
+    const candidate
+    of candidates
+  ){
+
+    const numeric =
+      readCandidate(
+        candidate
+      );
+
+    if(
+      numeric !== null
+    ){
+      return numeric;
+    }
+  }
+
+  return 0;
+}
+function normalizeChoice(
+  value
+){
+  return String(
+    value ||
+    ""
+  )
+    .toLowerCase()
+    .trim();
+}
+
+function cartLineKey(
+  item
+){
+  const productId =
+    String(
+      item?.productId ||
+      ""
+    );
+
+  const variantId =
+    String(
+      item?.variantId ||
+      ""
+    );
+
+  if(variantId){
+    return `${productId}:variant:${variantId}`;
+  }
+
+  return [
+    productId,
+    "options",
+    normalizeChoice(item?.size),
+    normalizeChoice(item?.color)
+  ].join(":");
+}
   function normalizeCart(
     cart
   ){
@@ -4175,10 +4288,11 @@ svg{
             item.catalogReference
               ?.catalogItemId ||
             null,
-
+          
           variantId:
             item.variantId ||
             item.catalogReference
+            ? .options
               ?.variantId ||
             null,
 
@@ -4214,14 +4328,19 @@ svg{
               )
             ),
 
-          price:
-            Number(
-              item.price?.amount ??
-              item.price ??
-              item.lineItemPrice
-                ?.amount ??
-              0
-            ),
+          unitPrice:
+  normalizePrice(
+    item.unitPrice,
+    item.price,
+    item.lineItemPrice
+  ),
+
+price:
+  normalizePrice(
+    item.unitPrice,
+    item.price,
+    item.lineItemPrice
+  ),
 
           autoSelected:
             item.autoSelected ===
@@ -4248,7 +4367,7 @@ svg{
         ) =>
           sum +
           (
-            item.price *
+            item.unitprice *
             item.quantity
           ),
         0
@@ -4581,19 +4700,87 @@ svg{
 
     const cart =
       readCart();
-
-    let line =
-      cart.items.find(
-        item =>
-          String(
-            item.productId
-          ) ===
-          String(
-            state.product.id
+const selectedVariant =
+  state.product
+    ?.variants
+    ?.find(
+      variant =>
+        normalizeChoice(
+          variant.size
+        ) ===
+          normalizeChoice(
+            state.selectedSize
           ) &&
-          item.autoSelected ===
-          true
-      );
+        (
+          !variant.color ||
+          normalizeChoice(
+            variant.color
+          ) ===
+            normalizeChoice(
+              state.selectedColor
+            )
+        )
+    ) ||
+  state.product
+    ?.variants
+    ?.find(
+      variant =>
+        normalizeChoice(
+          variant.size
+        ) ===
+        normalizeChoice(
+          state.selectedSize
+        )
+    ) ||
+  null;
+
+const variantId =
+  selectedVariant?.id ||
+  null;
+
+const desiredKey =
+  cartLineKey({
+    productId:
+      state.product.id,
+    variantId,
+    size:
+      state.selectedSize,
+    color:
+      state.selectedColor
+  });
+
+   let line =
+  cart.items.find(
+    item =>
+      cartLineKey(item) ===
+        desiredKey &&
+      item.autoSelected ===
+      true
+  ) ||
+  cart.items.find(
+    item =>
+      !item.variantId &&
+      String(
+        item.productId
+      ) ===
+        String(
+          state.product.id
+        ) &&
+      normalizeChoice(
+        item.size
+      ) ===
+        normalizeChoice(
+          state.selectedSize
+        ) &&
+      normalizeChoice(
+        item.color
+      ) ===
+        normalizeChoice(
+          state.selectedColor
+        ) &&
+      item.autoSelected ===
+        true
+  );
 
     const image =
       getMedia(
@@ -4618,27 +4805,29 @@ svg{
       line.image =
         image;
 
-      line.price =
-        Number(
-          state.product.price ||
-          0
-        );
+      line.variantId =
+  variantId;
 
-      line.quantity =
-        1;
+line.unitPrice =
+  normalizePrice(
+    selectedVariant?.price,
+    state.product.price
+  );
+
+line.price =
+  line.unitPrice;
 
     }else{
 
       line = {
 
         id:
-          `selection-${state.product.id}`,
+          `selection-${desireKey}`,
 
         productId:
           state.product.id,
 
-        variantId:
-          null,
+        variantId,
 
         name:
           state.product.name,
@@ -4654,11 +4843,17 @@ svg{
         quantity:
           1,
 
-        price:
-          Number(
-            state.product.price ||
-            0
-          ),
+        unitPrice:
+  normalizePrice(
+    selectedVariant?.price,
+    state.product.price
+  ),
+
+price:
+  normalizePrice(
+    selectedVariant?.price,
+    state.product.price
+  ),
 
         autoSelected:
           true

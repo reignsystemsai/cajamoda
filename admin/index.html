@@ -4391,22 +4391,24 @@ if(
      START
      ============================================================ */
 
-  seedDemoOrder();
-
   renderPhotoInputs();
 
   renderAll();
 
-  if(
-    authToken
-  ){
+if(
+  authToken
+){
 
-    hideLogin();
+  hideLogin();
 
-  }else{
+  loadRealOrders(
+    true
+  );
 
-    showLogin();
-  }
+}else{
+
+  showLogin();
+}
 
 })();
 

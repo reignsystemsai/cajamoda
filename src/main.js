@@ -1095,7 +1095,8 @@ function normalizeWixCart(
     )
       ? wixCart.lineItems
       : [];
-
+const localItems = 
+   readBestLocalCart().items;
   const items =
     lineItems.map(
       line => {
@@ -1129,7 +1130,35 @@ function normalizeWixCart(
                   variantId
                 )
             );
+const size =
+  variant?.size ||
+  "";
 
+const color =
+  variant?.color ||
+  "";
+
+const localLine =
+  localItems.find(
+    item =>
+      cartLineKey(item) ===
+      cartLineKey({
+        productId,
+        variantId,
+        size,
+        color
+      })
+  );
+
+const unitPrice =
+  normalizePrice(
+    line?.price,
+    line?.lineItemPrice,
+    variant?.price,
+    product?.price,
+    localLine?.unitPrice,
+    localLine?.price
+  );
         return {
           id:
             line?._id ||

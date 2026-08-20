@@ -7,7 +7,8 @@ import {
 } from "@wix/sdk";
 
 import {
-  productsV3
+  productsV3,
+  inventoryItemsV3
 } from "@wix/stores";
 
 import {

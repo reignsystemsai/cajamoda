@@ -1184,36 +1184,29 @@ const unitPrice =
               ?.media
               ?.[0] ||
             "",
+           
+            size,
 
-          size:
-            variant?.size ||
-            "",
-
-          color:
-            variant?.color ||
-            "",
+          color,
 
           quantity:
             Math.max(
               1,
               Number(
-                line?.quantity ||
+                localline?.quantity ??
+                 line?.quantity ??
                 1
               )
             ),
 
-          price:
-            Number(
-              line
-                ?.price
-                ?.amount ??
-              variant?.price ??
-              product?.price ??
-              0
-            ),
+          unitPrice,
+
+           price:
+              unitPrice,
 
           autoSelected:
-            true
+            localline? .autosSelected ??
+             true
         };
       }
     );
@@ -1237,16 +1230,13 @@ function cartFingerprint(
 
   return normalized.items
     .map(
-      item => [
-        item.productId || "",
-        normalizeChoice(
-          item.size
-        ),
-        Number(
-          item.quantity ||
-          1
-        )
-      ]
+     item => [
+  cartLineKey(item),
+  Number(
+    item.quantity ||
+    1
+  )
+]
         .join(":")
     )
     .sort()

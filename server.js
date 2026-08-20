@@ -1138,18 +1138,6 @@ function buildVariants(
 }
 
 
-      inventoryItem: {
-
-        inStock:
-          available
-      },
-
-      physicalProperties:
-        {}
-    })
-  );
-}
-
 /* ============================================================
    CATEGORY LABEL
    ============================================================ */

@@ -1940,6 +1940,155 @@ async function handleGetOrders(
     }
   );
 }
+/* ============================================================
+   REAL WIX INVENTORY
+   ============================================================ */
+
+function normalizeInventoryItem(
+  item
+) {
+
+  return {
+
+    id:
+      safeText(
+        item?._id ||
+        item?.id,
+        150
+      ),
+
+    productId:
+      safeText(
+        item?.productId,
+        150
+      ),
+
+    variantId:
+      safeText(
+        item?.variantId,
+        150
+      ),
+
+    productName:
+      safeText(
+        item
+          ?.product
+          ?.name,
+        300
+      ),
+
+    variantName:
+      safeText(
+        item
+          ?.product
+          ?.variantName,
+        300
+      ),
+
+    quantity:
+      Number.isFinite(
+        Number(
+          item?.quantity
+        )
+      )
+        ? Number(
+            item.quantity
+          )
+        : 0,
+
+    trackQuantity:
+      Boolean(
+        item?.trackQuantity
+      ),
+
+    inStock:
+      Boolean(
+        item?.inStock
+      ),
+
+    availabilityStatus:
+      safeText(
+        item?.availabilityStatus,
+        100
+      )
+  };
+}
+
+async function getWixInventory() {
+
+  if (
+    !wix
+  ) {
+
+    throw new Error(
+      "El servidor todavía no está conectado a Wix."
+    );
+  }
+
+  const result =
+    await wix
+      .inventoryItemsV3
+      .queryInventoryItems(
+        {
+          cursorPaging: {
+            limit:
+              1000
+          }
+        }
+      );
+
+  const inventoryItems =
+    Array.isArray(
+      result?.inventoryItems
+    )
+      ? result.inventoryItems
+      : [];
+
+  return inventoryItems
+    .map(
+      normalizeInventoryItem
+    )
+    .filter(
+      item =>
+        item.id
+    );
+}
+
+async function handleGetInventory(
+  request,
+  response
+) {
+
+  if (
+    !isAuthorized(
+      request
+    )
+  ) {
+
+    sendError(
+      response,
+      401,
+      "Inicia sesión en Store Loader."
+    );
+
+    return;
+  }
+
+  const inventory =
+    await getWixInventory();
+
+  sendJson(
+    response,
+    200,
+    {
+
+      ok:
+        true,
+
+      inventory
+    }
+  );
+}
 
 /* ============================================================
    SERVER
@@ -2072,7 +2221,24 @@ const server =
 
           return;
         }
+/* ------------------------------------------------------
+   REAL INVENTORY
+   ------------------------------------------------------ */
 
+if (
+  request.method ===
+    "GET" &&
+  url.pathname ===
+    "/api/inventory"
+) {
+
+  await handleGetInventory(
+    request,
+    response
+  );
+
+  return;
+}
         /* ------------------------------------------------------
            NOT FOUND
            ------------------------------------------------------ */

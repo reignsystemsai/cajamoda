@@ -451,33 +451,15 @@ function normalizeVariant(
     "";
 
   const price =
-    Number(
-      raw
-        ?.priceData
-        ?.discountedPrice ??
-
-      raw
-        ?.priceData
-        ?.price ??
-
-      variant
-        ?.priceData
-        ?.discountedPrice ??
-
-      variant
-        ?.priceData
-        ?.price ??
-
-      raw
-        ?.price
-        ?.amount ??
-
-      variant
-        ?.price
-        ?.amount ??
-
-      basePrice
-    );
+  normalizePrice(
+    raw?.priceData?.discountedPrice,
+    raw?.priceData?.price,
+    variant?.priceData?.discountedPrice,
+    variant?.priceData?.price,
+    raw?.price,
+    variant?.price,
+    basePrice
+  );
 
   const inStock =
     raw

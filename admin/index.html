@@ -3049,9 +3049,20 @@ function formatOrderDate(
         button.onclick =
           () => {
 
-            showPanel(
-              button.dataset.tab
-            );
+  const tab =
+  button.dataset.tab;
+
+showPanel(
+  tab
+);
+
+if(
+  tab ===
+  "orders"
+){
+
+  loadRealOrders();
+}
 
           };
 

@@ -4369,65 +4369,6 @@ if(
   }
 
   /* ============================================================
-     FIRST RUN SAMPLE ORDER
-     ============================================================ */
-
-  function seedDemoOrder(){
-
-    if(
-      orders.length
-    ){
-      return;
-    }
-
-    /*
-      Temporary demonstration order.
-
-      This will be removed when Store Loader
-      is connected to real platform orders.
-    */
-
-    orders = [
-      {
-        id:
-          createId(),
-
-        number:
-          "1001",
-
-        date:
-          new Date()
-            .toLocaleDateString(
-              "es-CO"
-            ),
-
-        customer:
-          "Pedido de muestra",
-
-        products:
-          "Ejemplo de seguimiento",
-
-        total:
-          0,
-
-        status:
-          "new",
-
-        carrier:
-          "",
-
-        trackingNumber:
-          ""
-      }
-    ];
-
-    saveJson(
-      "store-loader-orders",
-      orders
-    );
-  }
-
-  /* ============================================================
      RENDER ALL
      ============================================================ */
 

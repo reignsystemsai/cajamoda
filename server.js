@@ -1378,6 +1378,63 @@ async function createWixProduct(
       "Wix rechazó el producto."
     );
   }
+const inventoryResults =
+  Array.isArray(
+    result
+      ?.inventoryResults
+      ?.results
+  )
+    ? result.inventoryResults.results
+    : [];
+
+if(
+  !inventoryResults.length
+){
+
+  console.error(
+    "[Store Loader Inventory]",
+    JSON.stringify(
+      result?.inventoryResults || {},
+      null,
+      2
+    )
+  );
+
+  throw new Error(
+    "Wix creó el producto, pero no creó ningún registro de inventario."
+  );
+}
+
+const failedInventory =
+  inventoryResults.filter(
+    item =>
+      item
+        ?.itemMetadata
+        ?.success ===
+      false
+  );
+
+if(
+  failedInventory.length
+){
+
+  console.error(
+    "[Store Loader Inventory Failure]",
+    JSON.stringify(
+      failedInventory,
+      null,
+      2
+    )
+  );
+
+  throw new Error(
+    failedInventory[0]
+      ?.itemMetadata
+      ?.error
+      ?.message ||
+    "Wix creó el producto, pero rechazó su inventario."
+  );
+}
 
   const created =
     productResult

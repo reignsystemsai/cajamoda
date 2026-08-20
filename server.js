@@ -1439,7 +1439,92 @@ if(
       "Wix no devolvió el producto creado."
     );
   }
+const createdInventoryItems =
+  inventoryResults
+    .map(
+      inventoryResult =>
+        inventoryResult?.item
+    )
+    .filter(
+      inventoryItem =>
+        inventoryItem &&
+        (
+          inventoryItem._id ||
+          inventoryItem.id
+        )
+    );
 
+if(
+  !createdInventoryItems.length
+){
+  throw new Error(
+    "Wix creó el producto, pero no devolvió los registros de inventario."
+  );
+}
+
+const trackedQuantity =
+  Math.max(
+    0,
+    Math.trunc(
+      Number(
+        quantity || 0
+      )
+    )
+  );
+
+const quantityPerItem =
+  Math.floor(
+    trackedQuantity /
+    createdInventoryItems.length
+  );
+
+let quantityRemainder =
+  trackedQuantity %
+  createdInventoryItems.length;
+
+for(
+  const inventoryItem
+  of createdInventoryItems
+){
+
+  const inventoryItemId =
+    inventoryItem._id ||
+    inventoryItem.id;
+
+  const itemQuantity =
+    quantityPerItem +
+    (
+      quantityRemainder > 0
+        ? 1
+        : 0
+    );
+
+  if(
+    quantityRemainder > 0
+  ){
+    quantityRemainder -= 1;
+  }
+
+  await wix
+    .inventoryItemsV3
+    .updateInventoryItem(
+      inventoryItemId,
+      {
+        id:
+          inventoryItemId,
+
+        revision:
+          inventoryItem.revision,
+
+        quantity:
+          itemQuantity
+      },
+      {
+        reason:
+          "MANUAL"
+      }
+    );
+}
   return {
 
     id:

@@ -2908,11 +2908,93 @@ img{
       []
     );
 
-  let orders =
-    readJson(
-      "store-loader-orders",
-      []
+  let orders = [];
+  async function loadRealOrders(
+  silent = false
+){
+
+  if(
+    !authToken
+  ){
+    return;
+  }
+
+  try{
+
+    const result =
+      await apiRequest(
+        "/api/orders"
+      );
+
+    orders =
+      Array.isArray(
+        result?.orders
+      )
+        ? result.orders.map(
+            order => ({
+              ...order,
+              source:
+                "wix"
+            })
+          )
+        : [];
+
+    renderAll();
+
+    if(
+      !silent
+    ){
+
+      showToast(
+        "Pedidos actualizados."
+      );
+    }
+
+  }catch(
+    error
+  ){
+
+    if(
+      !silent
+    ){
+
+      showToast(
+        error?.message ||
+        "No pudimos cargar los pedidos."
+      );
+    }
+  }
+}
+
+function formatOrderDate(
+  value
+){
+
+  if(
+    !value
+  ){
+    return "";
+  }
+
+  const date =
+    new Date(
+      value
     );
+
+  if(
+    Number.isNaN(
+      date.getTime()
+    )
+  ){
+
+    return value;
+  }
+
+  return date
+    .toLocaleDateString(
+      "es-CO"
+    );
+}
 
   /* ============================================================
      TABS

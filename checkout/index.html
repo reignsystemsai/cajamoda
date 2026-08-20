@@ -1,63 +1,39 @@
+You have one new message. 
+
+Skip to content
+Using Gmail with screen readers
+
+2 of 172,700
+(no subject)
+Inbox
+
+Douglas R. Thompson <drtglobal@gmail.com>
+3:06 PM (1 minute ago)
+to me
+
 <!doctype html>
 <html lang="es">
-
 <head>
-
 <meta charset="utf-8">
-
-<meta
-  name="viewport"
-  content="width=device-width,initial-scale=1,viewport-fit=cover"
->
-
-<meta
-  name="theme-color"
-  content="#ffffff"
->
-
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
 <title>Finalizar compra | CajaModa</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
-
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
 <link
   href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
   rel="stylesheet"
 >
 
 <style>
-
-/* ============================================================
-   CAJAMODA CHECKOUT
-   ============================================================ */
-
 :root{
-
   --ink:#080808;
-
   --muted:#767676;
-
-  --soft:#f6f6f6;
-
   --line:rgba(0,0,0,.09);
-
-  --safe-top:
-    env(
-      safe-area-inset-top,
-      0px
-    );
-
-  --safe-bottom:
-    env(
-      safe-area-inset-bottom,
-      0px
-    );
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
 }
-
-/* ============================================================
-   RESET
-   ============================================================ */
 
 *{
   box-sizing:border-box;
@@ -65,24 +41,12 @@
 
 html,
 body{
-
   margin:0;
-
   width:100%;
-
   min-height:100%;
-
   background:#fff;
-
   color:var(--ink);
-
-  font-family:
-    Inter,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   -webkit-font-smoothing:antialiased;
 }
 
@@ -91,1099 +55,742 @@ body{
 }
 
 button,
-input,
-select{
-
+input{
   font:inherit;
-
   color:inherit;
 }
 
 button{
-
   border:0;
-
   background:none;
-
   cursor:pointer;
-
   -webkit-tap-highlight-color:transparent;
 }
 
 img{
-
   display:block;
-
   max-width:100%;
 }
 
-/* ============================================================
-   PAGE
-   ============================================================ */
-
 .checkoutApp{
-
   width:100%;
-
   max-width:520px;
-
   min-height:100dvh;
-
   margin:0 auto;
-
-  padding-bottom:
-    calc(
-      120px +
-      var(--safe-bottom)
-    );
-
+  padding-bottom:calc(205px + var(--safe-bottom));
   background:#fff;
 }
 
-/* ============================================================
-   HEADER
-   ============================================================ */
+/* Header */
 
 .checkoutHeader{
-
   position:sticky;
-
   z-index:50;
-
   top:0;
-
-  height:
-    calc(
-      62px +
-      var(--safe-top)
-    );
-
-  padding:
-    var(--safe-top)
-    16px
-    0;
-
+  height:calc(72px + var(--safe-top));
+  padding:var(--safe-top) 18px 0;
   display:grid;
-
-  grid-template-columns:
-    42px 1fr 42px;
-
+  grid-template-columns:42px 1fr 42px;
   align-items:center;
-
-  background:
-    rgba(255,255,255,.94);
-
-  border-bottom:
-    1px solid
-    rgba(0,0,0,.05);
-
-  backdrop-filter:
-    blur(20px);
-
-  -webkit-backdrop-filter:
-    blur(20px);
+  background:rgba(255,255,255,.94);
+  border-bottom:1px solid rgba(0,0,0,.05);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
 }
 
 .headerButton{
-
   position:relative;
-
   width:38px;
-
   height:38px;
-
   border-radius:50%;
-
   display:grid;
-
   place-items:center;
+  transition:transform .16s ease,background .16s ease;
+}
 
-  transition:
-    transform .16s ease,
-    background .16s ease;
+.headerButton:last-child{
+  justify-self:end;
+  align-self:center;
 }
 
 .headerButton:active{
-
-  transform:
-    scale(.92);
-
+  transform:scale(.92);
   background:#f3f3f3;
 }
 
 .headerButton svg{
-
-  width:20px;
-
-  height:20px;
-
+  width:22px;
+  height:22px;
   stroke-width:1.5;
 }
 
 .checkoutHeading{
-
-  text-align:center;
+  min-width:1px;
 }
-
-.checkoutHeadingTitle{
-
-  font-size:11px;
-
-  line-height:1;
-
-  font-weight:700;
-}
-
-.checkoutHeadingSubtitle{
-
-  margin-top:4px;
-
-  font-size:6.5px;
-
-  color:var(--muted);
-}
-
-/* ============================================================
-   HEADER BAG BADGE
-   ============================================================ */
 
 .headerBagBadge{
-
   position:absolute;
-
-  top:1px;
-
-  right:0;
-
-  min-width:17px;
-
-  height:17px;
-
+  top:0;
+  right:-2px;
+  min-width:18px;
+  height:18px;
   padding:0 4px;
-
   border-radius:999px;
-
   display:grid;
-
   place-items:center;
-
   background:#080808;
-
   color:#fff;
-
   border:2px solid #fff;
-
-  font-size:6px;
-
+  font-size:8px;
   font-weight:800;
 }
 
-/* ============================================================
-   INTRO
-   ============================================================ */
+/* Introduction */
 
 .checkoutIntro{
-
-  padding:
-    25px
-    18px
-    11px;
+  padding:25px 18px 11px;
 }
 
 .checkoutIntro h1{
-
   margin:0;
-
   font-size:25px;
-
   line-height:1.05;
-
   letter-spacing:-1px;
-
   font-weight:700;
 }
 
 .checkoutIntro p{
-
-  margin:
-    8px
-    0
-    0;
-
-  max-width:330px;
-
+  margin:8px 0 0;
+  max-width:350px;
   color:#686868;
-
   font-size:8px;
-
   line-height:1.5;
 }
 
-/* ============================================================
-   SECTION
-   ============================================================ */
-
 .checkoutSection{
-
-  padding:
-    16px
-    18px
-    0;
+  padding:16px 18px 0;
 }
 
 .sectionHeader{
-
   display:flex;
-
   align-items:center;
-
   justify-content:space-between;
-
   margin-bottom:10px;
 }
 
 .sectionTitle{
-
   font-size:10px;
-
   font-weight:750;
 }
 
 .sectionMeta{
-
   font-size:7px;
-
   color:var(--muted);
 }
 
-/* ============================================================
-   CART
-   ============================================================ */
+/* Product cards */
 
 .cartList{
-
   display:flex;
-
   flex-direction:column;
-
   gap:8px;
 }
 
 .cartItem{
-
   display:grid;
-
-  grid-template-columns:
-    76px 1fr;
-
+  grid-template-columns:76px 1fr;
   gap:12px;
-
-  min-height:96px;
-
-  padding:8px;
-
-  border:
-    1px solid
-    var(--line);
-
-  border-radius:16px;
-
-  background:#fff;
+  min-height:112px;
+  padding:10px;
+  border:1px solid rgba(0,0,0,.10);
+  border-radius:18px;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.80),
+      rgba(255,255,255,.50)
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.98),
+    inset 0 -1px 0 rgba(0,0,0,.025),
+    0 12px 30px rgba(0,0,0,.06);
+  backdrop-filter:blur(22px) saturate(125%);
+  -webkit-backdrop-filter:blur(22px) saturate(125%);
 }
 
 .cartImage{
-
   width:76px;
-
   height:96px;
-
   overflow:hidden;
-
-  border-radius:11px;
-
+  border-radius:12px;
   background:#f3f3f3;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.9),
+    0 6px 16px rgba(0,0,0,.05);
 }
 
 .cartImage img{
-
   width:100%;
-
   height:100%;
-
   object-fit:cover;
 }
 
 .cartImagePlaceholder{
-
   width:100%;
-
   height:100%;
-
   display:grid;
-
   place-items:center;
-
   color:#aaa;
-
   font-size:6px;
 }
 
 .cartInfo{
-
   min-width:0;
-
   display:flex;
-
   flex-direction:column;
 }
 
 .cartTop{
-
   display:flex;
-
   justify-content:space-between;
-
   gap:8px;
 }
 
 .cartName{
-
   overflow:hidden;
-
   font-size:9px;
-
-  font-weight:650;
-
+  font-weight:700;
   line-height:1.25;
-
   display:-webkit-box;
-
   -webkit-line-clamp:2;
-
   -webkit-box-orient:vertical;
 }
 
 .removeButton{
-
   flex:0 0 auto;
-
   width:25px;
-
   height:25px;
-
   border-radius:50%;
-
   display:grid;
-
   place-items:center;
-
-  color:#777;
+  color:#333;
 }
 
 .removeButton svg{
-
   width:14px;
-
   height:14px;
-
   stroke-width:1.5;
 }
 
 .cartOptions{
-
   margin-top:6px;
-
   color:#777;
-
   font-size:6.7px;
-
   line-height:1.5;
 }
 
 .cartBottom{
-
   margin-top:auto;
-
   display:flex;
-
   justify-content:space-between;
-
   align-items:flex-end;
-
   gap:10px;
 }
 
 .cartPrice{
-
   font-size:9px;
-
   font-weight:750;
 }
 
-/* ============================================================
-   QUANTITY
-   ============================================================ */
+/* Quantity */
 
 .quantityControl{
-
   height:29px;
-
   display:grid;
-
-  grid-template-columns:
-    29px 28px 29px;
-
+  grid-template-columns:29px 28px 29px;
   align-items:center;
-
-  border:
-    1px solid
-    rgba(0,0,0,.10);
-
+  border:1px solid rgba(0,0,0,.12);
   border-radius:999px;
-
   overflow:hidden;
+  background:rgba(255,255,255,.48);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
 }
 
 .quantityButton{
-
   width:29px;
-
   height:29px;
-
   display:grid;
-
   place-items:center;
-
   font-size:13px;
 }
 
 .quantityValue{
-
   text-align:center;
-
   font-size:7px;
-
   font-weight:700;
 }
 
-/* ============================================================
-   EMPTY CART
-   ============================================================ */
+/* Empty cart */
 
 .emptyCart{
-
-  padding:
-    35px
-    20px;
-
-  border:
-    1px solid
-    var(--line);
-
+  padding:35px 20px;
+  border:1px solid var(--line);
   border-radius:17px;
-
   text-align:center;
 }
 
 .emptyBagIcon{
-
   width:42px;
-
   height:42px;
-
-  margin:
-    0 auto 12px;
-
+  margin:0 auto 12px;
   border-radius:50%;
-
   display:grid;
-
   place-items:center;
-
   background:#f5f5f5;
 }
 
 .emptyBagIcon svg{
-
   width:20px;
-
   height:20px;
-
   stroke-width:1.4;
 }
 
 .emptyCartTitle{
-
   font-size:11px;
-
   font-weight:700;
 }
 
 .emptyCartText{
-
   margin-top:6px;
-
   color:#777;
-
   font-size:7px;
 }
 
 .continueShopping{
-
   margin-top:14px;
-
   min-width:135px;
-
   height:36px;
-
   padding:0 15px;
-
   border-radius:999px;
-
   background:#080808;
-
   color:#fff;
-
   font-size:7px;
-
   font-weight:700;
 }
 
-/* ============================================================
-   FORM
-   ============================================================ */
+/* Customer email */
 
 .checkoutForm{
-
   display:flex;
-
   flex-direction:column;
-
-  gap:8px;
-}
-
-.fieldRow{
-
-  display:grid;
-
-  grid-template-columns:
-    repeat(
-      2,
-      minmax(0,1fr)
-    );
-
   gap:8px;
 }
 
 .field{
-
   position:relative;
+  padding:12px;
+  border:1px solid rgba(0,0,0,.09);
+  border-radius:16px;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.80),
+      rgba(255,255,255,.52)
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.98),
+    0 9px 24px rgba(0,0,0,.045);
+  backdrop-filter:blur(20px) saturate(120%);
+  -webkit-backdrop-filter:blur(20px) saturate(120%);
 }
 
 .field label{
-
   display:block;
-
-  margin:
-    0
-    0
-    5px
-    2px;
-
-  color:#666;
-
-  font-size:6.5px;
-
-  font-weight:600;
+  margin:0 0 7px 2px;
+  color:#111;
+  font-size:7px;
+  font-weight:700;
 }
 
-.field input,
-.field select{
-
+.field input{
   width:100%;
-
   height:45px;
-
-  padding:
-    0 13px;
-
+  padding:0 13px;
   outline:none;
-
-  border:
-    1px solid
-    rgba(0,0,0,.10);
-
+  border:1px solid rgba(0,0,0,.12);
   border-radius:12px;
-
-  background:#fff;
-
+  background:rgba(255,255,255,.58);
   font-size:8px;
-
-  transition:
-    border-color .15s ease,
-    box-shadow .15s ease;
+  transition:border-color .15s ease,box-shadow .15s ease;
 }
 
-.field input:focus,
-.field select:focus{
-
-  border-color:
-    rgba(0,0,0,.42);
-
-  box-shadow:
-    0 0 0 3px
-    rgba(0,0,0,.035);
+.field input:focus{
+  border-color:rgba(0,0,0,.42);
+  box-shadow:0 0 0 3px rgba(0,0,0,.035);
 }
 
 .field input::placeholder{
-
   color:#aaa;
 }
 
-/* ============================================================
-   DELIVERY
-   ============================================================ */
+/* Delivery */
 
 .deliveryCard{
-
   padding:13px;
-
-  border:
-    1px solid
-    rgba(0,0,0,.11);
-
-  border-radius:14px;
-
+  border:1px solid rgba(0,0,0,.10);
+  border-radius:16px;
   display:flex;
-
   justify-content:space-between;
-
   align-items:center;
-
   gap:10px;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.80),
+      rgba(255,255,255,.52)
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.98),
+    0 9px 24px rgba(0,0,0,.045);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
 }
 
 .deliveryLeft{
-
   display:flex;
-
   align-items:center;
-
   gap:10px;
 }
 
 .deliveryDot{
-
   width:17px;
-
   height:17px;
-
   border-radius:50%;
-
   display:grid;
-
   place-items:center;
-
-  border:
-    1px solid #080808;
+  border:1px solid #080808;
 }
 
 .deliveryDot::after{
-
   content:"";
-
   width:9px;
-
   height:9px;
-
   border-radius:50%;
-
   background:#080808;
 }
 
 .deliveryName{
-
   font-size:8px;
-
   font-weight:700;
 }
 
 .deliveryDescription{
-
   margin-top:3px;
-
   color:#777;
-
   font-size:6.5px;
 }
 
 .deliveryPrice{
-
   flex:0 0 auto;
-
   color:#555;
-
   font-size:7px;
-
   font-weight:650;
 }
 
-/* ============================================================
-   SUMMARY
-   ============================================================ */
+/* Summary */
 
 .summaryCard{
-
   padding:15px;
-
+  border:1px solid rgba(0,0,0,.09);
   border-radius:16px;
-
-  background:#f6f6f6;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.82),
+      rgba(255,255,255,.55)
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.98),
+    0 10px 26px rgba(0,0,0,.045);
+  backdrop-filter:blur(20px) saturate(120%);
+  -webkit-backdrop-filter:blur(20px) saturate(120%);
 }
 
 .summaryLine{
-
   min-height:27px;
-
   display:flex;
-
   align-items:center;
-
   justify-content:space-between;
-
   gap:15px;
-
   font-size:7.5px;
 }
 
 .summaryLine span:first-child{
-
   color:#666;
 }
 
 .summaryValue{
-
   font-weight:650;
 }
 
 .summaryDivider{
-
   height:1px;
-
-  margin:
-    6px
-    0;
-
-  background:
-    rgba(0,0,0,.08);
+  margin:6px 0;
+  background:rgba(0,0,0,.10);
 }
 
 .summaryTotal{
-
   min-height:35px;
-
   display:flex;
-
   align-items:center;
-
   justify-content:space-between;
-
   gap:15px;
 }
 
 .summaryTotalLabel{
-
   font-size:9px;
-
   font-weight:750;
 }
 
 .summaryTotalValue{
-
   font-size:15px;
-
   font-weight:800;
 }
 
-/* ============================================================
-   PAYMENT INFORMATION
-   ============================================================ */
-
 .paymentInfo{
-
   margin-top:10px;
-
-  padding:
-    11px
-    12px;
-
-  border:
-    1px solid
-    rgba(0,0,0,.07);
-
+  padding:11px 12px;
+  border:1px solid rgba(0,0,0,.07);
   border-radius:12px;
-
   display:flex;
-
   align-items:center;
-
   gap:9px;
 }
 
 .paymentInfo svg{
-
   flex:0 0 auto;
-
   width:17px;
-
   height:17px;
-
   stroke-width:1.4;
 }
 
 .paymentInfoTitle{
-
   font-size:7.5px;
-
   font-weight:700;
 }
 
 .paymentInfoText{
-
   margin-top:2px;
-
   color:#777;
-
   font-size:6.2px;
-
   line-height:1.35;
 }
 
-/* ============================================================
-   FIXED CHECKOUT ACTION
-   ============================================================ */
+/* Black frosted checkout button */
 
 .checkoutAction{
-
   position:fixed;
-
   z-index:80;
-
   left:50%;
-
-  bottom:0;
-
-  transform:
-    translateX(-50%);
-
-  width:
-    min(
-      100%,
-      520px
-    );
-
-  padding:
-    11px
-    18px
-    calc(
-      11px +
-      var(--safe-bottom)
-    );
-
-  background:
-    rgba(255,255,255,.94);
-
-  border-top:
-    1px solid
-    rgba(0,0,0,.06);
-
-  backdrop-filter:
-    blur(20px);
-
-  -webkit-backdrop-filter:
-    blur(20px);
+  bottom:calc(78px + var(--safe-bottom));
+  transform:translateX(-50%);
+  width:min(100%,520px);
+  padding:11px 18px;
+  background:rgba(255,255,255,.82);
+  border-top:1px solid rgba(0,0,0,.05);
+  backdrop-filter:blur(22px);
+  -webkit-backdrop-filter:blur(22px);
 }
 
 .checkoutButton{
-
   width:100%;
-
   height:49px;
-
-  border-radius:13px;
-
+  border-radius:14px;
   display:flex;
-
   align-items:center;
-
   justify-content:center;
-
   gap:9px;
-
-  background:#080808;
-
+  background:
+    linear-gradient(
+      145deg,
+      rgba(22,22,22,.92),
+      rgba(0,0,0,.82)
+    );
   color:#fff;
-
+  border:1px solid rgba(255,255,255,.20);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.24),
+    inset 0 -1px 0 rgba(255,255,255,.05),
+    0 12px 30px rgba(0,0,0,.20);
+  backdrop-filter:blur(22px) saturate(135%);
+  -webkit-backdrop-filter:blur(22px) saturate(135%);
   font-size:9px;
-
   font-weight:750;
-
-  transition:
-    transform .15s ease,
-    opacity .15s ease;
+  transition:transform .15s ease,opacity .15s ease;
 }
 
 .checkoutButton:active{
-
-  transform:
-    scale(.985);
+  transform:scale(.985);
 }
 
 .checkoutButton:disabled{
-
   opacity:.35;
-
   cursor:not-allowed;
 }
 
 .checkoutButton svg{
-
   width:16px;
-
   height:16px;
-
   stroke-width:1.5;
 }
 
 .checkoutFinePrint{
-
   margin-top:6px;
-
   text-align:center;
-
   color:#888;
-
   font-size:5.8px;
 }
 
-/* ============================================================
-   TOAST
-   ============================================================ */
+/* Bottom navigation */
+
+.bottomNav{
+  position:fixed;
+  z-index:90;
+  left:50%;
+  bottom:calc(8px + var(--safe-bottom));
+  transform:translateX(-50%);
+  width:min(calc(100% - 24px),496px);
+  height:66px;
+  padding:7px 10px;
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  align-items:center;
+  border:1px solid rgba(255,255,255,.88);
+  border-radius:22px;
+  background:rgba(255,255,255,.72);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.96),
+    0 12px 34px rgba(0,0,0,.10);
+  backdrop-filter:blur(24px) saturate(145%);
+  -webkit-backdrop-filter:blur(24px) saturate(145%);
+}
+
+.bottomNavItem{
+  position:relative;
+  min-width:0;
+  height:52px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  color:#111;
+  text-decoration:none;
+  font-size:6.4px;
+  font-weight:500;
+}
+
+.bottomNavItem svg{
+  width:21px;
+  height:21px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.5;
+}
+
+.bottomNavPlus{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:#090909;
+  color:#fff;
+  box-shadow:0 7px 18px rgba(0,0,0,.18);
+}
+
+.bottomNavPlus svg{
+  width:20px;
+  height:20px;
+}
+
+.bottomNavBadge{
+  position:absolute;
+  top:1px;
+  right:11px;
+  min-width:17px;
+  height:17px;
+  padding:0 4px;
+  display:grid;
+  place-items:center;
+  border-radius:999px;
+  border:2px solid #fff;
+  background:#080808;
+  color:#fff;
+  font-size:7px;
+  font-weight:800;
+}
+
+/* Toast */
 
 .toast{
-
   position:fixed;
-
   z-index:200;
-
   left:50%;
-
-  bottom:
-    calc(
-      87px +
-      var(--safe-bottom)
-    );
-
-  transform:
-    translateX(-50%)
-    translateY(8px);
-
-  max-width:
-    calc(
-      100vw -
-      30px
-    );
-
-  padding:
-    9px
-    13px;
-
+  bottom:calc(160px + var(--safe-bottom));
+  transform:translateX(-50%) translateY(8px);
+  max-width:calc(100vw - 30px);
+  padding:9px 13px;
   border-radius:999px;
-
   background:#080808;
-
   color:#fff;
-
   font-size:7.5px;
-
   white-space:nowrap;
-
   opacity:0;
-
   pointer-events:none;
-
   transition:.18s ease;
 }
 
 .toast.show{
-
   opacity:1;
-
-  transform:
-    translateX(-50%)
-    translateY(0);
+  transform:translateX(-50%) translateY(0);
 }
 
-/* ============================================================
-   DESKTOP
-   ============================================================ */
-
 @media(min-width:700px){
-
   body{
     background:#f1f1f1;
   }
 
   .checkoutApp{
-
-    box-shadow:
-      0 0 60px
-      rgba(0,0,0,.06);
+    box-shadow:0 0 60px rgba(0,0,0,.06);
   }
 }
 
+@media(max-width:380px){
+  .bottomNav{
+    width:calc(100% - 16px);
+  }
+}
 </style>
-
 </head>
-
 <body>
 
 <div class="checkoutApp">
-
-  <!-- ========================================================
-       HEADER
-       ======================================================== -->
-
   <header class="checkoutHeader">
-
     <button
       id="backButton"
       class="headerButton"
       type="button"
       aria-label="Volver"
     >
-
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-      >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path d="m15 18-6-6 6-6"/>
       </svg>
-
     </button>
 
-    <div class="checkoutHeading">
-
-      <div class="checkoutHeadingTitle">
-        CajaModa
-      </div>
-
-      <div class="checkoutHeadingSubtitle">
-        Finalizar compra
-      </div>
-
-    </div>
+    <div class="checkoutHeading" aria-hidden="true"></div>
 
     <button
       id="headerBag"
@@ -1191,528 +798,209 @@ img{
       type="button"
       aria-label="Bolsa"
     >
-
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-      >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
         <path d="M6.3 8.4h11.4l1 11H5.3l1-11Z"/>
         <path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>
       </svg>
 
-      <span
-        id="headerBagBadge"
-        class="headerBagBadge"
-      >
-        0
-      </span>
-
+      <span id="headerBagBadge" class="headerBagBadge">0</span>
     </button>
-
   </header>
 
-  <!-- ========================================================
-       INTRO
-       ======================================================== -->
-
   <section class="checkoutIntro">
-
-    <h1>
-      Tu pedido.
-    </h1>
-
+    <h1>Tu pedido</h1>
     <p>
-      Revisa tu bolsa y completa los datos de entrega antes de continuar al pago seguro.
+      Revisa tu bolsa antes de continuar al pago seguro.
     </p>
-
   </section>
-
-  <!-- ========================================================
-       BAG
-       ======================================================== -->
 
   <section class="checkoutSection">
-
     <div class="sectionHeader">
-
-      <div class="sectionTitle">
-        Tu bolsa
-      </div>
-
-      <div
-        id="cartItemCount"
-        class="sectionMeta"
-      >
-        0 productos
-      </div>
-
+      <div class="sectionTitle">Tu bolsa</div>
+      <div id="cartItemCount" class="sectionMeta">0 productos</div>
     </div>
 
-    <div
-      id="cartList"
-      class="cartList"
-    ></div>
-
+    <div id="cartList" class="cartList"></div>
   </section>
-
-  <!-- ========================================================
-       DELIVERY INFORMATION
-       ======================================================== -->
-
-  <section
-    id="customerSection"
-    class="checkoutSection"
-  >
-
-    <div class="sectionHeader">
-
-      <div class="sectionTitle">
-        Información de entrega
-      </div>
-
-    </div>
-
-    <form
-      id="checkoutForm"
-      class="checkoutForm"
-      novalidate
-    >
-
-      <div class="field">
-
-        <label for="fullName">
-          Nombre completo
-        </label>
-
-        <input
-          id="fullName"
-          name="fullName"
-          type="text"
-          autocomplete="name"
-          placeholder="Nombre y apellido"
-          required
-        >
-
-      </div>
-
-      <div class="fieldRow">
-
-        <div class="field">
-
-          <label for="email">
-            Correo
-          </label>
-
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autocomplete="email"
-            placeholder="correo@email.com"
-            required
-          >
-
-        </div>
-
-        <div class="field">
-
-          <label for="phone">
-            Teléfono
-          </label>
-
-          <input
-            id="phone"
-            name="phone"
-            type="tel"
-            autocomplete="tel"
-            placeholder="+57"
-            required
-          >
-
-        </div>
-
-      </div>
-
-      <div class="field">
-
-        <label for="address">
-          Dirección
-        </label>
-
-        <input
-          id="address"
-          name="address"
-          type="text"
-          autocomplete="street-address"
-          placeholder="Calle, carrera, número"
-          required
-        >
-
-      </div>
-
-      <div class="field">
-
-        <label for="address2">
-          Apartamento, edificio o referencia
-        </label>
-
-        <input
-          id="address2"
-          name="address2"
-          type="text"
-          placeholder="Opcional"
-        >
-
-      </div>
-
-      <div class="fieldRow">
-
-        <div class="field">
-
-          <label for="city">
-            Ciudad
-          </label>
-
-          <input
-            id="city"
-            name="city"
-            type="text"
-            autocomplete="address-level2"
-            placeholder="Ciudad"
-            required
-          >
-
-        </div>
-
-        <div class="field">
-
-          <label for="region">
-            Departamento
-          </label>
-
-          <input
-            id="region"
-            name="region"
-            type="text"
-            autocomplete="address-level1"
-            placeholder="Departamento"
-            required
-          >
-
-        </div>
-
-      </div>
-
-      <div class="field">
-
-        <label for="postalCode">
-          Código postal
-        </label>
-
-        <input
-          id="postalCode"
-          name="postalCode"
-          type="text"
-          autocomplete="postal-code"
-          placeholder="Opcional"
-        >
-
-      </div>
-
-    </form>
-
-  </section>
-
-  <!-- ========================================================
-       DELIVERY METHOD
-       ======================================================== -->
 
   <section class="checkoutSection">
-
     <div class="sectionHeader">
-
-      <div class="sectionTitle">
-        Entrega
-      </div>
-
-    </div>
-
-    <div class="deliveryCard">
-
-      <div class="deliveryLeft">
-
-        <div class="deliveryDot"></div>
-
-        <div>
-
-          <div class="deliveryName">
-            Envío CajaModa
-          </div>
-
-          <div class="deliveryDescription">
-            El costo final se calcula antes del pago.
-          </div>
-
-        </div>
-
-      </div>
-
-      <div class="deliveryPrice">
-        Por calcular
-      </div>
-
-    </div>
-
-  </section>
-
-  <!-- ========================================================
-       ORDER SUMMARY
-       ======================================================== -->
-
-  <section class="checkoutSection">
-
-    <div class="sectionHeader">
-
-      <div class="sectionTitle">
-        Resumen
-      </div>
-
+      <div class="sectionTitle">Resumen</div>
     </div>
 
     <div class="summaryCard">
-
       <div class="summaryLine">
-
-        <span>
-          Subtotal
-        </span>
-
-        <span
-          id="subtotalValue"
-          class="summaryValue"
-        >
-          $0
-        </span>
-
+        <span>Subtotal</span>
+        <span id="subtotalValue" class="summaryValue">$0</span>
       </div>
 
       <div class="summaryLine">
-
-        <span>
-          Envío
-        </span>
-
-        <span class="summaryValue">
-          Por calcular
-        </span>
-
+        <span>Envío</span>
+        <span class="summaryValue">Por calcular</span>
       </div>
 
       <div class="summaryDivider"></div>
 
       <div class="summaryTotal">
+        <span class="summaryTotalLabel">Total</span>
+        <span id="totalValue" class="summaryTotalValue">$0</span>
+      </div>
+    </div>
+  </section>
 
-        <span class="summaryTotalLabel">
-          Total
-        </span>
-
-        <span
-          id="totalValue"
-          class="summaryTotalValue"
+  <section id="customerSection" class="checkoutSection">
+    <form id="checkoutForm" class="checkoutForm" novalidate>
+      <div class="field">
+        <label for="email">Correo para recibo y seguimiento</label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          autocomplete="email"
+          placeholder="tucorreo@email.com"
+          required
         >
-          $0
-        </span>
+      </div>
+    </form>
+  </section>
 
+  <section class="checkoutSection">
+    <div class="sectionHeader">
+      <div class="sectionTitle">Entrega</div>
+    </div>
+
+    <div class="deliveryCard">
+      <div class="deliveryLeft">
+        <div class="deliveryDot"></div>
+
+        <div>
+          <div class="deliveryName">Envío CajaModa</div>
+          <div class="deliveryDescription">
+            El costo final se calcula antes del pago.
+          </div>
+        </div>
       </div>
 
+      <div class="deliveryPrice">Por calcular</div>
     </div>
 
     <div class="paymentInfo">
-
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-      >
-        <rect
-          x="4"
-          y="10"
-          width="16"
-          height="10"
-          rx="2"
-        />
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <rect x="4" y="10" width="16" height="10" rx="2"/>
         <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
       </svg>
 
       <div>
-
-        <div class="paymentInfoTitle">
-          Pago seguro
-        </div>
-
+        <div class="paymentInfoTitle">Pago seguro</div>
         <div class="paymentInfoText">
-          El pago final será procesado mediante la plataforma segura de CajaModa.
+          El pago final será procesado mediante Wix.
         </div>
-
       </div>
-
     </div>
-
   </section>
-
 </div>
 
-<!-- ==========================================================
-     FIXED CHECKOUT BUTTON
-     ========================================================== -->
-
 <div class="checkoutAction">
+  <button id="checkoutButton" class="checkoutButton" type="button">
+    <span>Continuar al pago</span>
 
-  <button
-    id="checkoutButton"
-    class="checkoutButton"
-    type="button"
-  >
-
-    <span>
-      Continuar al pago
-    </span>
-
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-    >
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
       <path d="m9 5 7 7-7 7"/>
     </svg>
-
   </button>
 
   <div class="checkoutFinePrint">
     Podrás revisar el total final antes de confirmar el pago.
   </div>
-
 </div>
 
-<div
-  id="toast"
-  class="toast"
-></div>
+<nav class="bottomNav" aria-label="Navegación principal">
+  <a class="bottomNavItem" href="/" aria-label="Explorar">
+    <span class="bottomNavPlus">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+    </span>
+  </a>
 
+  <a class="bottomNavItem" href="/#favoritos">
+    <svg viewBox="0 0 24 24">
+      <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z"/>
+    </svg>
+    <span>Favoritos</span>
+  </a>
+
+  <a class="bottomNavItem" href="/">
+    <svg viewBox="0 0 24 24">
+      <path d="m3 11 9-8 9 8v9H3Z"/>
+      <path d="M9 20v-6h6v6"/>
+    </svg>
+    <span>Inicio</span>
+  </a>
+
+  <a class="bottomNavItem" href="/#perfil">
+    <svg viewBox="0 0 24 24">
+      <circle cx="12" cy="7" r="4"/>
+      <path d="M4 21a8 8 0 0 1 16 0"/>
+    </svg>
+    <span>Perfil</span>
+  </a>
+
+  <a class="bottomNavItem" href="/checkout/" aria-current="page">
+    <svg viewBox="0 0 24 24">
+      <path d="M6.3 8.4h11.4l1 11H5.3l1-11Z"/>
+      <path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>
+    </svg>
+    <span>Bolsa</span>
+    <span id="bottomBagBadge" class="bottomNavBadge">0</span>
+  </a>
+</nav>
+
+<div id="toast" class="toast"></div>
 <script>
-
 (() => {
-
   "use strict";
 
-  /* ============================================================
-     HELPERS
-     ============================================================ */
+  const $ = id => document.getElementById(id);
 
-  const $ =
-    id =>
-      document.getElementById(
-        id
-      );
-
-  function readJson(
-    key,
-    fallback
-  ){
-
+  function readJson(key,fallback){
     try{
+      const value=localStorage.getItem(key);
 
-      const value =
-        localStorage.getItem(
-          key
-        );
-
-      if(
-        !value
-      ){
+      if(!value){
         return fallback;
       }
 
-      return JSON.parse(
-        value
-      );
-
+      return JSON.parse(value);
     }catch{
-
       return fallback;
     }
   }
 
-  function saveJson(
-    key,
-    value
-  ){
-
+  function saveJson(key,value){
     try{
-
-      localStorage.setItem(
-        key,
-        JSON.stringify(
-          value
-        )
-      );
-
+      localStorage.setItem(key,JSON.stringify(value));
     }catch{}
   }
 
   function createId(){
-
-    if(
-      window.crypto?.randomUUID
-    ){
-
-      return window.crypto
-        .randomUUID();
+    if(window.crypto?.randomUUID){
+      return window.crypto.randomUUID();
     }
 
-    return (
-      `${Date.now()}-` +
-      Math.random()
-        .toString(16)
-        .slice(2)
-    );
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   }
 
-  function escapeHtml(
-    value
-  ){
-
-    return String(
-      value ??
-      ""
-    )
-      .replaceAll(
-        "&",
-        "&amp;"
-      )
-      .replaceAll(
-        "<",
-        "&lt;"
-      )
-      .replaceAll(
-        ">",
-        "&gt;"
-      )
-      .replaceAll(
-        '"',
-        "&quot;"
-      )
-      .replaceAll(
-        "'",
-        "&#039;"
-      );
+  function escapeHtml(value){
+    return String(value ?? "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
   }
 
-  function money(
-    amount
-  ){
-
+  function money(amount){
     return new Intl.NumberFormat(
       "es-CO",
       {
@@ -1720,158 +1008,99 @@ img{
         currency:"COP",
         maximumFractionDigits:0
       }
-    )
-      .format(
-        Number(
-          amount ||
-          0
-        )
-      );
+    ).format(Number(amount || 0));
   }
 
-  function showToast(
-    message
-  ){
+  function showToast(message){
+    const toast=$("toast");
 
-    const toast =
-      $("toast");
+    toast.textContent=message;
+    toast.classList.add("show");
 
-    toast.textContent =
-      message;
+    clearTimeout(showToast.timer);
 
-    toast.classList.add(
-      "show"
+    showToast.timer=setTimeout(
+      () => toast.classList.remove("show"),
+      1600
     );
-
-    clearTimeout(
-      showToast.timer
-    );
-
-    showToast.timer =
-      setTimeout(
-        () => {
-
-          toast.classList
-            .remove(
-              "show"
-            );
-
-        },
-        1600
-      );
   }
 
-  /* ============================================================
-     CART
-     ============================================================ */
+  function normalizeCart(cart){
+    const sourceItems=
+      Array.isArray(cart?.items)
+        ? cart.items
+        : Array.isArray(cart?.lineItems)
+          ? cart.lineItems
+          : [];
 
-  function normalizeCart(
-    cart
-  ){
+    const items=sourceItems.map(
+      item => ({
+        id:
+          item.id ||
+          item._id ||
+          item.lineItemId ||
+          createId(),
 
-    const sourceItems =
-      Array.isArray(
-        cart?.items
-      )
-        ?cart.items
-        :Array.isArray(
-          cart?.lineItems
-        )
-          ?cart.lineItems
-          :[];
+        productId:
+          item.productId ||
+          item.catalogReference?.catalogItemId ||
+          null,
 
-    const items =
-      sourceItems.map(
-        item => ({
+        variantId:
+          item.variantId ||
+          item.catalogReference?.variantId ||
+          null,
 
-          id:
-            item.id ||
-            item._id ||
-            item.lineItemId ||
-            createId(),
+        name:
+          item.name ||
+          item.productName ||
+          "Producto",
 
-          productId:
-            item.productId ||
-            item.catalogReference
-              ?.catalogItemId ||
-            null,
+        image:
+          item.image ||
+          item.imageUrl ||
+          item.media?.url ||
+          "",
 
-          variantId:
-            item.variantId ||
-            item.catalogReference
-              ?.variantId ||
-            null,
+        size:
+          item.size ||
+          item.options?.Size ||
+          item.options?.size ||
+          "",
 
-          name:
-            item.name ||
-            item.productName ||
-            "Producto",
+        color:
+          item.color ||
+          item.options?.Color ||
+          item.options?.color ||
+          "",
 
-          image:
-            item.image ||
-            item.imageUrl ||
-            item.media?.url ||
-            "",
-
-          size:
-            item.size ||
-            item.options?.Size ||
-            item.options?.size ||
-            "",
-
-          color:
-            item.color ||
-            item.options?.Color ||
-            item.options?.color ||
-            "",
-
-          quantity:
-            Math.max(
-              1,
-              Number(
-                item.quantity ||
-                1
-              )
-            ),
-
-          price:
-            Number(
-              item.price?.amount ??
-              item.price ??
-              item.lineItemPrice?.amount ??
-              0
-            ),
-
-          autoSelected:
-            item.autoSelected ===
-            true
-        })
-      );
-
-    const count =
-      items.reduce(
-        (
-          sum,
-          item
-        ) =>
-          sum +
-          item.quantity,
-        0
-      );
-
-    const total =
-      items.reduce(
-        (
-          sum,
-          item
-        ) =>
-          sum +
-          (
-            item.price *
-            item.quantity
+        quantity:
+          Math.max(
+            1,
+            Number(item.quantity || 1)
           ),
-        0
-      );
+
+        price:
+          Number(
+            item.price?.amount ??
+            item.price ??
+            item.lineItemPrice?.amount ??
+            0
+          ),
+
+        autoSelected:item.autoSelected === true
+      })
+    );
+
+    const count=items.reduce(
+      (sum,item) => sum + item.quantity,
+      0
+    );
+
+    const total=items.reduce(
+      (sum,item) => sum + item.price * item.quantity,
+      0
+    );
 
     return{
       items,
@@ -1881,40 +1110,28 @@ img{
   }
 
   function readCart(){
+    const checkoutCart=readJson(
+      "cajamoda-checkout-cart",
+      null
+    );
 
-    const checkoutCart =
-      readJson(
-        "cajamoda-checkout-cart",
-        null
-      );
+    const regularCart=readJson(
+      "cajamoda-cart",
+      null
+    );
 
-    const regularCart =
-      readJson(
-        "cajamoda-cart",
-        null
-      );
-
-    const chosen =
+    const chosen=
       checkoutCart?.items?.length
-        ?checkoutCart
-        :regularCart;
+        ? checkoutCart
+        : regularCart;
 
     return normalizeCart(
-      chosen ||
-      {
-        items:[]
-      }
+      chosen || {items:[]}
     );
   }
 
-  function saveCart(
-    cart
-  ){
-
-    const normalized =
-      normalizeCart(
-        cart
-      );
+  function saveCart(cart){
+    const normalized=normalizeCart(cart);
 
     saveJson(
       "cajamoda-cart",
@@ -1931,541 +1148,307 @@ img{
     return normalized;
   }
 
-  /* ============================================================
-     CART RENDER
-     ============================================================ */
-
   function renderCart(){
+    const cart=readCart();
 
-    const cart =
-      readCart();
+    $("headerBagBadge").textContent=String(cart.count);
+    $("bottomBagBadge").textContent=String(cart.count);
 
-    $("headerBagBadge")
-      .textContent =
-        String(
-          cart.count
-        );
+    $("cartItemCount").textContent=
+      cart.count === 1
+        ? "1 producto"
+        : `${cart.count} productos`;
 
-    $("cartItemCount")
-      .textContent =
-        cart.count === 1
-          ?"1 producto"
-          :`${cart.count} productos`;
+    $("subtotalValue").textContent=money(cart.total);
+    $("totalValue").textContent=money(cart.total);
 
-    $("subtotalValue")
-      .textContent =
-        money(
-          cart.total
-        );
+    $("checkoutButton").disabled=
+      cart.items.length === 0;
 
-    $("totalValue")
-      .textContent =
-        money(
-          cart.total
-        );
-
-    $("checkoutButton")
-      .disabled =
-        cart.items.length === 0;
-
-    if(
-      !cart.items.length
-    ){
-
-      $("cartList")
-        .innerHTML = `
-
-          <div class="emptyCart">
-
-            <div class="emptyBagIcon">
-
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-              >
-                <path d="M6.3 8.4h11.4l1 11H5.3l1-11Z"/>
-                <path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>
-              </svg>
-
-            </div>
-
-            <div class="emptyCartTitle">
-              Tu bolsa está vacía
-            </div>
-
-            <div class="emptyCartText">
-              Agrega un producto antes de continuar.
-            </div>
-
-            <button
-              class="continueShopping"
-              id="continueShopping"
-              type="button"
+    if(!cart.items.length){
+      $("cartList").innerHTML=`
+        <div class="emptyCart">
+          <div class="emptyBagIcon">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
             >
-              Seguir comprando
-            </button>
-
+              <path d="M6.3 8.4h11.4l1 11H5.3l1-11Z"/>
+              <path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>
+            </svg>
           </div>
 
-        `;
+          <div class="emptyCartTitle">
+            Tu bolsa está vacía
+          </div>
 
-      $("continueShopping")
-        .onclick =
-          () => {
+          <div class="emptyCartText">
+            Agrega un producto antes de continuar.
+          </div>
 
-            location.href =
-              "/";
-          };
+          <button
+            class="continueShopping"
+            id="continueShopping"
+            type="button"
+          >
+            Seguir comprando
+          </button>
+        </div>
+      `;
+
+      $("continueShopping").onclick=() => {
+        location.href="/";
+      };
 
       return;
     }
 
-    $("cartList")
-      .innerHTML =
-        cart.items.map(
-          item => `
-
-            <article
-              class="cartItem"
-              data-cart-item="${escapeHtml(item.id)}"
-            >
-
-              <div class="cartImage">
-
-                ${
-                  item.image
-                    ?`
-                      <img
-                        src="${escapeHtml(item.image)}"
-                        alt="${escapeHtml(item.name)}"
-                      >
-                    `
-                    :`
-                      <div class="cartImagePlaceholder">
-                        CAJAMODA
-                      </div>
-                    `
-                }
-
-              </div>
-
-              <div class="cartInfo">
-
-                <div class="cartTop">
-
-                  <div class="cartName">
-                    ${escapeHtml(item.name)}
-                  </div>
-
-                  <button
-                    class="removeButton"
-                    type="button"
-                    data-remove="${escapeHtml(item.id)}"
-                    aria-label="Eliminar"
+    $("cartList").innerHTML=cart.items.map(
+      item => `
+        <article
+          class="cartItem"
+          data-cart-item="${escapeHtml(item.id)}"
+        >
+          <div class="cartImage">
+            ${
+              item.image
+                ? `
+                  <img
+                    src="${escapeHtml(item.image)}"
+                    alt="${escapeHtml(item.name)}"
                   >
-
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                    >
-                      <path d="M6 6l12 12M18 6 6 18"/>
-                    </svg>
-
-                  </button>
-
-                </div>
-
-                <div class="cartOptions">
-
-                  ${
-                    item.color
-                      ?`
-                        Color:
-                        ${escapeHtml(item.color)}
-                        <br>
-                      `
-                      :""
-                  }
-
-                  ${
-                    item.size
-                      ?`
-                        Talla:
-                        ${escapeHtml(item.size)}
-                      `
-                      :""
-                  }
-
-                </div>
-
-                <div class="cartBottom">
-
-                  <div class="cartPrice">
-                    ${money(item.price)}
+                `
+                : `
+                  <div class="cartImagePlaceholder">
+                    CAJAMODA
                   </div>
+                `
+            }
+          </div>
 
-                  <div class="quantityControl">
-
-                    <button
-                      class="quantityButton"
-                      type="button"
-                      data-minus="${escapeHtml(item.id)}"
-                      aria-label="Reducir cantidad"
-                    >
-                      −
-                    </button>
-
-                    <span class="quantityValue">
-                      ${item.quantity}
-                    </span>
-
-                    <button
-                      class="quantityButton"
-                      type="button"
-                      data-plus="${escapeHtml(item.id)}"
-                      aria-label="Aumentar cantidad"
-                    >
-                      +
-                    </button>
-
-                  </div>
-
-                </div>
-
+          <div class="cartInfo">
+            <div class="cartTop">
+              <div class="cartName">
+                ${escapeHtml(item.name)}
               </div>
 
-            </article>
+              <button
+                class="removeButton"
+                type="button"
+                data-remove="${escapeHtml(item.id)}"
+                aria-label="Eliminar"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                >
+                  <path d="M6 6l12 12M18 6 6 18"/>
+                </svg>
+              </button>
+            </div>
 
-          `
-        )
-          .join("");
+            <div class="cartOptions">
+              ${
+                item.color
+                  ? `Color: ${escapeHtml(item.color)}<br>`
+                  : ""
+              }
+
+              ${
+                item.size
+                  ? `Talla: ${escapeHtml(item.size)}`
+                  : ""
+              }
+            </div>
+
+            <div class="cartBottom">
+              <div class="cartPrice">
+                ${money(item.price)}
+              </div>
+
+              <div class="quantityControl">
+                <button
+                  class="quantityButton"
+                  type="button"
+                  data-minus="${escapeHtml(item.id)}"
+                  aria-label="Reducir cantidad"
+                >
+                  −
+                </button>
+
+                <span class="quantityValue">
+                  ${item.quantity}
+                </span>
+
+                <button
+                  class="quantityButton"
+                  type="button"
+                  data-plus="${escapeHtml(item.id)}"
+                  aria-label="Aumentar cantidad"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          </div>
+        </article>
+      `
+    ).join("");
 
     document
-      .querySelectorAll(
-        "[data-remove]"
-      )
-      .forEach(
-        button => {
-
-          button.onclick =
-            () => {
-
-              removeItem(
-                button.dataset.remove
-              );
-            };
-        }
-      );
+      .querySelectorAll("[data-remove]")
+      .forEach(button => {
+        button.onclick=() => {
+          removeItem(button.dataset.remove);
+        };
+      });
 
     document
-      .querySelectorAll(
-        "[data-minus]"
-      )
-      .forEach(
-        button => {
-
-          button.onclick =
-            () => {
-
-              changeQuantity(
-                button.dataset.minus,
-                -1
-              );
-            };
-        }
-      );
+      .querySelectorAll("[data-minus]")
+      .forEach(button => {
+        button.onclick=() => {
+          changeQuantity(
+            button.dataset.minus,
+            -1
+          );
+        };
+      });
 
     document
-      .querySelectorAll(
-        "[data-plus]"
-      )
-      .forEach(
-        button => {
-
-          button.onclick =
-            () => {
-
-              changeQuantity(
-                button.dataset.plus,
-                1
-              );
-            };
-        }
-      );
+      .querySelectorAll("[data-plus]")
+      .forEach(button => {
+        button.onclick=() => {
+          changeQuantity(
+            button.dataset.plus,
+            1
+          );
+        };
+      });
   }
 
-  /* ============================================================
-     QUANTITY
-     ============================================================ */
+  function changeQuantity(itemId,amount){
+    const cart=readCart();
 
-  function changeQuantity(
-    itemId,
-    amount
-  ){
+    const item=cart.items.find(
+      candidate =>
+        String(candidate.id) === String(itemId)
+    );
 
-    const cart =
-      readCart();
-
-    const item =
-      cart.items.find(
-        candidate =>
-          String(
-            candidate.id
-          ) ===
-          String(
-            itemId
-          )
-      );
-
-    if(
-      !item
-    ){
+    if(!item){
       return;
     }
 
-    item.quantity +=
-      amount;
+    item.quantity+=amount;
 
-    if(
-      item.quantity <= 0
-    ){
-
-      cart.items =
-        cart.items.filter(
-          candidate =>
-            String(
-              candidate.id
-            ) !==
-            String(
-              itemId
-            )
-        );
+    if(item.quantity <= 0){
+      cart.items=cart.items.filter(
+        candidate =>
+          String(candidate.id) !== String(itemId)
+      );
     }
 
-    saveCart(
-      cart
-    );
+    saveCart(cart);
   }
 
-  function removeItem(
-    itemId
-  ){
+  function removeItem(itemId){
+    const cart=readCart();
 
-    const cart =
-      readCart();
-
-    cart.items =
-      cart.items.filter(
-        item =>
-          String(
-            item.id
-          ) !==
-          String(
-            itemId
-          )
-      );
-
-    saveCart(
-      cart
+    cart.items=cart.items.filter(
+      item =>
+        String(item.id) !== String(itemId)
     );
 
-    showToast(
-      "Producto eliminado."
-    );
+    saveCart(cart);
+    showToast("Producto eliminado.");
   }
 
-  /* ============================================================
-     CUSTOMER DATA
-     ============================================================ */
-
-  const customerFields = [
-    "fullName",
-    "email",
-    "phone",
-    "address",
-    "address2",
-    "city",
-    "region",
-    "postalCode"
-  ];
+  const customerFields=["email"];
 
   function loadCustomer(){
+    const saved=readJson(
+      "cajamoda-checkout-customer",
+      {}
+    );
 
-    const saved =
-      readJson(
-        "cajamoda-checkout-customer",
-        {}
-      );
-
-    customerFields
-      .forEach(
-        field => {
-
-          if(
-            $(
-              field
-            ) &&
-            saved[field]
-          ){
-
-            $(
-              field
-            ).value =
-              saved[field];
-          }
-        }
-      );
+    customerFields.forEach(field => {
+      if($(field) && saved[field]){
+        $(field).value=saved[field];
+      }
+    });
   }
 
   function collectCustomer(){
+    const customer={};
 
-    const customer =
-      {};
-
-    customerFields
-      .forEach(
-        field => {
-
-          customer[field] =
-            $(
-              field
-            )?.value
-              ?.trim() ||
-            "";
-        }
-      );
+    customerFields.forEach(field => {
+      customer[field]=
+        $(field)?.value?.trim() || "";
+    });
 
     return customer;
   }
 
   function saveCustomer(){
-
     saveJson(
       "cajamoda-checkout-customer",
       collectCustomer()
     );
   }
 
-  customerFields
-    .forEach(
-      field => {
-
-        $(
-          field
-        )?.addEventListener(
-          "input",
-          saveCustomer
-        );
-      }
+  customerFields.forEach(field => {
+    $(field)?.addEventListener(
+      "input",
+      saveCustomer
     );
-
-  /* ============================================================
-     VALIDATION
-     ============================================================ */
+  });
 
   function validateCheckout(){
+    const cart=readCart();
 
-    const cart =
-      readCart();
-
-    if(
-      !cart.items.length
-    ){
-
-      showToast(
-        "Tu bolsa está vacía."
-      );
-
+    if(!cart.items.length){
+      showToast("Tu bolsa está vacía.");
       return false;
     }
 
-    const customer =
-      collectCustomer();
+    const email=$("email");
 
-    const required = [
-      "fullName",
-      "email",
-      "phone",
-      "address",
-      "city",
-      "region"
-    ];
-
-    const missing =
-      required.find(
-        field =>
-          !customer[field]
-      );
-
-    if(
-      missing
-    ){
-
-      $(
-        missing
-      )?.focus();
-
+    if(!email.value.trim()){
+      email.focus();
       showToast(
-        "Completa tus datos de entrega."
+        "Ingresa tu correo electrónico."
       );
-
       return false;
     }
 
-    if(
-      !$(
-        "email"
-      ).checkValidity()
-    ){
-
-      $("email")
-        .focus();
-
+    if(!email.checkValidity()){
+      email.focus();
       showToast(
         "Revisa tu correo electrónico."
       );
-
       return false;
     }
 
     return true;
   }
 
-  /* ============================================================
-     PAYMENT REQUEST
-     ============================================================ */
-
   function requestPayment(){
-
-    if(
-      !validateCheckout()
-    ){
+    if(!validateCheckout()){
       return;
     }
 
     saveCustomer();
 
-    const cart =
-      readCart();
+    const cart=readCart();
+    const customer=collectCustomer();
+    const requestId=createId();
 
-    const customer =
-      collectCustomer();
-
-    const requestId =
-      createId();
-
-    const payload = {
-
+    const payload={
       requestId,
-
       cart,
-
       customer,
-
       currency:"COP",
-
       country:"CO"
     };
 
@@ -2474,101 +1457,56 @@ img{
       payload
     );
 
-    /*
-      Permanent checkout bridge hook.
-
-      src/main.js will connect this request
-      to Wix eCom in the next step.
-    */
-
     window.postMessage(
       {
-        source:
-          "CAJAMODA_CHECKOUT",
-
-        type:
-          "CREATE_CHECKOUT",
-
+        source:"CAJAMODA_CHECKOUT",
+        type:"CREATE_CHECKOUT",
         payload
       },
       "*"
     );
 
-    if(
-      window.parent !==
-      window
-    ){
-
+    if(window.parent !== window){
       window.parent.postMessage(
         {
-          source:
-            "CAJAMODA_CHECKOUT",
-
-          type:
-            "CREATE_CHECKOUT",
-
+          source:"CAJAMODA_CHECKOUT",
+          type:"CREATE_CHECKOUT",
           payload
         },
         "*"
       );
     }
 
-    showToast(
-      "Preparando pago seguro…"
-    );
+    showToast("Preparando pago seguro…");
   }
 
-  $("checkoutButton")
-    .onclick =
-      requestPayment;
-
-  /* ============================================================
-     CHECKOUT RESPONSE
-     ============================================================ */
+  $("checkoutButton").onclick=requestPayment;
 
   window.addEventListener(
     "message",
     event => {
-
-      const message =
-        event.data ||
-        {};
-
-      const payload =
-        message.payload ||
-        {};
+      const message=event.data || {};
+      const payload=message.payload || {};
 
       if(
         [
           "CHECKOUT_URL",
           "CHECKOUT_CREATED",
           "REDIRECT_TO_CHECKOUT"
-        ]
-          .includes(
-            message.type
-          )
+        ].includes(message.type)
       ){
-
-        const url =
+        const url=
           payload.url ||
           payload.checkoutUrl ||
           payload.redirectUrl ||
           "";
 
-        if(
-          url
-        ){
-
-          location.href =
-            url;
+        if(url){
+          location.href=url;
         }
       }
 
-      if(
-        message.type ===
-        "CHECKOUT_ERROR"
-      ){
-
+      if(message.type === "CHECKOUT_ERROR"){
         showToast(
           payload.message ||
           "No pudimos abrir el pago."
@@ -2577,54 +1515,26 @@ img{
     }
   );
 
-  /* ============================================================
-     NAVIGATION
-     ============================================================ */
+  $("backButton").onclick=() => {
+    if(history.length > 1){
+      history.back();
+    }else{
+      location.href="/";
+    }
+  };
 
-  $("backButton")
-    .onclick =
-      () => {
-
-        if(
-          history.length >
-          1
-        ){
-
-          history.back();
-
-        }else{
-
-          location.href =
-            "/";
-        }
-      };
-
-  $("headerBag")
-    .onclick =
-      () => {
-
-        document
-          .querySelector(
-            ".checkoutSection"
-          )
-          ?.scrollIntoView(
-            {
-              behavior:"smooth",
-              block:"start"
-            }
-          );
-      };
-
-  /* ============================================================
-     START
-     ============================================================ */
+  $("headerBag").onclick=() => {
+    document
+      .querySelector(".checkoutSection")
+      ?.scrollIntoView({
+        behavior:"smooth",
+        block:"start"
+      });
+  };
 
   loadCustomer();
-
   renderCart();
-
 })();
-
 </script>
 
 <script
@@ -2633,5 +1543,4 @@ img{
 ></script>
 
 </body>
-
 </html>

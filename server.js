@@ -106,7 +106,7 @@ const wix =
         modules: {
 
           productsV3,
-
+inventoryItemsV3,
           files,
 
           orders:

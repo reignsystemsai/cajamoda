@@ -2786,11 +2786,15 @@ img{
         authToken
       );
 
-      hideLogin();
+     hideLogin();
 
-      showToast(
-        "Sesión iniciada."
-      );
+showToast(
+  "Sesión iniciada."
+);
+
+await loadRealOrders(
+  true
+);
 
     }catch(
       error

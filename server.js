@@ -1054,7 +1054,7 @@ function buildVariants(
   sizes,
   colors,
   price,
-  available
+  quantity
 ) {
 
   const combinations =
@@ -1063,27 +1063,80 @@ function buildVariants(
       colors
     );
 
+  const totalQuantity =
+    Math.max(
+      0,
+      Number(
+        quantity ||
+        0
+      )
+    );
+
+  const quantityPerVariant =
+    combinations.length
+      ? Math.floor(
+          totalQuantity /
+          combinations.length
+        )
+      : totalQuantity;
+
+  let remainder =
+    combinations.length
+      ? totalQuantity %
+        combinations.length
+      : 0;
+
   return combinations.map(
-    combination => ({
+    combination => {
 
-      visible:
-        true,
+      const variantQuantity =
+        quantityPerVariant +
+        (
+          remainder > 0
+            ? 1
+            : 0
+        );
 
-      choices:
-        buildVariantChoices(
-          combination
-        ),
+      if(
+        remainder > 0
+      ){
+        remainder -= 1;
+      }
 
-      price: {
+      return {
 
-        actualPrice: {
+        visible:
+          true,
 
-          amount:
-            String(
-              price
-            )
-        }
-      },
+        choices:
+          buildVariantChoices(
+            combination
+          ),
+
+        price: {
+
+          actualPrice: {
+
+            amount:
+              String(
+                price
+              )
+          }
+        },
+
+        inventoryItem: {
+
+          quantity:
+            variantQuantity
+        },
+
+        physicalProperties:
+          {}
+      };
+    }
+  );
+}
+
 
       inventoryItem: {
 
@@ -1241,7 +1294,7 @@ async function createWixProduct(
       sizes,
       colors,
       price,
-      quantity > 0
+      quantity
     );
 
   const product = {

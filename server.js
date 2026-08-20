@@ -2548,6 +2548,25 @@ const server =
 
           return;
         }
+        /* ------------------------------------------------------
+   CUSTOMER ORDER TRACKING
+   ------------------------------------------------------ */
+
+if (
+  request.method ===
+    "GET" &&
+  url.pathname ===
+    "/api/track-order"
+) {
+
+  await handleTrackOrder(
+    request,
+    response,
+    url
+  );
+
+  return;
+}
 /* ------------------------------------------------------
    REAL INVENTORY
    ------------------------------------------------------ */

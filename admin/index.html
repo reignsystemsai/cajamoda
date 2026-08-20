@@ -2911,6 +2911,58 @@ await loadRealOrders(
       "store-loader-products",
       []
     );
+let inventory = [];
+
+async function loadRealInventory(
+  silent = false
+){
+
+  if(
+    !authToken
+  ){
+    return;
+  }
+
+  try{
+
+    const result =
+      await apiRequest(
+        "/api/inventory"
+      );
+
+    inventory =
+      Array.isArray(
+        result?.inventory
+      )
+        ? result.inventory
+        : [];
+
+    renderInventory();
+
+    if(
+      !silent
+    ){
+
+      showToast(
+        "Inventario actualizado."
+      );
+    }
+
+  }catch(
+    error
+  ){
+
+    if(
+      !silent
+    ){
+
+      showToast(
+        error?.message ||
+        "No pudimos cargar el inventario."
+      );
+    }
+  }
+}
 
   let orders = [];
   async function loadRealOrders(
@@ -3067,7 +3119,13 @@ if(
 
   loadRealOrders();
 }
+if(
+  tab ===
+  "inventory"
+){
 
+  loadRealInventory();
+}
           };
 
       }
@@ -3726,64 +3784,153 @@ if(
   /* ============================================================
      INVENTORY
      ============================================================ */
+function renderInventory(){
 
-  function renderInventory(){
-
-    if(
-      !products.length
-    ){
-
-      $("inventoryList")
-        .innerHTML = `
-
-          <div class="emptyState">
-
-            <div class="emptyStateTitle">
-              Sin inventario
-            </div>
-
-            <div class="emptyStateText">
-              Los productos aparecerán aquí.
-            </div>
-
-          </div>
-
-        `;
-
-      return;
-    }
+  if(
+    !inventory.length
+  ){
 
     $("inventoryList")
-      .innerHTML =
-        products
-          .map(
-            product => `
+      .innerHTML = `
 
-              <div class="inventoryRow">
+        <div class="emptyState">
 
-                <div class="inventoryName">
-                  ${escapeHtml(product.name)}
-                </div>
+          <div class="emptyStateTitle">
+            Sin inventario
+          </div>
 
-                <div class="inventoryQty">
-                  ${product.quantity}
-                </div>
+          <div class="emptyStateText">
+            El inventario de Wix aparecerá aquí.
+          </div>
 
-                <div class="inventoryState">
-                  ${
-                    product.quantity >
-                    0
-                      ?"Disponible"
-                      :"Agotado"
-                  }
-                </div>
+        </div>
 
+      `;
+
+    return;
+  }
+
+  const grouped =
+    new Map();
+
+  inventory.forEach(
+    item => {
+
+      const productId =
+        item.productId ||
+        item.id;
+
+      const localProduct =
+        products.find(
+          product =>
+            product.wixProductId ===
+              item.productId ||
+            product.id ===
+              item.productId
+        );
+
+      const current =
+        grouped.get(
+          productId
+        ) || {
+
+          name:
+            item.productName ||
+            localProduct?.name ||
+            "Producto Wix",
+
+          quantity:
+            0,
+
+          trackQuantity:
+            false,
+
+          inStock:
+            false
+        };
+
+      if(
+        item.trackQuantity
+      ){
+
+        current.quantity +=
+          Number(
+            item.quantity ||
+            0
+          );
+
+        current.trackQuantity =
+          true;
+      }
+
+      if(
+        item.inStock ||
+        item.availabilityStatus ===
+          "IN_STOCK" ||
+        Number(
+          item.quantity ||
+          0
+        ) > 0
+      ){
+
+        current.inStock =
+          true;
+      }
+
+      grouped.set(
+        productId,
+        current
+      );
+    }
+  );
+
+  const rows =
+    [
+      ...grouped.values()
+    ];
+
+  $("inventoryList")
+    .innerHTML =
+      rows
+        .map(
+          item => `
+
+            <div class="inventoryRow">
+
+              <div class="inventoryName">
+                ${escapeHtml(item.name)}
               </div>
 
-            `
-          )
-          .join("");
-  }
+              <div class="inventoryQty">
+                ${
+                  item.trackQuantity
+                    ? item.quantity
+                    : "—"
+                }
+              </div>
+
+              <div class="inventoryState">
+                ${
+                  item.trackQuantity
+                    ? (
+                        item.quantity > 0
+                          ? "Disponible"
+                          : "Agotado"
+                      )
+                    : (
+                        item.inStock
+                          ? "Disponible"
+                          : "Agotado"
+                      )
+                }
+              </div>
+
+            </div>
+
+          `
+        )
+        .join("");
+}
 
   /* ============================================================
      ORDERS

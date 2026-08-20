@@ -2372,8 +2372,11 @@ const inventoryItems =
     result?.inventoryItems
   )
     ? result.inventoryItems
-    : [];
-
+    : Array.isArray(
+        result?.items
+      )
+        ? result.items
+        : [];
 
   return inventoryItems
     .map(

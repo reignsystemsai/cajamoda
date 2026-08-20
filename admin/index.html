@@ -3904,7 +3904,11 @@ if(
                   </div>
 
                   <div class="orderDate">
-                    ${escapeHtml(order.date || "")}
+                    ${escapeHtml(
+  formatOrderDate(
+    order.date
+  )
+)}
                   </div>
 
                 </div>

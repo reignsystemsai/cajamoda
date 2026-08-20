@@ -2146,7 +2146,14 @@ async function getWixInventory() {
           }
         }
       );
-
+console.log(
+  "[WIX INVENTORY RAW]",
+  JSON.stringify(
+    result,
+    null,
+    2
+  )
+);
   const inventoryItems =
     Array.isArray(
       result?.inventoryItems

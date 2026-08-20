@@ -2351,11 +2351,13 @@ async function getWixInventory() {
 const result =
   await wix
     .inventoryItemsV3
-    .queryInventoryItems()
-    .limit(
-      1000
-    )
-    .find();
+    .queryInventoryItems({
+      cursorPaging: {
+        limit:
+          1000
+      }
+    });
+
 console.log(
   "[WIX INVENTORY RAW]",
   JSON.stringify(
@@ -2364,12 +2366,14 @@ console.log(
     2
   )
 );
-  const inventoryItems =
-    Array.isArray(
-      result?.items
-    )
-      ? result.items
-      : [];
+
+const inventoryItems =
+  Array.isArray(
+    result?.inventoryItems
+  )
+    ? result.inventoryItems
+    : [];
+
 
   return inventoryItems
     .map(

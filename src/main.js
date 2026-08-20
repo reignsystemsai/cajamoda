@@ -177,28 +177,89 @@ function cleanText(
    PRICE
    ============================================================ */
 
+function normalizePrice(
+  ...candidates
+) {
+  function readCandidate(
+    candidate
+  ) {
+    if (
+      candidate === null ||
+      candidate === undefined ||
+      candidate === ""
+    ) {
+      return null;
+    }
+
+    if (
+      typeof candidate === "object"
+    ) {
+      const nestedCandidates = [
+        candidate.amount,
+        candidate.value,
+        candidate.discountedPrice,
+        candidate.price
+      ];
+
+      for (
+        const nestedCandidate
+        of nestedCandidates
+      ) {
+        const nested =
+          readCandidate(
+            nestedCandidate
+          );
+
+        if (
+          nested !== null
+        ) {
+          return nested;
+        }
+      }
+
+      return null;
+    }
+
+    const numeric =
+      Number(candidate);
+
+    return Number.isFinite(
+      numeric
+    )
+      ? numeric
+      : null;
+  }
+
+  for (
+    const candidate
+    of candidates
+  ) {
+    const numeric =
+      readCandidate(
+        candidate
+      );
+
+    if (
+      numeric !== null
+    ) {
+      return numeric;
+    }
+  }
+
+  return 0;
+}
+
 function getPrice(
   product
 ) {
-  return Number(
-    product
-      ?.priceData
-      ?.discountedPrice ??
-
-    product
-      ?.priceData
-      ?.price ??
-
-    product
-      ?.price
-      ?.amount ??
-
-    product
-      ?.price ??
-
-    0
+  return normalizePrice(
+    product?.priceData?.discountedPrice,
+    product?.priceData?.price,
+    product?.price,
+    product?.discountedPrice
   );
 }
+
 
 /* ============================================================
    IMAGES

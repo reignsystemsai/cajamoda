@@ -2191,6 +2191,7 @@ svg{
   -webkit-backdrop-filter:blur(25px) saturate(165%);
 }
 #photoBag,#detailsBag,#navBag{width:39px;height:39px;min-width:39px;min-height:39px;margin:auto;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,rgba(255,255,255,.83),rgba(255,255,255,.36));border:1px solid rgba(255,255,255,.96);box-shadow:0 0 0 1px rgba(0,0,0,.026),inset 0 1px 0 rgba(255,255,255,1),0 8px 24px rgba(0,0,0,.055);backdrop-filter:blur(25px) saturate(165%);-webkit-backdrop-filter:blur(25px) saturate(165%)}
+#photoBag,#detailsBag,#navBag{background:transparent;border-color:transparent;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
 #photoBag svg,#detailsBag svg,#navBag svg{width:23px;height:23px;stroke-width:1.45}
 #photoBagBadge,#detailsBagCount,#navBagBadge{top:-2px;right:-2px;min-width:18px;height:18px;padding:0 4px;border:2px solid #fff;font-size:8px!important}
 </style>
@@ -5646,7 +5647,7 @@ function closeWishList(){
     scheduleWishListAutoClose();
   }
 
-  function toggleFavorite(){
+  function toggleFavorite(productId = state.product?.id){
 
     if(
       !state.product
@@ -5654,10 +5655,11 @@ function closeWishList(){
       return;
     }
 
-    const id =
-      String(
-        state.product.id
-      );
+    const id = String(productId || "");
+
+    if(!id){
+      return;
+    }
 
     const wasFavorite =
       state.favorites.has(
@@ -5700,7 +5702,9 @@ function closeWishList(){
       ]
     );
 
-    syncFavoriteUI();
+    if(String(state.product.id) === id){
+      syncFavoriteUI();
+    }
 
     renderWishList();
 
@@ -5732,7 +5736,7 @@ function closeWishList(){
 
   $("favoriteButton")
     .onclick =
-      toggleFavorite;
+      () => toggleFavorite();
 
   $("wishListClose")
     .onclick =
@@ -5751,6 +5755,9 @@ function closeWishList(){
         }
       };
 
+  window.addEventListener("pagehide",closeWishList);
+  window.addEventListener("pageshow",closeWishList);
+
   [
     "pointerdown",
     "touchstart",
@@ -5765,7 +5772,7 @@ function closeWishList(){
         $("wishListPanel")
           .addEventListener(
             eventName,
-            cancelWishListAutoClose,
+            scheduleWishListAutoClose,
             {
               passive:
                 eventName ===

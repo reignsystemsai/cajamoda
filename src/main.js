@@ -1,6699 +1,2330 @@
-<!doctype html>
-<html lang="es">
-
-<head>
-
-<meta charset="utf-8">
-
-<meta
-  name="viewport"
-  content="width=device-width,initial-scale=1,viewport-fit=cover"
->
-
-<meta
-  name="theme-color"
-  content="#ffffff"
->
-
-<meta
-  name="color-scheme"
-  content="light"
->
-
-<title>Producto | CajaModa Colombia</title>
-
-<link
-  rel="preconnect"
-  href="https://fonts.googleapis.com"
->
-
-<link
-  rel="preconnect"
-  href="https://fonts.gstatic.com"
-  crossorigin
->
-
-<link
-  href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
-  rel="stylesheet"
->
-
-<style>
+import { createClient, OAuthStrategy } from "@wix/sdk";
+import { products } from "@wix/stores";
+import { currentCart } from "@wix/ecom";
+import { redirects } from "@wix/redirects";
 
 /* ============================================================
-   CAJAMODA PRODUCT PAGE
-   FULL SCREEN PRODUCT EXPERIENCE
+   CAJAMODA
+   WIX PRODUCT + CART + CHECKOUT BRIDGE
    ============================================================ */
 
-:root{
+const CLIENT_ID =
+  import.meta.env.VITE_WIX_CLIENT_ID;
 
-  --bg:#ffffff;
+const WIX_STORES_APP_ID =
+  "215238eb-22a5-4c36-9e7b-e7c08025e04e";
 
-  --ink:#080808;
+const SESSION_KEY =
+  "wixSession";
 
-  --soft:#555555;
-
-  --muted:#8b8b8b;
-
-  --line:
-    rgba(0,0,0,.10);
-
-  --line-strong:
-    rgba(0,0,0,.18);
-
-  --glass:
-    rgba(255,255,255,.48);
-
-  --glass-strong:
-    rgba(255,255,255,.72);
-
-  --nav-h:
-    52px;
-
-  --mobile-max:
-    430px;
-
-  --safe-top:
-    env(
-      safe-area-inset-top,
-      0px
-    );
-
-  --safe-bottom:
-    env(
-      safe-area-inset-bottom,
-      0px
-    );
+if (!CLIENT_ID) {
+  throw new Error(
+    "VITE_WIX_CLIENT_ID is missing."
+  );
 }
 
 /* ============================================================
-   RESET
+   STORAGE
    ============================================================ */
 
-*{
-  box-sizing:border-box;
-}
-
-html{
-
-  width:100%;
-
-  min-height:100%;
-
-  margin:0;
-
-  background:#fff;
-
-  -webkit-text-size-adjust:100%;
-}
-
-body{
-
-  width:100%;
-
-  min-height:100%;
-
-  margin:0;
-
-  overflow-x:hidden;
-
-  background:#fff;
-
-  color:var(--ink);
-
-  font-family:
-    Inter,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-
-  -webkit-font-smoothing:
-    antialiased;
-}
-
-body.locked{
-  overflow:hidden;
-}
-
-button,
-input,
-textarea{
-
-  font:inherit;
-
-  color:inherit;
-}
-
-button{
-
-  border:0;
-
-  padding:0;
-
-  margin:0;
-
-  background:none;
-
-  cursor:pointer;
-
-  -webkit-tap-highlight-color:
-    transparent;
-}
-
-img{
-
-  display:block;
-
-  max-width:100%;
-
-  user-select:none;
-
-  -webkit-user-drag:none;
-}
-
-svg{
-
-  display:block;
-
-  pointer-events:none;
-}
-
-.hidden{
-  display:none!important;
-}
-
-/* ============================================================
-   APP
-   ============================================================ */
-
-.productApp{
-
-  position:relative;
-
-  width:100%;
-
-  min-height:100dvh;
-
-  margin:0 auto;
-
-  overflow:hidden;
-
-  background:#fff;
-}
-
-@media(min-width:700px){
-
-  body{
-    background:#f3f3f3;
-  }
-
-  .productApp{
-
-    width:
-      min(
-        100%,
-        var(--mobile-max)
-      );
-
-    box-shadow:
-      0 0 65px
-      rgba(0,0,0,.08);
-  }
-}
-
-/* ============================================================
-   FULL SCREEN PHOTO
-   ============================================================ */
-
-.photoStage{
-
-  position:relative;
-
-  width:100%;
-
-  height:100dvh;
-
-  min-height:650px;
-
-  overflow:hidden;
-
-  background:#fff;
-
-  /*
-    Vertical page movement remains natural.
-    Horizontal motion is available for product swiping.
-  */
-
-  touch-action:pan-y;
-}
-
-.mainPhoto{
-
-  position:absolute;
-
-  inset:0;
-
-  width:100%;
-
-  height:100%;
-
-  object-fit:cover;
-
-  object-position:center center;
-
-  background:#fff;
-
-  transition:
-    opacity .17s ease,
-    transform .22s ease;
-}
-
-.mainPhoto.changing{
-
-  opacity:.76;
-
-  transform:
-    scale(.985);
-}
-
-/* ============================================================
-   PRODUCT CATEGORY NAVIGATION
-   OVER PHOTO — NO SEPARATE WHITE HEADER
-   ============================================================ */
-/* ============================================================
-   MINIMAL PRODUCT CATEGORY HEADER
-   ============================================================ */
-
-.productCategoryNav{
-
-  position:absolute;
-
-  z-index:30;
-
-  top:0;
-
-  left:0;
-
-  right:0;
-
-  height:
-    calc(
-      54px +
-      var(--safe-top)
-    );
-
-  padding:
-    var(--safe-top)
-    16px
-    0;
-
-  display:flex;
-
-  align-items:center;
-
-  justify-content:space-between;
-
-  gap:18px;
-
-  overflow-x:auto;
-
-  overflow-y:hidden;
-
-  background:
-    rgba(255,255,255,.96);
-
-  border:0;
-
-  border-radius:0;
-
-  box-shadow:none;
-
-  backdrop-filter:none;
-
-  -webkit-backdrop-filter:none;
-
-  scrollbar-width:none;
-
-  -webkit-overflow-scrolling:
-    touch;
-}
-
-.productCategoryNav::-webkit-scrollbar{
-  display:none;
-}
-
-.productCategoryButton{
-
-  position:relative;
-
-  flex:0 0 auto;
-
-  height:100%;
-
-  padding:0 2px;
-
-  display:flex;
-
-  align-items:center;
-
-  justify-content:center;
-
-  white-space:nowrap;
-
-  color:rgba(0,0,0,.48);
-
-  font-size:7px;
-
-  font-weight:500;
-
-  letter-spacing:.08px;
-
-  text-transform:uppercase;
-
-  transition:
-    color .18s ease,
-    transform .18s ease;
-}
-
-.productCategoryButton.active{
-
-  color:#080808;
-
-  font-weight:700;
-}
-
-.productCategoryButton.active::after{
-
-  content:"";
-
-  position:absolute;
-
-  left:0;
-
-  right:0;
-
-  bottom:5px;
-
-  height:2px;
-
-  border-radius:999px;
-
-  background:#080808;
-}
-
-.productCategoryButton:active{
-  transform:scale(.95);
-}
-
-@media(hover:hover){
-
-  .productCategoryButton:hover{
-    color:#080808;
-  }
-}
-
-/* ============================================================
-   4 ADDITIONAL PRODUCT PHOTOS
-   ============================================================ */
-
-.thumbnailRail{
-
-  position:absolute;
-
-  z-index:15;
-
-  top:
-    calc(
-      67px +
-      var(--safe-top)
-    );
-
-  right:13px;
-
-  width:47px;
-
-  display:flex;
-
-  flex-direction:column;
-
-  gap:7px;
-}
-
-.thumbnail{
-
-  position:relative;
-
-  width:47px;
-
-  height:59px;
-
-  padding:2px;
-
-  border-radius:9px;
-
-  overflow:hidden;
-
-  background:
-    rgba(255,255,255,.74);
-
-  border:
-    1px solid
-    rgba(0,0,0,.10);
-
-  box-shadow:
-    0 6px 17px
-    rgba(0,0,0,.08);
-
-  backdrop-filter:
-    blur(13px);
-
-  -webkit-backdrop-filter:
-    blur(13px);
-
-  transition:
-    transform .16s ease,
-    border-color .16s ease;
-}
-
-.thumbnail img{
-
-  width:100%;
-
-  height:100%;
-
-  object-fit:cover;
-
-  border-radius:7px;
-}
-
-.thumbnail.active{
-
-  border-color:#111;
-
-  box-shadow:
-    0 0 0 1px
-    rgba(0,0,0,.26),
-    0 6px 17px
-    rgba(0,0,0,.08);
-}
-
-.thumbnailPlaceholder{
-
-  width:100%;
-
-  height:100%;
-
-  display:grid;
-
-  place-items:center;
-
-  border-radius:7px;
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255,255,255,.94),
-      rgba(240,240,240,.86)
-    );
-
-  color:#999;
-
-  font-size:6px;
-}
-
-.thumbnail:active{
-
-  transform:
-    scale(.94);
-}
-
-@media(hover:hover){
-
-  .thumbnail:hover{
-
-    transform:
-      translateX(-3px)
-      scale(1.025);
-  }
-}
-
-/* ============================================================
-   RIGHT CONTROL STACK
-   NUMBER > HEART > SHARE > BAG
-   ============================================================ */
-
-.rightControls{
-
-  position:absolute;
-
-  z-index:20;
-
-  right:14px;
-
-  top:
-    calc(
-      352px +
-      var(--safe-top)
-    );
-
-  display:flex;
-
-  flex-direction:column;
-
-  align-items:center;
-
-  gap:9px;
-}
-
-/* ============================================================
-   GENERAL ROUND GLASS BUTTON
-   ============================================================ */
-
-.circleControl{
-
-  position:relative;
-
-  width:42px;
-
-  height:42px;
-
-  border-radius:50%;
-
-  display:grid;
-
-  place-items:center;
-
-  background:
-    rgba(255,255,255,.72);
-
-  border:
-    1px solid
-    rgba(255,255,255,.96);
-
-  box-shadow:
-
-    0 0 0 1px
-    rgba(0,0,0,.025),
-
-    0 8px 22px
-    rgba(0,0,0,.085);
-
-  backdrop-filter:
-    blur(20px)
-    saturate(155%);
-
-  -webkit-backdrop-filter:
-    blur(20px)
-    saturate(155%);
-
-  transition:
-    transform .16s ease,
-    box-shadow .16s ease;
-}
-
-.circleControl svg{
-
-  width:20px;
-
-  height:20px;
-
-  stroke-width:1.5;
-}
-
-.circleControl:active{
-
-  transform:
-    scale(.90);
-}
-
-@media(hover:hover){
-
-  .circleControl:hover{
-
-    transform:
-      translateY(-2px)
-      scale(1.035);
-
-    box-shadow:
-      0 13px 28px
-      rgba(0,0,0,.12);
-  }
-}
-
-/* ============================================================
-   PRODUCT NUMBER
-   ============================================================ */
-
-.productNumber{
-
-  width:38px;
-
-  height:38px;
-
-  border-radius:50%;
-
-  display:grid;
-
-  place-items:center;
-
-  background:
-    rgba(255,255,255,.73);
-
-  border:
-    1px solid
-    rgba(255,255,255,.96);
-
-  box-shadow:
-
-    0 0 0 1px
-    rgba(0,0,0,.025),
-
-    0 7px 18px
-    rgba(0,0,0,.075);
-
-  backdrop-filter:
-    blur(18px);
-
-  -webkit-backdrop-filter:
-    blur(18px);
-
-  font-size:11px;
-
-  font-weight:700;
-}
-
-/* ============================================================
-   FAVORITE
-   ============================================================ */
-
-.favoriteButton{
-  color:#111;
-}
-
-.favoriteButton.active{
-
-  color:#e61937;
-
-  background:
-    rgba(255,235,239,.85);
-
-  box-shadow:
-
-    0 0 0 1px
-    rgba(230,25,55,.08),
-
-    0 9px 24px
-    rgba(230,25,55,.16);
-
-  animation:favoriteHeartbeat 1.8s ease-in-out infinite;
-}
-
-.favoriteButton.active svg{
-
-  fill:currentColor;
-
-  stroke:currentColor;
-}
-
-@keyframes favoriteHeartbeat{
-  0%,72%,100%{transform:scale(1)}
-  8%{transform:scale(1.14)}
-  16%{transform:scale(1)}
-  24%{transform:scale(1.09)}
-  32%{transform:scale(1)}
-}
-
-@media(prefers-reduced-motion:reduce){
-  .favoriteButton.active{animation:none}
-}
-
-/* ============================================================
-   WISHLIST OVERLAY
-   ============================================================ */
-
-.wishListOverlay{
-  position:fixed;
-  inset:0;
-  z-index:195;
-  display:none;
-  background:rgba(0,0,0,.08);
-  backdrop-filter:blur(5px);
-  -webkit-backdrop-filter:blur(5px);
-}
-
-.wishListOverlay.open{
-  display:block;
-}
-
-.wishListPanel{
-  position:absolute;
-  left:9px;
-  right:9px;
-  bottom:calc(var(--nav-h) + 16px + var(--safe-bottom));
-  max-height:min(420px,62vh);
-  padding:13px;
-  overflow:hidden;
-  border:1px solid rgba(255,255,255,.92);
-  border-radius:22px;
-  background:rgba(255,255,255,.72);
-  box-shadow:0 16px 45px rgba(0,0,0,.14);
-  backdrop-filter:blur(24px) saturate(145%);
-  -webkit-backdrop-filter:blur(24px) saturate(145%);
-  animation:wishListEnter .24s ease both;
-}
-
-@keyframes wishListEnter{
-  from{
-    opacity:0;
-    transform:translateY(14px);
-  }
-  to{
-    opacity:1;
-    transform:translateY(0);
-  }
-}
-
-.wishListHead{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-}
-
-.wishListEyebrow{
-  font-size:7px;
-  font-weight:800;
-  letter-spacing:.15em;
-  color:#777;
-}
-
-.wishListTitle{
-  margin-top:2px;
-  font-size:14px;
-  font-weight:800;
-}
-
-.wishListClose{
-  width:34px;
-  height:34px;
-  display:grid;
-  place-items:center;
-  flex:0 0 auto;
-  border:1px solid rgba(255,255,255,.94);
-  border-radius:999px;
-  background:rgba(255,255,255,.68);
-  color:#111;
-  box-shadow:0 8px 20px rgba(0,0,0,.08);
-}
-
-.wishListClose svg{
-  width:17px;
-  height:17px;
-  fill:none;
-  stroke:currentColor;
-  stroke-width:1.35;
-}
-
-.wishListRail{
-  display:flex;
-  gap:8px;
-  margin-top:10px;
-  padding-bottom:2px;
-  overflow-x:auto;
-  overscroll-behavior:contain;
-  scroll-snap-type:x mandatory;
-  scrollbar-width:none;
-  -webkit-overflow-scrolling:touch;
-}
-
-.wishListRail::-webkit-scrollbar{
-  display:none;
-}
-
-.wishListCard{
-  flex:0 0 93px;
-  min-width:0;
-  padding:0;
-  text-align:left;
-  scroll-snap-align:start;
-  background:transparent;
-  color:#111;
-}
-
-.wishListImage,
-.wishListPlaceholder{
-  width:93px;
-  height:116px;
-  overflow:hidden;
-  border-radius:11px;
-  background:rgba(238,238,238,.76);
-}
-
-.wishListImage img{
-  width:100%;
-  height:100%;
-  display:block;
-  object-fit:cover;
-}
-
-.wishListPlaceholder{
-  display:grid;
-  place-items:center;
-  font-size:8px;
-  color:#777;
-}
-
-.wishListName{
-  margin-top:6px;
-  overflow:hidden;
-  font-size:7.8px;
-  font-weight:700;
-  line-height:1.25;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
-
-.wishListPrice{
-  margin-top:2px;
-  font-size:7.4px;
-  font-weight:800;
-}
-
-.wishListEmpty{
-  width:100%;
-  padding:24px 12px 18px;
-  text-align:center;
-  font-size:9px;
-  color:#666;
-}
-
-.wishListEmptyHeart{
-  width:29px;
-  height:29px;
-  margin:0 auto 8px;
-  fill:none;
-  stroke:currentColor;
-  stroke-width:1.25;
-}
-
-/* ============================================================
-   SHARE
-   ============================================================ */
-
-.shareButton svg{
-
-  width:21px;
-
-  height:21px;
-
-  stroke-width:1.45;
-}
-
-/* ============================================================
-   BAG NOW UNDER SHARE
-   ============================================================ */
-
-.photoBag{
-
-  position:relative;
-}
-
-.photoBag svg{
-
-  width:20px;
-
-  height:20px;
-
-  stroke-width:1.5;
-}
-
-.bagBadge{
-
-  position:absolute;
-
-  top:-4px;
-
-  right:-4px;
-
-  min-width:18px;
-
-  height:18px;
-
-  padding:
-    0 4px;
-
-  border-radius:999px;
-
-  background:#080808;
-
-  color:#fff;
-
-  border:
-    2px solid #fff;
-
-  display:grid;
-
-  place-items:center;
-
-  font-size:7px;
-
-  font-weight:800;
-}
-
-.bagBadge.bump{
-
-  animation:
-    bagBump .24s ease;
-}
-
-@keyframes bagBump{
-
-  50%{
-
-    transform:
-      scale(1.30);
-  }
-}
-
-/* ============================================================
-   CLOSED PRICE CAPSULE
-   ============================================================ */
-
-.priceCapsule{
-
-  position:absolute;
-
-  z-index:22;
-
-  left:19px;
-
-  bottom:
-    calc(
-      var(--nav-h) +
-      40px +
-      var(--safe-bottom)
-    );
-
-  min-width:172px;
-
-  height:49px;
-
-  padding:
-    0 15px
-    0 17px;
-
-  border-radius:999px;
-
-  display:flex;
-
-  align-items:center;
-
-  justify-content:
-    space-between;
-
-  gap:14px;
-
-  background:
-    rgba(255,255,255,.55);
-
-  border:
-    1px solid
-    rgba(255,255,255,.95);
-
-  box-shadow:
-
-    0 0 0 1px
-    rgba(0,0,0,.035),
-
-    0 9px 28px
-    rgba(0,0,0,.095);
-
-  backdrop-filter:
-    blur(22px)
-    saturate(155%);
-
-  -webkit-backdrop-filter:
-    blur(22px)
-    saturate(155%);
-
-  transition:
-    transform .17s ease,
-    background .17s ease;
-}
-
-.priceCapsuleText{
-
-  font-size:13px;
-
-  font-weight:500;
-
-  white-space:nowrap;
-}
-
-.priceCapsule svg{
-
-  width:17px;
-
-  height:17px;
-
-  stroke-width:1.9;
-}
-
-.priceCapsule:active{
-
-  transform:
-    scale(.97);
-}
-
-@media(hover:hover){
-### Block 2 of 6
-
-```html
-  .priceCapsule:hover{
-
-    transform:
-      translateY(-2px);
-
-    background:
-      rgba(255,255,255,.70);
-  }
-}
-
-/* ============================================================
-   BOTTOM NAVIGATION
-   ============================================================ */
-
-.bottomNav{
-
-  position:fixed;
-
-  z-index:90;
-
-  left:50%;
-
-  bottom:
-    max(
-      7px,
-      var(--safe-bottom)
-    );
-
-  transform:
-    translateX(-50%);
-
-  width:
-    min(
-      calc(100% - 25px),
-      402px
-    );
-
-  height:
-    var(--nav-h);
-
-  padding:
-    2px 5px;
-
-  border-radius:18px;
-
-  display:grid;
-
-  grid-template-columns:
-    repeat(
-      5,
-      1fr
-    );
-
-  align-items:center;
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255,255,255,.67),
-      rgba(255,255,255,.28)
-    );
-
-  border:
-    1px solid
-    rgba(255,255,255,.95);
-
-  box-shadow:
-
-    0 0 0 1px
-    rgba(0,0,0,.028),
-
-    inset 0 1px 0
-    rgba(255,255,255,.98),
-
-    0 8px 25px
-    rgba(0,0,0,.075);
-
-  backdrop-filter:
-    blur(29px)
-    saturate(170%);
-
-  -webkit-backdrop-filter:
-    blur(29px)
-    saturate(170%);
-}
-
-.navButton{
-
-  position:relative;
-
-  height:43px;
-
-  border-radius:14px;
-
-  display:flex;
-
-  flex-direction:column;
-
-  align-items:center;
-
-  justify-content:center;
-
-  gap:1px;
-
-  transition:
-    transform .17s ease,
-    background .17s ease;
-}
-
-.navButton svg{
-
-  width:18px;
-
-  height:18px;
-
-  stroke-width:1.4;
-}
-
-.navButton span{
-
-  font-size:6.7px;
-}
-
-.navButton.active{
-
-  background:transparent;
-
-  box-shadow:none;
-}
-
-@media(hover:hover){
-
-  .navButton:hover{
-
-    transform:
-      translateY(-2px);
-
-    background:
-      rgba(255,255,255,.65);
-  }
-}
-
-.navButton:active{
-
-  transform:
-    scale(.94);
-
-  background:
-    rgba(255,255,255,.72);
-}
-
-.navPlusOrb{
-
-  width:29px;
-
-  height:29px;
-
-  border-radius:50%;
-
-  display:grid;
-
-  place-items:center;
-
-  background:#111;
-
-  color:#fff;
-
-  box-shadow:
-    0 6px 16px
-    rgba(0,0,0,.15);
-}
-
-.navPlusOrb svg{
-
-  width:15px;
-
-  height:15px;
-}
-
-.navBagBadge{
-
-  position:absolute;
-
-  top:0;
-
-  right:
-    calc(
-      50% - 18px
-    );
-
-  min-width:15px;
-
-  height:15px;
-
-  padding:
-    0 3px;
-
-  border-radius:999px;
-
-  background:#090909;
-
-  color:#fff;
-
-  border:
-    1.5px solid #fff;
-
-  display:grid;
-
-  place-items:center;
-
-  font-size:
-    6.3px!important;
-
-  font-weight:800;
-}
-
-/* ============================================================
-   DETAILS OVERLAY
-   ============================================================ */
-
-.detailsOverlay{
-
-  position:fixed;
-
-  inset:0;
-
-  z-index:120;
-
-  display:none;
-
-  pointer-events:none;
-}
-
-.detailsOverlay.open{
-
-  display:block;
-
-  pointer-events:auto;
-}
-
-.detailsBackdrop{
-
-  position:absolute;
-
-  inset:0;
-
-  background:
-    rgba(255,255,255,.01);
-}
-
-/* ============================================================
-   CLEAR GLASS DETAILS
-   ============================================================ */
-
-.detailsSheet{
-
-  position:absolute;
-
-  left:17px;
-
-  right:17px;
-
-  bottom:
-    calc(
-      var(--nav-h) +
-      18px +
-      var(--safe-bottom)
-    );
-
-  max-height:
-    min(
-      64dvh,
-      555px
-    );
-
-  border-radius:24px;
-
-  overflow:hidden;
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255,255,255,.70),
-      rgba(255,255,255,.40)
-    );
-
-  border:
-    1px solid
-    rgba(255,255,255,.95);
-
-  box-shadow:
-
-    0 0 0 1px
-    rgba(0,0,0,.04),
-
-    0 22px 60px
-    rgba(0,0,0,.15);
-
-  backdrop-filter:
-    blur(34px)
-    saturate(155%);
-
-  -webkit-backdrop-filter:
-    blur(34px)
-    saturate(155%);
-
-  transform:
-    translateY(24px);
-
-  opacity:0;
-
-  transition:
-    transform .24s ease,
-    opacity .24s ease;
-}
-
-.detailsOverlay.open
-.detailsSheet{
-
-  transform:none;
-
-  opacity:1;
-}
-
-.detailsScroll{
-
-  max-height:
-    min(
-      64dvh,
-      555px
-    );
-
-  overflow-y:auto;
-
-  padding:
-    11px 14px
-    15px;
-
-  -webkit-overflow-scrolling:
-    touch;
-}
-
-/* ============================================================
-   DRAG HANDLE
-   ============================================================ */
-
-.dragHandle{
-
-  display:block;
-
-  width:32px;
-
-  height:3px;
-
-  margin:
-    0 auto 10px;
-
-  border-radius:999px;
-
-  background:
-    rgba(0,0,0,.20);
-}
-
-/* ============================================================
-   DETAILS TOP
-   TITLE / PRICE / BAG
-   ============================================================ */
-
-.detailsTop{
-
-  display:grid;
-
-  grid-template-columns:
-    1fr auto;
-
-  gap:12px;
-
-  align-items:start;
-}
-
-.detailsTitle{
-
-  font-size:15px;
-
-  line-height:1.2;
-
-  font-weight:600;
-}
-
-.detailsPrice{
-
-  margin-top:4px;
-
-  font-size:19px;
-
-  line-height:1;
-
-  font-weight:800;
-}
-
-.detailsPrice small{
-
-  font-size:8px;
-
-  font-weight:600;
-}
-
-.detailsBag{
-
-  position:relative;
-
-  width:39px;
-
-  height:39px;
-
-  border-radius:50%;
-
-  display:grid;
-
-  place-items:center;
-
-  background:
-    rgba(255,255,255,.55);
-
-  border:
-    1px solid
-    rgba(0,0,0,.07);
-
-  box-shadow:
-    0 5px 15px
-    rgba(0,0,0,.055);
-}
-
-.detailsBag svg{
-
-  width:19px;
-
-  height:19px;
-
-  stroke-width:1.5;
-}
-
-.detailsBagCount{
-
-  position:absolute;
-
-  top:-3px;
-
-  right:-3px;
-
-  min-width:16px;
-
-  height:16px;
-
-  padding:
-    0 3px;
-
-  border-radius:999px;
-
-  display:grid;
-
-  place-items:center;
-
-  background:#111;
-
-  color:#fff;
-
-  border:
-    1.5px solid #fff;
-
-  font-size:6px;
-
-  font-weight:800;
-}
-
-/* ============================================================
-   DESCRIPTION
-   ============================================================ */
-
-.descriptionBlock{
-
-  margin-top:15px;
-
-  padding-top:12px;
-
-  border-top:
-    1px solid
-    rgba(0,0,0,.07);
-}
-
-.sectionTitle{
-
-  font-size:8.5px;
-
-  font-weight:800;
-}
-
-.descriptionText{
-
-  margin-top:6px;
-
-  font-size:8px;
-
-  line-height:1.55;
-
-  color:#444;
-}
-
-/* ============================================================
-   OPTIONS
-   ============================================================ */
-
-.optionSection{
-
-  margin-top:15px;
-}
-
-.optionLabel{
-
-  font-size:8.5px;
-
-  font-weight:700;
-}
-
-.optionLabelValue{
-
-  font-weight:800;
-}
-
-/* ============================================================
-   COLORS
-   ============================================================ */
-
-.colorRow{
-
-  display:flex;
-
-  align-items:center;
-
-  gap:10px;
-
-  margin-top:8px;
-}
-
-.colorButton{
-
-  width:29px;
-
-  height:29px;
-
-  border-radius:50%;
-
-  border:
-    3px solid
-    rgba(255,255,255,.88);
-
-  box-shadow:
-    0 0 0 1px
-    rgba(0,0,0,.10);
-
-  transition:
-    transform .15s ease,
-    box-shadow .15s ease;
-}
-
-.colorButton.active{
-
-  box-shadow:
-
-    0 0 0 2px
-    #111,
-
-    0 0 0 4px
-    rgba(255,255,255,.94);
-}
-
-.colorButton:active{
-
-  transform:
-    scale(.91);
-}
-
-.colorBlack{
-  background:#090909;
-}
-
-.colorRed{
-  background:#e92336;
-}
-
-.colorCream{
-  background:#f2dfc7;
-}
-
-/* ============================================================
-   SIZES
-   ============================================================ */
-
-.sizeGrid{
-
-  display:grid;
-
-  grid-template-columns:
-    repeat(
-      5,
-      1fr
-    );
-
-  gap:7px;
-
-  margin-top:8px;
-}
-
-.sizeButton{
-
-  position:relative;
-
-  height:39px;
-
-  border-radius:10px;
-
-  border:
-    1px solid
-    rgba(0,0,0,.10);
-
-  background:
-    rgba(255,255,255,.43);
-
-  font-size:8.5px;
-
-  font-weight:600;
-
-  transition:
-    background .15s ease,
-    border-color .15s ease,
-    transform .15s ease;
-}
-
-.sizeButton.selected{
-
-  border-color:#080808;
-
-  background:
-    rgba(255,255,255,.82);
-
-  box-shadow:
-    inset 0 0 0 1px
-    rgba(0,0,0,.28);
-}
-
-.sizeButton:active{
-
-  transform:
-    scale(.94);
-}
-
-.selectedSizeQuantities{
-  display:grid;
-  gap:7px;
-  margin-top:10px;
-}
-
-.selectedSizeQuantity{
-
-  min-height:40px;
-
-  padding:
-    6px 8px
-    6px 11px;
-
-  border:
-    1px solid
-    rgba(0,0,0,.10);
-
-  border-radius:12px;
-
-  background:
-    rgba(255,255,255,.48);
-
-  display:flex;
-
-  align-items:center;
-
-  justify-content:space-between;
-
-  gap:10px;
-}
-
-.selectedSizeName{
-
-  font-size:8px;
-
-  font-weight:700;
-}
-
-.selectedSizeControls{
-
-  display:flex;
-
-  align-items:center;
-
-  gap:5px;
-}
-
-.selectedSizeControls button{
-
-  width:28px;
-
-  height:28px;
-
-  border:
-    1px solid
-    rgba(0,0,0,.10);
-
-  border-radius:50%;
-
-  background:
-    rgba(255,255,255,.72);
-
-  font-size:13px;
-}
-
-.selectedSizeControls span{
-
-  min-width:18px;
-
-  text-align:center;
-
-  font-size:9px;
-
-  font-weight:700;
-}
-
-/* ============================================================
-   PURCHASE
-   ============================================================ */
-
-.purchaseActions{
-
-  margin-top:17px;
-}
-
-.addBagButton,
-.buyNowButton{
-
-  width:100%;
-
-  height:43px;
-
-  border-radius:11px;
-
-  font-size:9px;
-
-  font-weight:750;
-}
-
-.addBagButton{
-
-  background:#080808;
-
-  color:#fff;
-}
-
-.buyNowButton{
-
-  margin-top:6px;
-
-  background:#080808;
-
-  color:#fff;
-
-  border:
-    1px solid #080808;
-}
-
-.purchaseMeta{
-
-  display:flex;
-
-  align-items:center;
-
-  justify-content:
-    space-between;
-
-  gap:10px;
-
-  margin-top:9px;
-
-  font-size:5.9px;
-
-  color:#555;
-}
-
-/* ============================================================
-   SHARE OVERLAY
-   ============================================================ */
-
-.shareOverlay{
-
-  position:fixed;
-
-  inset:0;
-
-  z-index:190;
-
-  display:none;
-
-  background:
-    rgba(0,0,0,.08);
-
-  backdrop-filter:
-    blur(5px);
-
-  -webkit-backdrop-filter:
-    blur(5px);
-}
-
-.shareOverlay.open{
-  display:block;
-}
-
-.sharePanel{
-
-  position:absolute;
-
-  left:12px;
-
-  right:12px;
-
-  bottom:
-    calc(
-      var(--nav-h) +
-      18px +
-      var(--safe-bottom)
-    );
-
-  border-radius:20px;
-
-  padding:13px;
-
-  background:
-    rgba(255,255,255,.78);
-
-  border:
-    1px solid
-    rgba(255,255,255,.96);
-
-  box-shadow:
-    0 18px 50px
-    rgba(0,0,0,.13);
-
-  backdrop-filter:
-    blur(28px)
-    saturate(160%);
-
-  -webkit-backdrop-filter:
-    blur(28px)
-    saturate(160%);
-}
-
-.shareHead{
-
-  display:flex;
-
-  justify-content:
-    space-between;
-
-  align-items:center;
-}
-
-.shareTitle{
-
-  font-size:11px;
-
-  font-weight:800;
-}
-
-.shareClose{
-
-  width:29px;
-
-  height:29px;
-
-  border-radius:50%;
-
-  display:grid;
-
-  place-items:center;
-
-  border:
-    1px solid
-    rgba(0,0,0,.07);
-
-  background:
-    rgba(255,255,255,.55);
-}
-
-.shareClose svg{
-
-  width:14px;
-
-  height:14px;
-}
-
-.shareOptions{
-
-  display:grid;
-
-  grid-template-columns:
-    repeat(
-      3,
-      1fr
-    );
-
-  gap:8px;
-
-  margin-top:12px;
-}
-
-.socialShare{
-
-  min-height:73px;
-
-  border-radius:14px;
-
-  border:
-    1px solid
-    rgba(0,0,0,.07);
-
-  background:
-    rgba(255,255,255,.44);
-
-  display:flex;
-
-  flex-direction:column;
-
-  align-items:center;
-
-  justify-content:center;
-
-  gap:7px;
-
-  transition:
-    transform .17s ease,
-    background .17s ease;
-}
-
-.socialShare:active{
-
-  transform:
-    scale(.95);
-}
-
-.socialIcon{
-
-  width:31px;
-
-  height:31px;
-
-  border-radius:50%;
-
-  display:grid;
-
-  place-items:center;
-
-  background:#111;
-
-  color:#fff;
-
-  font-size:8px;
-
-  font-weight:800;
-}
-
-.socialLabel{
-
-  font-size:7.2px;
-
-  font-weight:700;
-}
-
-/* ============================================================
-   PLUS MENU
-   ============================================================ */
-
-.plusOverlay{
-
-  position:fixed;
-
-  inset:0;
-
-  z-index:180;
-
-  display:none;
-
-  background:
-    rgba(0,0,0,.08);
-
-  backdrop-filter:
-    blur(5px);
-
-  -webkit-backdrop-filter:
-    blur(5px);
-}
-
-.plusOverlay.open{
-  display:block;
-}
-
-.plusPanel{
-
-  position:absolute;
-
-  left:12px;
-
-  right:12px;
-
-  bottom:
-    calc(
-      var(--nav-h) +
-      18px +
-      var(--safe-bottom)
-    );
-
-  border-radius:20px;
-
-  padding:12px;
-
-  background:
-    rgba(255,255,255,.79);
-
-  border:
-    1px solid
-    rgba(255,255,255,.96);
-
-  box-shadow:
-    0 18px 50px
-    rgba(0,0,0,.13);
-
-  backdrop-filter:
-    blur(28px);
-
-  -webkit-backdrop-filter:
-    blur(28px);
-}
-
-.plusHead{
-
-  display:flex;
-
-  justify-content:
-    space-between;
-
-  align-items:center;
-}
-
-.plusTitle{
-
-  font-size:11px;
-
-  font-weight:800;
-}
-
-.plusClose{
-
-  width:29px;
-
-  height:29px;
-
-  border-radius:50%;
-
-  display:grid;
-
-  place-items:center;
-
-  border:
-    1px solid
-    rgba(0,0,0,.07);
-
-  font-size:15px;
-}
-
-.plusList{
-
-  margin-top:8px;
-}
-
-.plusItem{
-
-  width:100%;
-
-  min-height:43px;
-
-  display:flex;
-
-  align-items:center;
-
-  justify-content:
-    space-between;
-
-  border-top:
-    1px solid
-    rgba(0,0,0,.06);
-
-  font-size:8px;
-
-  font-weight:650;
-}
-
-/* ============================================================
-   TOAST
-   ============================================================ */
-
-.toast{
-
-  position:fixed;
-
-  z-index:260;
-
-  left:50%;
-
-  bottom:
-    calc(
-      var(--nav-h) +
-      24px +
-      var(--safe-bottom)
-    );
-
-  transform:
-    translateX(-50%)
-    translateY(8px);
-```
-  max-width:
-    calc(
-      100vw -
-      30px
-    );
-
-  padding:
-    9px 13px;
-
-  border-radius:999px;
-
-  background:#080808;
-
-  color:#fff;
-
-  font-size:8px;
-
-  white-space:nowrap;
-
-  opacity:0;
-
-  pointer-events:none;
-
-  transition:.18s ease;
-}
-
-.toast.show{
-
-  opacity:1;
-
-  transform:
-    translateX(-50%)
-    translateY(0);
-}
-
-</style>
-
-</head>
-
-<body>
-
-<div
-  id="productApp"
-  class="productApp"
->
-
-  <main
-    id="photoStage"
-    class="photoStage"
-  >
-
-    <!-- ======================================================
-         FULL SCREEN PRODUCT PHOTO
-         ====================================================== -->
-
-    <img
-      id="mainPhoto"
-      class="mainPhoto"
-      src=""
-      alt="Producto CajaModa"
-    >
-
-    <!-- ======================================================
-         CATEGORY QUICK NAVIGATION
-         ====================================================== -->
-
-    <nav
-      id="productCategoryNav"
-      class="productCategoryNav"
-      aria-label="Categorías"
-    ></nav>
-
-    <!-- ======================================================
-         PRODUCT PHOTO THUMBNAILS
-         ====================================================== -->
-
-    <div
-      id="thumbnailRail"
-      class="thumbnailRail"
-    ></div>
-
-    <!-- ======================================================
-         RIGHT SIDE CONTROLS
-         NUMBER > HEART > SHARE > BAG
-         ====================================================== -->
-
-    <div class="rightControls">
-
-      <div
-        id="productNumber"
-        class="productNumber"
-        aria-label="Número del producto"
-      >
-        1
-      </div>
-
-      <button
-        id="favoriteButton"
-        class="circleControl favoriteButton"
-        aria-label="Agregar a Wishlist"
-      >
-
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-        >
-          <path d="M20.3 5.7a5.2 5.2 0 0 0-7.4 0L12 6.6l-.9-.9a5.2 5.2 0 0 0-7.4 7.4L12 21l8.3-7.9a5.2 5.2 0 0 0 0-7.4Z"/>
-        </svg>
-
-      </button>
-
-      <button
-        id="shareButton"
-        class="circleControl shareButton"
-        aria-label="Compartir producto"
-      >
-
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-        >
-          <path d="M21 3 9.7 14.3"/>
-          <path d="m21 3-7 18-4.3-6.7L3 10l18-7Z"/>
-        </svg>
-
-      </button>
-
-      <button
-        id="photoBag"
-        class="circleControl photoBag"
-        aria-label="Abrir bolsa"
-      >
-
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-        >
-          <path d="M6.3 8.4h11.4l1 11H5.3l1-11Z"/>
-          <path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>
-        </svg>
-
-        <span
-          id="photoBagBadge"
-          class="bagBadge"
-        >
-          0
-        </span>
-
-      </button>
-
-    </div>
-
-    <!-- ======================================================
-         CLOSED PRICE CAPSULE
-         ====================================================== -->
-
-    <button
-      id="priceCapsule"
-      class="priceCapsule"
-      aria-label="Abrir detalles del producto"
-    >
-
-      <span
-        id="priceCapsuleText"
-        class="priceCapsuleText"
-      >
-        $0 COP
-      </span>
-
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-      >
-        <path d="m9 5 7 7-7 7"/>
-      </svg>
-
-    </button>
-
-  </main>
-
-</div>
-
-<!-- ==========================================================
-     DETAILS
-     PRICE > DESCRIPTION > COLOR > SIZE
-     ========================================================== -->
-
-<div
-  id="detailsOverlay"
-  class="detailsOverlay"
->
-
-  <div
-    id="detailsBackdrop"
-    class="detailsBackdrop"
-  ></div>
-
-  <section
-    id="detailsSheet"
-    class="detailsSheet"
-  >
-
-    <div class="detailsScroll">
-
-      <button
-        id="dragHandle"
-        class="dragHandle"
-        aria-label="Cerrar detalles"
-      ></button>
-
-      <header class="detailsTop">
-
-        <div>
-
-          <div
-            id="detailsTitle"
-            class="detailsTitle"
-          >
-            Producto CajaModa
-          </div>
-
-          <div
-            id="detailsPrice"
-            class="detailsPrice"
-          >
-            $0
-            <small>
-              COP
-            </small>
-          </div>
-
-        </div>
-
-        <button
-          id="detailsBag"
-          class="detailsBag"
-          aria-label="Abrir bolsa"
-        >
-
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-          >
-            <path d="M6.3 8.4h11.4l1 11H5.3l1-11Z"/>
-            <path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>
-          </svg>
-
-          <span
-            id="detailsBagCount"
-            class="detailsBagCount"
-          >
-            0
-          </span>
-
-        </button>
-
-      </header>
-
-      <!-- DESCRIPTION -->
-
-      <section class="descriptionBlock">
-
-        <div class="sectionTitle">
-          Descripción
-        </div>
-
-        <div
-          id="descriptionText"
-          class="descriptionText"
-        >
-          Descubre este producto CajaModa.
-        </div>
-
-        <div
-          id="selectedSizeQuantities"
-          class="selectedSizeQuantities"
-          aria-live="polite"
-        ></div>
-
-      </section>
-
-      <!-- COLOR -->
-
-      <section class="optionSection">
-
-        <div class="optionLabel">
-
-          Color:
-
-          <span
-            id="selectedColorLabel"
-            class="optionLabelValue"
-          >
-            Negro
-          </span>
-
-        </div>
-
-        <div class="colorRow">
-
-          <button
-            class="colorButton colorBlack active"
-            data-color="Negro"
-            aria-label="Negro"
-          ></button>
-
-          <button
-            class="colorButton colorRed"
-            data-color="Rojo"
-            aria-label="Rojo"
-          ></button>
-
-          <button
-            class="colorButton colorCream"
-            data-color="Crema"
-            aria-label="Crema"
-          ></button>
-
-        </div>
-
-      </section>
-
-      <!-- SIZE -->
-
-      <section class="optionSection">
-
-        <div class="optionLabel">
-
-          Talla:
-
-          <span
-            id="selectedSizeLabel"
-            class="optionLabelValue"
-          >
-            Selecciona
-          </span>
-
-        </div>
-
-        <div class="sizeGrid">
-
-          <button
-            class="sizeButton"
-            data-size="XS"
-          >
-            XS
-          </button>
-
-          <button
-            class="sizeButton"
-            data-size="S"
-          >
-            S
-          </button>
-
-          <button
-            class="sizeButton"
-            data-size="M"
-          >
-            M
-          </button>
-
-          <button
-            class="sizeButton"
-            data-size="L"
-          >
-            L
-          </button>
-
-          <button
-            class="sizeButton"
-            data-size="XL"
-          >
-            XL
-          </button>
-
-        </div>
-
-      </section>
-
-      <!-- PURCHASE -->
-
-      <section class="purchaseActions">
-
-        <button
-          id="addBagButton"
-          class="addBagButton"
-        >
-          Agregar a la bolsa
-        </button>
-
-        <button
-          id="buyNowButton"
-          class="buyNowButton"
-        >
-          Comprar ahora
-        </button>
-
-        <div class="purchaseMeta">
-
-          <span>
-            Envío según disponibilidad
-          </span>
-
-          <span>
-            Devoluciones según política
-          </span>
-
-        </div>
-
-      </section>
-
-    </div>
-
-  </section>
-
-</div>
-
-<!-- ==========================================================
-     WISHLIST
-     ========================================================== -->
-
-<div
-  id="wishListOverlay"
-  class="wishListOverlay"
-  aria-hidden="true"
->
-
-  <section
-    id="wishListPanel"
-    class="wishListPanel"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="wishListTitle"
-  >
-
-    <header class="wishListHead">
-
-      <div>
-
-        <div class="wishListEyebrow">
-          GUARDADO
-        </div>
-
-        <div
-          id="wishListTitle"
-          class="wishListTitle"
-        >
-          Wishlist
-        </div>
-
-      </div>
-
-      <button
-        id="wishListClose"
-        class="wishListClose"
-        type="button"
-        aria-label="Cerrar Wishlist"
-      >
-
-        <svg viewBox="0 0 24 24">
-          <path d="m7 7 10 10M17 7 7 17"/>
-        </svg>
-
-      </button>
-
-    </header>
-
-    <div
-      id="wishListRail"
-      class="wishListRail"
-    ></div>
-
-  </section>
-
-</div>
-
-<!-- ==========================================================
-     SHARE
-     ========================================================== -->
-
-<div
-  id="shareOverlay"
-  class="shareOverlay"
->
-
-  <section class="sharePanel">
-
-    <header class="shareHead">
-
-      <div class="shareTitle">
-        Compartir producto
-      </div>
-
-      <button
-        id="shareClose"
-        class="shareClose"
-        aria-label="Cerrar"
-      >
-
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-        >
-          <path d="m7 7 10 10M17 7 7 17"/>
-        </svg>
-
-      </button>
-
-    </header>
-
-    <div class="shareOptions">
-
-      <button
-        class="socialShare"
-        data-share="instagram"
-      >
-
-        <span class="socialIcon">
-          IG
-        </span>
-
-        <span class="socialLabel">
-          Instagram
-        </span>
-
-      </button>
-
-      <button
-        class="socialShare"
-        data-share="tiktok"
-      >
-
-        <span class="socialIcon">
-          TT
-        </span>
-
-        <span class="socialLabel">
-          TikTok
-        </span>
-
-      </button>
-
-      <button
-        class="socialShare"
-        data-share="whatsapp"
-      >
-
-        <span class="socialIcon">
-          W
-        </span>
-
-        <span class="socialLabel">
-          WhatsApp
-        </span>
-
-      </button>
-
-    </div>
-
-  </section>
-
-</div>
-
-<!-- ==========================================================
-     PLUS MENU
-     ========================================================== -->
-
-<div
-  id="plusOverlay"
-  class="plusOverlay"
->
-
-  <section class="plusPanel">
-
-    <header class="plusHead">
-
-      <div class="plusTitle">
-        ¿Cómo podemos ayudarte?
-      </div>
-
-      <button
-        id="plusClose"
-        class="plusClose"
-        aria-label="Cerrar"
-      >
-        ×
-      </button>
-
-    </header>
-
-    <div class="plusList">
-
-      <button
-        class="plusItem"
-        data-plus="whatsapp"
-      >
-        <span>
-          WhatsApp · Mensajes y pedidos
-        </span>
-
-        <span>
-          ›
-        </span>
-      </button>
-
-      <button
-        class="plusItem"
-        data-plus="contact"
-      >
-        <span>
-          Contáctanos
-        </span>
-
-        <span>
-          ›
-        </span>
-      </button>
-
-      <button
-        class="plusItem"
-        data-plus="track"
-      >
-        <span>
-          Rastrear mi pedido
-        </span>
-
-        <span>
-          ›
-        </span>
-      </button>
-
-      <button
-        class="plusItem"
-        data-plus="help"
-      >
-        <span>
-          Ayuda
-        </span>
-
-        <span>
-          ›
-        </span>
-      </button>
-
-    </div>
-
-  </section>
-
-</div>
-
-<!-- ==========================================================
-     BOTTOM NAVIGATION
-     ========================================================== -->
-
-<nav
-  class="bottomNav"
-  aria-label="Navegación principal"
->
-
-  <button
-    id="navPlus"
-    class="navButton"
-    aria-label="Más"
-  >
-
-    <span class="navPlusOrb">
-
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-      >
-        <path d="M12 5v14M5 12h14"/>
-      </svg>
-
-    </span>
-
-  </button>
-
-  <button
-    id="navFavorites"
-    class="navButton"
-    aria-label="Wishlist"
-  >
-
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-    >
-      <path d="M20.3 5.7a5.2 5.2 0 0 0-7.4 0L12 6.6l-.9-.9a5.2 5.2 0 0 0-7.4 7.4L12 21l8.3-7.9a5.2 5.2 0 0 0 0-7.4Z"/>
-    </svg>
-
-    <span>
-      Wishlist
-    </span>
-
-  </button>
-
-  <button
-    id="navHome"
-    class="navButton"
-    aria-label="Inicio"
-  >
-
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-    >
-      <path d="m4 10 8-6 8 6"/>
-      <path d="M6.5 9.5V20h11V9.5"/>
-      <path d="M10 20v-6h4v6"/>
-    </svg>
-
-    <span>
-      Inicio
-    </span>
-
-  </button>
-
-  <button
-    id="navProfile"
-    class="navButton"
-    aria-label="Perfil"
-  >
-
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-    >
-      <circle cx="12" cy="8" r="3.5"/>
-      <path d="M5.5 20c.7-4 3-6 6.5-6s5.8 2 6.5 6"/>
-    </svg>
-
-    <span>
-      Perfil
-    </span>
-
-  </button>
-
-  <button
-    id="navBag"
-    class="navButton"
-    aria-label="Bolsa"
-  >
-
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-    >
-      <path d="M6.3 8.4h11.4l1 11H5.3l1-11Z"/>
-      <path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>
-    </svg>
-
-    <span>
-      Bolsa
-    </span>
-
-    <span
-      id="navBagBadge"
-      class="navBagBadge"
-    >
-      0
-    </span>
-
-  </button>
-
-</nav>
-
-<div
-  id="toast"
-  class="toast"
-></div>
-
-<script>
-
-(() => {
-
-  "use strict";
-
-  /* ============================================================
-     CONFIGURATION
-     ============================================================ */
-
-  const CONFIG = {
-
-    homePage:
-      "/",
-
-    checkoutPage:
-      "/checkout/",
-
-    bridgeSource:
-      "CAJAMODA_IFRAME",
-
-    acceptedSources:[
-      "CAJAMODA_STOREFRONT",
-      "CAJAMODA_IFRAME",
-      "CAJAMODA_WIX",
-      "MODAPOP_IFRAME",
-      "MODAPOP_WIX"
-    ],
-
-    maxProductNumber:
-      100
-  };
-
-  const CATEGORIES = [
-
-    {
-      id:"late",
-      name:"Noches Largas"
-    },
-
-    {
-      id:"chill",
-      name:"Días Tranquilos"
-    },
-
-    {
-      id:"quick",
-      name:"Rápido y Fácil"
-    },
-
-    {
-      id:"sun",
-      name:"Baño de Sol"
-    }
-
-  ];
-
-  /* ============================================================
-     DOM
-     ============================================================ */
-
-  const $ =
-    id =>
-      document.getElementById(
-        id
-      );
-
-  const qsa =
-    (
-      selector,
-      root=document
-    ) =>
-      [
-        ...root.querySelectorAll(
-          selector
-        )
-      ];
-
-  /* ============================================================
-     STORAGE HELPERS
-     ============================================================ */
-
-  function readJson(
-    key,
-    fallback
-  ){
-
-    try{
-
-      const raw =
-        localStorage.getItem(
-          key
-        );
-
-      if(
-        !raw
-      ){
-        return fallback;
-      }
-
-      return JSON.parse(
-        raw
-      );
-
-    }catch{
-
+function readJson(
+  key,
+  fallback = null
+) {
+  try {
+    const raw =
+      localStorage.getItem(key);
+
+    if (!raw) {
       return fallback;
     }
+
+    return JSON.parse(raw);
+
+  } catch {
+    return fallback;
   }
-
-  function saveJson(
-    key,
-    value
-  ){
-
-    try{
-
-      localStorage.setItem(
-        key,
-        JSON.stringify(
-          value
-        )
-      );
-
-    }catch{}
-  }
-
-  /* ============================================================
-     STATE
-     ============================================================ */
-
-  const savedFavorites =
-    readJson(
-      "cajamoda-favorites",
-      []
-    );
-
-  const state = {
-
-    catalog:[],
-
-    product:null,
-
-    categoryId:"late",
-
-    categoryProducts:[],
-
-    productIndex:0,
-
-    imageIndex:0,
-
-    selectedSize:null,
-
-    selectedColor:"Negro",
-
-    favorites:
-      new Set(
-        Array.isArray(
-          savedFavorites
-        )
-          ? savedFavorites
-            .map(String)
-          : []
-      )
-  };
-
-  /* ============================================================
-     HELPERS
-     ============================================================ */
-
-  function normalizeText(
-    value
-  ){
-
-    return String(
-      value ||
-      ""
-    )
-      .normalize(
-        "NFD"
-      )
-      .replace(
-        /[\u0300-\u036f]/g,
-        ""
-      )
-      .toLowerCase()
-      .replace(
-        /[^a-z0-9]+/g,
-        " "
-      )
-      .replace(
-        /\s+/g,
-        " "
-      )
-      .trim();
-  }
-
-  function escapeHtml(
-    value
-  ){
-
-    return String(
-      value ??
-      ""
-    )
-      .replaceAll(
-        "&",
-        "&amp;"
-      )
-      .replaceAll(
-        "<",
-        "&lt;"
-      )
-      .replaceAll(
-        ">",
-        "&gt;"
-      )
-      .replaceAll(
-        '"',
-        "&quot;"
-      )
-      .replaceAll(
-        "'",
-        "&#039;"
-      );
-  }
-
-  function safeText(
-    value,
-    fallback=""
-  ){
-
-    return String(
-      value ||
-      fallback
-    );
-  }
-
-  function money(
-    value
-  ){
-
-    return new Intl.NumberFormat(
-      "es-CO",
-      {
-        style:
-          "currency",
-
-        currency:
-          "COP",
-
-        maximumFractionDigits:
-          0
-      }
-    )
-      .format(
-        Number(
-          value ||
-          0
-        )
-      );
-  }
-
-  function createId(){
-
-    if(
-      window.crypto?.randomUUID
-    ){
-
-      return window.crypto
-        .randomUUID();
-    }
-
-    return (
-      `${Date.now()}-` +
-      Math.random()
-        .toString(16)
-        .slice(2)
-    );
-  }
-
-  function show
-       max-width:
-    calc(
-      100vw -
-      30px
-    );
-
-  padding:
-    9px 13px;
-
-  border-radius:999px;
-
-  background:#080808;
-
-  color:#fff;
-
-  font-size:8px;
-
-  white-space:nowrap;
-
-  opacity:0;
-
-  pointer-events:none;
-
-  transition:.18s ease;
 }
 
-.toast.show{
-
-  opacity:1;
-
-  transform:
-    translateX(-50%)
-    translateY(0);
+function saveJson(
+  key,
+  value
+) {
+  try {
+    localStorage.setItem(
+      key,
+      JSON.stringify(value)
+    );
+  } catch {}
 }
 
-</style>
-
-</head>
-
-<body>
-
-<div
-  id="productApp"
-  class="productApp"
->
-
-  <main
-    id="photoStage"
-    class="photoStage"
-  >
-
-    <!-- ======================================================
-         FULL SCREEN PRODUCT PHOTO
-         ====================================================== -->
-
-    <img
-      id="mainPhoto"
-      class="mainPhoto"
-      src=""
-      alt="Producto CajaModa"
-    >
-
-    <!-- ======================================================
-         CATEGORY QUICK NAVIGATION
-         ====================================================== -->
-
-    <nav
-      id="productCategoryNav"
-      class="productCategoryNav"
-      aria-label="Categorías"
-    ></nav>
-
-    <!-- ======================================================
-         PRODUCT PHOTO THUMBNAILS
-         ====================================================== -->
-
-    <div
-      id="thumbnailRail"
-      class="thumbnailRail"
-    ></div>
-
-    <!-- ======================================================
-         RIGHT SIDE CONTROLS
-         NUMBER > HEART > SHARE > BAG
-         ====================================================== -->
-
-    <div class="rightControls">
-
-      <div
-        id="productNumber"
-        class="productNumber"
-        aria-label="Número del producto"
-      >
-        1
-      </div>
-
-      <button
-        id="favoriteButton"
-        class="circleControl favoriteButton"
-        aria-label="Agregar a Wishlist"
-      >
-
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-        >
-          <path d="M20.3 5.7a5.2 5.2 0 0 0-7.4 0L12 6.6l-.9-.9a5.2 5.2 0 0 0-7.4 7.4L12 21l8.3-7.9a5.2 5.2 0 0 0 0-7.4Z"/>
-        </svg>
-
-      </button>
-
-      <button
-        id="shareButton"
-        class="circleControl shareButton"
-        aria-label="Compartir producto"
-      >
-
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-        >
-          <path d="M21 3 9.7 14.3"/>
-          <path d="m21 3-7 18-4.3-6.7L3 10l18-7Z"/>
-        </svg>
-
-      </button>
-
-      <button
-        id="photoBag"
-        class="circleControl photoBag"
-        aria-label="Abrir bolsa"
-      >
-
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-        >
-          <path d="M6.3 8.4h11.4l1 11H5.3l1-11Z"/>
-          <path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>
-        </svg>
-
-        <span
-          id="photoBagBadge"
-          class="bagBadge"
-        >
-          0
-        </span>
-
-      </button>
-
-    </div>
-
-    <!-- ======================================================
-         CLOSED PRICE CAPSULE
-         ====================================================== -->
-
-    <button
-      id="priceCapsule"
-      class="priceCapsule"
-      aria-label="Abrir detalles del producto"
-    >
-
-      <span
-        id="priceCapsuleText"
-        class="priceCapsuleText"
-      >
-        $0 COP
-      </span>
-
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-      >
-        <path d="m9 5 7 7-7 7"/>
-      </svg>
-
-    </button>
-
-  </main>
-
-</div>
-
-<!-- ==========================================================
-     DETAILS
-     PRICE > DESCRIPTION > COLOR > SIZE
-     ========================================================== -->
-
-<div
-  id="detailsOverlay"
-  class="detailsOverlay"
->
-
-  <div
-    id="detailsBackdrop"
-    class="detailsBackdrop"
-  ></div>
-
-  <section
-    id="detailsSheet"
-    class="detailsSheet"
-  >
-
-    <div class="detailsScroll">
-
-      <button
-        id="dragHandle"
-        class="dragHandle"
-        aria-label="Cerrar detalles"
-      ></button>
-
-      <header class="detailsTop">
-
-        <div>
-
-          <div
-            id="detailsTitle"
-            class="detailsTitle"
-          >
-            Producto CajaModa
-          </div>
-
-          <div
-            id="detailsPrice"
-            class="detailsPrice"
-          >
-            $0
-            <small>
-              COP
-            </small>
-          </div>
-
-        </div>
-
-        <button
-          id="detailsBag"
-          class="detailsBag"
-          aria-label="Abrir bolsa"
-        >
-
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-          >
-            <path d="M6.3 8.4h11.4l1 11H5.3l1-11Z"/>
-            <path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>
-          </svg>
-
-          <span
-            id="detailsBagCount"
-            class="detailsBagCount"
-          >
-            0
-          </span>
-
-        </button>
-
-      </header>
-
-      <!-- DESCRIPTION -->
-
-      <section class="descriptionBlock">
-
-        <div class="sectionTitle">
-          Descripción
-        </div>
-
-        <div
-          id="descriptionText"
-          class="descriptionText"
-        >
-          Descubre este producto CajaModa.
-        </div>
-
-        <div
-          id="selectedSizeQuantities"
-          class="selectedSizeQuantities"
-          aria-live="polite"
-        ></div>
-
-      </section>
-
-      <!-- COLOR -->
-
-      <section class="optionSection">
-
-        <div class="optionLabel">
-
-          Color:
-
-          <span
-            id="selectedColorLabel"
-            class="optionLabelValue"
-          >
-            Negro
-          </span>
-
-        </div>
-
-        <div class="colorRow">
-
-          <button
-            class="colorButton colorBlack active"
-            data-color="Negro"
-            aria-label="Negro"
-          ></button>
-
-          <button
-            class="colorButton colorRed"
-            data-color="Rojo"
-            aria-label="Rojo"
-          ></button>
-
-          <button
-            class="colorButton colorCream"
-            data-color="Crema"
-            aria-label="Crema"
-          ></button>
-
-        </div>
-
-      </section>
-
-      <!-- SIZE -->
-
-      <section class="optionSection">
-
-        <div class="optionLabel">
-
-          Talla:
-
-          <span
-            id="selectedSizeLabel"
-            class="optionLabelValue"
-          >
-            Selecciona
-          </span>
-
-        </div>
-
-        <div class="sizeGrid">
-
-          <button
-            class="sizeButton"
-            data-size="XS"
-          >
-            XS
-          </button>
-
-          <button
-            class="sizeButton"
-            data-size="S"
-          >
-            S
-          </button>
-
-          <button
-            class="sizeButton"
-            data-size="M"
-          >
-            M
-          </button>
-
-          <button
-            class="sizeButton"
-            data-size="L"
-          >
-            L
-          </button>
-
-          <button
-            class="sizeButton"
-            data-size="XL"
-          >
-            XL
-          </button>
-
-        </div>
-
-      </section>
-
-      <!-- PURCHASE -->
-
-      <section class="purchaseActions">
-
-        <button
-          id="addBagButton"
-          class="addBagButton"
-        >
-          Agregar a la bolsa
-        </button>
-
-        <button
-          id="buyNowButton"
-          class="buyNowButton"
-        >
-          Comprar ahora
-        </button>
-
-        <div class="purchaseMeta">
-
-          <span>
-            Envío según disponibilidad
-          </span>
-
-          <span>
-            Devoluciones según política
-          </span>
-
-        </div>
-
-      </section>
-
-    </div>
-
-  </section>
-
-</div>
-
-<!-- ==========================================================
-     WISHLIST
-     ========================================================== -->
-
-<div
-  id="wishListOverlay"
-  class="wishListOverlay"
-  aria-hidden="true"
->
-
-  <section
-    id="wishListPanel"
-    class="wishListPanel"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="wishListTitle"
-  >
-
-    <header class="wishListHead">
-
-      <div>
-
-        <div class="wishListEyebrow">
-          GUARDADO
-        </div>
-
-        <div
-          id="wishListTitle"
-          class="wishListTitle"
-        >
-          Wishlist
-        </div>
-
-      </div>
-
-      <button
-        id="wishListClose"
-        class="wishListClose"
-        type="button"
-        aria-label="Cerrar Wishlist"
-      >
-
-        <svg viewBox="0 0 24 24">
-          <path d="m7 7 10 10M17 7 7 17"/>
-        </svg>
-
-      </button>
-
-    </header>
-
-    <div
-      id="wishListRail"
-      class="wishListRail"
-    ></div>
-
-  </section>
-
-</div>
-
-<!-- ==========================================================
-     SHARE
-     ========================================================== -->
-
-<div
-  id="shareOverlay"
-  class="shareOverlay"
->
-
-  <section class="sharePanel">
-
-    <header class="shareHead">
-
-      <div class="shareTitle">
-        Compartir producto
-      </div>
-
-      <button
-        id="shareClose"
-        class="shareClose"
-        aria-label="Cerrar"
-      >
-
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-        >
-          <path d="m7 7 10 10M17 7 7 17"/>
-        </svg>
-
-      </button>
-
-    </header>
-
-    <div class="shareOptions">
-
-      <button
-        class="socialShare"
-        data-share="instagram"
-      >
-
-        <span class="socialIcon">
-          IG
-        </span>
-
-        <span class="socialLabel">
-          Instagram
-        </span>
-
-      </button>
-
-      <button
-        class="socialShare"
-        data-share="tiktok"
-      >
-
-        <span class="socialIcon">
-          TT
-        </span>
-
-        <span class="socialLabel">
-          TikTok
-        </span>
-
-      </button>
-
-      <button
-        class="socialShare"
-        data-share="whatsapp"
-      >
-
-        <span class="socialIcon">
-          W
-        </span>
-
-        <span class="socialLabel">
-          WhatsApp
-        </span>
-
-      </button>
-
-    </div>
-
-  </section>
-
-</div>
-
-<!-- ==========================================================
-     PLUS MENU
-     ========================================================== -->
-
-<div
-  id="plusOverlay"
-  class="plusOverlay"
->
-
-  <section class="plusPanel">
-
-    <header class="plusHead">
-
-      <div class="plusTitle">
-        ¿Cómo podemos ayudarte?
-      </div>
-
-      <button
-        id="plusClose"
-        class="plusClose"
-        aria-label="Cerrar"
-      >
-        ×
-      </button>
-
-    </header>
-
-    <div class="plusList">
-
-      <button
-        class="plusItem"
-        data-plus="whatsapp"
-      >
-        <span>
-          WhatsApp · Mensajes y pedidos
-        </span>
-
-        <span>
-          ›
-        </span>
-      </button>
-
-      <button
-        class="plusItem"
-        data-plus="contact"
-      >
-        <span>
-          Contáctanos
-        </span>
-
-        <span>
-          ›
-        </span>
-      </button>
-
-      <button
-        class="plusItem"
-        data-plus="track"
-      >
-        <span>
-          Rastrear mi pedido
-        </span>
-
-        <span>
-          ›
-        </span>
-      </button>
-
-      <button
-        class="plusItem"
-        data-plus="help"
-      >
-        <span>
-          Ayuda
-        </span>
-
-        <span>
-          ›
-        </span>
-      </button>
-
-    </div>
-
-  </section>
-
-</div>
-
-<!-- ==========================================================
-     BOTTOM NAVIGATION
-     ========================================================== -->
-
-<nav
-  class="bottomNav"
-  aria-label="Navegación principal"
->
-
-  <button
-    id="navPlus"
-    class="navButton"
-    aria-label="Más"
-  >
-
-    <span class="navPlusOrb">
-
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-      >
-        <path d="M12 5v14M5 12h14"/>
-      </svg>
-
-    </span>
-
-  </button>
-
-  <button
-    id="navFavorites"
-    class="navButton"
-    aria-label="Wishlist"
-  >
-
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-    >
-      <path d="M20.3 5.7a5.2 5.2 0 0 0-7.4 0L12 6.6l-.9-.9a5.2 5.2 0 0 0-7.4 7.4L12 21l8.3-7.9a5.2 5.2 0 0 0 0-7.4Z"/>
-    </svg>
-
-    <span>
-      Wishlist
-    </span>
-
-  </button>
-
-  <button
-    id="navHome"
-    class="navButton"
-    aria-label="Inicio"
-  >
-
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-    >
-      <path d="m4 10 8-6 8 6"/>
-      <path d="M6.5 9.5V20h11V9.5"/>
-      <path d="M10 20v-6h4v6"/>
-    </svg>
-
-    <span>
-      Inicio
-    </span>
-
-  </button>
-
-  <button
-    id="navProfile"
-    class="navButton"
-    aria-label="Perfil"
-  >
-
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-    >
-      <circle cx="12" cy="8" r="3.5"/>
-      <path d="M5.5 20c.7-4 3-6 6.5-6s5.8 2 6.5 6"/>
-    </svg>
-
-    <span>
-      Perfil
-    </span>
-
-  </button>
-
-  <button
-    id="navBag"
-    class="navButton"
-    aria-label="Bolsa"
-  >
-
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-    >
-      <path d="M6.3 8.4h11.4l1 11H5.3l1-11Z"/>
-      <path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>
-    </svg>
-
-    <span>
-      Bolsa
-    </span>
-
-    <span
-      id="navBagBadge"
-      class="navBagBadge"
-    >
-      0
-    </span>
-
-  </button>
-
-</nav>
-
-<div
-  id="toast"
-  class="toast"
-></div>
-
-<script>
-
-(() => {
-
-  "use strict";
-
-  /* ============================================================
-     CONFIGURATION
-     ============================================================ */
-
-  const CONFIG = {
-
-    homePage:
-      "/",
-
-    checkoutPage:
-      "/checkout/",
-
-    bridgeSource:
-      "CAJAMODA_IFRAME",
-
-    acceptedSources:[
-      "CAJAMODA_STOREFRONT",
-      "CAJAMODA_IFRAME",
-      "CAJAMODA_WIX",
-      "MODAPOP_IFRAME",
-      "MODAPOP_WIX"
-    ],
-
-    maxProductNumber:
-      100
-  };
-
-  const CATEGORIES = [
-
-    {
-      id:"late",
-      name:"Noches Largas"
-    },
-
-    {
-      id:"chill",
-      name:"Días Tranquilos"
-    },
-
-    {
-      id:"quick",
-      name:"Rápido y Fácil"
-    },
-
-    {
-      id:"sun",
-      name:"Baño de Sol"
-    }
-
-  ];
-
-  /* ============================================================
-     DOM
-     ============================================================ */
-
-  const $ =
-    id =>
-      document.getElementById(
-        id
-      );
-
-  const qsa =
-    (
-      selector,
-      root=document
-    ) =>
-      [
-        ...root.querySelectorAll(
-          selector
-        )
-      ];
-
-  /* ============================================================
-     STORAGE HELPERS
-     ============================================================ */
-
-  function readJson(
-    key,
-    fallback
-  ){
-
-    try{
-
-      const raw =
-        localStorage.getItem(
-          key
-        );
-
-      if(
-        !raw
-      ){
-        return fallback;
-      }
-
-      return JSON.parse(
-        raw
-      );
-
-    }catch{
-
-      return fallback;
-    }
-  }
-
-  function saveJson(
-    key,
-    value
-  ){
-
-    try{
-
-      localStorage.setItem(
-        key,
-        JSON.stringify(
-          value
-        )
-      );
-
-    }catch{}
-  }
-
-  /* ============================================================
-     STATE
-     ============================================================ */
-
-  const savedFavorites =
+function removeStorage(
+  key
+) {
+  try {
+    localStorage.removeItem(key);
+  } catch {}
+}
+
+/* ============================================================
+   VISITOR TOKENS
+   ============================================================ */
+
+function getStoredTokens() {
+  const tokens =
     readJson(
-      "cajamoda-favorites",
-      []
+      SESSION_KEY,
+      null
     );
 
-  const state = {
+  if (
+    !tokens ||
+    typeof tokens !== "object"
+  ) {
+    return undefined;
+  }
 
-    catalog:[],
+  return tokens;
+}
 
-    product:null,
+const storedTokens =
+  getStoredTokens();
 
-    categoryId:"late",
+/* ============================================================
+   WIX CLIENT
+   ============================================================ */
 
-    categoryProducts:[],
+const wix =
+  createClient({
+    modules: {
+      products,
+      currentCart,
+      redirects
+    },
 
-    productIndex:0,
+    auth:
+      OAuthStrategy({
+        clientId:
+          CLIENT_ID,
 
-    imageIndex:0,
+        tokens:
+          storedTokens ??
+          undefined
+      })
+  });
 
-    selectedSize:null,
+/* ============================================================
+   STATE
+   ============================================================ */
 
-    selectedColor:"Negro",
+let catalog = [];
 
-    favorites:
-      new Set(
-        Array.isArray(
-          savedFavorites
-        )
-          ?savedFavorites
-            .map(String)
-          :[]
-      )
-  };
+let responseSource =
+  "CAJAMODA_WIX";
 
-  /* ============================================================
-     HELPERS
-     ============================================================ */
-
-  function normalizeText(
-    value
-  ){
-
-    return String(
-      value ||
-      ""
+let lastCart =
+  normalizeLocalCart(
+    readJson(
+      "cajamoda-cart",
+      null
     )
-      .normalize(
-        "NFD"
-      )
-      .replace(
-        /[\u0300-\u036f]/g,
-        ""
-      )
-      .toLowerCase()
-      .replace(
-        /[^a-z0-9]+/g,
-        " "
-      )
-      .replace(
-        /\s+/g,
-        " "
-      )
-      .trim();
-  }
+  );
 
-  function escapeHtml(
-    value
-  ){
+/* ============================================================
+   BRIDGE
+   ============================================================ */
 
-    return String(
-      value ??
-      ""
-    )
-      .replaceAll(
-        "&",
-        "&amp;"
-      )
-      .replaceAll(
-        "<",
-        "&lt;"
-      )
-      .replaceAll(
-        ">",
-        "&gt;"
-      )
-      .replaceAll(
-        '"',
-        "&quot;"
-      )
-      .replaceAll(
-        "'",
-        "&#039;"
-      );
-  }
+function send(
+  type,
+  payload = {}
+) {
+  window.postMessage(
+    {
+      source:
+        responseSource,
 
-  function safeText(
-    value,
-    fallback=""
-  ){
+      type,
 
-    return String(
-      value ||
-      fallback
-    );
-  }
+      payload
+    },
+    window.location.origin
+  );
+}
 
-  function money(
-    value
-  ){
+/* ============================================================
+   TEXT
+   ============================================================ */
 
-    return new Intl.NumberFormat(
-      "es-CO",
-      {
-        style:
-          "currency",
-
-        currency:
-          "COP",
-
-        maximumFractionDigits:
-          0
-      }
-    )
-      .format(
-        Number(
-          value ||
-          0
-        )
-      );
-  }
-
-  function createId(){
-
-    if(
-      window.crypto?.randomUUID
-    ){
-
-      return window.crypto
-        .randomUUID();
-    }
-
-    return (
-      `${Date.now()}-` +
-      Math.random()
-        .toString(16)
-        .slice(2)
-    );
-  }
-
-  function showToast(
-    text
-  ){
-         const toast =
-      $("toast");
-
-    toast.textContent =
-      text;
-
-    toast.classList.add(
-      "show"
+function cleanText(
+  html = ""
+) {
+  const element =
+    document.createElement(
+      "div"
     );
 
-    clearTimeout(
-      showToast.timer
-    );
+  element.innerHTML =
+    String(html);
 
-    showToast.timer =
-      setTimeout(
-        () => {
+  return (
+    element.textContent ||
+    element.innerText ||
+    ""
+  );
+}
 
-          toast.classList
-            .remove(
-              "show"
-            );
+/* ============================================================
+   PRICE
+   ============================================================ */
 
-        },
-        1550
-      );
-  }
-
-  /* ============================================================
-     BRIDGE
-     ============================================================ */
-
-  function sendBridge(
-    type,
-    payload={}
-  ){
-
-    try{
-
-      window.parent.postMessage(
-        {
-
-          source:
-            CONFIG.bridgeSource,
-
-          type,
-
-          payload
-        },
-        "*"
-      );
-
-    }catch{}
-  }
-
-  function track(
-    eventType,
-    payload={}
-  ){
-
-    sendBridge(
-      "TRACK_EVENT",
-      {
-
-        eventId:
-          createId(),
-
-        eventType,
-
-        occurredAt:
-          new Date()
-            .toISOString(),
-
-        page:
-          "product",
-
-        brand:
-          "CAJAMODA",
-
-        productId:
-          state.product?.id ||
-          null,
-
-        categoryId:
-          state.categoryId,
-
-        ...payload
-      }
-    );
-  }
-
-  /* ============================================================
-     DETERMINE PRODUCT CATEGORY
-     ============================================================ */
-
-  function getProductCategory(
-    product
-  ){
-
-    if(
-      !product
-    ){
+function normalizePrice(
+  ...candidates
+) {
+  function readCandidate(
+    candidate
+  ) {
+    if (
+      candidate === null ||
+      candidate === undefined ||
+      candidate === ""
+    ) {
       return null;
     }
 
-    const explicit =
-      normalizeText(
-        [
-          product.category,
-          product.vibeId,
-          product.vibe,
-          product.productType,
-          product.type
-        ]
-          .filter(Boolean)
-          .join(" ")
-      );
-
-    if(
-      explicit === "late" ||
-      explicit.includes(
-        "noches largas"
-      ) ||
-      explicit.includes(
-        "long nights"
-      )
-    ){
-      return "late";
-    }
-
-    if(
-      explicit === "chill" ||
-      explicit.includes(
-        "dias tranquilos"
-      ) ||
-      explicit.includes(
-        "quiet days"
-      )
-    ){
-      return "chill";
-    }
-
-    if(
-      explicit === "quick" ||
-      explicit.includes(
-        "rapido y facil"
-      ) ||
-      explicit.includes(
-        "quick and easy"
-      )
-    ){
-      return "quick";
-    }
-
-    if(
-      explicit === "sun" ||
-      explicit.includes(
-        "bano de sol"
-      ) ||
-      explicit.includes(
-        "sunbathing"
-      )
-    ){
-      return "sun";
-    }
-
-    const searchable =
-      normalizeText(
-        [
-          product.name,
-          product.description,
-          product.productType,
-          product.type,
-          product.collectionName
-        ]
-          .filter(Boolean)
-          .join(" ")
-      );
-
-    if(
-      searchable.includes(
-        "vestido"
-      ) ||
-      searchable.includes(
-        "dress"
-      ) ||
-      searchable.includes(
-        "noche"
-      )
-    ){
-      return "late";
-    }
-
-    if(
-      searchable.includes(
-        "top"
-      ) ||
-      searchable.includes(
-        "blusa"
-      ) ||
-      searchable.includes(
-        "camisa"
-      ) ||
-      searchable.includes(
-        "casual"
-      )
-    ){
-      return "chill";
-    }
-
-    if(
-      searchable.includes(
-        "conjunto"
-      ) ||
-      searchable.includes(
-        "set"
-      )
-    ){
-      return "quick";
-    }
-
-    if(
-      searchable.includes(
-        "bikini"
-      ) ||
-      searchable.includes(
-        "swim"
-      ) ||
-      searchable.includes(
-        "playa"
-      ) ||
-      searchable.includes(
-        "enterizo"
-      )
-    ){
-      return "sun";
-    }
-
-    return (
-      product.category ||
-      product.vibeId ||
-      null
-    );
-  }
-
-  /* ============================================================
-     MEDIA
-     ============================================================ */
-
-  function getMedia(
-    product
-  ){
-
-    if(
-      Array.isArray(
-        product?.media
-      )
-    ){
-
-      return product.media
-        .map(
-          item => {
-
-            if(
-              typeof item ===
-              "string"
-            ){
-
-              return item;
-            }
-
-            return (
-              item.url ||
-              item.src ||
-              item.imageUrl ||
-              item.image?.url ||
-              ""
-            );
-
-          }
-        )
-        .filter(Boolean);
-    }
-
-    return [
-      product?.image ||
-      product?.imageUrl ||
-      ""
-    ]
-      .filter(Boolean);
-  }
-
-  /* ============================================================
-     CATEGORY PRODUCT LIST
-     ============================================================ */
-
-  function rebuildCategoryProducts(){
-
-    state.categoryProducts =
-      state.catalog.filter(
-        product =>
-          getProductCategory(
-            product
-          ) ===
-          state.categoryId
-      );
-
-    if(
-      !state.categoryProducts.length &&
-      state.product
-    ){
-
-      state.categoryProducts =
-        [
-          state.product
-        ];
-    }
-  }
-
-  /* ============================================================
-     CATEGORY NAV
-     ============================================================ */
-
-  function renderCategoryNav(){
-
-    $("productCategoryNav")
-      .innerHTML =
-        CATEGORIES.map(
-          category => `
-
-            <button
-              class="productCategoryButton ${
-                category.id ===
-                state.categoryId
-                  ?"active"
-                  :""
-              }"
-              data-product-category="${category.id}"
-            >
-
-              ${escapeHtml(category.name)}
-
-            </button>
-
-          `
-        )
-          .join("");
-
-    qsa(
-      "[data-product-category]"
-    )
-      .forEach(
-        button => {
-
-          button.onclick =
-            event => {
-
-              event.stopPropagation();
-
-              switchCategory(
-                button.dataset
-                  .productCategory
-              );
-
-            };
-
-        }
-      );
-
-    const active =
-      document.querySelector(
-        ".productCategoryButton.active"
-      );
-
-    active?.scrollIntoView({
-      behavior:"smooth",
-      inline:"center",
-      block:"nearest"
-    });
-  }
-
-  function switchCategory(
-    categoryId
-  ){
-
-    const category =
-      CATEGORIES.find(
-        item =>
-          item.id ===
-          categoryId
-      );
-
-    if(
-      !category
-    ){
-      return;
-    }
-
-    const products =
-      state.catalog.filter(
-        product =>
-          getProductCategory(
-            product
-          ) ===
-          categoryId
-      );
-
-    if(
-      !products.length
-    ){
-
-      showToast(
-        `No hay productos en ${category.name}.`
-      );
-
-      return;
-    }
-
-    state.categoryId =
-      categoryId;
-
-    state.categoryProducts =
-      products;
-
-    state.productIndex =
-      0;
-
-    state.product =
-      products[0];
-
-    state.imageIndex =
-      0;
-
-    state.selectedSize =
-      null;
-
-    state.selectedColor =
-      "Negro";
-
-    resetColorControls();
-
-    renderCategoryNav();
-
-    renderProduct();
-
-    track(
-      "PRODUCT_CATEGORY_SWITCH",
-      {
-        categoryId
-      }
-    );
-  }
-
-  /* ============================================================
-     INITIAL PRODUCT
-     ============================================================ */
-
-  function loadInitialProduct(){
-
-    const params =
-      new URLSearchParams(
-        location.search
-      );
-
-    const requestedProductId =
-      params.get(
-        "productId"
-      );
-
-    const requestedCategory =
-      params.get(
-        "category"
-      );
-
-    const cachedCatalog =
-      readJson(
-        "cajamoda-catalog",
-        []
-      );
-
-    state.catalog =
-      Array.isArray(
-        cachedCatalog
-      )
-        ?cachedCatalog
-        :[];
-
-    const cachedActive =
-      readJson(
-        "cajamoda-active-product",
-        null
-      );
-
-    let selectedProduct =
-      state.catalog.find(
-        product =>
-          String(
-            product.id
-          ) ===
-          String(
-            requestedProductId
-          )
-      ) ||
-      cachedActive ||
-      state.catalog[0] ||
-      null;
-
-    if(
-      !selectedProduct
-    ){
-
-      renderEmptyProduct();
-
-      renderCategoryNav();
-
-      return;
-    }
-
-    state.product =
-      selectedProduct;
-
-    const actualCategory =
-      getProductCategory(
-        selectedProduct
-      );
-
-    const validRequested =
-      CATEGORIES.some(
-        category =>
-          category.id ===
-          requestedCategory
-      );
-
-    state.categoryId =
-      actualCategory ||
-      (
-        validRequested
-          ?requestedCategory
-          :"late"
-      );
-
-    rebuildCategoryProducts();
-
-    const foundIndex =
-      state.categoryProducts
-        .findIndex(
-          product =>
-            String(
-              product.id
-            ) ===
-            String(
-              selectedProduct.id
-            )
-        );
-
-    state.productIndex =
-      foundIndex >= 0
-        ?foundIndex
-        :0;
-
-    if(
-      foundIndex < 0 &&
-      state.categoryProducts.length
-    ){
-
-      state.product =
-        state.categoryProducts[0];
-    }
-
-    renderCategoryNav();
-
-    renderProduct();
-  }
-
-  function renderEmptyProduct(){
-
-    $("mainPhoto")
-      .removeAttribute(
-        "src"
-      );
-
-    $("priceCapsuleText")
-      .textContent =
-        "Producto no disponible";
-
-    $("detailsTitle")
-      .textContent =
-        "Producto no disponible";
-
-    $("detailsPrice")
-      .innerHTML =
-        "$0 <small>COP</small>";
-  }
-
-  /* ============================================================
-     RENDER PRODUCT
-     ============================================================ */
-
-  function renderProduct(){
-
-    const product =
-      state.product;
-
-    if(
-      !product
-    ){
-      return;
-    }
-
-    const media =
-      getMedia(
-        product
-      );
-
-    state.imageIndex =
-      Math.min(
-        state.imageIndex,
-        Math.max(
-          0,
-          media.length -
-          1
-        )
-      );
-
-    const currentImage =
-      media[
-        state.imageIndex
-      ] ||
-      product.image ||
-      "";
-
-    const photo =
-      $("mainPhoto");
-
-    photo.classList.add(
-      "changing"
-    );
-
-    setTimeout(
-      () => {
-
-        photo.src =
-          currentImage;
-
-        photo.alt =
-          safeText(
-            product.name,
-            "Producto CajaModa"
+    if (
+      typeof candidate === "object"
+    ) {
+      const nestedCandidates = [
+        candidate.amount,
+        candidate.value,
+        candidate.discountedPrice,
+        candidate.price
+      ];
+
+      for (
+        const nestedCandidate
+        of nestedCandidates
+      ) {
+        const nested =
+          readCandidate(
+            nestedCandidate
           );
 
-        photo.classList.remove(
-          "changing"
-        );
+        if (
+          nested !== null
+        ) {
+          return nested;
+        }
+      }
 
-      },
-      70
-    );
+      return null;
+    }
 
-    $("priceCapsuleText")
-      .textContent =
-        `${money(product.price)} COP`;
+    const numeric =
+      Number(candidate);
 
-    $("detailsTitle")
-      .textContent =
-        safeText(
-          product.name,
-          "Producto CajaModa"
-        );
+    return Number.isFinite(
+      numeric
+    )
+      ? numeric
+      : null;
+  }
 
-    $("detailsPrice")
-      .innerHTML =
-        `${money(product.price)} <small>COP</small>`;
-
-    $("descriptionText")
-      .textContent =
-        safeText(
-          product.description,
-          "Producto seleccionado de CajaModa. Elige tu color y tu talla para agregarlo a tu bolsa."
-        );
-
-    /*
-      Number always represents position inside
-      the active category.
-    */
-
-    const number =
-      Math.min(
-        CONFIG.maxProductNumber,
-        state.productIndex +
-        1
+  for (
+    const candidate
+    of candidates
+  ) {
+    const numeric =
+      readCandidate(
+        candidate
       );
 
-    $("productNumber")
-      .textContent =
-        String(
-          number
-        );
+    if (
+      numeric !== null
+    ) {
+      return numeric;
+    }
+  }
 
-    state.selectedSize =
-      null;
+  return 0;
+}
 
-    $("selectedSizeLabel")
-      .textContent =
-        "Selecciona";
+function getPrice(
+  product
+) {
+  return normalizePrice(
+    product?.priceData?.discountedPrice,
+    product?.priceData?.price,
+    product?.price,
+    product?.discountedPrice
+  );
+}
 
-    renderSizeState();
 
-    renderSelectedSizeQuantities();
+/* ============================================================
+   IMAGES
+   ============================================================ */
 
-    renderThumbnails();
+function getImages(
+  product
+) {
+  const urls = [];
 
-    syncFavoriteUI();
+  function add(
+    url
+  ) {
+    if (
+      url &&
+      !urls.includes(url)
+    ) {
+      urls.push(url);
+    }
+  }
 
-    syncBagCount();
+  add(
+    product
+      ?.media
+      ?.mainMedia
+      ?.image
+      ?.url
+  );
 
-    saveJson(
-      "cajamoda-active-product",
+  add(
+    product
+      ?.media
+      ?.mainMedia
+      ?.url
+  );
+
+  add(
+    product
+      ?.image
+      ?.url
+  );
+
+  add(
+    product
+      ?.imageUrl
+  );
+
+  const mediaItems =
+    product
+      ?.media
+      ?.items ||
+    [];
+
+  for (
+    const item
+    of mediaItems
+  ) {
+    add(
+      item
+        ?.image
+        ?.url
+    );
+
+    add(
+      item
+        ?.url
+    );
+
+    add(
+      item
+        ?.imageUrl
+    );
+  }
+
+  return urls;
+}
+
+/* ============================================================
+   PRODUCT TYPE
+   ============================================================ */
+
+function getProductType(
+  product
+) {
+  const text =
+    String(
+      product?.name ||
+      ""
+    )
+      .toLowerCase();
+
+  if (
+    text.includes("top") ||
+    text.includes("blusa") ||
+    text.includes("camisa")
+  ) {
+    return "Tops";
+  }
+
+  if (
+    text.includes("conjunto") ||
+    text.includes("set")
+  ) {
+    return "Conjuntos";
+  }
+
+  if (
+    text.includes("enterizo") ||
+    text.includes("jumpsuit")
+  ) {
+    return "Enterizos";
+  }
+
+  return "Vestidos";
+}
+
+/* ============================================================
+   VARIANT CHOICES
+   ============================================================ */
+
+function getChoices(
+  variant
+) {
+  return (
+    variant
+      ?.choices ||
+
+    variant
+      ?.variant
+      ?.choices ||
+
+    {}
+  );
+}
+
+function getSize(
+  variant
+) {
+  const choices =
+    getChoices(
+      variant
+    );
+
+  return (
+    choices.Size ||
+    choices.size ||
+    choices.Talla ||
+    choices.talla ||
+    ""
+  );
+}
+
+function getColor(
+  variant
+) {
+  const choices =
+    getChoices(
+      variant
+    );
+
+  return (
+    choices.Color ||
+    choices.color ||
+    choices.Colour ||
+    choices.colour ||
+    ""
+  );
+}
+
+/* ============================================================
+   NORMALIZE VARIANT
+   ============================================================ */
+
+function normalizeVariant(
+  productId,
+  variant,
+  basePrice
+) {
+  const raw =
+    variant?.variant ||
+    variant;
+
+  const id =
+    variant?._id ||
+    variant?.id ||
+    raw?._id ||
+    raw?.id ||
+    variant?.variantId ||
+    "";
+
+  const price =
+  normalizePrice(
+    raw?.priceData?.discountedPrice,
+    raw?.priceData?.price,
+    variant?.priceData?.discountedPrice,
+    variant?.priceData?.price,
+    raw?.price,
+    variant?.price,
+    basePrice
+  );
+
+  const inStock =
+    raw
+      ?.stock
+      ?.inStock !== false &&
+
+    variant
+      ?.stock
+      ?.inStock !== false;
+
+  return {
+    id,
+
+    productId,
+
+    size:
+      getSize(
+        variant
+      ),
+
+    color:
+      getColor(
+        variant
+      ),
+
+    sku:
+      raw?.sku ||
+      variant?.sku ||
+      "",
+
+    price,
+
+    inStock
+  };
+}
+
+/* ============================================================
+   NORMALIZE PRODUCT
+   ============================================================ */
+
+function normalizeProduct(
+  product,
+  index
+) {
+  const id =
+    product?._id ||
+    product?.id ||
+    "";
+
+  const basePrice =
+    getPrice(
       product
     );
 
-    updateUrlWithoutReload();
-  }
+  const rawVariants =
+    Array.isArray(
+      product?.variants
+    )
+      ? product.variants
+      : [];
 
-  function updateUrlWithoutReload(){
-
-    if(
-      !state.product
-    ){
-      return;
-    }
-
-    const url =
-      new URL(
-        location.href
-      );
-
-    url.searchParams.set(
-      "productId",
-      state.product.id
-    );
-
-    url.searchParams.set(
-      "category",
-      state.categoryId
-    );
-
-    history.replaceState(
-      null,
-      "",
-      url
-    );
-  }
-
-  /* ============================================================
-     THUMBNAILS
-     ============================================================ */
-
-  function renderThumbnails(){
-
-    const media =
-      getMedia(
-        state.product
-      );
-
-    const five =
-      media.slice(
-        0,
-        5
-      );
-
-    while(
-      five.length <
-      5
-    ){
-
-      five.push(
-        ""
-      );
-    }
-
-    $("thumbnailRail")
-      .innerHTML =
-        five
-          .slice(
-            1,
-            5
+  const variants =
+    rawVariants
+      .map(
+        variant =>
+          normalizeVariant(
+            id,
+            variant,
+            basePrice
           )
+      )
+      .filter(
+        variant =>
+          variant.id
+      );
+
+  const sizes =
+    [
+      ...new Set(
+        variants
           .map(
-            (
-              url,
-              index
-            ) => {
-
-              const actualIndex =
-                index +
-                1;
-
-              return `
-
-                <button
-                  class="thumbnail ${
-                    actualIndex ===
-                    state.imageIndex
-                      ?"active"
-                      :""
-                  }"
-                  data-image-index="${actualIndex}"
-                  aria-label="Foto ${actualIndex + 1}"
-                >
-
-                  ${
-                    url
-                      ?`
-                        <img
-                          src="${escapeHtml(url)}"
-                          alt=""
-                        >
-                      `
-                      :`
-                        <div class="thumbnailPlaceholder">
-                          FOTO
-                        </div>
-                      `
-                  }
-
-                </button>
-
-              `;
-
-            }
+            variant =>
+              variant.size
           )
-          .join("");
-
-    qsa(
-      "[data-image-index]"
-    )
-      .forEach(
-        button => {
-
-          button.onclick =
-            event => {
-
-              event.stopPropagation();
-
-              const index =
-                Number(
-                  button.dataset
-                    .imageIndex
-                );
-
-              const media =
-                getMedia(
-                  state.product
-                );
-
-              if(
-                !media[index]
-              ){
-                return;
-              }
-
-              changePhoto(
-                index
-              );
-
-            };
-
-        }
-      );
-  }
-
-  function changePhoto(
-    index
-  ){
-
-    const media =
-      getMedia(
-        state.product
-      );
-
-    if(
-      !media[index]
-    ){
-      return;
-    }
-
-    const image =
-      $("mainPhoto");
-
-    image.classList.add(
-      "changing"
-    );
-
-    setTimeout(
-      () => {
-
-        state.imageIndex =
-          index;
-
-        image.src =
-          media[index];
-
-        renderThumbnails();
-
-        image.classList.remove(
-          "changing"
-        );
-
-      },
-      90
-    );
-  }
-
-  /* ============================================================
-     PRODUCT SWIPE
-     LEFT = NEXT
-     RIGHT = PREVIOUS
-     ALWAYS INSIDE ACTIVE CATEGORY
-     ============================================================ */
-
-  let pointerStartX =
-    0;
-
-  let pointerStartY =
-    0;
-
-  let pointerStartedOnControl =
-    false;
-
-  let pointerTracking =
-    false;
-
-  $("photoStage")
-    .addEventListener(
-      "pointerdown",
-      event => {
-
-        pointerStartedOnControl =
-          !!event.target.closest(
-            "button,nav"
-          );
-
-        if(
-          pointerStartedOnControl
-        ){
-
-          pointerTracking =
-            false;
-
-          return;
-        }
-
-        pointerTracking =
-          true;
-
-        pointerStartX =
-          event.clientX;
-
-        pointerStartY =
-          event.clientY;
-
-      }
-    );
-
-  $("photoStage")
-    .addEventListener(
-      "pointerup",
-      event => {
-
-        if(
-          !pointerTracking
-        ){
-          return;
-        }
-
-        pointerTracking =
-          false;
-
-        if(
-          $("detailsOverlay")
-            .classList
-            .contains(
-              "open"
-            )
-        ){
-          return;
-        }
-
-        const dx =
-          event.clientX -
-          pointerStartX;
-
-        const dy =
-          event.clientY -
-          pointerStartY;
-
-        /*
-          Require a real horizontal swipe.
-        */
-
-        if(
-          Math.abs(
-            dx
-          ) <
-          45
-        ){
-          return;
-        }
-
-        if(
-          Math.abs(
-            dx
-          ) <=
-          Math.abs(
-            dy
-          )
-        ){
-          return;
-        }
-
-        if(
-          dx <
-          0
-        ){
-
-          nextProduct();
-
-        }else{
-
-          previousProduct();
-        }
-
-      }
-    );
-
-  $("photoStage")
-    .addEventListener(
-      "pointercancel",
-      () => {
-
-        pointerTracking =
-          false;
-      }
-    );
-
-  function nextProduct(){
-
-    if(
-      state.categoryProducts.length <
-      2
-    ){
-
-      showToast(
-        "No hay otro producto en esta categoría."
-      );
-
-      return;
-    }
-
-    state.productIndex =
-      (
-        state.productIndex +
-        1
-      ) %
-      state.categoryProducts.length;
-
-    state.product =
-      state.categoryProducts[
-        state.productIndex
-       ### Block 5 of 6
-
-```html
-      ];
-
-    state.imageIndex =
-      0;
-
-    state.selectedSize =
-      null;
-
-    state.selectedColor =
-      "Negro";
-
-    resetColorControls();
-
-    renderProduct();
-
-    track(
-      "PRODUCT_SWIPE",
-      {
-        direction:"left",
-        productIndex:
-          state.productIndex +
-          1
-      }
-    );
-  }
-
-  function previousProduct(){
-
-    if(
-      state.categoryProducts.length <
-      2
-    ){
-
-      showToast(
-        "No hay otro producto en esta categoría."
-      );
-
-      return;
-    }
-
-    state.productIndex =
-      (
-        state.productIndex -
-        1 +
-        state.categoryProducts.length
-      ) %
-      state.categoryProducts.length;
-
-    state.product =
-      state.categoryProducts[
-        state.productIndex
-      ];
-
-    state.imageIndex =
-      0;
-
-    state.selectedSize =
-      null;
-
-    state.selectedColor =
-      "Negro";
-
-    resetColorControls();
-
-    renderProduct();
-
-    track(
-      "PRODUCT_SWIPE",
-      {
-        direction:"right",
-        productIndex:
-          state.productIndex +
-          1
-      }
-    );
-  }
-
-  /* ============================================================
-     DETAILS
-     ============================================================ */
-
-  function openDetails(){
-
-    $("detailsOverlay")
-      .classList
-      .add(
-        "open"
-      );
-
-    document.body
-      .classList
-      .add(
-        "locked"
-      );
-
-    syncBagCount();
-
-    track(
-      "PRODUCT_DETAILS_OPEN"
-    );
-  }
-
-  function closeDetails(){
-
-    $("detailsOverlay")
-      .classList
-      .remove(
-        "open"
-      );
-
-    document.body
-      .classList
-      .remove(
-        "locked"
-      );
-  }
-
-  $("priceCapsule")
-    .onclick =
-      openDetails;
-
-  $("detailsBackdrop")
-    .onclick =
-      closeDetails;
-
-  $("dragHandle")
-    .onclick =
-      closeDetails;
-
-  /* ============================================================
-     CART
-     ============================================================ */
-
-  function normalizePrice(
-    ...candidates
-  ){
-
-    function readCandidate(
-      candidate
-    ){
-
-      if(
-        candidate === null ||
-        candidate === undefined ||
-        candidate === ""
-      ){
-        return null;
-      }
-
-      if(
-        typeof candidate ===
-        "object"
-      ){
-
-        const nestedCandidates = [
-          candidate.amount,
-          candidate.value,
-          candidate.discountedPrice,
-          candidate.price
-        ];
-
-        for(
-          const nestedCandidate
-          of nestedCandidates
-        ){
-
-          const nested =
-            readCandidate(
-              nestedCandidate
-            );
-
-          if(
-            nested !== null
-          ){
-            return nested;
-          }
-        }
-
-        return null;
-      }
-
-      const numeric =
-        Number(
-          candidate
-        );
-
-      return Number.isFinite(
-        numeric
+          .filter(Boolean)
       )
-        ?numeric
-        :null;
-    }
+    ];
 
-    for(
-      const candidate
-      of candidates
-    ){
+  /*
+    Preserve the existing four CajaModa category rails.
+  */
 
-      const numeric =
-        readCandidate(
-          candidate
-        );
+  const vibes = [
+    "late",
+    "chill",
+    "quick",
+    "sun"
+  ];
 
-      if(
-        numeric !== null
-      ){
-        return numeric;
-      }
-    }
+  const vibeId =
+    product
+      ?.additionalInfoSections
+      ?.find?.(
+        section =>
+          String(
+            section?.title ||
+            ""
+          )
+            .toLowerCase() ===
+          "vibe"
+      )
+      ?.description ||
 
-    return 0;
-  }
+    vibes[
+      index %
+      vibes.length
+    ];
 
-  function normalizeChoice(
-    value
-  ){
+  return {
+    id,
 
-    return String(
-      value ||
-      ""
-    )
-      .toLowerCase()
-      .trim();
-  }
+    masterProductId:
+      id,
 
-  function cartLineKey(
-    item
-  ){
+    source:
+      "wix",
 
-    const productId =
-      String(
-        item?.productId ||
-        ""
-      );
+    name:
+      product?.name ||
+      "Producto",
 
-    const variantId =
-      String(
-        item?.variantId ||
-        ""
-      );
-
-    if(
-      variantId
-    ){
-
-      return (
-        `${productId}:variant:${variantId}`
-      );
-    }
-
-    return [
-      productId,
-      "options",
-      normalizeChoice(
-        item?.size
+    productType:
+      getProductType(
+        product
       ),
-      normalizeChoice(
-        item?.color
+
+    vibeId:
+      String(
+        vibeId
       )
-    ]
-      .join(
-        ":"
-      );
+        .toLowerCase()
+        .trim(),
+
+    vibes: [
+      String(
+        vibeId
+      )
+        .toLowerCase()
+        .trim()
+    ],
+
+    price:
+      basePrice,
+
+    media:
+      getImages(
+        product
+      ),
+
+    sizes,
+
+    variants,
+
+    deliveryModes: [
+      "pickup",
+      "fast",
+      "ship"
+    ],
+
+    inventoryMode:
+      product
+        ?.stock
+        ?.trackInventory
+        ? "STOCKED"
+        : "WIX",
+
+    inventoryStatus:
+      product
+        ?.stock
+        ?.inStock === false
+        ? "OUT_OF_STOCK"
+        : "AVAILABLE",
+
+    inventoryQuantity:
+      product
+        ?.stock
+        ?.quantity ??
+      null,
+
+    fulfillmentConfidence:
+      null,
+
+    supplyRef:
+      null,
+
+    defaultLocationId:
+      null,
+
+    inventoryItems:
+      [],
+
+    supplySyncAt:
+      new Date()
+        .toISOString(),
+
+    description:
+      cleanText(
+        product?.description ||
+        ""
+      ),
+
+    reviews:
+      []
+  };
+}
+
+/* ============================================================
+   PRODUCT LOOKUP
+   ============================================================ */
+
+function findProduct(
+  id
+) {
+  return (
+    catalog.find(
+      product =>
+        String(
+          product.id
+        ) ===
+        String(id)
+    ) ||
+    null
+  );
+}
+
+/* ============================================================
+   LOCAL CART
+   ============================================================ */
+
+function emptyCart() {
+  return {
+    items: [],
+    count: 0,
+    total: 0
+  };
+}
+
+function createLocalId() {
+  if (
+    window.crypto
+      ?.randomUUID
+  ) {
+    return window.crypto
+      .randomUUID();
   }
 
-  function normalizeCart(
-    cart
-  ){
+  return (
+    `${Date.now()}-` +
+    Math.random()
+      .toString(16)
+      .slice(2)
+  );
+}
 
-    const sourceItems =
-      Array.isArray(
-        cart?.items
-      )
-        ?cart.items
-        :Array.isArray(
+function normalizeLocalCart(
+  cart
+) {
+  const sourceItems =
+    Array.isArray(
+      cart?.items
+    )
+      ? cart.items
+      : Array.isArray(
           cart?.lineItems
         )
-          ?cart.lineItems
-          :[];
+        ? cart.lineItems
+        : [];
 
-    const items =
-      sourceItems.map(
-        item => ({
+  const items =
+    sourceItems.map(
+      item => ({
+        id:
+          item.id ||
+          item._id ||
+          item.lineItemId ||
+          createLocalId(),
 
+        productId:
+          item.productId ||
+          item
+            ?.catalogReference
+            ?.catalogItemId ||
+          null,
+
+        variantId:
+          item.variantId ||
+          item
+            ?.catalogReference
+            ?.options
+            ?.variantId ||
+          null,
+
+        name:
+          item.name ||
+          item
+            ?.productName
+            ?.translated ||
+          item
+            ?.productName
+            ?.original ||
+          item.productName ||
+          "Producto",
+
+        image:
+          item.image ||
+          item.imageUrl ||
+          item
+            ?.media
+            ?.url ||
+          "",
+
+        size:
+          item.size ||
+          item
+            ?.options
+            ?.Size ||
+          item
+            ?.options
+            ?.size ||
+          "",
+
+        color:
+          item.color ||
+          item
+            ?.options
+            ?.Color ||
+          item
+            ?.options
+            ?.color ||
+          "",
+
+        quantity:
+          Math.max(
+            1,
+            Number(
+              item.quantity ||
+              1
+            )
+          ),
+
+  unitPrice:
+  normalizePrice(
+    item.unitPrice,
+    item.price,
+    item.lineItemPrice
+  ),
+
+price:
+  normalizePrice(
+    item.unitPrice,
+    item.price,
+    item.lineItemPrice
+  ),
+
+        autoSelected:
+          item.autoSelected ===
+          true
+      })
+    );
+
+  const count =
+    items.reduce(
+      (
+        total,
+        item
+      ) =>
+        total +
+        item.quantity,
+      0
+    );
+
+  const total =
+    items.reduce(
+      (
+        subtotal,
+        item
+      ) =>
+        subtotal +
+        (
+          item.unitPrice *
+          item.quantity
+        ),
+      0
+    );
+
+  return {
+    items,
+    count,
+    total
+  };
+}
+
+function saveLocalCart(
+  cart
+) {
+  const normalized =
+    normalizeLocalCart(
+      cart
+    );
+
+  saveJson(
+    "cajamoda-cart",
+    normalized
+  );
+
+  saveJson(
+    "cajamoda-checkout-cart",
+    normalized
+  );
+
+  lastCart =
+    normalized;
+
+  return normalized;
+}
+
+function readBestLocalCart() {
+  const regular =
+    normalizeLocalCart(
+      readJson(
+        "cajamoda-cart",
+        null
+      )
+    );
+
+  const checkout =
+    normalizeLocalCart(
+      readJson(
+        "cajamoda-checkout-cart",
+        null
+      )
+    );
+
+  if (
+    regular.items.length
+  ) {
+    return regular;
+  }
+
+  if (
+    checkout.items.length
+  ) {
+    return checkout;
+  }
+
+  return emptyCart();
+}
+
+/* ============================================================
+   VARIANT LOOKUP
+   ============================================================ */
+
+function normalizeChoice(
+  value
+) {
+  return String(
+    value ||
+    ""
+  )
+    .toLowerCase()
+    .trim();
+}
+function cartLineKey(
+  item
+) {
+  const productId =
+    String(
+      item?.productId ||
+      ""
+    );
+
+  const variantId =
+    String(
+      item?.variantId ||
+      ""
+    );
+
+  if (
+    variantId
+  ) {
+    return `${productId}:variant:${variantId}`;
+  }
+
+  return [
+    productId,
+    "options",
+    normalizeChoice(item?.size),
+    normalizeChoice(item?.color)
+  ].join(":");
+}
+function findVariant(
+  product,
+  item
+) {
+  if (
+    !product ||
+    !Array.isArray(
+      product.variants
+    ) ||
+    !product.variants.length
+  ) {
+    return null;
+  }
+
+  /*
+    First use a known Wix variant ID.
+  */
+
+  if (
+    item.variantId
+  ) {
+    const direct =
+      product.variants.find(
+        variant =>
+          String(
+            variant.id
+          ) ===
+          String(
+            item.variantId
+          )
+      );
+
+    if (direct) {
+      return direct;
+    }
+  }
+
+  const wantedSize =
+    normalizeChoice(
+      item.size
+    );
+
+  const wantedColor =
+    normalizeChoice(
+      item.color
+    );
+
+  /*
+    Exact size + color.
+  */
+
+  if (
+    wantedSize &&
+    wantedColor
+  ) {
+    const exact =
+      product.variants.find(
+        variant =>
+          normalizeChoice(
+            variant.size
+          ) ===
+            wantedSize &&
+
+          normalizeChoice(
+            variant.color
+          ) ===
+            wantedColor &&
+
+          variant.inStock !==
+            false
+      );
+
+    if (exact) {
+      return exact;
+    }
+  }
+
+  /*
+    Size match is enough when the current
+    visual color selector doesn't correspond
+    to a Wix variant option.
+  */
+
+  if (
+    wantedSize
+  ) {
+    const sizeMatch =
+      product.variants.find(
+        variant =>
+          normalizeChoice(
+            variant.size
+          ) ===
+            wantedSize &&
+
+          variant.inStock !==
+            false
+      );
+
+    if (sizeMatch) {
+      return sizeMatch;
+    }
+  }
+
+  /*
+    Final fallback to the first available variant.
+  */
+
+  return (
+    product.variants.find(
+      variant =>
+        variant.inStock !==
+        false
+    ) ||
+    product.variants[0] ||
+    null
+  );
+}
+
+/* ============================================================
+   WIX CART -> CAJAMODA CART
+   ============================================================ */
+
+function normalizeWixCart(
+  rawCart
+) {
+  const wixCart =
+    rawCart?.cart ||
+    rawCart;
+
+  const lineItems =
+    Array.isArray(
+      wixCart?.lineItems
+    )
+      ? wixCart.lineItems
+      : [];
+const localItems = 
+   readBestLocalCart().items;
+  const items =
+    lineItems.map(
+      line => {
+        const productId =
+          line
+            ?.catalogReference
+            ?.catalogItemId ||
+          null;
+
+        const variantId =
+          line
+            ?.catalogReference
+            ?.options
+            ?.variantId ||
+          null;
+
+        const product =
+          findProduct(
+            productId
+          );
+
+        const variant =
+          product
+            ?.variants
+            ?.find(
+              candidate =>
+                String(
+                  candidate.id
+                ) ===
+                String(
+                  variantId
+                )
+            );
+const size =
+  variant?.size ||
+  "";
+
+const color =
+  variant?.color ||
+  "";
+
+const localLine =
+  localItems.find(
+    item =>
+      cartLineKey(item) ===
+      cartLineKey({
+        productId,
+        variantId,
+        size,
+        color
+      })
+  );
+
+const unitPrice =
+  normalizePrice(
+    line?.price,
+    line?.lineItemPrice,
+    variant?.price,
+    product?.price,
+    localLine?.unitPrice,
+    localLine?.price
+  );
+        return {
           id:
-            item.id ||
-            item._id ||
-            item.lineItemId ||
-            createId(),
+            line?._id ||
+            line?.id ||
+            createLocalId(),
 
-          productId:
-            item.productId ||
-            item.catalogReference
-              ?.catalogItemId ||
-            null,
+          productId,
 
-          variantId:
-            item.variantId ||
-            item.catalogReference
-              ?.options
-              ?.variantId ||
-            null,
+          variantId,
 
           name:
-            item.name ||
-            item.productName ||
+            line
+              ?.productName
+              ?.translated ||
+            line
+              ?.productName
+              ?.original ||
+            product?.name ||
             "Producto",
 
           image:
-            item.image ||
-            item.imageUrl ||
-            item.media?.url ||
+            product
+              ?.media
+              ?.[0] ||
             "",
+           
+            size,
 
-          size:
-            item.size ||
-            item.options?.Size ||
-            item.options?.size ||
-            "",
-
-          color:
-            item.color ||
-            item.options?.Color ||
-            item.options?.color ||
-            "Negro",
+          color,
 
           quantity:
             Math.max(
               1,
               Number(
-                item.quantity ||
+                localLine?.quantity ??
+                line?.quantity ??
                 1
               )
             ),
 
-          unitPrice:
-            normalizePrice(
-              item.unitPrice,
-              item.price,
-              item.lineItemPrice
-            ),
+          unitPrice,
 
           price:
-            normalizePrice(
-              item.unitPrice,
-              item.price,
-              item.lineItemPrice
-            ),
+            unitPrice,
 
           autoSelected:
-            item.autoSelected ===
+            localLine?.autoSelected ??
             true
-        })
-      );
-
-    const count =
-      items.reduce(
-        (
-          sum,
-          item
-        ) =>
-          sum +
-          item.quantity,
-        0
-      );
-
-    const total =
-      items.reduce(
-        (
-          sum,
-          item
-        ) =>
-          sum +
-          (
-            item.unitPrice *
-            item.quantity
-          ),
-        0
-      );
-
-    return{
-
-      items,
-
-      count,
-
-      total
-    };
-  }
-
-  function readCart(){
-
-    return normalizeCart(
-      readJson(
-        "cajamoda-cart",
-        {
-          items:[],
-          count:0,
-          total:0
-        }
-      )
+        };
+      }
     );
-  }
 
-  function saveCart(
-    cart
-  ){
+  return normalizeLocalCart({
+    items
+  });
+}
 
-    const normalized =
-      normalizeCart(
-        cart
+/* ============================================================
+   CART COMPARISON
+   ============================================================ */
+
+function cartFingerprint(
+  cart
+) {
+  const normalized =
+    normalizeLocalCart(
+      cart
+    );
+
+  return normalized.items
+    .map(
+     item => [
+  cartLineKey(item),
+  Number(
+    item.quantity ||
+    1
+  )
+]
+        .join(":")
+    )
+    .sort()
+    .join("|");
+}
+
+/* ============================================================
+   VISITOR SESSION
+   ============================================================ */
+
+function persistCurrentTokens() {
+  try {
+    const tokens =
+      wix.auth
+        .getTokens();
+
+    if (tokens) {
+      saveJson(
+        SESSION_KEY,
+        tokens
       );
+    }
+  } catch {}
+}
+
+async function prepareVisitorSession() {
+  try {
+    const tokens =
+      await wix.auth
+        .generateVisitorTokens(
+          storedTokens
+        );
 
     saveJson(
-      "cajamoda-cart",
-      normalized
+      SESSION_KEY,
+      tokens
     );
 
-    syncBagCount();
+    return tokens;
 
-    return normalized;
-  }
+  } catch (
+    firstError
+  ) {
+    /*
+      If old stored tokens are unusable,
+      create a fresh anonymous visitor session.
+    */
 
-  function syncBagCount(){
-
-    const cart =
-      readCart();
-
-    const count =
-      cart.count;
-
-    [
-      $("photoBagBadge"),
-      $("navBagBadge"),
-      $("detailsBagCount")
-    ]
-      .forEach(
-        badge => {
-
-          if(
-            badge
-          ){
-
-            badge.textContent =
-              String(
-                count
-              );
-          }
-
-        }
-      );
-  }
-
-  function animateBag(){
-
-    const badge =
-      $("photoBagBadge");
-
-    if(
-      !badge
-    ){
-      return;
-    }
-
-    badge.classList.remove(
-      "bump"
+    console.warn(
+      "[CajaModa] Renewing Wix visitor session."
     );
 
-    void badge.offsetWidth;
-
-    badge.classList.add(
-      "bump"
-    );
-  }
-
-  /* ============================================================
-     SIZE SELECTION
-     ============================================================ */
-
-  function findExistingAutoLine(
-    productId
-  ){
-
-    const cart =
-      readCart();
-
-    return cart.items.find(
-      item =>
-        String(
-          item.productId
-        ) ===
-        String(
-          productId
-        ) &&
-        item.autoSelected ===
-        true
-    ) ||
-    null;
-  }
-
-  function findExistingSelectedSize(
-    productId
-  ){
-
-    const line =
-      findExistingAutoLine(
-        productId
-      );
-
-    return line?.size ||
-      null;
-  }
-
-  function renderSizeState(){
-
-    const selectedSizes =
-      new Set(
-        readCart().items
-          .filter(
-            item =>
-              String(
-                item.productId
-              ) ===
-                String(
-                  state.product?.id
-                ) &&
-              item.autoSelected ===
-                true
-          )
-          .map(
-            item =>
-              normalizeChoice(
-                item.size
-              )
-          )
-      );
-
-    qsa(
-      "[data-size]"
-    )
-      .forEach(
-        button => {
-
-          button.classList.toggle(
-            "selected",
-            selectedSizes.has(
-              normalizeChoice(
-                button.dataset.size
-              )
-            )
-          );
-
-        }
-      );
-  }
-
-  function selectedSizeLines(){
-
-    return readCart().items.filter(
-      item =>
-        String(
-          item.productId
-        ) ===
-          String(
-            state.product?.id
-          ) &&
-        item.autoSelected ===
-          true
-    );
-  }
-
-  function renderSelectedSizeQuantities(){
-
-    const container =
-      $("selectedSizeQuantities");
-
-    if(
-      !container
-    ){
-      return;
-    }
-
-    const lines =
-      selectedSizeLines();
-
-    container.innerHTML =
-      lines.map(
-        line => `
-
-          <div class="selectedSizeQuantity">
-
-            <span class="selectedSizeName">
-              Talla ${escapeHtml(line.size || "—")}
-            </span>
-
-            <span class="selectedSizeControls">
-
-              <button
-                type="button"
-                data-size-minus="${escapeHtml(line.id)}"
-                aria-label="Reducir talla ${escapeHtml(line.size || "")}"
-              >
-                −
-              </button>
-
-              <span>
-                ${Math.max(1,Number(line.quantity)||1)}
-              </span>
-
-              <button
-                type="button"
-                data-size-plus="${escapeHtml(line.id)}"
-                aria-label="Aumentar talla ${escapeHtml(line.size || "")}"
-              >
-                +
-              </button>
-
-            </span>
-
-          </div>
-
-        `
-      )
-        .join("");
-  }
-
-  function removeSelectedSize(
-    size
-  ){
-
-    const cart =
-      readCart();
-
-    cart.items =
-      cart.items.filter(
-        item =>
-          !(
-            String(
-              item.productId
-            ) ===
-              String(
-                state.product?.id
-              ) &&
-            normalizeChoice(
-              item.size
-            ) ===
-              normalizeChoice(
-                size
-              ) &&
-            item.autoSelected ===
-              true
-          )
-      );
-
-    saveCart(
-      cart
+    removeStorage(
+      SESSION_KEY
     );
 
-    sendBridge(
-      "ADD_TO_CART",
-      {
-        selectionMode:
-          "SIZE_DESELECTION"
-      }
-    );
-  }
+    try {
+      const tokens =
+        await wix.auth
+          .generateVisitorTokens();
 
-  function changeSelectedSizeQuantity(
-    itemId,
-    delta
-  ){
-
-    const cart =
-      readCart();
-
-    const line =
-      cart.items.find(
-        item =>
-          String(
-            item.id
-          ) ===
-          String(
-            itemId
-          )
+      saveJson(
+        SESSION_KEY,
+        tokens
       );
 
-    if(
-      !line
-    ){
-      return;
-    }
+      return tokens;
 
-    line.quantity =
-      Math.max(
-        0,
-        (
-          Number(
-            line.quantity
-          ) ||
-          1
-        ) +
-        delta
-      );
-
-    if(
-      line.quantity ===
-      0
-    ){
-
-      cart.items =
-        cart.items.filter(
-          item =>
-            String(
-              item.id
-            ) !==
-            String(
-              itemId
-            )
-        );
-    }
-
-    saveCart(
-      cart
-    );
-
-    sendBridge(
-      "ADD_TO_CART",
-      {
-        selectionMode:
-          "QUANTITY_CHANGE"
-      }
-    );
-
-    renderSizeState();
-
-    renderSelectedSizeQuantities();
-  }
-
-  function selectSize(
-    size
-  ){
-
-    if(
-      !state.product
-    ){
-      return;
-    }
-
-    const alreadySelected =
-      selectedSizeLines()
-        .some(
-          item =>
-            normalizeChoice(
-              item.size
-            ) ===
-            normalizeChoice(
-              size
-            )
-        );
-
-    if(
-      alreadySelected
-    ){
-
-      removeSelectedSize(
-        size
-      );
-
-      state.selectedSize =
-        null;
-
-      $("selectedSizeLabel")
-        .textContent =
-          "Selecciona";
-
-      renderSizeState();
-
-      renderSelectedSizeQuantities();
-
-      showToast(
-        `Talla ${size} eliminada de la bolsa.`
-      );
-
-      return;
-    }
-
-    state.selectedSize =
-      size;
-
-    $("selectedSizeLabel")
-      .textContent =
-        size;
-
-    renderSizeState();
-
-    syncSelectionToBag();
-
-    renderSizeState();
-
-    renderSelectedSizeQuantities();
-
-    animateBag();
-
-    if(
-      navigator.vibrate
-    ){
-
-      navigator.vibrate(
-        20
+    } catch (
+      error
+    ) {
+      throw (
+        error ||
+        firstError
       );
     }
-
-    showToast(
-      `Talla ${size} agregada a la bolsa.`
-    );
-
-    track(
-      "SIZE_SELECTED",
-      {
-        size,
-        color:
-          state.selectedColor
-      }
-    );
   }
+}
 
-  qsa(
-    "[data-size]"
-  )
-    .forEach(
-      button => {
+/* ============================================================
+   ERROR HELPERS
+   ============================================================ */
 
-        button.onclick =
-          () => {
+function getStatus(
+  error
+) {
+  return Number(
+    error
+      ?.response
+      ?.status ||
+    error
+      ?.status ||
+    error
+      ?.statusCode ||
+    0
+  );
+}
 
-            selectSize(
-              button.dataset.size
-            );
+function isNotFound(
+  error
+) {
+  return (
+    getStatus(error) ===
+    404
+  );
+}
 
-          };
+/* ============================================================
+   GET CURRENT WIX CART
+   ============================================================ */
 
-      }
-    );
+async function getWixCart() {
+  try {
+    const result =
+      await wix
+        .currentCart
+        .getCurrentCart();
 
-  /* ============================================================
-     COLORS
-     ============================================================ */
+    persistCurrentTokens();
 
-  function resetColorControls(){
+    return result;
 
-    state.selectedColor =
-      "Negro";
-
-    $("selectedColorLabel")
-      .textContent =
-        "Negro";
-
-    qsa(
-      "[data-color]"
-    )
-      .forEach(
-        button => {
-
-          button.classList.toggle(
-            "active",
-            button.dataset.color ===
-              "Negro"
-          );
-
-        }
-      );
-  }
-
-  $("selectedSizeQuantities")
-    .addEventListener(
-      "click",
-      event => {
-
-        const minus =
-          event.target.closest(
-            "[data-size-minus]"
-          );
-
-        const plus =
-          event.target.closest(
-            "[data-size-plus]"
-          );
-
-        if(
-          minus
-        ){
-
-          changeSelectedSizeQuantity(
-            minus.dataset.sizeMinus,
-            -1
-          );
-        }
-
-        if(
-          plus
-        ){
-
-          changeSelectedSizeQuantity(
-            plus.dataset.sizePlus,
-            1
-          );
-        }
-
-      }
-    );
-
-  function selectColor(
-    color,
-    selectedButton
-  ){
-
-    state.selectedColor =
-      color;
-
-    $("selectedColorLabel")
-      .textContent =
-        color;
-
-    qsa(
-      "[data-color]"
-    )
-      .forEach(
-        button => {
-
-          button.classList.toggle(
-            "active",
-            button ===
-              selectedButton
-          );
-
-        }
-      );
-
-    if(
-      state.selectedSize
-    ){
-
-      syncSelectionToBag();
-    }
-
-    track(
-      "COLOR_SELECTED",
-      {
-        color
-      }
-    );
-  }
-
-  qsa(
-    "[data-color]"
-  )
-    .forEach(
-      button => {
-
-        button.onclick =
-          () => {
-
-            selectColor(
-              button.dataset.color,
-              button
-            );
-
-          };
-
-      }
-    );
-
-  /* ============================================================
-     AUTO ADD TO BAG
-     ============================================================ */
-
-  function syncSelectionToBag(){
-
-    if(
-      !state.product ||
-      !state.selectedSize
-    ){
+  } catch (
+    error
+  ) {
+    if (
+      isNotFound(error)
+    ) {
       return null;
     }
 
-    const cart =
-      readCart();
+    throw error;
+  }
+}
 
-    const selectedVariant =
-      state.product
-        ?.variants
-        ?.find(
-          variant =>
-            normalizeChoice(
-              variant.size
-            ) ===
-              normalizeChoice(
-                state.selectedSize
-              ) &&
-            (
-              !variant.color ||
-              normalizeChoice(
-                variant.color
-              ) ===
-                normalizeChoice(
-                  state.selectedColor
-                )
-            )
-        ) ||
-      state.product
-        ?.variants
-        ?.find(
-          variant =>
-            normalizeChoice(
-              variant.size
-            ) ===
-              normalizeChoice(
-                state.selectedSize
-              )
-        ) ||
-      null;
+/* ============================================================
+   CART PERSISTENCE
+   ============================================================ */
 
-    const variantId =
-      selectedVariant?.id ||
-      null;
+async function getPersistentCart() {
+  /*
+    CajaModa local storage is intentionally
+    preferred when it already has items.
 
-    const desiredKey =
-      cartLineKey({
-        productId:
-          state.product.id,
+    This prevents Home from erasing a Product-page
+    selection while Wix synchronization is still
+    finishing.
+  */
 
-        variantId,
+  const local =
+    readBestLocalCart();
 
-        size:
-          state.selectedSize,
+  let wixCart = null;
 
-        color:
-          state.selectedColor
-      });
+  try {
+    wixCart =
+      await getWixCart();
 
-    let line =
-      cart.items.find(
-        item =>
-          cartLineKey(
-            item
-          ) ===
-            desiredKey &&
-          item.autoSelected ===
-            true
-      ) ||
-      cart.items.find(
-        item =>
-          !item.variantId &&
-          String(
-            item.productId
-          ) ===
-            String(
-              state.product.id
-            ) &&
-          normalizeChoice(
-            item.size
-          ) ===
-            normalizeChoice(
-              state.selectedSize
-            ) &&
-          normalizeChoice(
-            item.color
-          ) ===
-            normalizeChoice(
-              state.selectedColor
-            ) &&
-          item.autoSelected ===
-            true
-      );
-
-    const image =
-      getMedia(
-        state.product
-      )[0] ||
-      state.product.image ||
-      "";
-
-    if(
-      line
-    ){
-
-      line.size =
-        state.selectedSize;
-
-      line.color =
-        state.selectedColor;
-
-      line.name =
-        state.product.name;
-
-      line.image =
-        image;
-
-      line.variantId =
-        variantId;
-
-      line.unitPrice =
-        normalizePrice(
-          selectedVariant?.price,
-          state.product.price
-        );
-
-      line.price =
-        line.unitPrice;
-
-    }else{
-
-      line = {
-
-        id:
-          `selection-${desiredKey}`,
-
-        productId:
-          state.product.id,
-
-        variantId,
-
-        name:
-          state.product.name,
-
-        image,
-
-        size:
-          state.selectedSize,
-
-        color:
-          state.selectedColor,
-
-        quantity:
-          1,
-
-        unitPrice:
-          normalizePrice(
-            selectedVariant?.price,
-            state.product.price
-          ),
-
-        price:
-          normalizePrice(
-            selectedVariant?.price,
-            state.product.price
-          ),
-
-        autoSelected:
-          true
-      };
-
-      cart.items.push(
-        line
-      );
-    }
-
-    const saved =
-      saveCart(
-        cart
-      );
-
-    sendBridge(
-      "ADD_TO_CART",
-      {
-
-        productId:
-          state.product.id,
-
-        size:
-          state.selectedSize,
-
-        color:
-          state.selectedColor,
-
-        quantity:
-          1,
-
-        selectionMode:
-          "SIZE_SELECTION"
-      }
+  } catch (
+    error
+  ) {
+    console.warn(
+      "[CajaModa] Wix cart read warning:",
+      error
     );
-
-    return saved;
   }
 
-  /* ============================================================
-     ADD TO BAG
-     ============================================================ */
+  const normalizedWix =
+    wixCart
+      ? normalizeWixCart(
+          wixCart
+        )
+      : emptyCart();
 
-  $("addBagButton")
-    .onclick =
-      () => {
+  if (
+    local.items.length
+  ) {
+    lastCart =
+      local;
 
-        if(
-          !state.selectedSize
-        ){
+    /*
+      If Wix is behind the local bag,
+      synchronize quietly in the background.
+    */
 
-          showToast(
-            "Selecciona una talla."
-          );
+    if (
+      catalog.length &&
+      cartFingerprint(local) !==
+        cartFingerprint(
+          normalizedWix
+        )
+    ) {
+      syncLocalCartToWix(
+        local
+      )
+        .catch(
+          error => {
+            console.warn(
+              "[CajaModa] Background cart sync:",
+              error
+            );
+          }
+        );
+    }
 
-          return;
-        }
+    return local;
+  }
 
-        syncSelectionToBag();
+  if (
+    normalizedWix
+      .items
+      .length
+  ) {
+    return saveLocalCart(
+      normalizedWix
+    );
+  }
 
-        animateBag();
+  lastCart =
+    emptyCart();
 
-        showToast(
-          "Producto guardado en tu bolsa."
+  return lastCart;
+}
+
+/* ============================================================
+   TURN LOCAL BAG INTO WIX LINE ITEMS
+   ============================================================ */
+
+function buildWixLineItems(
+  localCart
+) {
+  const cart =
+    normalizeLocalCart(
+      localCart
+    );
+
+  if (
+    !cart.items.length
+  ) {
+    return [];
+  }
+
+  return cart.items.map(
+    item => {
+      const product =
+        findProduct(
+          item.productId
         );
 
-        if(
-          navigator.vibrate
-        ){
+      if (
+        !product
+      ) {
+        throw new Error(
+          `No pudimos encontrar ${item.name || "un producto"} en Wix.`
+        );
+      }
 
-          navigator.vibrate(
-            18
-          );
-        }
+      const variant =
+        findVariant(
+          product,
+          item
+        );
+
+      if (
+        product.variants.length &&
+        !variant?.id
+      ) {
+        throw new Error(
+          `Selecciona una talla disponible para ${product.name}.`
+        );
+      }
+
+      const catalogReference = {
+        appId:
+          WIX_STORES_APP_ID,
+
+        catalogItemId:
+          product.id
       };
 
-  /* ============================================================
-     BUY NOW
-     ============================================================ */
+      if (
+        variant?.id
+      ) {
+        catalogReference.options = {
+          variantId:
+            variant.id
+        };
+      }
 
-  $("buyNowButton")
-    .onclick =
-      () => {
+      return {
+        catalogReference,
 
-        if(
-          !state.selectedSize
-        ){
+        quantity:
+          Math.max(
+            1,
+            Number(
+              item.quantity ||
+              1
+            )
+          )
+      };
+    }
+  );
+}
 
-          showToast(
-            "Selecciona una talla."
-          );
+/* ============================================================
+   SYNC CAJAMODA BAG -> REAL WIX CART
+   ============================================================ */
 
-          return;
-        }
+async function syncLocalCartToWix(
+  localCart
+) {
+  const cart =
+    normalizeLocalCart(
+      localCart
+    );
 
-        const cart =
-          syncSelectionToBag() ||
-          readCart();
+  if (
+    !cart.items.length
+  ) {
+    return cart;
+  }
 
-        saveJson(
-          "cajamoda-checkout-cart",
+  const lineItems =
+    buildWixLineItems(
+      cart
+    );
+
+  /*
+    Remove the old Wix current cart so that
+    the checkout exactly matches the visible
+    CajaModa bag and doesn't duplicate items.
+  */
+
+  try {
+    await wix
+      .currentCart
+      .deleteCurrentCart();
+
+  } catch (
+    error
+  ) {
+    if (
+      !isNotFound(error)
+    ) {
+      throw error;
+    }
+  }
+
+  const result =
+    await wix
+      .currentCart
+      .addToCurrentCart({
+        lineItems
+      });
+
+  persistCurrentTokens();
+
+  const wixCart =
+    result?.cart ||
+    result;
+
+  const normalizedWix =
+    normalizeWixCart(
+      wixCart
+    );
+
+  /*
+    Keep the local display information if Wix
+    hasn't returned enough display fields yet.
+  */
+
+  const saved =
+    normalizedWix.items.length
+      ? saveLocalCart(
+          normalizedWix
+        )
+      : saveLocalCart(
           cart
         );
 
-        track(
-          "BUY_NOW",
+  return saved;
+}
+
+/* ============================================================
+   SEND INIT
+   ============================================================ */
+
+function sendInit() {
+  send(
+    "INIT",
+    {
+      products:
+        catalog,
+
+      sellerId:
+        "CAJAMODA",
+
+      storefrontId:
+        "CAJAMODA",
+
+      storefrontSlug:
+        "cajamoda",
+
+      brand: {
+        name:
+          "CAJAMODA",
+
+        publicName:
+          "CajaModa",
+
+        monogram:
+          "CM"
+      },
+
+      /*
+        Important:
+        never initialize the storefront with a
+        fake empty cart when a local bag exists.
+      */
+
+      cart:
+        lastCart,
+
+      features: {
+        reviewsEnabled:
+          false
+      },
+
+      supplyContext: {
+        enabled:
+          true,
+
+        checkoutMode:
+          "DEFAULT_LOCATION_NATIVE",
+
+        supportsLocationInventory:
+          false,
+
+        supportsReservations:
+          false,
+
+        supportsPreorder:
+          false,
+
+        supportsCustomMultiLocationCheckout:
+          false,
+
+        locations:
+          [],
+
+        inventoryItems:
+          []
+      },
+
+      inventoryCheckoutMode:
+        "DEFAULT_LOCATION_NATIVE"
+    }
+  );
+}
+
+/* ============================================================
+   LOAD WIX PRODUCTS
+   ============================================================ */
+
+async function loadCatalog() {
+  const result =
+    await wix
+      .products
+      .queryProducts()
+      .limit(100)
+      .find();
+
+  const wixProducts =
+    result?.items ||
+    [];
+
+  catalog =
+    wixProducts
+      .map(
+        (
+          product,
+          index
+        ) =>
+          normalizeProduct(
+            product,
+            index
+          )
+      )
+      .filter(
+        product =>
+          product.id
+      );
+
+  console.log(
+    `[CajaModa] Loaded ${catalog.length} Wix products`
+  );
+
+  /*
+    Resolve the best persistent bag only after
+    the catalog is available so variants can be
+    matched correctly.
+  */
+
+  lastCart =
+    await getPersistentCart();
+
+  sendInit();
+}
+
+/* ============================================================
+   CREATE REAL WIX CHECKOUT
+   ============================================================ */
+
+async function createPaymentCheckout(
+  payload
+) {
+  try {
+    const suppliedCart =
+      normalizeLocalCart(
+        payload?.cart
+      );
+
+    const localCart =
+      suppliedCart.items.length
+        ? suppliedCart
+        : readBestLocalCart();
+
+    if (
+      !localCart
+        .items
+        .length
+    ) {
+      throw new Error(
+        "Tu bolsa está vacía."
+      );
+    }
+
+    /*
+      Make Wix's current cart match exactly
+      what the customer sees on Checkout.
+    */
+
+    await syncLocalCartToWix(
+      localCart
+    );
+
+    const customer =
+      payload?.customer ||
+      {};
+
+    const channelType =
+      currentCart
+        ?.ChannelType
+        ?.OTHER_PLATFORM ||
+      "OTHER_PLATFORM";
+
+    const checkoutOptions = {
+      channelType
+    };
+
+    /*
+      Email is safe to prefill.
+      Wix's hosted checkout remains responsible
+      for final shipping and payment validation.
+    */
+
+    if (
+      customer.email
+    ) {
+      checkoutOptions.email =
+        customer.email;
+    }
+
+    const checkoutResult =
+      await wix
+        .currentCart
+        .createCheckoutFromCurrentCart(
+          checkoutOptions
+        );
+
+    const checkoutId =
+      checkoutResult
+        ?.checkoutId ||
+      checkoutResult
+        ?._id ||
+      checkoutResult
+        ?.id ||
+      "";
+
+    if (
+      !checkoutId
+    ) {
+      throw new Error(
+        "Wix no devolvió un checkout válido."
+      );
+    }
+
+    persistCurrentTokens();
+
+    /*
+      Generate the Wix-hosted secure checkout URL.
+    */
+
+    const redirectResult =
+      await wix
+        .redirects
+        .createRedirectSession({
+          callbacks: {
+            postFlowUrl:
+              `${window.location.origin}/?checkout=complete`
+          },
+
+          ecomCheckout: {
+            checkoutId
+          },
+
+          origin:
+            window.location.origin,
+
+          preferences: {
+            checkIfPublish:
+              true
+          }
+        });
+
+    const checkoutUrl =
+      redirectResult
+        ?.redirectSession
+        ?.fullUrl ||
+      "";
+
+    if (
+      !checkoutUrl
+    ) {
+      throw new Error(
+        "Wix no devolvió la dirección de pago."
+      );
+    }
+
+    send(
+      "CHECKOUT_URL",
+      {
+        url:
+          checkoutUrl,
+
+        checkoutId
+      }
+    );
+
+  } catch (
+    error
+  ) {
+    console.error(
+      "[CajaModa] Checkout error:",
+      error
+    );
+
+    send(
+      "CHECKOUT_ERROR",
+      {
+        message:
+          error?.message ||
+          "No pudimos abrir el pago seguro."
+      }
+    );
+  }
+}
+
+/* ============================================================
+   MESSAGE LISTENER
+   ============================================================ */
+
+window.addEventListener(
+  "message",
+  async event => {
+    /*
+      All CajaModa HTML pages and this bridge
+      execute inside the same browser window.
+    */
+
+    if (
+      event.source !==
+      window
+    ) {
+      return;
+    }
+
+    const message =
+      event.data ||
+      {};
+
+    const acceptedSources =
+      new Set([
+        "MODAPOP_IFRAME",
+        "CAJAMODA_IFRAME",
+        "CAJAMODA_STOREFRONT",
+        "CAJAMODA_CHECKOUT"
+      ]);
+
+    if (
+      !acceptedSources.has(
+        message.source
+      )
+    ) {
+      return;
+    }
+
+    if (
+      message.source ===
+      "MODAPOP_IFRAME"
+    ) {
+      responseSource =
+        "MODAPOP_WIX";
+
+    } else {
+      responseSource =
+        "CAJAMODA_WIX";
+    }
+
+    const payload =
+      message.payload ||
+      {};
+
+    switch (
+      message.type
+    ) {
+
+      /* ======================================================
+         READY
+         ====================================================== */
+
+      case "READY":
+        sendInit();
+        break;
+
+      /* ======================================================
+         PRODUCT VARIANTS
+         ====================================================== */
+
+      case "REQUEST_VARIANTS": {
+        const product =
+          findProduct(
+            payload.productId
+          );
+
+        if (
+          product
+        ) {
+          send(
+            "VARIANTS",
+            {
+              productId:
+                product.id,
+
+              variants:
+                product.variants
+            }
+          );
+        }
+
+        break;
+      }
+
+      /* ======================================================
+         PRODUCT META
+         ====================================================== */
+
+      case "REQUEST_PRODUCT_META": {
+        const product =
+          findProduct(
+            payload.productId
+          );
+
+        if (
+          product
+        ) {
+          send(
+            "PRODUCT_META",
+            product
+          );
+        }
+
+        break;
+      }
+
+      /* ======================================================
+         SUPPLY CONTEXT
+         ====================================================== */
+
+      case "REQUEST_SUPPLY_CONTEXT":
+        send(
+          "SUPPLY_CONTEXT",
           {
-            cartCount:
-              cart.count,
+            enabled:
+              true,
 
-            size:
-              state.selectedSize,
+            checkoutMode:
+              "DEFAULT_LOCATION_NATIVE",
 
-            color:
-              state.selectedColor
+            supportsLocationInventory:
+              false,
+
+            supportsReservations:
+              false,
+
+            supportsPreorder:
+              false,
+
+            supportsCustomMultiLocationCheckout:
+              false,
+
+            locations:
+              [],
+
+            inventoryItems:
+              []
           }
         );
 
-        location.href =
-          CONFIG.checkoutPage;
-      };
+        break;
 
-  /* ============================================================
-     FAVORITE
-     ============================================================ */
+      /* ======================================================
+         PRODUCT SUPPLY
+         ====================================================== */
 
-  let wishListAutoCloseTimer =
-    null;
+      case "REQUEST_PRODUCT_SUPPLY":
+        send(
+          "PRODUCT_SUPPLY",
+          {
+            productId:
+              payload.productId,
 
-  function isFavorite(){
+            locations:
+              [],
 
-    return (
-      state.product &&
-      state.favorites.has(
-        String(
-          state.product.id
-        )
-      )
-    );
-```
+            inventoryItems:
+              []
+          }
+        );
 
-   
+        break;
+
+      /* ======================================================
+         VARIANT INVENTORY
+         ====================================================== */
+
+      case "REQUEST_VARIANT_INVENTORY":
+        send(
+          "VARIANT_INVENTORY",
+          {
+            productId:
+              payload.productId,
+
+            variantId:
+              payload.variantId,
+
+            locations:
+              [],
+
+            inventoryItems:
+              []
+          }
+        );
+
+        break;
+
+      /* ======================================================
+         PURCHASE VALIDATION
+         ====================================================== */
+
+      case "VALIDATE_PURCHASE_PATH":
+        send(
+          "PURCHASE_PATH_STATE",
+          {
+            allowed:
+              true,
+
+            sellable:
+              true,
+
+            checkoutMode:
+              "DEFAULT_LOCATION_NATIVE",
+
+            supplyIntent:
+              payload.supplyIntent ||
+              null
+          }
+        );
+
+        break;
+
+      /* ======================================================
+         PRODUCT PAGE ADDED TO BAG
+         ====================================================== */
+
+      case "ADD_TO_CART": {
+        /*
+          product/index.html already writes the
+          selected item into cajamoda-cart first.
+
+          Keep that local cart immediately, then
+          mirror it into Wix.
+        */
+
+        const localCart =
+          readBestLocalCart();
+
+        if (
+          localCart
+            .items
+            .length
+        ) {
+          lastCart =
+            localCart;
+
+          /*
+            Send local state immediately so the UI
+            never waits for Wix networking.
+          */
+
+          send(
+            "CART_STATE",
+            localCart
+          );
+
+          /*
+            Sync Wix without blocking the product UI.
+          */
+
+          if (
+            catalog.length
+          ) {
+            syncLocalCartToWix(
+              localCart
+            )
+              .then(
+                cart => {
+                  send(
+                    "CART_STATE",
+                    cart
+                  );
+                }
+              )
+              .catch(
+                error => {
+                  console.warn(
+                    "[CajaModa] Cart sync warning:",
+                    error
+                  );
+                }
+              );
+          }
+        }
+
+        break;
+      }
+
+      /* ======================================================
+         GET CART
+         ====================================================== */
+
+      case "GET_CART": {
+        const cart =
+          await getPersistentCart();
+
+        send(
+          "CART_STATE",
+          cart
+        );
+
+        break;
+      }
+
+      /* ======================================================
+         CREATE REAL PAYMENT
+         ====================================================== */
+
+      case "CREATE_CHECKOUT":
+        await createPaymentCheckout(
+          payload
+        );
+
+        break;
+
+      default:
+        break;
+    }
+  }
+);
+
+/* ============================================================
+   STORAGE SYNC
+   ============================================================ */
+
+window.addEventListener(
+  "storage",
+  event => {
+    if (
+      event.key ===
+      "cajamoda-cart"
+    ) {
+      const cart =
+        readBestLocalCart();
+
+      if (
+        cart.items.length
+      ) {
+        lastCart =
+          cart;
+      }
+    }
+  }
+);
+
+/* ============================================================
+   START
+   ============================================================ */
+
+async function start() {
+  /*
+    Maintain the same anonymous Wix visitor
+    across Home, Product and Checkout.
+  */
+
+  await prepareVisitorSession();
+
+  await loadCatalog();
+}
+
+start()
+  .catch(
+    error => {
+      console.error(
+        "[CajaModa] Wix startup error:",
+        error
+      );
+
+      /*
+        Keep the local storefront usable even
+        if Wix temporarily fails.
+      */
+
+      lastCart =
+        readBestLocalCart();
+
+      send(
+        "INIT",
+        {
+          products:
+            catalog,
+
+          sellerId:
+            "CAJAMODA",
+
+          storefrontId:
+            "CAJAMODA",
+
+          storefrontSlug:
+            "cajamoda",
+
+          brand: {
+            name:
+              "CAJAMODA",
+
+            publicName:
+              "CajaModa",
+
+            monogram:
+              "CM"
+          },
+
+          cart:
+            lastCart,
+
+          features: {
+            reviewsEnabled:
+              false
+          }
+        }
+      );
+
+      send(
+        "SUPPLY_ERROR",
+        {
+          message:
+            "No pudimos conectar CajaModa con Wix."
+        }
+      );
+    }
+  );

@@ -831,7 +831,7 @@
     eventName => {
       drawer.addEventListener(
         eventName,
-        cancelAutoClose
+        scheduleAutoClose
       );
     }
   );
@@ -950,6 +950,15 @@
       }
     }
   );
+
+  window.addEventListener("pagehide",closeBag);
+  window.addEventListener("pageshow",closeBag);
+
+  document.addEventListener("visibilitychange",() => {
+    if(document.hidden){
+      closeBag();
+    }
+  });
 
   window.CajaModaBagPreview = {
     open:

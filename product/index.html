@@ -818,6 +818,7 @@ svg{
 }
 
 .wishListCard{
+  position:relative;
   flex:0 0 93px;
   min-width:0;
   padding:0;
@@ -826,6 +827,9 @@ svg{
   background:transparent;
   color:#111;
 }
+
+.wishListHeart{position:absolute;z-index:3;top:5px;right:5px;width:27px;height:27px;display:grid;place-items:center;border-radius:50%;background:rgba(255,255,255,.90);border:1px solid rgba(255,255,255,.97);color:#cf1738;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);animation:cajaHeartBeat 2.4s ease-in-out infinite}
+.wishListHeart svg{width:15px;height:15px;fill:currentColor;stroke:currentColor;stroke-width:1.7}
 
 .wishListImage,
 .wishListPlaceholder{
@@ -2179,6 +2183,9 @@ svg{
   backdrop-filter:blur(25px) saturate(165%);
   -webkit-backdrop-filter:blur(25px) saturate(165%);
 }
+#photoBag,#detailsBag,#navBag{width:39px;height:39px;min-width:39px;min-height:39px;margin:auto;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,rgba(255,255,255,.83),rgba(255,255,255,.36));border:1px solid rgba(255,255,255,.96);box-shadow:0 0 0 1px rgba(0,0,0,.026),inset 0 1px 0 rgba(255,255,255,1),0 8px 24px rgba(0,0,0,.055);backdrop-filter:blur(25px) saturate(165%);-webkit-backdrop-filter:blur(25px) saturate(165%)}
+#photoBag svg,#detailsBag svg,#navBag svg{width:23px;height:23px;stroke-width:1.45}
+#photoBagBadge,#detailsBagCount,#navBagBadge{top:-2px;right:-2px;min-width:18px;height:18px;padding:0 4px;border:2px solid #fff;font-size:8px!important}
 </style>
 
 </head>
@@ -5375,6 +5382,8 @@ price:
                     data-wishlist-product="${escapeHtml(product.id)}"
                   >
 
+                    <span class="wishListHeart" data-wishlist-remove="${escapeHtml(product.id)}" role="button" aria-label="Quitar de Wishlist" tabindex="0">${heartIcon(true)}</span>
+
                     ${
                       image
                         ?`
@@ -5466,6 +5475,12 @@ price:
             };
         }
       );
+
+    qsa("[data-wishlist-remove]", $("wishListRail")).forEach(heart => {
+      const remove = event => {event.preventDefault();event.stopPropagation();toggleFavorite(heart.dataset.wishlistRemove)};
+      heart.onclick = remove;
+      heart.onkeydown = event => {if(event.key === "Enter" || event.key === " ") remove(event)};
+    });
   }
 
   function cancelWishListAutoClose(){

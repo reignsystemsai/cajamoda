@@ -307,9 +307,9 @@
       align-items:flex-end;
       justify-content:center;
       padding:8px;
-      background:rgba(255,255,255,.30);
-      backdrop-filter:blur(16px);
-      -webkit-backdrop-filter:blur(16px);
+      background:rgba(0,0,0,.10);
+      backdrop-filter:blur(6px);
+      -webkit-backdrop-filter:blur(6px);
       opacity:0;
       visibility:hidden;
       pointer-events:none;
@@ -327,14 +327,15 @@
       max-height:79dvh;
       overflow-y:auto;
       padding:14px 13px calc(15px + env(safe-area-inset-bottom));
-      border:1px solid rgba(255,255,255,.88);
+      border:1px solid rgba(255,255,255,.98);
       border-radius:23px;
-      background:rgba(255,255,255,.76);
+      background:linear-gradient(145deg,rgba(255,255,255,.95),rgba(255,255,255,.60));
       box-shadow:
-        inset 0 1px 0 rgba(255,255,255,.96),
-        0 18px 55px rgba(0,0,0,.16);
-      backdrop-filter:blur(28px) saturate(150%);
-      -webkit-backdrop-filter:blur(28px) saturate(150%);
+        0 0 0 1px rgba(0,0,0,.04),
+        inset 0 1px 0 #fff,
+        0 20px 48px rgba(0,0,0,.10);
+      backdrop-filter:blur(31px) saturate(178%);
+      -webkit-backdrop-filter:blur(31px) saturate(178%);
     }
 
     .sharedBagHeader{

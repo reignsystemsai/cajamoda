@@ -853,14 +853,17 @@ svg{
 
   flex:0 0 auto;
 
-  height:40px;
+  height:34px;
 
   padding:
     0 7px;
 
   white-space:nowrap;
 
-  font-size:7px;
+  font-size:8px;
+
+  display:flex;
+  align-items:center;
 
   font-weight:500;
 
@@ -889,7 +892,7 @@ svg{
 
   left:5px;
   right:5px;
-  bottom:-1px;
+  bottom:2px;
 
   height:2px;
 
@@ -1181,9 +1184,10 @@ svg{
    ============================================================ */
 
 .placeholderCard{
-  pointer-events:none;
   box-shadow:none;
 }
+
+.placeholderCard .productHeart{pointer-events:none;opacity:.58}
 
 .placeholderMedia{
   position:relative;
@@ -1970,11 +1974,15 @@ svg{
 }
 
 .favoriteMini{
+  position:relative;
   flex:
     0 0 93px;
 
   scroll-snap-align:start;
 }
+
+.favoriteMiniHeart{position:absolute;z-index:3;top:5px;right:5px;width:27px;height:27px;display:grid;place-items:center;border-radius:50%;background:rgba(255,255,255,.90);border:1px solid rgba(255,255,255,.97);color:#cf1738;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);animation:cajaHeartBeat 2.4s ease-in-out infinite}
+.favoriteMiniHeart svg{width:15px;height:15px;fill:currentColor;stroke:currentColor;stroke-width:1.7}
 
 .favoriteMiniImage{
   width:93px;
@@ -2367,6 +2375,9 @@ svg{
 .productHeart.active{color:#cf1738;animation:cajaHeartBeat 2.4s ease-in-out infinite;transform-origin:center}
 @keyframes cajaHeartBeat{0%,42%,100%{transform:scale(1)}7%{transform:scale(1.13)}14%{transform:scale(1)}21%{transform:scale(1.09)}29%{transform:scale(1)}}
 @media (prefers-reduced-motion:reduce){.productHeart.active{animation:none}}
+#navBag{width:39px;height:39px;min-width:39px;min-height:39px;margin:auto;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,rgba(255,255,255,.83),rgba(255,255,255,.36));border:1px solid rgba(255,255,255,.96);box-shadow:0 0 0 1px rgba(0,0,0,.026),inset 0 1px 0 rgba(255,255,255,1),0 8px 24px rgba(0,0,0,.055);backdrop-filter:blur(25px) saturate(165%);-webkit-backdrop-filter:blur(25px) saturate(165%)}
+#navBag svg{width:23px;height:23px;stroke-width:1.45}
+#navBag .navBagBadge{top:-2px;right:-2px;min-width:18px;height:18px;padding:0 4px;border:2px solid #fff;font-size:8px}
 </style>
 </head>
 
@@ -2605,7 +2616,7 @@ svg{
     id="navFavorites"
     class="navButton"
     data-nav-name="favorites"
-    aria-label="Favoritos"
+    aria-label="Wishlist"
   >
 
     <svg
@@ -2617,7 +2628,7 @@ svg{
     </svg>
 
     <span>
-      Favoritos
+      Wishlist
     </span>
 
   </button>
@@ -3062,7 +3073,7 @@ svg{
         </div>
 
         <div class="panelHeadTitle">
-          Favoritos
+          Wishlist
         </div>
 
       </div>
@@ -4494,6 +4505,8 @@ svg{
 
         <div class="productMedia">
 
+          <button class="productHeart" type="button" disabled aria-label="Producto próximamente">${heartIcon(false)}</button>
+
           <div class="placeholderMedia">
 
             <div class="placeholderInner">
@@ -5076,6 +5089,8 @@ svg{
                 data-favorite-open="${escapeHtml(product.id)}"
               >
 
+                <span class="favoriteMiniHeart" data-favorite-remove="${escapeHtml(product.id)}" role="button" aria-label="Quitar de Wishlist" tabindex="0">${heartIcon(true)}</span>
+
                 <div class="favoriteMiniImage">
 
                   ${
@@ -5152,6 +5167,12 @@ svg{
           };
       }
     );
+
+    qsa("[data-favorite-remove]", $("favoriteRail")).forEach(heart => {
+      const remove = event => {event.preventDefault();event.stopPropagation();toggleFavorite(heart.dataset.favoriteRemove)};
+      heart.onclick = remove;
+      heart.onkeydown = event => {if(event.key === "Enter" || event.key === " ") remove(event)};
+    });
   }
 
   /* ============================================================

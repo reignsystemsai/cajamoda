@@ -234,6 +234,8 @@
       normalized.count
     );
 
+    window.dispatchEvent(new CustomEvent("cajamoda:cart-updated",{detail:normalized}));
+
     renderBag();
 
     return normalized;

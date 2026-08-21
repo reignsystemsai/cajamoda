@@ -623,7 +623,14 @@ function normalizeProduct(
     "sun"
   ];
 
+  const brandVibe =
+    categoryVibeFromName(
+      product?.brand?.name ||
+      product?.brand
+    );
+
   const collectionVibe =
+    brandVibe ||
     productCategoryVibes.get(
       String(id)
     ) ||
@@ -1912,7 +1919,8 @@ async function loadCatalog() {
         .productsV3
         .queryProducts({
           fields: [
-            "DIRECT_CATEGORIES_INFO"
+            "DIRECT_CATEGORIES_INFO",
+            "BREADCRUMBS_INFO"
           ]
         })
         .limit(100)
@@ -1988,6 +1996,22 @@ async function loadCatalog() {
       categoryProducts
         .map(product => {
           const vibeId =
+            categoryVibeFromName(
+              product?.brand?.name ||
+              product?.brand
+            ) ||
+            (
+              product
+                ?.breadcrumbsInfo
+                ?.breadcrumbs ||
+              []
+            )
+              .map(breadcrumb =>
+                categoryVibeFromName(
+                  breadcrumb?.categoryName
+                )
+              )
+              .find(Boolean) ||
             (
               product
                 ?.directCategoriesInfo

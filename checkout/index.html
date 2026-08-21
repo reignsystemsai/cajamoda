@@ -1013,7 +1013,7 @@ img{display:block;max-width:100%}
         aria-hidden="true"
       >
         <div class="deliveryIntro">
-          <h2>Información de entrega</h2>
+          <h2>Correo de contacto</h2>
           <p>
             Usaremos tu correo para el recibo y el seguimiento.
             La dirección final se verifica de forma segura al pagar.
@@ -1039,26 +1039,6 @@ img{display:block;max-width:100%}
             </label>
           </div>
         </form>
-
-        <div class="deliverySelector">
-          <div class="deliverySelectorMain">
-            <svg viewBox="0 0 24 24">
-              <path d="M3 6h11v11H3Z"/>
-              <path d="M14 10h4l3 3v4h-7Z"/>
-              <circle cx="7" cy="18" r="2"/>
-              <circle cx="18" cy="18" r="2"/>
-            </svg>
-
-            <div>
-              <div class="deliveryName">Método de entrega</div>
-              <div class="deliveryDescription">
-                El costo y la dirección se confirman antes del pago.
-              </div>
-            </div>
-          </div>
-
-          <div class="deliveryPrice">Por calcular</div>
-        </div>
 
         <div class="panelActions">
           <button
@@ -1099,17 +1079,16 @@ img{display:block;max-width:100%}
         <div class="paymentIntro">
           <h2>Completa tu pago.</h2>
           <p>
-            Confirma tu pedido. Los impuestos, el envío y los métodos
-            de pago disponibles se calcularán de forma segura en el
-            último paso.
+            Confirma tu pedido y continúa al checkout seguro de Wix.
+            Allí finalizarás envío, facturación y pago.
           </p>
         </div>
 
         <div class="reviewEmailCard glassCard">
           <div class="reviewCardTop">
-            <div class="reviewCardTitle">Información de entrega</div>
+            <div class="reviewCardTitle">Correo de contacto</div>
             <button
-              id="editDeliveryButton"
+              id="editContactButton"
               class="editDelivery"
               type="button"
             >
@@ -1159,14 +1138,14 @@ img{display:block;max-width:100%}
           </button>
 
           <button
-            id="backToDeliveryButton"
+            id="backToContactButton"
             class="secondaryButton"
             type="button"
           >
             <svg viewBox="0 0 24 24">
               <path d="m15 5-7 7 7 7"/>
             </svg>
-            <span>Volver a entrega</span>
+            <span>Volver al correo</span>
           </button>
         </div>
 
@@ -1827,7 +1806,7 @@ img{display:block;max-width:100%}
     return true;
   }
 
-  function validateDelivery() {
+  function validateContact() {
     if (!validateCart()) {
       return false;
     }
@@ -1889,7 +1868,7 @@ img{display:block;max-width:100%}
     if (
       step === "payment" &&
       !options.skipValidation &&
-      !validateDelivery()
+      !validateContact()
     ) {
       return;
     }
@@ -1968,7 +1947,7 @@ img{display:block;max-width:100%}
   }
 
   function requestPayment() {
-    if (!validateDelivery()) {
+    if (!validateContact()) {
       return;
     }
 
@@ -2057,11 +2036,11 @@ img{display:block;max-width:100%}
     goToStep("payment");
   };
 
-  $("editDeliveryButton").onclick = () => {
+  $("editContactButton").onclick = () => {
     goToStep("delivery");
   };
 
-  $("backToDeliveryButton").onclick = () => {
+  $("backToContactButton").onclick = () => {
     goToStep("delivery");
   };
 

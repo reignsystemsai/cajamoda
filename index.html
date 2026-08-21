@@ -2364,6 +2364,9 @@ svg{
     transition-duration:.01ms!important;
   }
 }
+.productHeart.active{color:#cf1738;animation:cajaHeartBeat 2.4s ease-in-out infinite;transform-origin:center}
+@keyframes cajaHeartBeat{0%,42%,100%{transform:scale(1)}7%{transform:scale(1.13)}14%{transform:scale(1)}21%{transform:scale(1.09)}29%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.productHeart.active{animation:none}}
 </style>
 </head>
 
@@ -4418,10 +4421,7 @@ svg{
           product.category === categoryId &&
           matchesSearch(product)
       )
-      .slice(
-        0,
-        CONFIG.maxSlotsPerCategory
-      );
+      ;
   }
 
   function placeholderCard(
@@ -4597,22 +4597,8 @@ svg{
                 productCard
               );
 
-            if(!searching){
-
-              for(
-                let slot =
-                  products.length + 1;
-
-                slot <=
-                  CONFIG.maxSlotsPerCategory;
-
-                slot += 1
-              ){
-
-                cards.push(
-                  placeholderCard(slot)
-                );
-              }
+            if(!searching && products.length === 0){
+              cards.push(placeholderCard(1));
             }
 
             return `
@@ -4977,7 +4963,12 @@ svg{
 
     saveFavorites();
 
-    renderSections();
+    qsa(`[data-favorite="${CSS.escape(id)}"]`).forEach(button=>{
+      const active=state.favorites.has(id);
+      button.classList.toggle("active",active);
+      button.setAttribute("aria-label",active?"Quitar de favoritos":"Agregar a favoritos");
+      button.innerHTML=heartIcon(active);
+    });
 
     renderFavorites();
 

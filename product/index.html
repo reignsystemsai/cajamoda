@@ -5267,20 +5267,11 @@ price:
      BAG ROUTE
      ============================================================ */
 
-  function goToBag(){
+ function goToBag(){
 
-    const cart =
-      readCart();
-
-    saveJson(
-      "cajamoda-checkout-cart",
-      cart
-    );
-
-    location.href =
-      CONFIG.checkoutPage;
-  }
-
+  window.CajaModaBagPreview
+    ?.open();
+}
   $("photoBag")
     .onclick =
       goToBag;

@@ -2141,6 +2141,16 @@ svg{
     translateY(0);
 }
 
+.quantitySection{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:18px}
+.quantityCapsule{display:grid;grid-template-columns:46px 52px 46px;align-items:center;min-height:46px;border:1px solid rgba(17,17,17,.14);border-radius:999px;background:rgba(255,255,255,.48);box-shadow:0 12px 32px rgba(17,17,17,.08),inset 0 1px 0 rgba(255,255,255,.9);backdrop-filter:blur(18px) saturate(150%);-webkit-backdrop-filter:blur(18px) saturate(150%);overflow:hidden}
+.quantityButton{width:46px;height:46px;border:0;background:transparent;color:#111;font:500 25px/1 Inter,system-ui,sans-serif;cursor:pointer;transition:transform .18s ease,background .18s ease}
+.quantityButton:hover{background:rgba(17,17,17,.07);transform:scale(1.08)}
+.quantityButton:active{transform:scale(.94)}
+.quantityButton:disabled{opacity:.3;cursor:not-allowed;transform:none}
+.quantityValue{min-width:52px;text-align:center;font:700 15px/1 Inter,system-ui,sans-serif;color:#111}
+.favoriteButton.active{color:#cf1738;animation:cajaHeartBeat 2.4s ease-in-out infinite;transform-origin:center}
+@keyframes cajaHeartBeat{0%,42%,100%{transform:scale(1)}7%{transform:scale(1.13)}14%{transform:scale(1)}21%{transform:scale(1.09)}29%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.favoriteButton.active{animation:none}}
 </style>
 
 </head>
@@ -2483,6 +2493,16 @@ svg{
 
         </div>
 
+      </section>
+
+      <!-- QUANTITY -->
+      <section class="quantitySection" aria-label="Cantidad">
+        <div class="optionLabel">Cantidad</div>
+        <div class="quantityCapsule">
+          <button id="quantityMinus" class="quantityButton" type="button" aria-label="Disminuir cantidad">−</button>
+          <output id="quantityValue" class="quantityValue" aria-live="polite">1</output>
+          <button id="quantityPlus" class="quantityButton" type="button" aria-label="Aumentar cantidad">+</button>
+        </div>
       </section>
 
       <!-- PURCHASE -->
@@ -3035,6 +3055,8 @@ svg{
     imageIndex:0,
 
     selectedSize:null,
+
+    selectedQuantity:1,
 
     selectedColor:"Negro",
 
@@ -3876,7 +3898,11 @@ svg{
         state.selectedSize ||
         "Selecciona";
 
+    state.selectedQuantity =
+      findExistingAutoLine(product.id)?.quantity || 1;
+
     renderSizeState();
+    renderQuantityState();
 
     renderThumbnails();
 
@@ -4750,57 +4776,42 @@ price:
       );
   }
 
-  function selectSize(
-    size
-  ){
+  function removeProductSelection(){
+    if(!state.product){return readCart()}
+    const cart=readCart();
+    cart.items=cart.items.filter(item=>!(
+      String(item.productId)===String(state.product.id)&&
+      item.autoSelected===true
+    ));
+    const saved=saveCart(cart);
+    sendBridge("ADD_TO_CART",{productId:state.product.id,remove:true,cart:saved});
+    return saved;
+  }
 
-    if(
-      !state.product
-    ){
+  function selectSize(size){
+    if(!state.product){return}
+
+    if(state.selectedSize===size){
+      state.selectedSize=null;
+      state.selectedQuantity=1;
+      $("selectedSizeLabel").textContent="Selecciona";
+      renderSizeState();
+      renderQuantityState();
+      removeProductSelection();
+      showToast("Producto eliminado de tu bolsa.");
       return;
     }
 
-    if(
-      state.selectedSize ===
-      size
-    ){
-      return;
-    }
-
-    state.selectedSize =
-      size;
-
-    $("selectedSizeLabel")
-      .textContent =
-        size;
-
+    state.selectedSize=size;
+    const existing=findExistingAutoLine(state.product.id);
+    state.selectedQuantity=existing?.size===size
+      ?Math.max(1,Number(existing.quantity||1))
+      :1;
+    $("selectedSizeLabel").textContent=size;
     renderSizeState();
-
-    syncSelectionToBag();
-
-    animateBag();
-
-    if(
-      navigator.vibrate
-    ){
-
-      navigator.vibrate(
-        20
-      );
-    }
-
-    showToast(
-      `Talla ${size} agregada a la bolsa.`
-    );
-
-    track(
-      "SIZE_SELECTED",
-      {
-        size,
-        color:
-          state.selectedColor
-      }
-    );
+    renderQuantityState();
+    if(navigator.vibrate){navigator.vibrate(20)}
+    track("SIZE_SELECTED",{size,color:state.selectedColor});
   }
 
   qsa(
@@ -4877,13 +4888,6 @@ price:
         }
       );
 
-    if(
-      state.selectedSize
-    ){
-
-      syncSelectionToBag();
-    }
-
     track(
       "COLOR_SELECTED",
       {
@@ -4912,7 +4916,40 @@ price:
     );
 
   /* ============================================================
-     AUTO ADD TO BAG
+     QUANTITY
+     ============================================================ */
+  function selectedInventoryLimit(){
+    const matching=state.product?.variants?.find(variant=>
+      normalizeChoice(variant.size)===normalizeChoice(state.selectedSize)&&
+      (!variant.color||normalizeChoice(variant.color)===normalizeChoice(state.selectedColor))
+    );
+    const raw=matching?.inventoryQuantity??matching?.quantity??state.product?.inventoryQuantity;
+    const limit=Number(raw);
+    return Number.isFinite(limit)&&limit>0?Math.max(1,Math.floor(limit)):99;
+  }
+
+  function renderQuantityState(){
+    const value=Math.max(1,Math.min(selectedInventoryLimit(),Number(state.selectedQuantity||1)));
+    state.selectedQuantity=value;
+    $("quantityValue").textContent=String(value);
+    $("quantityMinus").disabled=value<=1;
+    $("quantityPlus").disabled=value>=selectedInventoryLimit();
+  }
+
+  function changeSelectedQuantity(amount){
+    if(!state.selectedSize){showToast("Selecciona una talla primero.");return}
+    const next=Math.max(1,Math.min(selectedInventoryLimit(),Number(state.selectedQuantity||1)+amount));
+    if(next===state.selectedQuantity){return}
+    state.selectedQuantity=next;
+    renderQuantityState();
+    if(navigator.vibrate){navigator.vibrate(12)}
+  }
+
+  $("quantityMinus").onclick=()=>changeSelectedQuantity(-1);
+  $("quantityPlus").onclick=()=>changeSelectedQuantity(1);
+
+  /* ============================================================
+     ADD SELECTION TO BAG
      ============================================================ */
 
   function syncSelectionToBag(){
@@ -5043,12 +5080,15 @@ line.unitPrice =
 line.price =
   line.unitPrice;
 
+line.quantity =
+  Math.max(1,Number(state.selectedQuantity||1));
+
     }else{
 
       line = {
 
         id:
-          `selection-${desireKey}`,
+          `selection-${desiredKey}`,
 
         productId:
           state.product.id,
@@ -5067,7 +5107,7 @@ line.price =
           state.selectedColor,
 
         quantity:
-          1,
+          Math.max(1,Number(state.selectedQuantity||1)),
 
         unitPrice:
   normalizePrice(
@@ -5109,10 +5149,13 @@ price:
           state.selectedColor,
 
         quantity:
-          1,
+          Math.max(1,Number(state.selectedQuantity||1)),
 
         selectionMode:
-          "SIZE_SELECTION"
+          "SIZE_SELECTION",
+
+        cart:
+          saved
       }
     );
 

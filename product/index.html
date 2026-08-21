@@ -1598,7 +1598,233 @@ svg{
 
   color:#555;
 }
+/* ============================================================
+   WISH LIST POPUP
+   ============================================================ */
 
+.wishListOverlay{
+  position:fixed;
+  inset:0;
+  z-index:185;
+  display:none;
+  align-items:flex-end;
+  justify-content:center;
+  padding:
+    18px
+    17px
+    calc(
+      var(--nav-h) +
+      18px +
+      var(--safe-bottom)
+    );
+  background:rgba(255,255,255,.08);
+  backdrop-filter:blur(7px);
+  -webkit-backdrop-filter:blur(7px);
+}
+
+.wishListOverlay.open{
+  display:flex;
+}
+
+.wishListPanel{
+  width:min(100%,500px);
+  max-height:min(46dvh,410px);
+  padding:16px;
+  overflow:hidden;
+  border-radius:25px;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255,255,255,.76),
+      rgba(255,255,255,.48)
+    );
+  border:1px solid rgba(255,255,255,.96);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.98),
+    0 22px 60px rgba(0,0,0,.16);
+  backdrop-filter:
+    blur(34px)
+    saturate(160%);
+  -webkit-backdrop-filter:
+    blur(34px)
+    saturate(160%);
+  animation:
+    wishListEnter
+    .32s
+    cubic-bezier(.22,1,.36,1);
+}
+
+@keyframes wishListEnter{
+  from{
+    opacity:0;
+    transform:translateY(22px) scale(.98);
+  }
+
+  to{
+    opacity:1;
+    transform:none;
+  }
+}
+
+.wishListHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:15px;
+  padding:0 2px 13px;
+}
+
+.wishListEyebrow{
+  color:#777;
+  font-size:6px;
+  font-weight:700;
+  letter-spacing:1.7px;
+}
+
+.wishListTitle{
+  margin-top:3px;
+  font-size:16px;
+  font-weight:750;
+}
+
+.wishListClose{
+  flex:0 0 auto;
+  width:38px;
+  height:38px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:rgba(255,255,255,.64);
+  border:1px solid rgba(0,0,0,.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.96),
+    0 8px 20px rgba(0,0,0,.08);
+  transition:
+    transform .16s ease,
+    background .16s ease;
+}
+
+.wishListClose:active{
+  transform:scale(.88);
+  background:rgba(255,255,255,.86);
+}
+
+.wishListClose svg{
+  width:17px;
+  height:17px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.35;
+}
+
+.wishListRail{
+  display:grid;
+  grid-auto-flow:column;
+  grid-auto-columns:112px;
+  gap:13px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  padding:2px 2px 10px;
+  scrollbar-width:none;
+  overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;
+}
+
+.wishListRail::-webkit-scrollbar{
+  display:none;
+}
+
+.wishListCard{
+  width:112px;
+  min-width:112px;
+  padding:7px;
+  border-radius:17px;
+  text-align:left;
+  background:rgba(255,255,255,.44);
+  border:1px solid rgba(0,0,0,.055);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.96),
+    0 9px 24px rgba(0,0,0,.07);
+  transition:
+    transform .16s ease,
+    background .16s ease;
+}
+
+.wishListCard:active{
+  transform:scale(.96);
+  background:rgba(255,255,255,.72);
+}
+
+.wishListImage{
+  width:100%;
+  height:118px;
+  overflow:hidden;
+  border-radius:13px;
+  background:#f1f1f1;
+}
+
+.wishListImage img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.wishListPlaceholder{
+  width:100%;
+  height:100%;
+  display:grid;
+  place-items:center;
+  color:#777;
+  font-family:"Cormorant Garamond",Georgia,serif;
+  font-size:12px;
+  letter-spacing:1px;
+}
+
+.wishListName{
+  margin-top:8px;
+  min-height:26px;
+  overflow:hidden;
+  font-size:8px;
+  font-weight:650;
+  line-height:1.4;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+}
+
+.wishListPrice{
+  margin-top:5px;
+  font-size:9px;
+  font-weight:800;
+}
+
+.wishListEmpty{
+  grid-column:1/-1;
+  width:100%;
+  min-height:145px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:22px;
+  color:#777;
+  text-align:center;
+  font-size:9px;
+  line-height:1.6;
+}
+
+.wishListEmptyHeart{
+  margin-bottom:10px;
+  color:#111;
+}
+
+.wishListEmptyHeart svg{
+  width:29px;
+  height:29px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.25;
+}
 /* ============================================================
    SHARE OVERLAY
    ============================================================ */
@@ -2354,7 +2580,54 @@ svg{
   </section>
 
 </div>
+<!-- ==========================================================
+     WISH LIST
+     ========================================================== -->
 
+<div
+  id="wishListOverlay"
+  class="wishListOverlay"
+  aria-hidden="true"
+>
+  <section
+    id="wishListPanel"
+    class="wishListPanel"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="wishListTitle"
+  >
+    <header class="wishListHead">
+      <div>
+        <div class="wishListEyebrow">
+          GUARDADO
+        </div>
+
+        <div
+          id="wishListTitle"
+          class="wishListTitle"
+        >
+          Wish List
+        </div>
+      </div>
+
+      <button
+        id="wishListClose"
+        class="wishListClose"
+        type="button"
+        aria-label="Cerrar Wish List"
+      >
+        <svg viewBox="0 0 24 24">
+          <path d="m7 7 10 10M17 7 7 17"/>
+        </svg>
+      </button>
+    </header>
+
+    <div
+      id="wishListRail"
+      class="wishListRail"
+    ></div>
+  </section>
+</div>
 <!-- ==========================================================
      SHARE
      ========================================================== -->
@@ -4976,118 +5249,427 @@ price:
           CONFIG.checkoutPage;
       };
 
-  /* ============================================================
-     FAVORITE
-     ============================================================ */
+/* ============================================================
+   WISH LIST
+   ============================================================ */
 
-  function isFavorite(){
+let wishListAutoCloseTimer = null;
 
-    return (
-      state.product &&
-      state.favorites.has(
-        String(
-          state.product.id
-        )
+function isFavorite(){
+
+  return (
+    state.product &&
+    state.favorites.has(
+      String(
+        state.product.id
       )
+    )
+  );
+}
+
+function syncFavoriteUI(){
+
+  const active =
+    isFavorite();
+
+  $("favoriteButton")
+    .classList.toggle(
+      "active",
+      active
+    );
+
+  $("favoriteButton")
+    .setAttribute(
+      "aria-label",
+      active
+        ?"Quitar de Wish List"
+        :"Agregar a Wish List"
+    );
+
+  const svg =
+    $("favoriteButton")
+      .querySelector(
+        "svg"
+      );
+
+  if(svg){
+
+    svg.setAttribute(
+      "fill",
+      active
+        ?"currentColor"
+        :"none"
     );
   }
+}
 
-  function syncFavoriteUI(){
+function getWishListProducts(){
 
-    const active =
-      isFavorite();
+  return [
+    ...state.favorites
+  ]
+    .slice(
+      0,
+      20
+    )
+    .map(
+      favoriteId =>
+        state.catalog.find(
+          product =>
+            String(
+              product.id
+            ) ===
+            String(
+              favoriteId
+            )
+        )
+    )
+    .filter(Boolean)
+    .reverse();
+}
 
-    $("favoriteButton")
-      .classList.toggle(
-        "active",
-        active
+function renderWishList(){
+
+  const products =
+    getWishListProducts();
+
+  $("wishListRail")
+    .innerHTML =
+      products.length
+        ?products.map(
+          product => {
+
+            const media =
+              getMedia(
+                product
+              );
+
+            const image =
+              media[0] ||
+              product.image ||
+              product.imageUrl ||
+              "";
+
+            return `
+              <button
+                class="wishListCard"
+                type="button"
+                data-wish-list-product="${escapeHtml(product.id)}"
+                aria-label="Abrir ${escapeHtml(product.name)}"
+              >
+                <div class="wishListImage">
+                  ${
+                    image
+                      ?`
+                        <img
+                          src="${escapeHtml(image)}"
+                          alt="${escapeHtml(product.name)}"
+                        >
+                      `
+                      :`
+                        <div class="wishListPlaceholder">
+                          CAJAMODA
+                        </div>
+                      `
+                  }
+                </div>
+
+                <div class="wishListName">
+                  ${escapeHtml(product.name)}
+                </div>
+
+                <div class="wishListPrice">
+                  ${money(product.price)}
+                </div>
+              </button>
+            `;
+          }
+        ).join("")
+        :`
+          <div class="wishListEmpty">
+            <div class="wishListEmptyHeart">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+              >
+                <path d="M20.3 5.7a5.2 5.2 0 0 0-7.4 0L12 6.6l-.9-.9a5.2 5.2 0 0 0-7.4 7.4L12 21l8.3-7.9a5.2 5.2 0 0 0 0-7.4Z"/>
+              </svg>
+            </div>
+
+            Tu Wish List está vacía.<br>
+            Toca un corazón para guardar un producto.
+          </div>
+        `;
+
+  qsa(
+    "[data-wish-list-product]"
+  )
+    .forEach(
+      button => {
+
+        button.onclick =
+          () => {
+
+            cancelWishListAutoClose();
+
+            const product =
+              state.catalog.find(
+                candidate =>
+                  String(
+                    candidate.id
+                  ) ===
+                  String(
+                    button.dataset
+                      .wishListProduct
+                  )
+              );
+
+            if(!product){
+              return;
+            }
+
+            saveJson(
+              "cajamoda-active-product",
+              product
+            );
+
+            const url =
+              new URL(
+                location.href
+              );
+
+            url.searchParams.set(
+              "productId",
+              product.id
+            );
+
+            url.searchParams.set(
+              "category",
+              getProductCategory(
+                product
+              )
+            );
+
+            location.href =
+              url.toString();
+          };
+      }
+    );
+}
+
+function cancelWishListAutoClose(){
+
+  clearTimeout(
+    wishListAutoCloseTimer
+  );
+
+  wishListAutoCloseTimer =
+    null;
+}
+
+function scheduleWishListAutoClose(){
+
+  cancelWishListAutoClose();
+
+  wishListAutoCloseTimer =
+    setTimeout(
+      () => {
+
+        closeWishList();
+
+      },
+      3000
+    );
+}
+
+function openWishList(){
+
+  renderWishList();
+
+  $("wishListOverlay")
+    .classList.add(
+      "open"
+    );
+
+  $("wishListOverlay")
+    .setAttribute(
+      "aria-hidden",
+      "false"
+    );
+
+  document.body
+    .classList.add(
+      "locked"
+    );
+
+  scheduleWishListAutoClose();
+}
+
+function closeWishList(){
+
+  cancelWishListAutoClose();
+
+  $("wishListOverlay")
+    .classList.remove(
+      "open"
+    );
+
+  $("wishListOverlay")
+    .setAttribute(
+      "aria-hidden",
+      "true"
+    );
+
+  if(
+    !$("detailsOverlay")
+      .classList.contains(
+        "open"
+      ) &&
+    !$("shareOverlay")
+      .classList.contains(
+        "open"
+      )
+  ){
+
+    document.body
+      .classList.remove(
+        "locked"
       );
+  }
+}
 
-    const svg =
-      $("favoriteButton")
-        .querySelector(
-          "svg"
-        );
+function toggleFavorite(){
 
-    if(
-      svg
-    ){
-
-      svg.setAttribute(
-        "fill",
-        active
-          ?"currentColor"
-          :"none"
-      );
-    }
+  if(!state.product){
+    return;
   }
 
-  function toggleFavorite(){
+  const id =
+    String(
+      state.product.id
+    );
+
+  const wasFavorite =
+    state.favorites.has(
+      id
+    );
+
+  if(wasFavorite){
+
+    state.favorites.delete(
+      id
+    );
+
+  }else{
 
     if(
-      !state.product
+      state.favorites.size >=
+      20
     ){
+
+      showToast(
+        "Puedes guardar hasta 20 productos en tu Wish List."
+      );
+
       return;
     }
 
-    const id =
-      String(
-        state.product.id
-      );
-
-    if(
-      state.favorites.has(
-        id
-      )
-    ){
-
-      state.favorites.delete(
-        id
-      );
-
-    }else{
-
-      state.favorites.add(
-        id
-      );
-    }
-
-    saveJson(
-      "cajamoda-favorites",
-      [
-        ...state.favorites
-      ]
-    );
-
-    syncFavoriteUI();
-
-    if(
-      navigator.vibrate
-    ){
-
-      navigator.vibrate(
-        state.favorites.has(
-          id
-        )
-          ?32
-          :18
-      );
-    }
-
-    track(
-      "FAVORITE_TOGGLE",
-      {
-        active:
-          state.favorites.has(
-            id
-          )
-      }
+    state.favorites.add(
+      id
     );
   }
 
-  $("favoriteButton")
-    .onclick =
-      toggleFavorite;
+  saveJson(
+    "cajamoda-favorites",
+    [
+      ...state.favorites
+    ]
+  );
+
+  syncFavoriteUI();
+  renderWishList();
+
+  if(navigator.vibrate){
+
+    navigator.vibrate(
+      wasFavorite
+        ?18
+        :32
+    );
+  }
+
+  track(
+    "WISH_LIST_TOGGLE",
+    {
+      productId:id,
+      active:
+        state.favorites.has(
+          id
+        )
+    }
+  );
+
+  if(
+    state.favorites.has(
+      id
+    )
+  ){
+
+    openWishList();
+
+  }else{
+
+    showToast(
+      "Producto eliminado de Wish List."
+    );
+  }
+}
+
+$("favoriteButton")
+  .onclick =
+    toggleFavorite;
+
+$("wishListClose")
+  .onclick =
+    closeWishList;
+
+$("wishListOverlay")
+  .onclick =
+    event => {
+
+      if(
+        event.target ===
+        $("wishListOverlay")
+      ){
+
+        closeWishList();
+      }
+    };
+
+[
+  "pointerdown",
+  "touchstart",
+  "wheel",
+  "scroll",
+  "focusin",
+  "keydown"
+]
+  .forEach(
+    eventName => {
+
+      $("wishListPanel")
+        .addEventListener(
+          eventName,
+          cancelWishListAutoClose,
+          {
+            passive:
+              eventName !==
+              "keydown"
+          }
+        );
+    }
+  );
 
   /* ============================================================
      SHARE

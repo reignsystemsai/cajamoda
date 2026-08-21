@@ -1,16 +1,3 @@
- None selected 
-
-Skip to content
-Using Gmail with screen readers
-
-1 of 184,937
-checkout last working copy
-Inbox
-
-Douglas R. Thompson <drtglobal@gmail.com>
-12:06 AM (7 minutes ago)
-to me
-
 <!doctype html>
 <html lang="es">
 <head>
@@ -21,111 +8,80 @@ to me
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link
-  href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
-  rel="stylesheet"
->
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
 :root{
   --ink:#080808;
-  --muted:#767676;
+  --muted:#737373;
   --line:rgba(0,0,0,.09);
+  --glass:rgba(255,255,255,.68);
   --safe-top:env(safe-area-inset-top,0px);
   --safe-bottom:env(safe-area-inset-bottom,0px);
+  --ease:cubic-bezier(.22,1,.36,1);
 }
 
-*{
-  box-sizing:border-box;
-}
-
-html,
-body{
+*{box-sizing:border-box}
+html,body{
   margin:0;
   width:100%;
   min-height:100%;
   background:#fff;
   color:var(--ink);
   font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  -webkit-font-smoothing:antialiased;
+  -webkit-font-smoothing:antialiased
 }
-
-body{
-  overflow-x:hidden;
-}
-
-button,
-input{
-  font:inherit;
-  color:inherit;
-}
-
+body{overflow-x:hidden}
+button,input{font:inherit;color:inherit}
 button{
   border:0;
   background:none;
   cursor:pointer;
-  -webkit-tap-highlight-color:transparent;
+  -webkit-tap-highlight-color:transparent
 }
-
-img{
-  display:block;
-  max-width:100%;
-}
+img{display:block;max-width:100%}
 
 .checkoutApp{
   width:100%;
   max-width:520px;
   min-height:100dvh;
   margin:0 auto;
-  padding-bottom:calc(205px + var(--safe-bottom));
-  background:#fff;
+  padding-bottom:calc(98px + var(--safe-bottom));
+  background:#fff
 }
-
-/* Header */
 
 .checkoutHeader{
   position:sticky;
   z-index:50;
   top:0;
-  height:calc(72px + var(--safe-top));
-  padding:var(--safe-top) 18px 0;
+  height:calc(84px + var(--safe-top));
+  padding:var(--safe-top) 20px 0;
   display:grid;
-  grid-template-columns:42px 1fr 42px;
+  grid-template-columns:44px 1fr 44px;
   align-items:center;
-  background:rgba(255,255,255,.94);
-  border-bottom:1px solid rgba(0,0,0,.05);
-  backdrop-filter:blur(20px);
-  -webkit-backdrop-filter:blur(20px);
+  background:rgba(255,255,255,.86);
+  backdrop-filter:blur(22px) saturate(145%);
+  -webkit-backdrop-filter:blur(22px) saturate(145%)
 }
 
 .headerButton{
   position:relative;
-  width:38px;
-  height:38px;
+  width:40px;
+  height:40px;
   border-radius:50%;
   display:grid;
   place-items:center;
-  transition:transform .16s ease,background .16s ease;
+  transition:transform .18s var(--ease),background .18s ease
 }
-
-.headerButton:last-child{
-  justify-self:end;
-  align-self:center;
-}
-
+.headerButton:last-child{justify-self:end}
 .headerButton:active{
-  transform:scale(.92);
-  background:#f3f3f3;
+  transform:scale(.9);
+  background:rgba(0,0,0,.04)
 }
-
 .headerButton svg{
-  width:22px;
-  height:22px;
-  stroke-width:1.5;
-}
-
-.checkoutHeading{
-  min-width:1px;
+  width:23px;
+  height:23px;
+  stroke-width:1.45
 }
 
 .headerBagBadge{
@@ -142,517 +98,639 @@ img{
   color:#fff;
   border:2px solid #fff;
   font-size:8px;
-  font-weight:800;
+  font-weight:800
 }
 
-/* Introduction */
+.brandMark{
+  justify-self:center;
+  text-align:center;
+  line-height:1;
+  color:#080808;
+  user-select:none
+}
+.brandMonogram{
+  font-family:"Cormorant Garamond",Georgia,serif;
+  font-size:42px;
+  letter-spacing:-5px;
+  height:37px
+}
+.brandName{
+  margin-top:3px;
+  font-family:"Cormorant Garamond",Georgia,serif;
+  font-size:9px;
+  letter-spacing:5px
+}
+.brandCountry{
+  margin-top:4px;
+  font-size:4.8px;
+  font-weight:700;
+  letter-spacing:4px
+}
 
 .checkoutIntro{
-  padding:25px 18px 11px;
+  padding:32px 28px 18px;
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:20px
 }
-
 .checkoutIntro h1{
   margin:0;
-  font-size:25px;
-  line-height:1.05;
-  letter-spacing:-1px;
-  font-weight:700;
+  font-family:"Cormorant Garamond",Georgia,serif;
+  font-size:52px;
+  line-height:.9;
+  font-weight:500;
+  letter-spacing:-2px
 }
-
 .checkoutIntro p{
-  margin:8px 0 0;
-  max-width:350px;
-  color:#686868;
-  font-size:8px;
-  line-height:1.5;
+  margin:14px 0 0;
+  max-width:330px;
+  color:#555;
+  font-size:10px;
+  line-height:1.6
+}
+.introTotal{
+  display:block;
+  flex:0 0 auto;
+  text-align:right
+}
+.introTotalLabel{
+  color:#777;
+  font-size:7px
+}
+.introTotalValue{
+  margin-top:4px;
+  font-size:11px;
+  font-weight:700
 }
 
-.checkoutSection{
-  padding:16px 18px 0;
+.stepNav{
+  position:sticky;
+  z-index:40;
+  top:calc(84px + var(--safe-top));
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  margin:0 28px;
+  background:rgba(255,255,255,.9);
+  border-bottom:1px solid rgba(0,0,0,.09);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px)
 }
 
-.sectionHeader{
+.checkoutApp.isPayment .checkoutIntro,
+.checkoutApp.isPayment .stepNav{
+  display:none
+}
+
+.paymentIntro{margin-bottom:28px}
+.paymentIntro h2{
+  margin:0;
+  font-family:"Cormorant Garamond",Georgia,serif;
+  font-size:44px;
+  line-height:1;
+  font-weight:500;
+  letter-spacing:-1.4px
+}
+.paymentIntro p{
+  margin:12px 0 0;
+  max-width:390px;
+  color:#626262;
+  font-size:9px;
+  line-height:1.65
+}
+
+.stepTab{
+  position:relative;
+  height:54px;
+  color:#777;
+  font-size:10px;
+  transition:color .2s ease,transform .18s var(--ease)
+}
+.stepTab::after{
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:-1px;
+  height:2px;
+  background:#080808;
+  transform:scaleX(0);
+  transform-origin:center;
+  transition:transform .42s var(--ease)
+}
+.stepTab.isActive{
+  color:#080808;
+  font-weight:650
+}
+.stepTab.isActive::after{transform:scaleX(1)}
+.stepTab:active{transform:scale(.96)}
+
+.stepViewport{
+  overflow:hidden;
+  transition:height .48s var(--ease)
+}
+.stepTrack{
+  display:flex;
+  align-items:flex-start;
+  width:100%;
+  transition:transform .58s var(--ease);
+  will-change:transform
+}
+.stepPanel{
+  flex:0 0 100%;
+  width:100%;
+  padding:34px 28px 26px;
+  opacity:.28;
+  transform:scale(.985);
+  transition:opacity .38s ease,transform .5s var(--ease);
+  pointer-events:none
+}
+.stepPanel.isActive{
+  opacity:1;
+  transform:scale(1);
+  pointer-events:auto
+}
+
+.panelHeading{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  margin-bottom:10px;
+  margin-bottom:18px
+}
+.panelTitle{
+  font-family:"Cormorant Garamond",Georgia,serif;
+  font-size:23px;
+  font-weight:600
+}
+.panelMeta{
+  color:#777;
+  font-size:9px
 }
 
-.sectionTitle{
-  font-size:10px;
-  font-weight:750;
+.glassCard,
+.glassField,
+.deliverySelector,
+.reviewItem{
+  background:linear-gradient(
+    145deg,
+    rgba(255,255,255,.84),
+    rgba(255,255,255,.54)
+  );
+  border:1px solid rgba(0,0,0,.07);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.96),
+    0 12px 34px rgba(0,0,0,.07);
+  backdrop-filter:blur(28px) saturate(150%);
+  -webkit-backdrop-filter:blur(28px) saturate(150%)
 }
-
-.sectionMeta{
-  font-size:7px;
-  color:var(--muted);
-}
-
-/* Product cards */
 
 .cartList{
   display:flex;
   flex-direction:column;
-  gap:8px;
+  gap:20px
 }
-
 .cartItem{
   display:grid;
-  grid-template-columns:76px 1fr;
-  gap:12px;
-  min-height:112px;
-  padding:10px;
-  border-radius:18px;
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255,255,255,.70),
-      rgba(255,255,255,.40)
-    );
-  border:1px solid rgba(255,255,255,.95);
+  grid-template-columns:104px 1fr;
+  gap:18px;
+  min-height:164px;
+  padding:14px;
+  border-radius:22px;
+  background:linear-gradient(
+    145deg,
+    rgba(255,255,255,.82),
+    rgba(255,255,255,.52)
+  );
+  border:1px solid rgba(0,0,0,.07);
   box-shadow:
-    0 0 0 1px rgba(0,0,0,.04),
-    0 18px 44px rgba(0,0,0,.11);
-  backdrop-filter:blur(34px) saturate(155%);
-  -webkit-backdrop-filter:blur(34px) saturate(155%);
+    inset 0 1px 0 rgba(255,255,255,.98),
+    0 15px 40px rgba(0,0,0,.075);
+  backdrop-filter:blur(30px) saturate(155%);
+  -webkit-backdrop-filter:blur(30px) saturate(155%)
 }
-
 .cartImage{
-  width:76px;
-  height:96px;
+  width:104px;
+  height:136px;
   overflow:hidden;
-  border-radius:12px;
-  background:#f3f3f3;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.9),
-    0 6px 16px rgba(0,0,0,.05);
+  border-radius:16px;
+  background:#f2f2f2
 }
-
 .cartImage img{
   width:100%;
   height:100%;
-  object-fit:cover;
+  object-fit:cover
 }
-
 .cartImagePlaceholder{
   width:100%;
   height:100%;
   display:grid;
   place-items:center;
-  color:#aaa;
-  font-size:6px;
+  font-family:"Cormorant Garamond",Georgia,serif;
+  font-size:18px;
+  letter-spacing:3px
 }
-
 .cartInfo{
   min-width:0;
   display:flex;
-  flex-direction:column;
+  flex-direction:column
 }
-
 .cartTop{
   display:flex;
   justify-content:space-between;
-  gap:8px;
+  gap:10px
 }
-
 .cartName{
   overflow:hidden;
-  font-size:9px;
+  font-size:12px;
   font-weight:700;
-  line-height:1.25;
+  line-height:1.3;
   display:-webkit-box;
   -webkit-line-clamp:2;
-  -webkit-box-orient:vertical;
+  -webkit-box-orient:vertical
 }
-
 .removeButton{
   flex:0 0 auto;
-  width:25px;
-  height:25px;
+  width:30px;
+  height:30px;
   border-radius:50%;
   display:grid;
   place-items:center;
-  color:#333;
+  transition:transform .16s var(--ease),background .16s ease
 }
-
+.removeButton:active{
+  transform:scale(.88);
+  background:rgba(0,0,0,.05)
+}
 .removeButton svg{
-  width:14px;
-  height:14px;
-  stroke-width:1.5;
+  width:16px;
+  height:16px;
+  stroke-width:1.35
 }
-
 .cartOptions{
-  margin-top:6px;
+  margin-top:12px;
   color:#777;
-  font-size:6.7px;
-  line-height:1.5;
+  font-size:9px;
+  line-height:1.65
 }
-
 .cartBottom{
   margin-top:auto;
   display:flex;
   justify-content:space-between;
   align-items:flex-end;
-  gap:10px;
+  gap:10px
 }
-
 .cartPrice{
-  font-size:9px;
-  font-weight:750;
+  font-size:14px;
+  font-weight:750
 }
-
-/* Quantity */
 
 .quantityControl{
-  height:29px;
+  height:38px;
   display:grid;
-  grid-template-columns:29px 28px 29px;
+  grid-template-columns:38px 34px 38px;
   align-items:center;
-  border:1px solid rgba(0,0,0,.12);
+  border:1px solid rgba(0,0,0,.11);
   border-radius:999px;
-  overflow:hidden;
-  background:rgba(255,255,255,.48);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.9);
-  backdrop-filter:blur(12px);
-  -webkit-backdrop-filter:blur(12px);
+  background:rgba(255,255,255,.54);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.95);
+  overflow:hidden
 }
-
 .quantityButton{
-  width:29px;
-  height:29px;
+  width:38px;
+  height:38px;
   display:grid;
   place-items:center;
-  font-size:13px;
+  font-size:17px;
+  transition:transform .14s var(--ease),background .14s ease
 }
-
+.quantityButton:active{
+  transform:scale(.84);
+  background:rgba(0,0,0,.05)
+}
 .quantityValue{
   text-align:center;
-  font-size:7px;
-  font-weight:700;
+  font-size:10px;
+  font-weight:700
 }
-
-/* Empty cart */
-
-.emptyCart{
-  padding:35px 20px;
-  border:1px solid var(--line);
-  border-radius:17px;
-  text-align:center;
-}
-
-.emptyBagIcon{
-  width:42px;
-  height:42px;
-  margin:0 auto 12px;
-  border-radius:50%;
-  display:grid;
-  place-items:center;
-  background:#f5f5f5;
-}
-
-.emptyBagIcon svg{
-  width:20px;
-  height:20px;
-  stroke-width:1.4;
-}
-
-.emptyCartTitle{
-  font-size:11px;
-  font-weight:700;
-}
-
-.emptyCartText{
-  margin-top:6px;
-  color:#777;
-  font-size:7px;
-}
-
-.continueShopping{
-  margin-top:14px;
-  min-width:135px;
-  height:36px;
-  padding:0 15px;
-  border-radius:999px;
-  background:#080808;
-  color:#fff;
-  font-size:7px;
-  font-weight:700;
-}
-
-/* Customer email */
-
-.checkoutForm{
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-}
-
-.field{
-  position:relative;
-  padding:12px;
-  border-radius:18px;
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255,255,255,.70),
-      rgba(255,255,255,.40)
-    );
-  border:1px solid rgba(255,255,255,.95);
-  box-shadow:
-    0 0 0 1px rgba(0,0,0,.04),
-    0 18px 44px rgba(0,0,0,.11);
-  backdrop-filter:blur(34px) saturate(155%);
-  -webkit-backdrop-filter:blur(34px) saturate(155%);
-}
-
-.field label{
-  display:block;
-  margin:0 0 7px 2px;
-  color:#111;
-  font-size:7px;
-  font-weight:700;
-}
-
-.field input{
-  width:100%;
-  height:45px;
-  padding:0 13px;
-  outline:none;
-  border:1px solid rgba(0,0,0,.12);
-  border-radius:12px;
-  background:rgba(255,255,255,.58);
-  font-size:8px;
-  transition:border-color .15s ease,box-shadow .15s ease;
-}
-
-.field input:focus{
-  border-color:rgba(0,0,0,.42);
-  box-shadow:0 0 0 3px rgba(0,0,0,.035);
-}
-
-.field input::placeholder{
-  color:#aaa;
-}
-
-/* Delivery */
-
-.deliveryCard{
-  padding:13px;
-  border:1px solid rgba(0,0,0,.10);
-  border-radius:16px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:10px;
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255,255,255,.80),
-      rgba(255,255,255,.52)
-    );
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.98),
-    0 9px 24px rgba(0,0,0,.045);
-  backdrop-filter:blur(20px);
-  -webkit-backdrop-filter:blur(20px);
-}
-
-.deliveryLeft{
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-
-.deliveryDot{
-  width:17px;
-  height:17px;
-  border-radius:50%;
-  display:grid;
-  place-items:center;
-  border:1px solid #080808;
-}
-
-.deliveryDot::after{
-  content:"";
-  width:9px;
-  height:9px;
-  border-radius:50%;
-  background:#080808;
-}
-
-.deliveryName{
-  font-size:8px;
-  font-weight:700;
-}
-
-.deliveryDescription{
-  margin-top:3px;
-  color:#777;
-  font-size:6.5px;
-}
-
-.deliveryPrice{
-  flex:0 0 auto;
-  color:#555;
-  font-size:7px;
-  font-weight:650;
-}
-
-/* Summary */
 
 .summaryCard{
-  padding:15px;
-  border-radius:18px;
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255,255,255,.70),
-      rgba(255,255,255,.40)
-    );
-  border:1px solid rgba(255,255,255,.95);
-  box-shadow:
-    0 0 0 1px rgba(0,0,0,.04),
-    0 18px 44px rgba(0,0,0,.11);
-  backdrop-filter:blur(34px) saturate(155%);
-  -webkit-backdrop-filter:blur(34px) saturate(155%);
+  margin-top:22px;
+  padding:18px 20px;
+  border-radius:20px
 }
-
 .summaryLine{
-  min-height:27px;
+  min-height:31px;
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:15px;
-  font-size:7.5px;
+  font-size:10px
 }
-
-.summaryLine span:first-child{
-  color:#666;
-}
-
-.summaryValue{
-  font-weight:650;
-}
-
+.summaryLine span:first-child{color:#666}
+.summaryValue{font-weight:650}
 .summaryDivider{
   height:1px;
-  margin:6px 0;
-  background:rgba(0,0,0,.10);
+  margin:7px 0;
+  background:rgba(0,0,0,.10)
 }
-
 .summaryTotal{
-  min-height:35px;
+  min-height:42px;
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:15px;
+  gap:15px
 }
-
 .summaryTotalLabel{
-  font-size:9px;
-  font-weight:750;
+  font-family:"Cormorant Garamond",Georgia,serif;
+  font-size:18px;
+  font-weight:600
 }
-
 .summaryTotalValue{
   font-size:15px;
-  font-weight:800;
+  font-weight:800
 }
 
-.paymentInfo{
-  margin-top:10px;
-  padding:11px 12px;
-  border:1px solid rgba(0,0,0,.07);
-  border-radius:12px;
+.deliveryIntro{margin-bottom:22px}
+.deliveryIntro h2{
+  margin:0;
+  font-family:"Cormorant Garamond",Georgia,serif;
+  font-size:26px;
+  font-weight:600
+}
+.deliveryIntro p{
+  margin:8px 0 0;
+  max-width:390px;
+  color:#777;
+  font-size:9px;
+  line-height:1.55
+}
+.fieldGrid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:16px
+}
+.glassField{
+  position:relative;
+  min-height:70px;
+  border-radius:18px;
   display:flex;
   align-items:center;
-  gap:9px;
+  padding:10px 16px;
+  transition:
+    transform .2s var(--ease),
+    box-shadow .2s ease,
+    border-color .2s ease
 }
-
-.paymentInfo svg{
+.glassField:focus-within{
+  transform:translateY(-2px);
+  border-color:rgba(0,0,0,.18);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    0 18px 40px rgba(0,0,0,.09)
+}
+.glassField svg{
   flex:0 0 auto;
-  width:17px;
-  height:17px;
-  stroke-width:1.4;
+  width:20px;
+  height:20px;
+  margin-right:13px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.4
 }
-
-.paymentInfoTitle{
-  font-size:7.5px;
-  font-weight:700;
-}
-
-.paymentInfoText{
-  margin-top:2px;
-  color:#777;
-  font-size:6.2px;
-  line-height:1.35;
-}
-
-/* Black frosted checkout button */
-
-.checkoutAction{
-  position:fixed;
-  z-index:80;
-  left:50%;
-  bottom:calc(78px + var(--safe-bottom));
-  transform:translateX(-50%);
-  width:min(100%,520px);
-  padding:11px 18px;
-  background:rgba(255,255,255,.82);
-  border-top:1px solid rgba(0,0,0,.05);
-  backdrop-filter:blur(22px);
-  -webkit-backdrop-filter:blur(22px);
-}
-
-.checkoutButton{
+.glassField input{
   width:100%;
-  height:49px;
+  height:42px;
+  padding:0;
+  outline:0;
+  border:0;
+  background:transparent;
+  font-size:11px
+}
+.glassField input::placeholder{color:#929292}
+
+.deliverySelector{
+  margin-top:20px;
+  min-height:78px;
+  padding:16px 18px;
+  border-radius:19px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px
+}
+.deliverySelectorMain{
+  display:flex;
+  align-items:center;
+  gap:13px
+}
+.deliverySelector svg{
+  width:21px;
+  height:21px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.35
+}
+.deliveryName{
+  font-family:"Cormorant Garamond",Georgia,serif;
+  font-size:17px;
+  font-weight:600
+}
+.deliveryDescription{
+  margin-top:4px;
+  color:#777;
+  font-size:8px;
+  line-height:1.4
+}
+.deliveryPrice{
+  color:#555;
+  font-size:8px;
+  font-weight:650
+}
+
+.reviewEmailCard{
+  padding:19px 20px;
+  border-radius:20px;
+  margin-bottom:20px
+}
+.reviewCardTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px
+}
+.reviewCardTitle{
+  font-family:"Cormorant Garamond",Georgia,serif;
+  font-size:18px;
+  font-weight:600
+}
+.editDelivery{
+  text-decoration:underline;
+  font-size:9px
+}
+.reviewEmail{
+  margin-top:12px;
+  color:#555;
+  font-size:10px
+}
+.reviewList{
+  display:flex;
+  flex-direction:column;
+  gap:16px
+}
+.reviewItem{
+  display:grid;
+  grid-template-columns:78px 1fr auto;
+  gap:14px;
+  align-items:center;
+  padding:12px;
+  border-radius:19px
+}
+.reviewImage{
+  width:78px;
+  height:94px;
   border-radius:14px;
+  overflow:hidden;
+  background:#f2f2f2
+}
+.reviewImage img{
+  width:100%;
+  height:100%;
+  object-fit:cover
+}
+.reviewInfo{min-width:0}
+.reviewName{
+  font-size:10px;
+  font-weight:700;
+  line-height:1.3
+}
+.reviewOptions{
+  margin-top:7px;
+  color:#777;
+  font-size:8px;
+  line-height:1.5
+}
+.reviewNumbers{text-align:right}
+.reviewQuantity{
+  color:#777;
+  font-size:8px
+}
+.reviewPrice{
+  margin-top:17px;
+  font-size:11px;
+  font-weight:700
+}
+
+.panelActions{
+  margin-top:24px;
+  display:grid;
+  gap:12px
+}
+.primaryButton,
+.secondaryButton{
+  width:100%;
+  height:58px;
+  border-radius:17px;
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:9px;
-  background:
-    linear-gradient(
-      145deg,
-      rgba(8,8,8,.94),
-      rgba(8,8,8,.84)
-    );
+  gap:11px;
+  font-size:12px;
+  transition:
+    transform .16s var(--ease),
+    box-shadow .16s ease,
+    opacity .16s ease
+}
+.primaryButton{
+  background:linear-gradient(
+    145deg,
+    rgba(8,8,8,.97),
+    rgba(8,8,8,.88)
+  );
   color:#fff;
-  border:1px solid rgba(255,255,255,.22);
+  border:1px solid rgba(255,255,255,.2);
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.18),
-    inset 0 -1px 0 rgba(255,255,255,.04),
-    0 14px 34px rgba(0,0,0,.24);
-  backdrop-filter:blur(34px) saturate(155%);
-  -webkit-backdrop-filter:blur(34px) saturate(155%);
-  font-size:9px;
-  font-weight:750;
-  transition:transform .15s ease,opacity .15s ease;
+    0 16px 34px rgba(0,0,0,.22);
+  font-weight:650
 }
-
-.checkoutButton:active{
-  transform:scale(.985);
+.secondaryButton{
+  border:1px solid rgba(0,0,0,.48);
+  background:rgba(255,255,255,.48)
 }
-
-.checkoutButton:disabled{
+.primaryButton:active,
+.secondaryButton:active{
+  transform:scale(.975)
+}
+.primaryButton:disabled{
   opacity:.35;
-  cursor:not-allowed;
+  cursor:not-allowed
+}
+.primaryButton svg,
+.secondaryButton svg{
+  width:17px;
+  height:17px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.5
 }
 
-.checkoutButton svg{
-  width:16px;
-  height:16px;
-  stroke-width:1.5;
+.trustLine{
+  margin-top:14px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  color:#666;
+  font-size:8px
+}
+.trustLine svg{
+  width:13px;
+  height:13px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.5
 }
 
-.checkoutFinePrint{
-  margin-top:6px;
-  text-align:center;
-  color:#888;
-  font-size:5.8px;
+.emptyCart{
+  padding:42px 22px;
+  border:1px solid var(--line);
+  border-radius:20px;
+  text-align:center
 }
-
-/* Bottom navigation */
+.emptyBagIcon{
+  width:48px;
+  height:48px;
+  margin:0 auto 13px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:#f5f5f5
+}
+.emptyBagIcon svg{
+  width:22px;
+  height:22px;
+  stroke-width:1.4
+}
+.emptyCartTitle{
+  font-size:13px;
+  font-weight:700
+}
+.emptyCartText{
+  margin-top:7px;
+  color:#777;
+  font-size:9px
+}
+.continueShopping{
+  margin-top:16px;
+  min-width:150px;
+  height:42px;
+  padding:0 18px;
+  border-radius:999px;
+  background:#080808;
+  color:#fff;
+  font-size:9px;
+  font-weight:700
+}
 
 .bottomNav{
   position:fixed;
@@ -661,25 +739,24 @@ img{
   bottom:calc(8px + var(--safe-bottom));
   transform:translateX(-50%);
   width:min(calc(100% - 24px),496px);
-  height:66px;
+  height:70px;
   padding:7px 10px;
   display:grid;
   grid-template-columns:repeat(5,1fr);
   align-items:center;
-  border:1px solid rgba(255,255,255,.88);
-  border-radius:22px;
-  background:rgba(255,255,255,.72);
+  border:1px solid rgba(0,0,0,.06);
+  border-radius:24px;
+  background:rgba(255,255,255,.74);
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.96),
-    0 12px 34px rgba(0,0,0,.10);
-  backdrop-filter:blur(24px) saturate(145%);
-  -webkit-backdrop-filter:blur(24px) saturate(145%);
+    inset 0 1px 0 rgba(255,255,255,.98),
+    0 14px 38px rgba(0,0,0,.11);
+  backdrop-filter:blur(28px) saturate(150%);
+  -webkit-backdrop-filter:blur(28px) saturate(150%)
 }
-
 .bottomNavItem{
   position:relative;
   min-width:0;
-  height:52px;
+  height:54px;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -687,40 +764,36 @@ img{
   gap:3px;
   color:#111;
   text-decoration:none;
-  font-size:6.4px;
-  font-weight:500;
+  font-size:6.5px;
+  font-weight:500
 }
-
 .bottomNavItem svg{
-  width:21px;
-  height:21px;
+  width:22px;
+  height:22px;
   fill:none;
   stroke:currentColor;
-  stroke-width:1.5;
+  stroke-width:1.45
 }
-
 .bottomNavPlus{
-  width:42px;
-  height:42px;
+  width:44px;
+  height:44px;
   border-radius:50%;
   display:grid;
   place-items:center;
   background:#090909;
   color:#fff;
-  box-shadow:0 7px 18px rgba(0,0,0,.18);
+  box-shadow:0 8px 20px rgba(0,0,0,.2)
 }
-
 .bottomNavPlus svg{
-  width:20px;
-  height:20px;
+  width:21px;
+  height:21px
 }
-
 .bottomNavBadge{
   position:absolute;
-  top:1px;
-  right:11px;
-  min-width:17px;
-  height:17px;
+  top:0;
+  right:10px;
+  min-width:18px;
+  height:18px;
   padding:0 4px;
   display:grid;
   place-items:center;
@@ -729,53 +802,79 @@ img{
   background:#080808;
   color:#fff;
   font-size:7px;
-  font-weight:800;
+  font-weight:800
 }
-
-/* Toast */
 
 .toast{
   position:fixed;
   z-index:200;
   left:50%;
-  bottom:calc(160px + var(--safe-bottom));
+  bottom:calc(92px + var(--safe-bottom));
   transform:translateX(-50%) translateY(8px);
   max-width:calc(100vw - 30px);
-  padding:9px 13px;
+  padding:10px 14px;
   border-radius:999px;
   background:#080808;
   color:#fff;
-  font-size:7.5px;
+  font-size:9px;
   white-space:nowrap;
   opacity:0;
   pointer-events:none;
-  transition:.18s ease;
+  transition:.2s ease
 }
-
 .toast.show{
   opacity:1;
-  transform:translateX(-50%) translateY(0);
+  transform:translateX(-50%) translateY(0)
 }
 
-@media(min-width:700px){
-  body{
-    background:#f1f1f1;
+@media(min-width:560px){
+  body{background:#f5f5f5}
+  .checkoutApp{box-shadow:0 0 70px rgba(0,0,0,.07)}
+}
+
+@media(max-width:390px){
+  .checkoutIntro,
+  .stepPanel{
+    padding-left:20px;
+    padding-right:20px
   }
 
-  .checkoutApp{
-    box-shadow:0 0 60px rgba(0,0,0,.06);
+  .stepNav{
+    margin-left:20px;
+    margin-right:20px
+  }
+
+  .checkoutIntro h1{font-size:46px}
+  .cartItem{grid-template-columns:88px 1fr}
+  .cartImage{
+    width:88px;
+    height:122px
+  }
+  .cartBottom{
+    align-items:flex-start;
+    flex-direction:column
+  }
+  .reviewItem{grid-template-columns:66px 1fr auto}
+  .reviewImage{
+    width:66px;
+    height:82px
   }
 }
 
-@media(max-width:380px){
-  .bottomNav{
-    width:calc(100% - 16px);
+@media(prefers-reduced-motion:reduce){
+  .stepTrack,
+  .stepViewport,
+  .stepPanel,
+  .stepTab::after,
+  .primaryButton,
+  .secondaryButton{
+    transition:none!important
   }
 }
 </style>
 </head>
-<body>
 
+<body>
 <div class="checkoutApp">
   <header class="checkoutHeader">
     <button
@@ -789,7 +888,11 @@ img{
       </svg>
     </button>
 
-    <div class="checkoutHeading" aria-hidden="true"></div>
+    <div class="brandMark" aria-label="CajaModa Colombia">
+      <div class="brandMonogram">CM</div>
+      <div class="brandName">CAJAMODA</div>
+      <div class="brandCountry">COLOMBIA</div>
+    </div>
 
     <button
       id="headerBag"
@@ -801,116 +904,282 @@ img{
         <path d="M6.3 8.4h11.4l1 11H5.3l1-11Z"/>
         <path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>
       </svg>
-
       <span id="headerBagBadge" class="headerBagBadge">0</span>
     </button>
   </header>
 
   <section class="checkoutIntro">
-    <h1>Tu pedido</h1>
-    <p>
-      Revisa tu bolsa antes de continuar al pago seguro.
-    </p>
-  </section>
-
-  <section class="checkoutSection">
-    <div class="sectionHeader">
-      <div class="sectionTitle">Tu bolsa</div>
-      <div id="cartItemCount" class="sectionMeta">0 productos</div>
+    <div>
+      <h1>Tu pedido</h1>
+      <p>
+        Revisa tu bolsa y completa tus datos antes de continuar
+        al pago seguro.
+      </p>
     </div>
 
-    <div id="cartList" class="cartList"></div>
-  </section>
-
-  <section class="checkoutSection">
-    <div class="sectionHeader">
-      <div class="sectionTitle">Resumen</div>
-    </div>
-
-    <div class="summaryCard">
-      <div class="summaryLine">
-        <span>Subtotal</span>
-        <span id="subtotalValue" class="summaryValue">$0</span>
-      </div>
-
-      <div class="summaryLine">
-        <span>Envío</span>
-        <span class="summaryValue">Por calcular</span>
-      </div>
-
-      <div class="summaryDivider"></div>
-
-      <div class="summaryTotal">
-        <span class="summaryTotalLabel">Total</span>
-        <span id="totalValue" class="summaryTotalValue">$0</span>
-      </div>
+    <div class="introTotal">
+      <div class="introTotalLabel">Total</div>
+      <div id="headerTotal" class="introTotalValue">$0</div>
     </div>
   </section>
 
-  <section id="customerSection" class="checkoutSection">
-    <form id="checkoutForm" class="checkoutForm" novalidate>
-      <div class="field">
-        <label for="email">Correo para recibo y seguimiento</label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          autocomplete="email"
-          placeholder="tucorreo@email.com"
-          required
-        >
-      </div>
-    </form>
-  </section>
+  <nav class="stepNav" aria-label="Proceso de compra">
+    <button
+      class="stepTab isActive"
+      type="button"
+      data-step="bag"
+      aria-current="step"
+    >
+      Bolsa
+    </button>
 
-  <section class="checkoutSection">
-    <div class="sectionHeader">
-      <div class="sectionTitle">Entrega</div>
-    </div>
+    <button
+      class="stepTab"
+      type="button"
+      data-step="delivery"
+    >
+      Entrega
+    </button>
 
-    <div class="deliveryCard">
-      <div class="deliveryLeft">
-        <div class="deliveryDot"></div>
+    <button
+      class="stepTab"
+      type="button"
+      data-step="payment"
+    >
+      Pago
+    </button>
+  </nav>
 
-        <div>
-          <div class="deliveryName">Envío CajaModa</div>
-          <div class="deliveryDescription">
-            El costo final se calcula antes del pago.
+  <main id="stepViewport" class="stepViewport">
+    <div id="stepTrack" class="stepTrack">
+
+      <section
+        class="stepPanel isActive"
+        data-panel="bag"
+        aria-label="Bolsa"
+      >
+        <div class="panelHeading">
+          <div class="panelTitle">Tu bolsa</div>
+          <div id="cartItemCount" class="panelMeta">0 productos</div>
+        </div>
+
+        <div id="cartList" class="cartList"></div>
+
+        <div class="summaryCard glassCard">
+          <div class="summaryLine">
+            <span>Subtotal</span>
+            <span id="bagSubtotalValue" class="summaryValue">$0</span>
+          </div>
+
+          <div class="summaryLine">
+            <span>Envío</span>
+            <span class="summaryValue">Por calcular</span>
+          </div>
+
+          <div class="summaryDivider"></div>
+
+          <div class="summaryTotal">
+            <span class="summaryTotalLabel">Total</span>
+            <span id="bagTotalValue" class="summaryTotalValue">$0</span>
           </div>
         </div>
-      </div>
 
-      <div class="deliveryPrice">Por calcular</div>
-    </div>
-
-    <div class="paymentInfo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-        <rect x="4" y="10" width="16" height="10" rx="2"/>
-        <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
-      </svg>
-
-      <div>
-        <div class="paymentInfoTitle">Pago seguro</div>
-        <div class="paymentInfoText">
-          El pago final será procesado mediante Wix.
+        <div class="panelActions">
+          <button
+            id="toDeliveryButton"
+            class="primaryButton"
+            type="button"
+          >
+            <span>Continuar a entrega</span>
+            <svg viewBox="0 0 24 24">
+              <path d="m9 5 7 7-7 7"/>
+            </svg>
+          </button>
         </div>
-      </div>
+
+        <div class="trustLine">
+          <svg viewBox="0 0 24 24">
+            <rect x="5" y="10" width="14" height="10" rx="2"/>
+            <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+          </svg>
+          <span>Pago seguro y cifrado</span>
+        </div>
+      </section>
+
+      <section
+        class="stepPanel"
+        data-panel="delivery"
+        aria-label="Entrega"
+        aria-hidden="true"
+      >
+        <div class="deliveryIntro">
+          <h2>Información de entrega</h2>
+          <p>
+            Usaremos tu correo para el recibo y el seguimiento.
+            La dirección final se verifica de forma segura al pagar.
+          </p>
+        </div>
+
+        <form id="checkoutForm" novalidate>
+          <div class="fieldGrid">
+            <label class="glassField" for="email">
+              <svg viewBox="0 0 24 24">
+                <rect x="3" y="5" width="18" height="14" rx="2"/>
+                <path d="m3 7 9 6 9-6"/>
+              </svg>
+
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autocomplete="email"
+                placeholder="Correo para recibo y seguimiento"
+                required
+              >
+            </label>
+          </div>
+        </form>
+
+        <div class="deliverySelector">
+          <div class="deliverySelectorMain">
+            <svg viewBox="0 0 24 24">
+              <path d="M3 6h11v11H3Z"/>
+              <path d="M14 10h4l3 3v4h-7Z"/>
+              <circle cx="7" cy="18" r="2"/>
+              <circle cx="18" cy="18" r="2"/>
+            </svg>
+
+            <div>
+              <div class="deliveryName">Método de entrega</div>
+              <div class="deliveryDescription">
+                El costo y la dirección se confirman antes del pago.
+              </div>
+            </div>
+          </div>
+
+          <div class="deliveryPrice">Por calcular</div>
+        </div>
+
+        <div class="panelActions">
+          <button
+            id="backToBagButton"
+            class="secondaryButton"
+            type="button"
+          >
+            Volver
+          </button>
+
+          <button
+            id="toPaymentButton"
+            class="primaryButton"
+            type="button"
+          >
+            <span>Continuar a pago</span>
+            <svg viewBox="0 0 24 24">
+              <path d="m9 5 7 7-7 7"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="trustLine">
+          <svg viewBox="0 0 24 24">
+            <rect x="5" y="10" width="14" height="10" rx="2"/>
+            <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+          </svg>
+          <span>Pago seguro y cifrado</span>
+        </div>
+      </section>
+
+      <section
+        class="stepPanel"
+        data-panel="payment"
+        aria-label="Pago"
+        aria-hidden="true"
+      >
+        <div class="paymentIntro">
+          <h2>Completa tu pago.</h2>
+          <p>
+            Confirma tu pedido. Los impuestos, el envío y los métodos
+            de pago disponibles se calcularán de forma segura en el
+            último paso.
+          </p>
+        </div>
+
+        <div class="reviewEmailCard glassCard">
+          <div class="reviewCardTop">
+            <div class="reviewCardTitle">Información de entrega</div>
+            <button
+              id="editDeliveryButton"
+              class="editDelivery"
+              type="button"
+            >
+              Editar
+            </button>
+          </div>
+
+          <div id="reviewEmail" class="reviewEmail"></div>
+        </div>
+
+        <div id="reviewList" class="reviewList"></div>
+
+        <div class="summaryCard glassCard">
+          <div class="summaryLine">
+            <span>Subtotal</span>
+            <span id="subtotalValue" class="summaryValue">$0</span>
+          </div>
+
+          <div class="summaryLine">
+            <span>Envío</span>
+            <span class="summaryValue">Se calcula al pagar</span>
+          </div>
+
+          <div class="summaryLine">
+            <span>Impuestos</span>
+            <span class="summaryValue">Se calculan al pagar</span>
+          </div>
+
+          <div class="summaryDivider"></div>
+
+          <div class="summaryTotal">
+            <span class="summaryTotalLabel">Total</span>
+            <span id="totalValue" class="summaryTotalValue">$0</span>
+          </div>
+        </div>
+
+        <div class="panelActions">
+          <button
+            id="checkoutButton"
+            class="primaryButton"
+            type="button"
+          >
+            <span>Continuar al pago seguro</span>
+            <svg viewBox="0 0 24 24">
+              <path d="m9 5 7 7-7 7"/>
+            </svg>
+          </button>
+
+          <button
+            id="backToDeliveryButton"
+            class="secondaryButton"
+            type="button"
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="m15 5-7 7 7 7"/>
+            </svg>
+            <span>Volver a entrega</span>
+          </button>
+        </div>
+
+        <div class="trustLine">
+          <svg viewBox="0 0 24 24">
+            <rect x="5" y="10" width="14" height="10" rx="2"/>
+            <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+          </svg>
+          <span>Pago seguro y cifrado</span>
+        </div>
+      </section>
     </div>
-  </section>
-</div>
-
-<div class="checkoutAction">
-  <button id="checkoutButton" class="checkoutButton" type="button">
-    <span>Continuar al pago</span>
-
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-      <path d="m9 5 7 7-7 7"/>
-    </svg>
-  </button>
-
-  <div class="checkoutFinePrint">
-    Podrás revisar el total final antes de confirmar el pago.
-  </div>
+  </main>
 </div>
 
 <nav class="bottomNav" aria-label="Navegación principal">
@@ -945,7 +1214,12 @@ img{
     <span>Perfil</span>
   </a>
 
-  <a class="bottomNavItem" href="/checkout/" aria-current="page">
+  <a
+    id="bottomBagButton"
+    class="bottomNavItem"
+    href="/checkout/"
+    aria-current="page"
+  >
     <svg viewBox="0 0 24 24">
       <path d="M6.3 8.4h11.4l1 11H5.3l1-11Z"/>
       <path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>
@@ -955,127 +1229,151 @@ img{
   </a>
 </nav>
 
-<div id="toast" class="toast"></div>
+<div
+  id="toast"
+  class="toast"
+  role="status"
+  aria-live="polite"
+></div>
 <script>
 (() => {
   "use strict";
 
   const $ = id => document.getElementById(id);
+  const STEPS = ["bag", "delivery", "payment"];
 
-  function readJson(key,fallback){
-    try{
-      const value=localStorage.getItem(key);
+  let activeStep = "bag";
+  let paymentTimer = null;
 
-      if(!value){
-        return fallback;
-      }
-
-      return JSON.parse(value);
-    }catch{
+  function readJson(key, fallback) {
+    try {
+      const value = localStorage.getItem(key);
+      return value ? JSON.parse(value) : fallback;
+    } catch {
       return fallback;
     }
   }
 
-  function saveJson(key,value){
-    try{
-      localStorage.setItem(key,JSON.stringify(value));
-    }catch{}
+  function saveJson(key, value) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch {}
   }
 
-  function createId(){
-    if(window.crypto?.randomUUID){
-      return window.crypto.randomUUID();
-    }
-
-    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  function createId() {
+    return window.crypto?.randomUUID
+      ? window.crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   }
 
-  function escapeHtml(value){
+  function escapeHtml(value) {
     return String(value ?? "")
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
   }
 
-  function money(amount){
-    return new Intl.NumberFormat(
-      "es-CO",
-      {
-        style:"currency",
-        currency:"COP",
-        maximumFractionDigits:0
-      }
-    ).format(Number(amount || 0));
+  function money(amount) {
+    return new Intl.NumberFormat("es-CO", {
+      style: "currency",
+      currency: "COP",
+      maximumFractionDigits: 0
+    }).format(Number(amount || 0));
   }
 
-  function showToast(message){
-    const toast=$("toast");
+  function showToast(message) {
+    const toast = $("toast");
 
-    toast.textContent=message;
+    toast.textContent = message;
     toast.classList.add("show");
 
     clearTimeout(showToast.timer);
 
-    showToast.timer=setTimeout(
-      () => toast.classList.remove("show"),
-      1600
-    );
+    showToast.timer = setTimeout(() => {
+      toast.classList.remove("show");
+    }, 1800);
   }
-function normalizePrice(...candidates){
-  function readCandidate(candidate){
-    if(
-      candidate === null ||
-      candidate === undefined ||
-      candidate === ""
-    ){
-      return null;
-    }
 
-    if(typeof candidate === "object"){
-      const nestedCandidates=[
-        candidate.amount,
-        candidate.value,
-        candidate.discountedPrice,
-        candidate.price
-      ];
-
-      for(const nestedCandidate of nestedCandidates){
-        const nested=readCandidate(nestedCandidate);
-
-        if(nested !== null){
-          return nested;
-        }
+  function normalizePrice(...candidates) {
+    function read(candidate) {
+      if (
+        candidate === null ||
+        candidate === undefined ||
+        candidate === ""
+      ) {
+        return null;
       }
 
-      return null;
+      if (typeof candidate === "object") {
+        const nestedCandidates = [
+          candidate.amount,
+          candidate.value,
+          candidate.discountedPrice,
+          candidate.price,
+          candidate.formattedAmount
+        ];
+
+        for (const nested of nestedCandidates) {
+          const value = read(nested);
+
+          if (value !== null) {
+            return value;
+          }
+        }
+
+        return null;
+      }
+
+      if (typeof candidate === "string") {
+        const cleaned = candidate
+          .replace(/[^0-9,.-]/g, "")
+          .replace(/\.(?=\d{3}(?:\D|$))/g, "")
+          .replace(",", ".");
+
+        const numeric = Number(cleaned);
+
+        return Number.isFinite(numeric)
+          ? numeric
+          : null;
+      }
+
+      const numeric = Number(candidate);
+
+      return Number.isFinite(numeric)
+        ? numeric
+        : null;
     }
 
-    const numeric=Number(candidate);
-    return Number.isFinite(numeric) ? numeric : null;
-  }
+    for (const candidate of candidates) {
+      const numeric = read(candidate);
 
-  for(const candidate of candidates){
-    const numeric=readCandidate(candidate);
-
-    if(numeric !== null){
-      return numeric;
+      if (numeric !== null) {
+        return numeric;
+      }
     }
+
+    return 0;
   }
 
-  return 0;
-}
-  function normalizeCart(cart){
-    const sourceItems=
-      Array.isArray(cart?.items)
-        ? cart.items
-        : Array.isArray(cart?.lineItems)
-          ? cart.lineItems
-          : [];
+  function normalizeCart(cart) {
+    const sourceItems = Array.isArray(cart?.items)
+      ? cart.items
+      : Array.isArray(cart?.lineItems)
+        ? cart.lineItems
+        : [];
 
-    const items=sourceItems.map(
-      item => ({
+    const items = sourceItems.map(item => {
+      const unitPrice = normalizePrice(
+        item.unitPrice,
+        item.price,
+        item.lineItemPrice,
+        item.priceData?.discountedPrice,
+        item.priceData?.price
+      );
+
+      return {
         id:
           item.id ||
           item._id ||
@@ -1115,70 +1413,55 @@ function normalizePrice(...candidates){
           item.options?.color ||
           "",
 
-        quantity:
-          Math.max(
-            1,
-            Number(item.quantity || 1)
-          ),
+        quantity: Math.max(
+          1,
+          Number(item.quantity || 1)
+        ),
 
-        unitPrice:
-  normalizePrice(
-    item.unitPrice,
-    item.price,
-    item.lineItemPrice
-  ),
+        unitPrice,
+        price: unitPrice,
+        autoSelected: item.autoSelected === true
+      };
+    });
 
-price:
-  normalizePrice(
-    item.unitPrice,
-    item.price,
-    item.lineItemPrice
-  ),
-
-        autoSelected:item.autoSelected === true
-      })
-    );
-
-    const count=items.reduce(
-      (sum,item) => sum + item.quantity,
-      0
-    );
-
-    const total=items.reduce(
-      (sum,item) => sum + item.unitprice * item.quantity,
-      0
-    );
-
-    return{
+    return {
       items,
-      count,
-      total
+
+      count: items.reduce(
+        (sum, item) => sum + item.quantity,
+        0
+      ),
+
+      total: items.reduce(
+        (sum, item) =>
+          sum + item.unitPrice * item.quantity,
+        0
+      )
     };
   }
 
-  function readCart(){
-    const checkoutCart=readJson(
+  function readCart() {
+    const checkoutCart = readJson(
       "cajamoda-checkout-cart",
       null
     );
 
-    const regularCart=readJson(
+    const regularCart = readJson(
       "cajamoda-cart",
       null
     );
 
-    const chosen=
-      checkoutCart?.items?.length
-        ? checkoutCart
-        : regularCart;
+    const chosen = checkoutCart?.items?.length
+      ? checkoutCart
+      : regularCart;
 
     return normalizeCart(
-      chosen || {items:[]}
+      chosen || { items: [] }
     );
   }
 
-  function saveCart(cart){
-    const normalized=normalizeCart(cart);
+  function saveCart(cart) {
+    const normalized = normalizeCart(cart);
 
     saveJson(
       "cajamoda-cart",
@@ -1195,25 +1478,64 @@ price:
     return normalized;
   }
 
-  function renderCart(){
-    const cart=readCart();
+  function productImage(item, review = false) {
+    const className = review
+      ? "reviewImage"
+      : "cartImage";
 
-    $("headerBagBadge").textContent=String(cart.count);
-    $("bottomBagBadge").textContent=String(cart.count);
+    if (item.image) {
+      return `
+        <div class="${className}">
+          <img
+            src="${escapeHtml(item.image)}"
+            alt="${escapeHtml(item.name)}"
+          >
+        </div>
+      `;
+    }
 
-    $("cartItemCount").textContent=
+    return `
+      <div class="${className}">
+        <div class="cartImagePlaceholder">
+          CAJAMODA
+        </div>
+      </div>
+    `;
+  }
+
+  function renderCart() {
+    const cart = readCart();
+    const totalText = money(cart.total);
+
+    $("headerBagBadge").textContent =
+      String(cart.count);
+
+    $("bottomBagBadge").textContent =
+      String(cart.count);
+
+    $("cartItemCount").textContent =
       cart.count === 1
         ? "1 producto"
         : `${cart.count} productos`;
 
-    $("subtotalValue").textContent=money(cart.total);
-    $("totalValue").textContent=money(cart.total);
+    [
+      "bagSubtotalValue",
+      "bagTotalValue",
+      "subtotalValue",
+      "totalValue",
+      "headerTotal"
+    ].forEach(id => {
+      $(id).textContent = totalText;
+    });
 
-    $("checkoutButton").disabled=
+    $("toDeliveryButton").disabled =
       cart.items.length === 0;
 
-    if(!cart.items.length){
-      $("cartList").innerHTML=`
+    $("checkoutButton").disabled =
+      cart.items.length === 0;
+
+    if (!cart.items.length) {
+      $("cartList").innerHTML = `
         <div class="emptyCart">
           <div class="emptyBagIcon">
             <svg
@@ -1244,110 +1566,130 @@ price:
         </div>
       `;
 
-      $("continueShopping").onclick=() => {
-        location.href="/";
+      $("reviewList").innerHTML = "";
+
+      $("continueShopping").onclick = () => {
+        location.href = "/";
       };
 
+      syncPanelHeight();
       return;
     }
 
-    $("cartList").innerHTML=cart.items.map(
-      item => `
-        <article
-          class="cartItem"
-          data-cart-item="${escapeHtml(item.id)}"
-        >
-          <div class="cartImage">
+    $("cartList").innerHTML = cart.items.map(item => `
+      <article
+        class="cartItem"
+        data-cart-item="${escapeHtml(item.id)}"
+      >
+        ${productImage(item)}
+
+        <div class="cartInfo">
+          <div class="cartTop">
+            <div class="cartName">
+              ${escapeHtml(item.name)}
+            </div>
+
+            <button
+              class="removeButton"
+              type="button"
+              data-remove="${escapeHtml(item.id)}"
+              aria-label="Eliminar"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+              >
+                <path d="M6 6l12 12M18 6 6 18"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="cartOptions">
             ${
-              item.image
-                ? `
-                  <img
-                    src="${escapeHtml(item.image)}"
-                    alt="${escapeHtml(item.name)}"
-                  >
-                `
-                : `
-                  <div class="cartImagePlaceholder">
-                    CAJAMODA
-                  </div>
-                `
+              item.color
+                ? `Color: ${escapeHtml(item.color)}<br>`
+                : ""
+            }
+            ${
+              item.size
+                ? `Talla: ${escapeHtml(item.size)}`
+                : ""
             }
           </div>
 
-          <div class="cartInfo">
-            <div class="cartTop">
-              <div class="cartName">
-                ${escapeHtml(item.name)}
-              </div>
+          <div class="cartBottom">
+            <div class="cartPrice">
+              ${money(item.unitPrice)}
+            </div>
+
+            <div class="quantityControl">
+              <button
+                class="quantityButton"
+                type="button"
+                data-minus="${escapeHtml(item.id)}"
+                aria-label="Reducir cantidad"
+              >
+                −
+              </button>
+
+              <span class="quantityValue">
+                ${item.quantity}
+              </span>
 
               <button
-                class="removeButton"
+                class="quantityButton"
                 type="button"
-                data-remove="${escapeHtml(item.id)}"
-                aria-label="Eliminar"
+                data-plus="${escapeHtml(item.id)}"
+                aria-label="Aumentar cantidad"
               >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                >
-                  <path d="M6 6l12 12M18 6 6 18"/>
-                </svg>
+                +
               </button>
             </div>
-
-            <div class="cartOptions">
-              ${
-                item.color
-                  ? `Color: ${escapeHtml(item.color)}<br>`
-                  : ""
-              }
-
-              ${
-                item.size
-                  ? `Talla: ${escapeHtml(item.size)}`
-                  : ""
-              }
-            </div>
-
-            <div class="cartBottom">
-              <div class="cartPrice">
-                ${money(item.unitprice)}
-              </div>
-
-              <div class="quantityControl">
-                <button
-                  class="quantityButton"
-                  type="button"
-                  data-minus="${escapeHtml(item.id)}"
-                  aria-label="Reducir cantidad"
-                >
-                  −
-                </button>
-
-                <span class="quantityValue">
-                  ${item.quantity}
-                </span>
-
-                <button
-                  class="quantityButton"
-                  type="button"
-                  data-plus="${escapeHtml(item.id)}"
-                  aria-label="Aumentar cantidad"
-                >
-                  +
-                </button>
-              </div>
-            </div>
           </div>
-        </article>
-      `
-    ).join("");
+        </div>
+      </article>
+    `).join("");
+
+    $("reviewList").innerHTML = cart.items.map(item => `
+      <article class="reviewItem">
+        ${productImage(item, true)}
+
+        <div class="reviewInfo">
+          <div class="reviewName">
+            ${escapeHtml(item.name)}
+          </div>
+
+          <div class="reviewOptions">
+            ${
+              item.color
+                ? `Color: ${escapeHtml(item.color)}<br>`
+                : ""
+            }
+            ${
+              item.size
+                ? `Talla: ${escapeHtml(item.size)}`
+                : ""
+            }
+          </div>
+        </div>
+
+        <div class="reviewNumbers">
+          <div class="reviewQuantity">
+            Cantidad ${item.quantity}
+          </div>
+
+          <div class="reviewPrice">
+            ${money(item.unitPrice * item.quantity)}
+          </div>
+        </div>
+      </article>
+    `).join("");
 
     document
       .querySelectorAll("[data-remove]")
       .forEach(button => {
-        button.onclick=() => {
+        button.onclick = () => {
           removeItem(button.dataset.remove);
         };
       });
@@ -1355,7 +1697,7 @@ price:
     document
       .querySelectorAll("[data-minus]")
       .forEach(button => {
-        button.onclick=() => {
+        button.onclick = () => {
           changeQuantity(
             button.dataset.minus,
             -1
@@ -1366,31 +1708,45 @@ price:
     document
       .querySelectorAll("[data-plus]")
       .forEach(button => {
-        button.onclick=() => {
+        button.onclick = () => {
           changeQuantity(
             button.dataset.plus,
             1
           );
         };
       });
+
+    document
+      .querySelectorAll(
+        ".cartImage img,.reviewImage img"
+      )
+      .forEach(image => {
+        image.addEventListener(
+          "load",
+          syncPanelHeight,
+          { once: true }
+        );
+      });
+
+    syncPanelHeight();
   }
 
-  function changeQuantity(itemId,amount){
-    const cart=readCart();
+  function changeQuantity(itemId, amount) {
+    const cart = readCart();
 
-    const item=cart.items.find(
+    const item = cart.items.find(
       candidate =>
         String(candidate.id) === String(itemId)
     );
 
-    if(!item){
+    if (!item) {
       return;
     }
 
-    item.quantity+=amount;
+    item.quantity += amount;
 
-    if(item.quantity <= 0){
-      cart.items=cart.items.filter(
+    if (item.quantity <= 0) {
+      cart.items = cart.items.filter(
         candidate =>
           String(candidate.id) !== String(itemId)
       );
@@ -1399,10 +1755,10 @@ price:
     saveCart(cart);
   }
 
-  function removeItem(itemId){
-    const cart=readCart();
+  function removeItem(itemId) {
+    const cart = readCart();
 
-    cart.items=cart.items.filter(
+    cart.items = cart.items.filter(
       item =>
         String(item.id) !== String(itemId)
     );
@@ -1411,37 +1767,48 @@ price:
     showToast("Producto eliminado.");
   }
 
-  const customerFields=["email"];
+  const customerFields = ["email"];
 
-  function loadCustomer(){
-    const saved=readJson(
+  function loadCustomer() {
+    const saved = readJson(
       "cajamoda-checkout-customer",
       {}
     );
 
     customerFields.forEach(field => {
-      if($(field) && saved[field]){
-        $(field).value=saved[field];
+      if ($(field) && saved[field]) {
+        $(field).value = saved[field];
       }
     });
+
+    updateReviewCustomer();
   }
 
-  function collectCustomer(){
-    const customer={};
+  function collectCustomer() {
+    const customer = {};
 
     customerFields.forEach(field => {
-      customer[field]=
+      customer[field] =
         $(field)?.value?.trim() || "";
     });
 
     return customer;
   }
 
-  function saveCustomer(){
+  function saveCustomer() {
     saveJson(
       "cajamoda-checkout-customer",
       collectCustomer()
     );
+
+    updateReviewCustomer();
+  }
+
+  function updateReviewCustomer() {
+    const email = $("email")?.value?.trim();
+
+    $("reviewEmail").textContent =
+      email || "Correo pendiente";
   }
 
   customerFields.forEach(field => {
@@ -1451,52 +1818,177 @@ price:
     );
   });
 
-  function validateCheckout(){
-    const cart=readCart();
-
-    if(!cart.items.length){
+  function validateCart() {
+    if (!readCart().items.length) {
       showToast("Tu bolsa está vacía.");
-      return false;
-    }
-
-    const email=$("email");
-
-    if(!email.value.trim()){
-      email.focus();
-      showToast(
-        "Ingresa tu correo electrónico."
-      );
-      return false;
-    }
-
-    if(!email.checkValidity()){
-      email.focus();
-      showToast(
-        "Revisa tu correo electrónico."
-      );
       return false;
     }
 
     return true;
   }
 
-  function requestPayment(){
-    if(!validateCheckout()){
-      return;
+  function validateDelivery() {
+    if (!validateCart()) {
+      return false;
+    }
+
+    const email = $("email");
+
+    if (!email.value.trim()) {
+      goToStep("delivery");
+
+      requestAnimationFrame(() => {
+        email.focus();
+      });
+
+      showToast(
+        "Ingresa tu correo electrónico."
+      );
+
+      return false;
+    }
+
+    if (!email.checkValidity()) {
+      goToStep("delivery");
+
+      requestAnimationFrame(() => {
+        email.focus();
+      });
+
+      showToast(
+        "Revisa tu correo electrónico."
+      );
+
+      return false;
     }
 
     saveCustomer();
+    return true;
+  }
 
-    const cart=readCart();
-    const customer=collectCustomer();
-    const requestId=createId();
+  function syncPanelHeight() {
+    requestAnimationFrame(() => {
+      const panel = document.querySelector(
+        `[data-panel="${activeStep}"]`
+      );
 
-    const payload={
-      requestId,
+      if (panel) {
+        $("stepViewport").style.height =
+          `${panel.scrollHeight}px`;
+      }
+    });
+  }
+
+  function goToStep(step, options = {}) {
+    const index = STEPS.indexOf(step);
+
+    if (index < 0) {
+      return;
+    }
+
+    if (
+      step === "payment" &&
+      !options.skipValidation &&
+      !validateDelivery()
+    ) {
+      return;
+    }
+
+    if (
+      step !== "bag" &&
+      !validateCart()
+    ) {
+      return;
+    }
+
+    activeStep = step;
+
+    document
+      .querySelector(".checkoutApp")
+      ?.classList.toggle(
+        "isPayment",
+        step === "payment"
+      );
+
+    $("stepTrack").style.transform =
+      `translate3d(-${index * 100}%,0,0)`;
+
+    document
+      .querySelectorAll("[data-panel]")
+      .forEach(panel => {
+        const active =
+          panel.dataset.panel === step;
+
+        panel.classList.toggle(
+          "isActive",
+          active
+        );
+
+        panel.setAttribute(
+          "aria-hidden",
+          String(!active)
+        );
+      });
+
+    document
+      .querySelectorAll("[data-step]")
+      .forEach(tab => {
+        const active =
+          tab.dataset.step === step;
+
+        tab.classList.toggle(
+          "isActive",
+          active
+        );
+
+        if (active) {
+          tab.setAttribute(
+            "aria-current",
+            "step"
+          );
+        } else {
+          tab.removeAttribute(
+            "aria-current"
+          );
+        }
+      });
+
+    if (step === "payment") {
+      updateReviewCustomer();
+    }
+
+    syncPanelHeight();
+
+    if (options.scroll !== false) {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+    }
+  }
+
+  function requestPayment() {
+    if (!validateDelivery()) {
+      return;
+    }
+
+    const button = $("checkoutButton");
+
+    button.disabled = true;
+
+    button
+      .querySelector("span")
+      .textContent = "Preparando pago…";
+
+    const cart = readCart();
+    const customer = collectCustomer();
+
+    const payload = {
+      requestId: createId(),
       cart,
       customer,
-      currency:"COP",
-      country:"CO"
+      currency: "COP",
+      country: "CO"
     };
 
     saveJson(
@@ -1504,56 +1996,107 @@ price:
       payload
     );
 
-    window.postMessage(
-      {
-        source:"CAJAMODA_CHECKOUT",
-        type:"CREATE_CHECKOUT",
-        payload
-      },
-      "*"
-    );
+    const message = {
+      source: "CAJAMODA_CHECKOUT",
+      type: "CREATE_CHECKOUT",
+      payload
+    };
 
-    if(window.parent !== window){
+    window.postMessage(message, "*");
+
+    if (window.parent !== window) {
       window.parent.postMessage(
-        {
-          source:"CAJAMODA_CHECKOUT",
-          type:"CREATE_CHECKOUT",
-          payload
-        },
+        message,
         "*"
       );
     }
 
-    showToast("Preparando pago seguro…");
+    showToast(
+      "Preparando pago seguro…"
+    );
+
+    clearTimeout(paymentTimer);
+
+    paymentTimer = setTimeout(
+      resetPaymentButton,
+      10000
+    );
   }
 
-  $("checkoutButton").onclick=requestPayment;
+  function resetPaymentButton() {
+    clearTimeout(paymentTimer);
+
+    const button = $("checkoutButton");
+
+    button.disabled =
+      readCart().items.length === 0;
+
+    button
+      .querySelector("span")
+      .textContent =
+        "Continuar al pago seguro";
+  }
+
+  document
+    .querySelectorAll("[data-step]")
+    .forEach(tab => {
+      tab.onclick = () => {
+        goToStep(tab.dataset.step);
+      };
+    });
+
+  $("toDeliveryButton").onclick = () => {
+    goToStep("delivery");
+  };
+
+  $("backToBagButton").onclick = () => {
+    goToStep("bag");
+  };
+
+  $("toPaymentButton").onclick = () => {
+    goToStep("payment");
+  };
+
+  $("editDeliveryButton").onclick = () => {
+    goToStep("delivery");
+  };
+
+  $("backToDeliveryButton").onclick = () => {
+    goToStep("delivery");
+  };
+
+  $("checkoutButton").onclick =
+    requestPayment;
 
   window.addEventListener(
     "message",
     event => {
-      const message=event.data || {};
-      const payload=message.payload || {};
+      const message = event.data || {};
+      const payload = message.payload || {};
 
-      if(
+      if (
         [
           "CHECKOUT_URL",
           "CHECKOUT_CREATED",
           "REDIRECT_TO_CHECKOUT"
         ].includes(message.type)
-      ){
-        const url=
+      ) {
+        const url =
           payload.url ||
           payload.checkoutUrl ||
           payload.redirectUrl ||
           "";
 
-        if(url){
-          location.href=url;
+        if (url) {
+          location.href = url;
         }
       }
 
-      if(message.type === "CHECKOUT_ERROR"){
+      if (
+        message.type === "CHECKOUT_ERROR"
+      ) {
+        resetPaymentButton();
+
         showToast(
           payload.message ||
           "No pudimos abrir el pago."
@@ -1562,31 +2105,82 @@ price:
     }
   );
 
-  $("backButton").onclick=() => {
-    if(history.length > 1){
+  $("backButton").onclick = () => {
+    if (activeStep === "payment") {
+      goToStep("delivery");
+      return;
+    }
+
+    if (activeStep === "delivery") {
+      goToStep("bag");
+      return;
+    }
+
+    if (history.length > 1) {
       history.back();
-    }else{
-      location.href="/";
+    } else {
+      location.href = "/";
     }
   };
 
   $("headerBag").onclick = () => {
-  window.CajaModaBagPreview
-    ?.open();
-};
+    window.CajaModaBagPreview?.open();
+  };
+
+  $("bottomBagButton").onclick = event => {
+    if (window.CajaModaBagPreview?.open) {
+      event.preventDefault();
+      window.CajaModaBagPreview.open();
+    }
+  };
+
+  window.addEventListener(
+    "resize",
+    syncPanelHeight,
+    { passive: true }
+  );
+
+  window.addEventListener(
+    "pageshow",
+    () => {
+      loadCustomer();
+      renderCart();
+
+      goToStep(
+        activeStep,
+        {
+          skipValidation: true,
+          scroll: false
+        }
+      );
+    }
+  );
+
+  document.fonts?.ready?.then(
+    syncPanelHeight
+  );
+
   loadCustomer();
   renderCart();
+
+  goToStep(
+    "bag",
+    {
+      skipValidation: true,
+      scroll: false
+    }
+  );
 })();
 </script>
+
 <script
   type="module"
   src="/src/bag-preview.js"
 ></script>
+
 <script
   type="module"
   src="/src/main.js"
 ></script>
-
 </body>
 </html>
-

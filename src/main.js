@@ -15,6 +15,11 @@ const CLIENT_ID =
 const WIX_STORES_APP_ID =
   "215238eb-22a5-4c36-9e7b-e7c08025e04e";
 
+const CATEGORY_ROUTER_URL =
+  import.meta.env
+    .VITE_CATEGORY_ROUTER_URL ||
+  "https://cajamoda-storeload-api.onrender.com/api/category-routes";
+
 const SESSION_KEY =
   "wixSession";
 
@@ -1887,12 +1892,88 @@ function sendInit() {
    LOAD WIX PRODUCTS
    ============================================================ */
 
+
+async function loadRenderCategoryRoutes() {
+
+  try {
+
+    const response =
+      await fetch(
+        CATEGORY_ROUTER_URL,
+        {
+          headers: {
+            Accept:
+              "application/json"
+          }
+        }
+      );
+
+    if (
+      !response.ok
+    ) {
+
+      throw new Error(
+        `Category router returned ${response.status}`
+      );
+    }
+
+    const payload =
+      await response.json();
+
+    return new Map(
+      Object.entries(
+        payload?.routes ||
+        {}
+      )
+        .map(
+          (
+            [
+              productId,
+              vibeId
+            ]
+          ) => [
+            String(
+              productId
+            ),
+
+            String(
+              vibeId ||
+              ""
+            )
+          ]
+        )
+        .filter(
+          (
+            [
+              productId,
+              vibeId
+            ]
+          ) =>
+            productId &&
+            vibeId
+        )
+    );
+
+  } catch (
+    error
+  ) {
+
+    console.warn(
+      "[CajaModa] Render category router warning:",
+      error
+    );
+
+    return new Map();
+  }
+}
+
 async function loadCatalog() {
   const [
     productResult,
     collectionResult,
     categoryProductResult,
-    categoryResult
+    categoryResult,
+    renderCategoryRoutes
   ] =
     await Promise.all([
       wix
@@ -1953,7 +2034,9 @@ async function loadCatalog() {
           );
 
           return { items: [] };
-        })
+        }),
+
+      loadRenderCategoryRoutes()
     ]);
 
   const wixProducts =
@@ -1993,7 +2076,8 @@ async function loadCatalog() {
 
   const productCategoryVibes =
     new Map(
-      categoryProducts
+      [
+        ...categoryProducts
         .map(product => {
           const vibeId =
             categoryVibeFromName(
@@ -2043,7 +2127,13 @@ async function loadCatalog() {
           ([productId, vibeId]) =>
             productId &&
             vibeId
+        ),
+
+        ...Array.from(
+          renderCategoryRoutes
+            .entries()
         )
+      ]
     );
 
   const collectionVibes =

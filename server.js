@@ -19,6 +19,9 @@ import {
   orders as ecomOrders
 } from "@wix/ecom";
 
+import * as categoriesV3
+  from "@wix/categories_categories";
+
 /* ============================================================
    STORE LOADER BACKEND
    ------------------------------------------------------------
@@ -106,7 +109,8 @@ const wix =
         modules: {
 
           productsV3,
-inventoryItemsV3,
+          inventoryItemsV3,
+          categoriesV3,
           files,
 
           orders:
@@ -224,6 +228,12 @@ function setCors(
 
     origin ===
       "https://admin.cajamoda.com" ||
+
+    origin ===
+      "https://cajamoda.com" ||
+
+    origin ===
+      "https://www.cajamoda.com" ||
 
     origin ===
       "http://localhost:5173" ||
@@ -1148,13 +1158,13 @@ const CATEGORY_NAMES = {
     "Noches Largas",
 
   chill:
-    "Días Tranquilos",
+    "Dias Tranquilos",
 
   quick:
-    "Rápido y Fácil",
+    "Rapido y Facil",
 
   sun:
-    "Baño de Sol"
+    "Bano De Sol"
 };
 
 function getCategoryName(
@@ -1167,6 +1177,294 @@ function getCategoryName(
     ] ||
     "CajaModa"
   );
+}
+
+
+const WIX_STORES_APP_ID =
+  "215238eb-22a5-4c36-9e7b-e7c08025e04e";
+
+const STORE_CATEGORY_TREE = {
+  appNamespace:
+    "@wix/stores"
+};
+
+const CATEGORY_ROUTE_BY_NAME = {
+  "noches largas":
+    "late",
+
+  "dias tranquilos":
+    "chill",
+
+  "rapido y facil":
+    "quick",
+
+  "bano de sol":
+    "sun"
+};
+
+function normalizeCategoryRouteName(
+  value
+) {
+
+  return String(
+    value ||
+    ""
+  )
+    .normalize(
+      "NFD"
+    )
+    .replace(
+      /[\u0300-\u036f]/g,
+      ""
+    )
+    .toLowerCase()
+    .replace(
+      /[^a-z0-9]+/g,
+      " "
+    )
+    .trim();
+}
+
+function categoryRouteFromName(
+  value
+) {
+
+  return (
+    CATEGORY_ROUTE_BY_NAME[
+      normalizeCategoryRouteName(
+        value
+      )
+    ] ||
+    ""
+  );
+}
+
+let categoryRouteCache = {
+  expiresAt:
+    0,
+
+  routes:
+    {}
+};
+
+async function queryRoutedCategories() {
+
+  const result =
+    await wix
+      .categoriesV3
+      .queryCategories({
+        treeReference:
+          STORE_CATEGORY_TREE,
+
+        returnNonVisibleCategories:
+          true
+      })
+      .limit(
+        1000
+      )
+      .find();
+
+  return (
+    result?.items ||
+    []
+  )
+    .map(
+      category => ({
+        id:
+          String(
+            category?._id ||
+            category?.id ||
+            ""
+          ),
+
+        name:
+          String(
+            category?.name ||
+            ""
+          ),
+
+        vibeId:
+          categoryRouteFromName(
+            category?.name
+          )
+      })
+    )
+    .filter(
+      category =>
+        category.id &&
+        category.vibeId
+    );
+}
+
+async function getCategoryRoutes() {
+
+  if (
+    categoryRouteCache
+      .expiresAt >
+    Date.now()
+  ) {
+
+    return (
+      categoryRouteCache
+        .routes
+    );
+  }
+
+  if (
+    !wix
+  ) {
+
+    throw new Error(
+      "El servidor todavía no está conectado a Wix."
+    );
+  }
+
+  const categories =
+    await queryRoutedCategories();
+
+  const memberships =
+    await Promise.all(
+      categories.map(
+        async category => {
+
+          const result =
+            await wix
+              .categoriesV3
+              .listItemsInCategory(
+                category.id,
+                STORE_CATEGORY_TREE,
+                {
+                  cursorPaging: {
+                    limit:
+                      100
+                  }
+                }
+              );
+
+          return {
+            vibeId:
+              category.vibeId,
+
+            productIds:
+              (
+                result?.items ||
+                []
+              )
+                .filter(
+                  item =>
+                    !item?.appId ||
+                    item.appId ===
+                      WIX_STORES_APP_ID
+                )
+                .map(
+                  item =>
+                    String(
+                      item
+                        ?.catalogItemId ||
+                      ""
+                    )
+                )
+                .filter(
+                  Boolean
+                )
+          };
+        }
+      )
+    );
+
+  const routes = {};
+
+  for (
+    const membership
+    of memberships
+  ) {
+
+    for (
+      const productId
+      of membership.productIds
+    ) {
+
+      routes[
+        productId
+      ] =
+        membership.vibeId;
+    }
+  }
+
+  categoryRouteCache = {
+    expiresAt:
+      Date.now() +
+      60 * 1000,
+
+    routes
+  };
+
+  return routes;
+}
+
+async function assignProductCategory(
+  productId,
+  categoryKey
+) {
+
+  const targetVibe =
+    categoryRouteFromName(
+      CATEGORY_NAMES[
+        categoryKey
+      ] ||
+      categoryKey
+    );
+
+  if (
+    !targetVibe
+  ) {
+
+    return;
+  }
+
+  const categories =
+    await queryRoutedCategories();
+
+  const target =
+    categories.find(
+      category =>
+        category.vibeId ===
+        targetVibe
+    );
+
+  if (
+    !target
+  ) {
+
+    throw new Error(
+      `No existe la categoria Wix "${CATEGORY_NAMES[categoryKey] || categoryKey}".`
+    );
+  }
+
+  await wix
+    .categoriesV3
+    .bulkAddItemsToCategory(
+      target.id,
+      [
+        {
+          appId:
+            WIX_STORES_APP_ID,
+
+          catalogItemId:
+            String(
+              productId
+            )
+        }
+      ],
+      {
+        treeReference:
+          STORE_CATEGORY_TREE
+      }
+    );
+
+  categoryRouteCache
+    .expiresAt =
+      0;
 }
 
 /* ============================================================
@@ -1525,6 +1823,12 @@ for(
       }
     );
 }
+  await assignProductCategory(
+    created._id ||
+    created.id,
+    category
+  );
+
   return {
 
     id:
@@ -2489,6 +2793,52 @@ const server =
                 )
             }
           );
+
+          return;
+        }
+
+        /* ------------------------------------------------------
+           PUBLIC STOREFRONT CATEGORY ROUTER
+           ------------------------------------------------------ */
+
+        if (
+          request.method ===
+            "GET" &&
+          url.pathname ===
+            "/api/category-routes"
+        ) {
+
+          try {
+
+            const routes =
+              await getCategoryRoutes();
+
+            sendJson(
+              response,
+              200,
+              {
+                routes
+              }
+            );
+
+          } catch (
+            error
+          ) {
+
+            console.error(
+              "[Category Router]",
+              error
+            );
+
+            sendJson(
+              response,
+              500,
+              {
+                error:
+                  "No se pudieron resolver las categorias."
+              }
+            );
+          }
 
           return;
         }

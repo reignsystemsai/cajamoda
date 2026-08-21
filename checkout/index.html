@@ -1249,14 +1249,14 @@ img{display:block;max-width:100%}
         const numeric = Number(cleaned);
 
         return Number.isFinite(numeric)
-          ? numeric
+          ? Math.round(numeric)
           : null;
       }
 
       const numeric = Number(candidate);
 
       return Number.isFinite(numeric)
-        ? numeric
+        ? Math.round(numeric)
         : null;
     }
 
@@ -1350,7 +1350,10 @@ img{display:block;max-width:100%}
         (sum, item) =>
           sum + item.unitPrice * item.quantity,
         0
-      )
+      ),
+      revision: Math.max(0,Number(cart?.revision || 0)),
+      updatedAt: Math.max(0,Number(cart?.updatedAt || 0)),
+      authoritative: cart?.authoritative === true
     };
   }
 
@@ -1365,7 +1368,7 @@ img{display:block;max-width:100%}
       null
     );
 
-    const chosen = regularCart?.items?.length
+    const chosen = regularCart !== null
       ? regularCart
       : checkoutCart;
 
@@ -1374,8 +1377,15 @@ img{display:block;max-width:100%}
     );
   }
 
-  function saveCart(cart) {
+  function saveCart(cart, syncBackend = true) {
     const normalized = normalizeCart(cart);
+
+    normalized.revision = Math.max(
+      Number(readJson("cajamoda-cart",null)?.revision || 0),
+      Number(cart?.revision || 0)
+    ) + 1;
+    normalized.updatedAt = Date.now();
+    normalized.authoritative = true;
 
     saveJson(
       "cajamoda-cart",
@@ -1386,6 +1396,14 @@ img{display:block;max-width:100%}
       "cajamoda-checkout-cart",
       normalized
     );
+
+    if (syncBackend) {
+      window.postMessage({
+        source: "CAJAMODA_CHECKOUT",
+        type: "SYNC_CART",
+        payload: { cart: normalized }
+      }, "*");
+    }
 
     renderCart();
 

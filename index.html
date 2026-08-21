@@ -3591,10 +3591,18 @@ svg{
   }
 
   function saveCart(
-    cart
+    cart,
+    syncBackend=true
   ){
 
     const normalized = normalizeCart(cart);
+
+    normalized.revision = Math.max(
+      Number(readJson("cajamoda-cart",null)?.revision || 0),
+      Number(cart?.revision || 0)
+    ) + 1;
+    normalized.updatedAt = Date.now();
+    normalized.authoritative = true;
 
     saveJson(
       "cajamoda-cart",
@@ -3605,6 +3613,12 @@ svg{
       "cajamoda-checkout-cart",
       normalized
     );
+
+    if(syncBackend){
+      sendBridge("SYNC_CART",{cart:normalized});
+    }
+
+    return normalized;
   }
 
   /* ============================================================
@@ -4010,10 +4024,10 @@ svg{
         .replace(/\.(?=\d{3}(?:\D|$))/g,"")
         .replace(",",".");
       const parsed=Number(cleaned);
-      return Number.isFinite(parsed)?parsed:0;
+      return Number.isFinite(parsed)?Math.round(parsed):0;
     }
     const parsed=Number(value);
-    return Number.isFinite(parsed)?parsed:0;
+    return Number.isFinite(parsed)?Math.round(parsed):0;
   }
 
   function normalizeCart(
@@ -4141,7 +4155,10 @@ svg{
     return{
       items,
       count,
-      total
+      total,
+      revision: Math.max(0,Number(payload?.revision || 0)),
+      updatedAt: Math.max(0,Number(payload?.updatedAt || 0)),
+      authoritative: payload?.authoritative === true
     };
   }
 
@@ -6071,14 +6088,12 @@ scheduleBagAutoClose();
   */
 
   if(
-    !readCart().items.length &&
+    localStorage.getItem("cajamoda-cart") === null &&
     Array.isArray(incomingItems) &&
     incomingItems.length > 0
   ){
 
-    saveCart(
-      incoming
-    );
+    saveCart(incoming,false);
   }
 
   syncBagCount(

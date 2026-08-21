@@ -130,6 +130,9 @@ let lastCart =
     )
   );
 
+/* Serialize Wix mutations so an older request can never finish after a newer cart. */
+let cartSyncQueue = Promise.resolve();
+
 /* ============================================================
    BRIDGE
    ============================================================ */
@@ -226,11 +229,11 @@ function normalizePrice(
         .replace(/\.(?=\d{3}(?:\D|$))/g,"")
         .replace(",",".");
       const parsed=Number(cleaned);
-      return Number.isFinite(parsed)?parsed:null;
+      return Number.isFinite(parsed)?Math.round(parsed):null;
     }
 
     const numeric=Number(candidate);
-    return Number.isFinite(numeric)?numeric:null;
+    return Number.isFinite(numeric)?Math.round(numeric):null;
   }
 
   for (
@@ -861,17 +864,38 @@ price:
   return {
     items,
     count,
-    total
+    total,
+    revision: Math.max(0,Number(cart?.revision || 0)),
+    updatedAt: Math.max(0,Number(cart?.updatedAt || 0)),
+    authoritative: cart?.authoritative === true
   };
 }
 
 function saveLocalCart(
   cart
 ) {
+  const previous = readJson("cajamoda-cart",null);
   const normalized =
     normalizeLocalCart(
       cart
     );
+
+  /* Never let completion of an older Wix request overwrite a newer local edit. */
+  if (
+    previous?.authoritative === true &&
+    cart?.authoritative === true &&
+    Number(previous.revision || 0) > Number(cart.revision || 0)
+  ) {
+    lastCart = normalizeLocalCart(previous);
+    return lastCart;
+  }
+
+  normalized.revision = Math.max(
+    Number(previous?.revision || 0),
+    Number(cart?.revision || 0)
+  ) + 1;
+  normalized.updatedAt = Date.now();
+  normalized.authoritative = true;
 
   saveJson(
     "cajamoda-cart",
@@ -890,35 +914,19 @@ function saveLocalCart(
 }
 
 function readBestLocalCart() {
-  const regular =
-    normalizeLocalCart(
-      readJson(
-        "cajamoda-cart",
-        null
-      )
-    );
+  const regularRaw = readJson("cajamoda-cart",null);
+  const checkoutRaw = readJson("cajamoda-checkout-cart",null);
 
-  const checkout =
-    normalizeLocalCart(
-      readJson(
-        "cajamoda-checkout-cart",
-        null
-      )
-    );
-
-  if (
-    regular.items.length
-  ) {
-    return regular;
-  }
-
-  if (
-    checkout.items.length
-  ) {
-    return checkout;
-  }
+  /* A stored empty cart is intentional. Never replace it with an older cart. */
+  if (regularRaw !== null) return normalizeLocalCart(regularRaw);
+  if (checkoutRaw !== null) return normalizeLocalCart(checkoutRaw);
 
   return emptyCart();
+}
+
+function hasAuthoritativeLocalCart() {
+  return localStorage.getItem("cajamoda-cart") !== null ||
+    localStorage.getItem("cajamoda-checkout-cart") !== null;
 }
 
 /* ============================================================
@@ -1501,9 +1509,7 @@ async function getPersistentCart() {
         )
       : emptyCart();
 
-  if (
-    local.items.length
-  ) {
+  if (hasAuthoritativeLocalCart()) {
     lastCart =
       local;
 
@@ -1519,9 +1525,7 @@ async function getPersistentCart() {
           normalizedWix
         )
     ) {
-      syncLocalCartToWix(
-        local
-      )
+      queueCartSync(local)
         .catch(
           error => {
             console.warn(
@@ -1705,6 +1709,14 @@ async function syncLocalCartToWix(
   return saveLocalCart(cart);
 }
 
+function queueCartSync(cart) {
+  const snapshot = normalizeLocalCart(cart);
+  cartSyncQueue = cartSyncQueue
+    .catch(() => undefined)
+    .then(() => syncLocalCartToWix(snapshot));
+  return cartSyncQueue;
+}
+
 /* ============================================================
    SEND INIT
    ============================================================ */
@@ -1821,7 +1833,7 @@ async function loadCatalog() {
 
   /* Re-price legacy saved lines from the live Wix catalog before any checkout. */
   const storedCart = readBestLocalCart();
-  if (storedCart.items.length) {
+  if (hasAuthoritativeLocalCart() && storedCart.items.length) {
     try {
       saveLocalCart(canonicalizeCartForWix(storedCart));
     } catch (error) {
@@ -1854,10 +1866,9 @@ async function createPaymentCheckout(
         payload?.cart
       );
 
-    const localCart =
-      suppliedCart.items.length
-        ? suppliedCart
-        : readBestLocalCart();
+    const localCart = payload?.cart
+      ? suppliedCart
+      : readBestLocalCart();
 
     const canonicalCart = canonicalizeCartForWix(localCart);
 
@@ -1876,9 +1887,7 @@ async function createPaymentCheckout(
       what the customer sees on Checkout.
     */
 
-    await syncLocalCartToWix(
-      canonicalCart
-    );
+    await queueCartSync(canonicalCart);
 
     /* Final pre-checkout verification immediately before Wix creates the checkout. */
     const verifiedWixCart = await getWixCart();
@@ -2242,7 +2251,21 @@ window.addEventListener(
         send("CART_STATE",localCart);
 
         if(catalog.length){
-          syncLocalCartToWix(localCart)
+          queueCartSync(localCart)
+            .then(cart=>send("CART_STATE",cart))
+            .catch(error=>console.warn("[CajaModa] Cart sync warning:",error));
+        }
+        break;
+      }
+
+      case "SYNC_CART": {
+        const localCart = saveLocalCart(
+          normalizeLocalCart(payload?.cart || readBestLocalCart())
+        );
+        send("CART_STATE",localCart);
+
+        if (catalog.length) {
+          queueCartSync(localCart)
             .then(cart=>send("CART_STATE",cart))
             .catch(error=>console.warn("[CajaModa] Cart sync warning:",error));
         }
@@ -2296,12 +2319,7 @@ window.addEventListener(
       const cart =
         readBestLocalCart();
 
-      if (
-        cart.items.length
-      ) {
-        lastCart =
-          cart;
-      }
+      lastCart = cart;
     }
   }
 );

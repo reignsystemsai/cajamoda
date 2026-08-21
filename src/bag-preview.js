@@ -96,11 +96,11 @@
           .replace(/\.(?=\d{3}(?:\D|$))/g,"")
           .replace(",",".");
         const parsed=Number(cleaned);
-        return Number.isFinite(parsed)?parsed:null;
+        return Number.isFinite(parsed)?Math.round(parsed):null;
       }
 
       const numeric=Number(candidate);
-      return Number.isFinite(numeric)?numeric:null;
+      return Number.isFinite(numeric)?Math.round(numeric):null;
     }
 
     for(
@@ -190,7 +190,11 @@
               item.quantity
             ),
           0
-        )
+        ),
+
+      revision: Math.max(0,Number(cart?.revision || 0)),
+      updatedAt: Math.max(0,Number(cart?.updatedAt || 0)),
+      authoritative: cart?.authoritative === true
     };
   }
 
@@ -208,7 +212,7 @@
       );
 
     return normalizeCart(
-      regularCart?.items?.length
+      regularCart !== null
         ? regularCart
         : checkoutCart
     );
@@ -220,6 +224,13 @@
     const normalized =
       normalizeCart(cart);
 
+    normalized.revision = Math.max(
+      Number(readJson(CART_KEY,null)?.revision || 0),
+      Number(cart?.revision || 0)
+    ) + 1;
+    normalized.updatedAt = Date.now();
+    normalized.authoritative = true;
+
     saveJson(
       CART_KEY,
       normalized
@@ -229,6 +240,12 @@
       CHECKOUT_CART_KEY,
       normalized
     );
+
+    window.postMessage({
+      source:"CAJAMODA_STOREFRONT",
+      type:"SYNC_CART",
+      payload:{cart:normalized}
+    },"*");
 
     updateExistingBadges(
       normalized.count

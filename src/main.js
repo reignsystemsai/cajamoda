@@ -1193,20 +1193,20 @@ const unitPrice =
             Math.max(
               1,
               Number(
-                localline?.quantity ??
-                 line?.quantity ??
+                localLine?.quantity ??
+                line?.quantity ??
                 1
               )
             ),
 
           unitPrice,
 
-           price:
-              unitPrice,
+          price:
+            unitPrice,
 
           autoSelected:
-            localline? .autosSelected ??
-             true
+            localLine?.autoSelected ??
+            true
         };
       }
     );

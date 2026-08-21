@@ -378,6 +378,33 @@
       font-size:7px;
     }
 
+    .sharedBagBulkActions{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:5px 0 8px;
+      border-bottom:1px solid rgba(0,0,0,.07);
+    }
+
+    .sharedBagBulkButton{
+      padding:0;
+      border:0;
+      background:none;
+      color:#555;
+      font-size:8px;
+      font-weight:700;
+      cursor:pointer;
+    }
+
+    .sharedBagBulkButton:disabled{opacity:.35}
+
+    .sharedBagSelect{
+      width:18px;
+      height:18px;
+      margin:0;
+      accent-color:#080808;
+    }
+
     .sharedBagClose{
       width:39px;
       height:39px;
@@ -394,7 +421,7 @@
 
     .sharedBagItem{
       display:grid;
-      grid-template-columns:61px 1fr auto;
+      grid-template-columns:18px 61px 1fr auto;
       gap:9px;
       padding:10px 0;
       border-bottom:1px solid rgba(0,0,0,.07);
@@ -558,6 +585,11 @@
         </button>
       </header>
 
+      <div class="sharedBagBulkActions">
+        <button id="sharedBagSelectAll" class="sharedBagBulkButton" type="button">Seleccionar todo</button>
+        <button id="sharedBagRemoveSelected" class="sharedBagBulkButton" type="button" disabled>Eliminar seleccionados</button>
+      </div>
+
       <div id="sharedBagItems"></div>
 
       <div
@@ -626,6 +658,22 @@
       "sharedBagCheckout"
     );
 
+  const selectedItems = new Set();
+  const selectAllButton = document.getElementById("sharedBagSelectAll");
+  const removeSelectedButton = document.getElementById("sharedBagRemoveSelected");
+
+  function syncBulkActions(cart){
+    const validIds = new Set(cart.items.map(item => String(item.id)));
+    [...selectedItems].forEach(id => {
+      if(!validIds.has(id)) selectedItems.delete(id);
+    });
+
+    const allSelected = cart.items.length > 0 && cart.items.every(item => selectedItems.has(String(item.id)));
+    selectAllButton.textContent = allSelected ? "Deseleccionar todo" : "Seleccionar todo";
+    selectAllButton.disabled = cart.items.length === 0;
+    removeSelectedButton.disabled = selectedItems.size === 0;
+  }
+
   function cancelAutoClose(){
     clearTimeout(
       autoCloseTimer
@@ -681,6 +729,7 @@
       cart.items.map(
         item => `
           <article class="sharedBagItem">
+            <input class="sharedBagSelect" type="checkbox" data-shared-select="${escapeHtml(item.id)}" aria-label="Seleccionar ${escapeHtml(item.name || "Producto")}" ${selectedItems.has(String(item.id)) ? "checked" : ""}>
             <div class="sharedBagImage">
               ${
                 item.image
@@ -756,6 +805,8 @@
     updateExistingBadges(
       cart.count
     );
+
+    syncBulkActions(cart);
   }
 
   function changeQuantity(
@@ -865,6 +916,15 @@
           "[data-shared-remove]"
         );
 
+      const select = event.target.closest("[data-shared-select]");
+
+      if(select){
+        const id = String(select.dataset.sharedSelect);
+        select.checked ? selectedItems.add(id) : selectedItems.delete(id);
+        syncBulkActions(readCart());
+        return;
+      }
+
       if(minus){
         changeQuantity(
           minus.dataset.sharedMinus,
@@ -885,6 +945,21 @@
         );
       }
     };
+
+  selectAllButton.onclick = () => {
+    const cart = readCart();
+    const allSelected = cart.items.length > 0 && cart.items.every(item => selectedItems.has(String(item.id)));
+    selectedItems.clear();
+    if(!allSelected) cart.items.forEach(item => selectedItems.add(String(item.id)));
+    renderBag();
+  };
+
+  removeSelectedButton.onclick = () => {
+    const cart = readCart();
+    cart.items = cart.items.filter(item => !selectedItems.has(String(item.id)));
+    selectedItems.clear();
+    saveCart(cart);
+  };
 
   checkoutButton.onclick =
     () => {

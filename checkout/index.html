@@ -2154,6 +2154,14 @@ img{display:block;max-width:100%}
       const payload = message.payload || {};
 
       if (
+        (message.type === "INIT" || message.type === "CATALOG_PATCH") &&
+        Array.isArray(payload.products)
+      ) {
+        saveJson("cajamoda-catalog", payload.products);
+        renderCart();
+      }
+
+      if (
         [
           "CHECKOUT_URL",
           "CHECKOUT_CREATED",
@@ -2245,6 +2253,12 @@ img{display:block;max-width:100%}
 
   loadCustomer();
   renderCart();
+
+  window.postMessage({
+    source:"CAJAMODA_CHECKOUT",
+    type:"READY",
+    payload:{page:"CHECKOUT",needs:["CATALOG","VARIANTS"]}
+  },"*");
 
   goToStep(
     "bag",

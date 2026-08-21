@@ -1984,6 +1984,11 @@ svg{
 
 .favoriteMiniHeart{position:absolute;z-index:3;top:5px;right:5px;width:27px;height:27px;display:grid;place-items:center;border-radius:50%;background:rgba(255,255,255,.90);border:1px solid rgba(255,255,255,.97);color:#cf1738;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);animation:cajaHeartBeat 2.4s ease-in-out infinite}
 .favoriteMiniHeart svg{width:15px;height:15px;fill:currentColor;stroke:currentColor;stroke-width:1.7}
+.favoriteMiniSelect{position:absolute;z-index:4;top:6px;left:6px;width:20px;height:20px;border:1px solid rgba(0,0,0,.28);border-radius:50%;background:rgba(255,255,255,.88)}
+.favoriteMiniSelect.selected{background:#080808;box-shadow:inset 0 0 0 5px #fff}
+.favoriteBulkActions{display:flex;gap:12px;margin-top:8px}
+.favoriteBulkButton{padding:0;border:0;background:none;color:#555;font-size:8px;font-weight:700}
+.favoriteBulkButton:disabled{opacity:.35}
 
 .favoriteMiniImage{
   width:93px;
@@ -3098,6 +3103,11 @@ svg{
       </button>
 
     </header>
+
+    <div class="favoriteBulkActions">
+      <button id="favoritesSelectAll" class="favoriteBulkButton" type="button">Seleccionar todo</button>
+      <button id="favoritesRemoveSelected" class="favoriteBulkButton" type="button" disabled>Eliminar seleccionados</button>
+    </div>
 
     <div
       id="favoriteRail"
@@ -5110,6 +5120,19 @@ svg{
     }
   }
 
+  const selectedFavorites = new Set();
+
+  function syncFavoriteBulkActions(products){
+    const validIds = new Set(products.map(product => String(product.id)));
+    [...selectedFavorites].forEach(id => {
+      if(!validIds.has(id)) selectedFavorites.delete(id);
+    });
+    const allSelected = products.length > 0 && products.every(product => selectedFavorites.has(String(product.id)));
+    $("favoritesSelectAll").textContent = allSelected ? "Deseleccionar todo" : "Seleccionar todo";
+    $("favoritesSelectAll").disabled = products.length === 0;
+    $("favoritesRemoveSelected").disabled = selectedFavorites.size === 0;
+  }
+
   function renderFavorites(){
 
     const products =
@@ -5129,6 +5152,8 @@ svg{
                 class="favoriteMini"
                 data-favorite-open="${escapeHtml(product.id)}"
               >
+
+                <span class="favoriteMiniSelect ${selectedFavorites.has(String(product.id)) ? "selected" : ""}" data-favorite-select="${escapeHtml(product.id)}" role="checkbox" aria-checked="${selectedFavorites.has(String(product.id))}" tabindex="0"></span>
 
                 <span class="favoriteMiniHeart" data-favorite-remove="${escapeHtml(product.id)}" role="button" aria-label="Quitar de Wishlist" tabindex="0">${heartIcon(true)}</span>
 
@@ -5214,6 +5239,20 @@ svg{
       heart.onclick = remove;
       heart.onkeydown = event => {if(event.key === "Enter" || event.key === " ") remove(event)};
     });
+
+    qsa("[data-favorite-select]", $("favoriteRail")).forEach(control => {
+      const select = event => {
+        event.preventDefault();
+        event.stopPropagation();
+        const id = String(control.dataset.favoriteSelect);
+        selectedFavorites.has(id) ? selectedFavorites.delete(id) : selectedFavorites.add(id);
+        renderFavorites();
+      };
+      control.onclick = select;
+      control.onkeydown = event => {if(event.key === "Enter" || event.key === " ") select(event)};
+    });
+
+    syncFavoriteBulkActions(products);
   }
 
   /* ============================================================
@@ -6386,6 +6425,23 @@ scheduleBagAutoClose();
   $("favoritesClose")
     .onclick =
       closeFavorites;
+
+  $("favoritesSelectAll").onclick = () => {
+    const products = state.products.filter(product => state.favorites.has(String(product.id)));
+    const allSelected = products.length > 0 && products.every(product => selectedFavorites.has(String(product.id)));
+    selectedFavorites.clear();
+    if(!allSelected) products.forEach(product => selectedFavorites.add(String(product.id)));
+    renderFavorites();
+    scheduleFavoritesAutoClose();
+  };
+
+  $("favoritesRemoveSelected").onclick = () => {
+    selectedFavorites.forEach(id => state.favorites.delete(id));
+    selectedFavorites.clear();
+    saveFavorites();
+    renderFavorites();
+    scheduleFavoritesAutoClose();
+  };
 
   $("favoritesOverlay")
     .onclick =

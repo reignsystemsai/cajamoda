@@ -4487,11 +4487,11 @@ function normalizePrice(
         .replace(/\.(?=\d{3}(?:\D|$))/g,"")
         .replace(",",".");
       const parsed=Number(cleaned);
-      return Number.isFinite(parsed)?parsed:null;
+      return Number.isFinite(parsed)?Math.round(parsed):null;
     }
 
     const numeric=Number(candidate);
-    return Number.isFinite(numeric)?numeric:null;
+    return Number.isFinite(numeric)?Math.round(numeric):null;
   }
 
   for(
@@ -4671,7 +4671,10 @@ price:
 
       count,
 
-      total
+      total,
+      revision: Math.max(0,Number(cart?.revision || 0)),
+      updatedAt: Math.max(0,Number(cart?.updatedAt || 0)),
+      authoritative: cart?.authoritative === true
     };
   }
 
@@ -4690,13 +4693,21 @@ price:
   }
 
   function saveCart(
-    cart
+    cart,
+    syncBackend=true
   ){
 
     const normalized =
       normalizeCart(
         cart
       );
+
+    normalized.revision = Math.max(
+      Number(readJson("cajamoda-cart",null)?.revision || 0),
+      Number(cart?.revision || 0)
+    ) + 1;
+    normalized.updatedAt = Date.now();
+    normalized.authoritative = true;
 
     saveJson(
       "cajamoda-cart",
@@ -4707,6 +4718,10 @@ price:
       "cajamoda-checkout-cart",
       normalized
     );
+
+    if(syncBackend){
+      sendBridge("SYNC_CART",{cart:normalized});
+    }
 
     syncBagCount();
 
@@ -6197,14 +6212,12 @@ function closeWishList(){
         */
 
         if(
-          !readCart().items.length &&
+          localStorage.getItem("cajamoda-cart") === null &&
           Array.isArray(incomingItems) &&
           incomingItems.length
         ){
 
-          saveCart(
-            incoming
-          );
+          saveCart(incoming,false);
         }
 
         syncBagCount();

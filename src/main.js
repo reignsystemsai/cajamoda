@@ -1,5 +1,6 @@
 import { createClient, OAuthStrategy } from "@wix/sdk";
 import { products, productsV3, collections } from "@wix/stores";
+import * as categoriesV3 from "@wix/categories_categories";
 import { currentCart } from "@wix/ecom";
 import { redirects } from "@wix/redirects";
 
@@ -99,6 +100,7 @@ const wix =
     modules: {
       products,
       productsV3,
+      categoriesV3,
       collections,
       currentCart,
       redirects
@@ -1882,7 +1884,8 @@ async function loadCatalog() {
   const [
     productResult,
     collectionResult,
-    categoryProductResult
+    categoryProductResult,
+    categoryResult
   ] =
     await Promise.all([
       wix
@@ -1909,8 +1912,7 @@ async function loadCatalog() {
         .productsV3
         .queryProducts({
           fields: [
-            "DIRECT_CATEGORIES_INFO",
-            "BREADCRUMBS_INFO"
+            "DIRECT_CATEGORIES_INFO"
           ]
         })
         .limit(100)
@@ -1918,6 +1920,27 @@ async function loadCatalog() {
         .catch(error => {
           console.warn(
             "[CajaModa] Wix V3 category read warning:",
+            error
+          );
+
+          return { items: [] };
+        }),
+
+      wix
+        .categoriesV3
+        .queryCategories({
+          treeReference: {
+            appNamespace:
+              "@wix/stores"
+          },
+          returnNonVisibleCategories:
+            true
+        })
+        .limit(1000)
+        .find()
+        .catch(error => {
+          console.warn(
+            "[CajaModa] Wix category-name read warning:",
             error
           );
 
@@ -1937,6 +1960,29 @@ async function loadCatalog() {
     categoryProductResult?.items ||
     [];
 
+  const categoryVibes =
+    new Map(
+      (
+        categoryResult?.items ||
+        []
+      )
+        .map(category => [
+          String(
+            category?._id ||
+            category?.id ||
+            ""
+          ),
+          categoryVibeFromName(
+            category?.name
+          )
+        ])
+        .filter(
+          ([categoryId, vibeId]) =>
+            categoryId &&
+            vibeId
+        )
+    );
+
   const productCategoryVibes =
     new Map(
       categoryProducts
@@ -1944,13 +1990,17 @@ async function loadCatalog() {
           const vibeId =
             (
               product
-                ?.breadcrumbsInfo
-                ?.breadcrumbs ||
+                ?.directCategoriesInfo
+                ?.categories ||
               []
             )
-              .map(breadcrumb =>
-                categoryVibeFromName(
-                  breadcrumb?.categoryName
+              .map(category =>
+                categoryVibes.get(
+                  String(
+                    category?._id ||
+                    category?.id ||
+                    ""
+                  )
                 )
               )
               .find(Boolean) ||

@@ -714,6 +714,13 @@ svg{
   stroke:currentColor;
 }
 
+.sizeButton:disabled{
+  opacity:.28;
+  cursor:not-allowed;
+  background:rgba(255,255,255,.24);
+  box-shadow:none;
+}
+
 /* ============================================================
    WISHLIST OVERLAY
    ============================================================ */
@@ -3139,6 +3146,20 @@ svg{
       .trim();
   }
 
+  function heartIcon(
+    filled=false
+  ){
+    return `
+      <svg
+        viewBox="0 0 24 24"
+        fill="${filled ? "currentColor" : "none"}"
+        stroke="currentColor"
+      >
+        <path d="M20.3 5.7a5.2 5.2 0 0 0-7.4 0L12 6.6l-.9-.9a5.2 5.2 0 0 0-7.4 7.4L12 21l8.3-7.9a5.2 5.2 0 0 0 0-7.4Z"/>
+      </svg>
+    `;
+  }
+
   function escapeHtml(
     value
   ){
@@ -4382,6 +4403,18 @@ svg{
      DETAILS
      ============================================================ */
 
+  let detailsAutoCloseTimer = null;
+
+  function cancelDetailsAutoClose(){
+    clearTimeout(detailsAutoCloseTimer);
+    detailsAutoCloseTimer = null;
+  }
+
+  function scheduleDetailsAutoClose(){
+    cancelDetailsAutoClose();
+    detailsAutoCloseTimer = setTimeout(closeDetails,3000);
+  }
+
   function openDetails(){
 
     $("detailsOverlay")
@@ -4398,12 +4431,16 @@ svg{
 
     syncBagCount();
 
+    scheduleDetailsAutoClose();
+
     track(
       "PRODUCT_DETAILS_OPEN"
     );
   }
 
   function closeDetails(){
+
+    cancelDetailsAutoClose();
 
     $("detailsOverlay")
       .classList
@@ -4429,6 +4466,13 @@ svg{
   $("dragHandle")
     .onclick =
       closeDetails;
+
+  $("detailsSheet")?.addEventListener(
+    "pointerdown",
+    scheduleDetailsAutoClose
+  );
+
+  window.addEventListener("pagehide",closeDetails);
 
   /* ============================================================
      CART
@@ -4820,16 +4864,52 @@ price:
 
   function renderSizeState(){
 
+    const inStockVariants = Array.isArray(state.product?.variants)
+      ? state.product.variants.filter(variant => variant.inStock !== false)
+      : [];
+
+    const selectedColor = normalizeChoice(state.selectedColor);
+    const colorVariants = inStockVariants.filter(variant =>
+      !variant.color || normalizeChoice(variant.color) === selectedColor
+    );
+    const sizeSource = colorVariants.some(variant => normalizeChoice(variant.size))
+      ? colorVariants
+      : inStockVariants;
+    const availableSizes = new Set(
+      sizeSource
+        .map(variant => normalizeChoice(variant.size))
+        .filter(Boolean)
+    );
+
+    if(
+      state.selectedSize &&
+      availableSizes.size &&
+      !availableSizes.has(normalizeChoice(state.selectedSize))
+    ){
+      state.selectedSize = null;
+      state.selectedQuantity = 1;
+      $("selectedSizeLabel").textContent = "Selecciona";
+    }
+
     qsa(
       "[data-size]"
     )
       .forEach(
         button => {
 
+          const unavailable = availableSizes.size > 0 &&
+            !availableSizes.has(normalizeChoice(button.dataset.size));
+
+          button.disabled = unavailable;
+          button.setAttribute("aria-disabled",String(unavailable));
+          button.title = unavailable
+            ? "Talla no disponible"
+            : "";
+
           button.classList.toggle(
             "selected",
-            button.dataset.size ===
-            state.selectedSize
+            !unavailable &&
+            button.dataset.size === state.selectedSize
           );
 
         }
@@ -4850,6 +4930,15 @@ price:
 
   function selectSize(size){
     if(!state.product){return}
+
+    const button = qsa("[data-size]").find(
+      candidate => candidate.dataset.size === size
+    );
+
+    if(button?.disabled){
+      showToast("Esta talla no está disponible en Wix.");
+      return;
+    }
 
     if(state.selectedSize===size){
       state.selectedSize=null;
@@ -4947,6 +5036,9 @@ price:
 
         }
       );
+
+    renderSizeState();
+    renderQuantityState();
 
     track(
       "COLOR_SELECTED",
@@ -6272,6 +6364,8 @@ function closeWishList(){
   window.addEventListener(
     "pageshow",
     () => {
+
+      closeDetails();
 
       syncBagCount();
 

@@ -410,6 +410,28 @@ img{display:block;max-width:100%}
   font-size:9px;
   line-height:1.65
 }
+.cartOptionControls{
+  margin-top:10px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px
+}
+.cartOptionSelect{
+  max-width:112px;
+  height:32px;
+  padding:0 24px 0 10px;
+  border:1px solid rgba(0,0,0,.11);
+  border-radius:999px;
+  background:rgba(255,255,255,.58);
+  color:#333;
+  font-size:9px
+}
+.cartImageLink,
+.reviewImageLink{
+  display:block;
+  border-radius:inherit;
+  overflow:hidden
+}
 .cartBottom{
   margin-top:auto;
   display:flex;
@@ -918,6 +940,7 @@ img{display:block;max-width:100%}
   -webkit-backdrop-filter:blur(25px) saturate(165%);
 }
 #headerBag,#bottomBagButton{width:39px;height:39px;min-width:39px;min-height:39px;margin:auto;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,rgba(255,255,255,.83),rgba(255,255,255,.36));border:1px solid rgba(255,255,255,.96);box-shadow:0 0 0 1px rgba(0,0,0,.026),inset 0 1px 0 rgba(255,255,255,1),0 8px 24px rgba(0,0,0,.055);backdrop-filter:blur(25px) saturate(165%);-webkit-backdrop-filter:blur(25px) saturate(165%)}
+#backButton,#headerBag,#bottomBagButton{background:transparent;border-color:transparent;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
 #headerBag svg,#bottomBagButton svg{width:23px;height:23px;stroke-width:1.45}
 #headerBagBadge,#bottomBagBadge{top:-2px;right:-2px;min-width:18px;height:18px;padding:0 4px;border:2px solid #fff;font-size:8px}
 </style>
@@ -1456,6 +1479,51 @@ img{display:block;max-width:100%}
     return normalized;
   }
 
+  function normalizeChoice(value) {
+    return String(value || "").trim().toLowerCase();
+  }
+
+  function catalogProduct(productId) {
+    const catalog = readJson("cajamoda-catalog", []);
+    return Array.isArray(catalog)
+      ? catalog.find(product => String(product.id || product._id) === String(productId)) || null
+      : null;
+  }
+
+  function productVariants(item) {
+    const product = catalogProduct(item.productId);
+    const variants = product?.variants || product?.raw?.variants || [];
+    return Array.isArray(variants)
+      ? variants.filter(variant => variant.inStock !== false)
+      : [];
+  }
+
+  function variantChoice(variant, name) {
+    const choices = variant.choices || variant.options || variant.selectedOptions || {};
+    return variant[name] || choices[name] || choices[name.toLowerCase()] || "";
+  }
+
+  function optionValues(item, name) {
+    return [...new Set(productVariants(item)
+      .map(variant => String(variantChoice(variant, name)).trim())
+      .filter(Boolean))];
+  }
+
+  function optionSelect(item, name, label, current) {
+    const values = optionValues(item, name);
+    if (!values.length) return "";
+
+    return `<select class="cartOptionSelect" data-cart-option="${name.toLowerCase()}" data-item-id="${escapeHtml(item.id)}" aria-label="${escapeHtml(label)}">
+      ${values.map(value => `<option value="${escapeHtml(value)}" ${normalizeChoice(value) === normalizeChoice(current) ? "selected" : ""}>${escapeHtml(label)}: ${escapeHtml(value)}</option>`).join("")}
+    </select>`;
+  }
+
+  function productUrl(item) {
+    const url = new URL("/product/", location.origin);
+    url.searchParams.set("productId", item.productId || "");
+    return url.toString();
+  }
+
   function productImage(item, review = false) {
     const className = review
       ? "reviewImage"
@@ -1463,21 +1531,25 @@ img{display:block;max-width:100%}
 
     if (item.image) {
       return `
+        <a class="${review ? "reviewImageLink" : "cartImageLink"}" href="${escapeHtml(productUrl(item))}" aria-label="Ver ${escapeHtml(item.name)}">
         <div class="${className}">
           <img
             src="${escapeHtml(item.image)}"
             alt="${escapeHtml(item.name)}"
           >
         </div>
+        </a>
       `;
     }
 
     return `
+      <a class="${review ? "reviewImageLink" : "cartImageLink"}" href="${escapeHtml(productUrl(item))}" aria-label="Ver ${escapeHtml(item.name)}">
       <div class="${className}">
         <div class="cartImagePlaceholder">
           CAJAMODA
         </div>
       </div>
+      </a>
     `;
   }
 
@@ -1596,6 +1668,11 @@ img{display:block;max-width:100%}
             }
           </div>
 
+          <div class="cartOptionControls">
+            ${optionSelect(item, "Color", "Color", item.color)}
+            ${optionSelect(item, "Size", "Talla", item.size)}
+          </div>
+
           <div class="cartBottom">
             <div class="cartPrice">
               ${money(item.unitPrice * item.quantity)}
@@ -1695,6 +1772,14 @@ img{display:block;max-width:100%}
       });
 
     document
+      .querySelectorAll("[data-cart-option]")
+      .forEach(select => {
+        select.onchange = () => {
+          changeOption(select.dataset.itemId, select.dataset.cartOption, select.value);
+        };
+      });
+
+    document
       .querySelectorAll(
         ".cartImage img,.reviewImage img"
       )
@@ -1731,6 +1816,44 @@ img{display:block;max-width:100%}
     }
 
     saveCart(cart);
+  }
+
+  function changeOption(itemId, option, value) {
+    const cart = readCart();
+    const item = cart.items.find(candidate =>
+      String(candidate.id) === String(itemId)
+    );
+
+    if (!item) return;
+
+    const nextSize = option === "size" ? value : item.size;
+    const nextColor = option === "color" ? value : item.color;
+    const variant = productVariants(item).find(candidate => {
+      const size = variantChoice(candidate, "Size");
+      const color = variantChoice(candidate, "Color");
+      return (!size || normalizeChoice(size) === normalizeChoice(nextSize)) &&
+        (!color || normalizeChoice(color) === normalizeChoice(nextColor));
+    });
+
+    if (!variant) {
+      showToast("Esa combinación no está disponible en Wix.");
+      renderCart();
+      return;
+    }
+
+    item.size = nextSize;
+    item.color = nextColor;
+    item.variantId = variant.id || variant._id || item.variantId;
+    item.unitPrice = normalizePrice(
+      variant.price,
+      variant.priceData?.discountedPrice,
+      variant.priceData?.price,
+      item.unitPrice
+    );
+    item.price = item.unitPrice;
+
+    saveCart(cart);
+    showToast("Producto actualizado.");
   }
 
   function removeItem(itemId) {
@@ -2062,6 +2185,8 @@ img{display:block;max-width:100%}
   );
 
   $("backButton").onclick = () => {
+    window.CajaModaBagPreview?.close();
+
     if (activeStep === "payment") {
       goToStep("bag");
       return;
@@ -2094,6 +2219,7 @@ img{display:block;max-width:100%}
   window.addEventListener(
     "pageshow",
     () => {
+      window.CajaModaBagPreview?.close();
       loadCustomer();
       renderCart();
 

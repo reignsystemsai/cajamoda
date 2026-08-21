@@ -1557,15 +1557,10 @@ price:
     }
   };
 
-  $("headerBag").onclick=() => {
-    document
-      .querySelector(".checkoutSection")
-      ?.scrollIntoView({
-        behavior:"smooth",
-        block:"start"
-      });
-  };
-
+  $("headerBag").onclick = () => {
+  window.CajaModaBagPreview
+    ?.open();
+};
   loadCustomer();
   renderCart();
 })();

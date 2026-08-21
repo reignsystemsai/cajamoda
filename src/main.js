@@ -1192,11 +1192,11 @@ const unitPrice =
 
           color,
 
+          /* Use Wix's confirmed quantity. Local quantity must never mask a failed sync. */
           quantity:
             Math.max(
               1,
               Number(
-                localLine?.quantity ??
                 line?.quantity ??
                 1
               )
@@ -1244,6 +1244,93 @@ function cartFingerprint(
     )
     .sort()
     .join("|");
+}
+
+function canonicalizeCartForWix(
+  localCart
+) {
+  const input = normalizeLocalCart(localCart);
+  const grouped = new Map();
+
+  for (const item of input.items) {
+    const product = findProduct(item.productId);
+
+    if (!product) {
+      throw new Error(`No pudimos encontrar ${item.name || "un producto"} en Wix.`);
+    }
+
+    const variant = findVariant(product,item);
+
+    if (product.variants.length) {
+      if (!variant?.id) {
+        throw new Error(`Selecciona una talla disponible para ${product.name}.`);
+      }
+
+      const wantedSize = normalizeChoice(item.size);
+      const wantedColor = normalizeChoice(item.color);
+
+      if (wantedSize && normalizeChoice(variant.size) !== wantedSize) {
+        throw new Error(`La talla ${item.size} de ${product.name} no coincide con Wix.`);
+      }
+
+      if (wantedColor && variant.color && normalizeChoice(variant.color) !== wantedColor) {
+        throw new Error(`El color ${item.color} de ${product.name} no coincide con Wix.`);
+      }
+    }
+
+    const canonical = {
+      ...item,
+      productId: product.id,
+      variantId: variant?.id || null,
+      name: product.name,
+      image: product.media?.[0] || item.image || "",
+      size: variant?.size || item.size || "",
+      color: variant?.color || item.color || "",
+      quantity: Math.max(1,Math.floor(Number(item.quantity || 1))),
+      unitPrice: normalizePrice(variant?.price,product.price),
+      price: normalizePrice(variant?.price,product.price)
+    };
+
+    const key = cartLineKey(canonical);
+    const existing = grouped.get(key);
+
+    if (existing) {
+      existing.quantity += canonical.quantity;
+    } else {
+      grouped.set(key,canonical);
+    }
+  }
+
+  return normalizeLocalCart({items:[...grouped.values()]});
+}
+
+function wixCartSubtotal(rawCart, fallbackCart) {
+  const wixCart = rawCart?.cart || rawCart || {};
+  return normalizePrice(
+    wixCart?.subtotal?.amount,
+    wixCart?.subtotal,
+    wixCart?.priceSummary?.subtotal?.amount,
+    wixCart?.priceSummary?.subtotal,
+    fallbackCart?.total
+  );
+}
+
+function assertWixCartMatches(expectedCart, rawWixCart) {
+  const expected = normalizeLocalCart(expectedCart);
+  const confirmed = normalizeWixCart(rawWixCart);
+
+  if (cartFingerprint(expected) !== cartFingerprint(confirmed)) {
+    throw new Error("La cantidad confirmada por Wix no coincide con tu bolsa. Intenta nuevamente.");
+  }
+
+  const confirmedTotal = wixCartSubtotal(rawWixCart,confirmed);
+  const expectedTotal = expected.total;
+
+  if (Math.abs(confirmedTotal - expectedTotal) > 0.01) {
+    throw new Error(`Wix confirmó ${confirmedTotal} pero tu bolsa suma ${expectedTotal}. No abrimos un pago incorrecto.`);
+  }
+
+  return confirmed;
 }
 
 /* ============================================================
@@ -1472,7 +1559,7 @@ function buildWixLineItems(
   localCart
 ) {
   const cart =
-    normalizeLocalCart(
+    canonicalizeCartForWix(
       localCart
     );
 
@@ -1553,7 +1640,7 @@ async function syncLocalCartToWix(
   localCart
 ) {
   const cart =
-    normalizeLocalCart(
+    canonicalizeCartForWix(
       localCart
     );
 
@@ -1606,29 +1693,15 @@ async function syncLocalCartToWix(
 
   persistCurrentTokens();
 
-  const wixCart =
+  /* Read the cart back from Wix; the add response alone is not sufficient proof. */
+  const confirmedRaw =
+    await getWixCart() ||
     result?.cart ||
     result;
 
-  const normalizedWix =
-    normalizeWixCart(
-      wixCart
-    );
+  assertWixCartMatches(cart,confirmedRaw);
 
-  /*
-    Keep the local display information if Wix
-    hasn't returned enough display fields yet.
-  */
-
-  /*
-    Wix confirms the backend cart, but the local cart remains
-    authoritative for IDs, selected size/color and visible quantity.
-    This prevents an asynchronous Wix response from resetting the UI.
-  */
-  if(normalizedWix.items.length !== cart.items.length){
-    console.warn("[CajaModa] Wix returned a different line count; keeping the visible cart.");
-  }
-
+  /* Keep CajaModa metadata, but only after Wix confirms identity, quantity and total. */
   return saveLocalCart(cart);
 }
 
@@ -1746,6 +1819,16 @@ async function loadCatalog() {
     `[CajaModa] Loaded ${catalog.length} Wix products`
   );
 
+  /* Re-price legacy saved lines from the live Wix catalog before any checkout. */
+  const storedCart = readBestLocalCart();
+  if (storedCart.items.length) {
+    try {
+      saveLocalCart(canonicalizeCartForWix(storedCart));
+    } catch (error) {
+      console.warn("[CajaModa] Saved-cart migration needs customer review:",error);
+    }
+  }
+
   /*
     Resolve the best persistent bag only after
     the catalog is available so variants can be
@@ -1776,8 +1859,10 @@ async function createPaymentCheckout(
         ? suppliedCart
         : readBestLocalCart();
 
+    const canonicalCart = canonicalizeCartForWix(localCart);
+
     if (
-      !localCart
+      !canonicalCart
         .items
         .length
     ) {
@@ -1792,8 +1877,12 @@ async function createPaymentCheckout(
     */
 
     await syncLocalCartToWix(
-      localCart
+      canonicalCart
     );
+
+    /* Final pre-checkout verification immediately before Wix creates the checkout. */
+    const verifiedWixCart = await getWixCart();
+    assertWixCartMatches(canonicalCart,verifiedWixCart);
 
     const customer =
       payload?.customer ||

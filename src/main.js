@@ -1557,7 +1557,15 @@ async function syncLocalCartToWix(
   if (
     !cart.items.length
   ) {
-    return cart;
+    try {
+      await wix.currentCart.deleteCurrentCart();
+    } catch (error) {
+      if (!isNotFound(error)) {
+        throw error;
+      }
+    }
+    persistCurrentTokens();
+    return saveLocalCart(cart);
   }
 
   const lineItems =
@@ -2134,64 +2142,18 @@ window.addEventListener(
          ====================================================== */
 
       case "ADD_TO_CART": {
-        /*
-          product/index.html already writes the
-          selected item into cajamoda-cart first.
+        const localCart=normalizeLocalCart(
+          payload?.cart?.items?payload.cart:readBestLocalCart()
+        );
+        lastCart=localCart;
+        saveLocalCart(localCart);
+        send("CART_STATE",localCart);
 
-          Keep that local cart immediately, then
-          mirror it into Wix.
-        */
-
-        const localCart =
-          readBestLocalCart();
-
-        if (
-          localCart
-            .items
-            .length
-        ) {
-          lastCart =
-            localCart;
-
-          /*
-            Send local state immediately so the UI
-            never waits for Wix networking.
-          */
-
-          send(
-            "CART_STATE",
-            localCart
-          );
-
-          /*
-            Sync Wix without blocking the product UI.
-          */
-
-          if (
-            catalog.length
-          ) {
-            syncLocalCartToWix(
-              localCart
-            )
-              .then(
-                cart => {
-                  send(
-                    "CART_STATE",
-                    cart
-                  );
-                }
-              )
-              .catch(
-                error => {
-                  console.warn(
-                    "[CajaModa] Cart sync warning:",
-                    error
-                  );
-                }
-              );
-          }
+        if(catalog.length){
+          syncLocalCartToWix(localCart)
+            .then(cart=>send("CART_STATE",cart))
+            .catch(error=>console.warn("[CajaModa] Cart sync warning:",error));
         }
-
         break;
       }
 

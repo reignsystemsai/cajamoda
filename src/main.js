@@ -1,5 +1,5 @@
 import { createClient, OAuthStrategy } from "@wix/sdk";
-import { products, collections } from "@wix/stores";
+import { products, productsV3, collections } from "@wix/stores";
 import { currentCart } from "@wix/ecom";
 import { redirects } from "@wix/redirects";
 
@@ -98,6 +98,7 @@ const wix =
   createClient({
     modules: {
       products,
+      productsV3,
       collections,
       currentCart,
       redirects
@@ -562,7 +563,8 @@ function normalizeVariant(
 function normalizeProduct(
   product,
   index,
-  collectionVibes
+  collectionVibes,
+  productCategoryVibes
 ) {
   const id =
     product?._id ||
@@ -620,6 +622,9 @@ function normalizeProduct(
   ];
 
   const collectionVibe =
+    productCategoryVibes.get(
+      String(id)
+    ) ||
     (
       Array.isArray(
         product?.collectionIds
@@ -657,10 +662,7 @@ function normalizeProduct(
   const vibeId =
     collectionVibe ||
     legacyVibe ||
-    vibes[
-      index %
-      vibes.length
-    ];
+    "";
 
   return {
     id,
@@ -1879,7 +1881,8 @@ function sendInit() {
 async function loadCatalog() {
   const [
     productResult,
-    collectionResult
+    collectionResult,
+    categoryProductResult
   ] =
     await Promise.all([
       wix
@@ -1900,6 +1903,25 @@ async function loadCatalog() {
           );
 
           return { items: [] };
+        }),
+
+      wix
+        .productsV3
+        .queryProducts({
+          fields: [
+            "DIRECT_CATEGORIES_INFO",
+            "BREADCRUMBS_INFO"
+          ]
+        })
+        .limit(100)
+        .find()
+        .catch(error => {
+          console.warn(
+            "[CajaModa] Wix V3 category read warning:",
+            error
+          );
+
+          return { items: [] };
         })
     ]);
 
@@ -1910,6 +1932,45 @@ async function loadCatalog() {
   const wixCollections =
     collectionResult?.items ||
     [];
+
+  const categoryProducts =
+    categoryProductResult?.items ||
+    [];
+
+  const productCategoryVibes =
+    new Map(
+      categoryProducts
+        .map(product => {
+          const vibeId =
+            (
+              product
+                ?.breadcrumbsInfo
+                ?.breadcrumbs ||
+              []
+            )
+              .map(breadcrumb =>
+                categoryVibeFromName(
+                  breadcrumb?.categoryName
+                )
+              )
+              .find(Boolean) ||
+            "";
+
+          return [
+            String(
+              product?._id ||
+              product?.id ||
+              ""
+            ),
+            vibeId
+          ];
+        })
+        .filter(
+          ([productId, vibeId]) =>
+            productId &&
+            vibeId
+        )
+    );
 
   const collectionVibes =
     new Map(
@@ -1949,7 +2010,8 @@ async function loadCatalog() {
           normalizeProduct(
             product,
             index,
-            collectionVibes
+            collectionVibes,
+            productCategoryVibes
           )
       )
       .filter(

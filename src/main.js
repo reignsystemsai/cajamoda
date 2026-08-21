@@ -1,5 +1,5 @@
 import { createClient, OAuthStrategy } from "@wix/sdk";
-import { products } from "@wix/stores";
+import { products, collections } from "@wix/stores";
 import { currentCart } from "@wix/ecom";
 import { redirects } from "@wix/redirects";
 
@@ -98,6 +98,7 @@ const wix =
   createClient({
     modules: {
       products,
+      collections,
       currentCart,
       redirects
     },
@@ -383,6 +384,58 @@ function getProductType(
 }
 
 /* ============================================================
+   WIX CATEGORY MAPPING
+   ============================================================ */
+
+const CATEGORY_VIBE_BY_NAME =
+  Object.freeze({
+    "noches largas":
+      "late",
+
+    "dias tranquilos":
+      "chill",
+
+    "rapido y facil":
+      "quick",
+
+    "bano de sol":
+      "sun"
+  });
+
+function normalizeCategoryName(
+  value
+) {
+  return String(
+    value ||
+    ""
+  )
+    .normalize("NFD")
+    .replace(
+      /[\u0300-\u036f]/g,
+      ""
+    )
+    .toLowerCase()
+    .replace(
+      /[^a-z0-9]+/g,
+      " "
+    )
+    .trim();
+}
+
+function categoryVibeFromName(
+  name
+) {
+  return (
+    CATEGORY_VIBE_BY_NAME[
+      normalizeCategoryName(
+        name
+      )
+    ] ||
+    ""
+  );
+}
+
+/* ============================================================
    VARIANT CHOICES
    ============================================================ */
 
@@ -508,7 +561,8 @@ function normalizeVariant(
 
 function normalizeProduct(
   product,
-  index
+  index,
+  collectionVibes
 ) {
   const id =
     product?._id ||
@@ -565,7 +619,27 @@ function normalizeProduct(
     "sun"
   ];
 
-  const vibeId =
+  const collectionVibe =
+    (
+      Array.isArray(
+        product?.collectionIds
+      )
+        ? product.collectionIds
+        : []
+    )
+      .map(
+        collectionId =>
+          collectionVibes.get(
+            String(
+              collectionId
+            )
+          ) ||
+          ""
+      )
+      .find(Boolean) ||
+    "";
+
+  const legacyVibe =
     product
       ?.additionalInfoSections
       ?.find?.(
@@ -578,7 +652,11 @@ function normalizeProduct(
           "vibe"
       )
       ?.description ||
+    "";
 
+  const vibeId =
+    collectionVibe ||
+    legacyVibe ||
     vibes[
       index %
       vibes.length
@@ -1799,16 +1877,59 @@ function sendInit() {
    ============================================================ */
 
 async function loadCatalog() {
-  const result =
-    await wix
-      .products
-      .queryProducts()
-      .limit(100)
-      .find();
+  const [
+    productResult,
+    collectionResult
+  ] =
+    await Promise.all([
+      wix
+        .products
+        .queryProducts()
+        .limit(100)
+        .find(),
+
+      wix
+        .collections
+        .queryCollections()
+        .limit(100)
+        .find()
+    ]);
 
   const wixProducts =
-    result?.items ||
+    productResult?.items ||
     [];
+
+  const wixCollections =
+    collectionResult?.items ||
+    [];
+
+  const collectionVibes =
+    new Map(
+      wixCollections
+        .map(
+          collection => [
+            String(
+              collection?._id ||
+              collection?.id ||
+              ""
+            ),
+
+            categoryVibeFromName(
+              collection?.name
+            )
+          ]
+        )
+        .filter(
+          (
+            [
+              collectionId,
+              vibeId
+            ]
+          ) =>
+            collectionId &&
+            vibeId
+        )
+    );
 
   catalog =
     wixProducts
@@ -1819,9 +1940,9 @@ async function loadCatalog() {
         ) =>
           normalizeProduct(
             product,
-            index
+            index,
+            collectionVibes
           )
-      )
       .filter(
         product =>
           product.id

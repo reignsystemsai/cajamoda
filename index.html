@@ -3832,88 +3832,62 @@ svg{
     productIndex = 0
   ){
 
-    const explicit =
-      normalizeText(
-        [
-          product.vibeId,
-          product.vibe,
-          product.category,
-          product.productType,
-          product.type
-        ]
-          .filter(Boolean)
-          .join(" ")
-      );
+    const explicitValues =
+      [
+        product.vibeId,
+        product.vibe,
+        product.category
+      ]
+        .filter(Boolean)
+        .map(
+          value =>
+            normalizeText(
+              value
+            )
+        );
 
-    if(
-      explicit.includes("late") ||
-      explicit.includes("long night") ||
-      explicit.includes("noches largas") ||
-      explicit.includes("vestido") ||
-      explicit.includes("dress")
-    ){
-      return "late";
-    }
+    const exactRoutes = {
+      late:
+        "late",
 
-    if(
-      explicit.includes("chill") ||
-      explicit.includes("quiet day") ||
-      explicit.includes("dias tranquilos") ||
-      explicit.includes("top") ||
-      explicit.includes("blusa")
-    ){
-      return "chill";
-    }
+      "noches largas":
+        "late",
 
-    if(
-      explicit.includes("quick") ||
-      explicit.includes("rapido y facil") ||
-      explicit.includes("conjunto") ||
-      explicit.includes("set")
-    ){
-      return "quick";
-    }
+      chill:
+        "chill",
 
-    if(
-      explicit.includes("sun") ||
-      explicit.includes("bano de sol") ||
-      explicit.includes("enterizo") ||
-      explicit.includes("bikini") ||
-      explicit.includes("swim")
-    ){
-      return "sun";
-    }
+      "dias tranquilos":
+        "chill",
 
-    const text =
-      normalizeText(
-        [
-          product.name,
-          product.description,
-          product.productType,
-          product.type,
-          product.category,
-          product.collectionName,
-          product.tags
-        ]
-          .flat()
-          .filter(Boolean)
-          .join(" ")
-      );
+      quick:
+        "quick",
+
+      "rapido y facil":
+        "quick",
+
+      sun:
+        "sun",
+
+      "bano de sol":
+        "sun"
+    };
 
     for(
-      const category
-      of CATEGORIES
+      const value
+      of explicitValues
     ){
 
       if(
-        category.terms.some(
-          term =>
-            text.includes(
-              normalizeText(term)
-            )
-        )
+        exactRoutes[
+          value
+        ]
       ){
-        return category.id;
+
+        return (
+          exactRoutes[
+            value
+          ]
+        );
       }
     }
 

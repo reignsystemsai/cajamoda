@@ -8,7 +8,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500;6..96,600&family=Cormorant+Garamond:wght@500;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
 :root{
@@ -54,7 +54,7 @@ img{display:block;max-width:100%}
   position:sticky;
   z-index:50;
   top:0;
-  height:calc(102px + var(--safe-top));
+  height:calc(116px + var(--safe-top));
   padding:var(--safe-top) 20px 0;
   display:grid;
   grid-template-columns:44px 1fr 44px;
@@ -101,30 +101,69 @@ img{display:block;max-width:100%}
   font-weight:800
 }
 
-.brandMark{
+.brandLockup{
   justify-self:center;
-  text-align:center;
-  line-height:1;
+  width:190px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
   color:#080808;
-  user-select:none
+  user-select:none;
+  pointer-events:none
 }
 .brandMonogram{
-  font-family:"Cormorant Garamond",Georgia,serif;
-  font-size:52px;
-  letter-spacing:-5px;
-  height:45px
+  position:relative;
+  width:100px;
+  height:57px;
+  font-family:"Bodoni Moda",Didot,serif
 }
-.brandName{
-  margin-top:3px;
-  font-family:"Cormorant Garamond",Georgia,serif;
-  font-size:10.5px;
-  letter-spacing:5px
+.brandC{
+  position:absolute;
+  left:7px;
+  top:-12px;
+  font-size:74px;
+  line-height:1;
+  font-weight:400;
+  letter-spacing:-8px;
+  transform:scaleX(.89)
+}
+.brandM{
+  position:absolute;
+  left:43px;
+  top:8px;
+  font-size:52px;
+  line-height:1;
+  font-weight:400;
+  letter-spacing:-5px;
+  transform:scaleX(.90)
+}
+.brandWord{
+  margin-top:-2px;
+  padding-left:6px;
+  font-family:"Bodoni Moda",Didot,serif;
+  font-size:11px;
+  line-height:1;
+  font-weight:500;
+  letter-spacing:5.4px
+}
+.brandCountryRow{
+  width:145px;
+  margin-top:7px;
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  align-items:center;
+  gap:8px
+}
+.brandCountryLine{
+  height:1px;
+  background:rgba(0,0,0,.42)
 }
 .brandCountry{
-  margin-top:4px;
-  font-size:5.5px;
-  font-weight:700;
-  letter-spacing:4px
+  padding-left:3px;
+  font-size:6px;
+  line-height:1;
+  font-weight:600;
+  letter-spacing:3.1px
 }
 
 .checkoutIntro{
@@ -167,7 +206,7 @@ img{display:block;max-width:100%}
 .stepNav{
   position:sticky;
   z-index:40;
-  top:calc(102px + var(--safe-top));
+  top:calc(116px + var(--safe-top));
   display:grid;
   grid-template-columns:repeat(2,1fr);
   margin:0 28px;
@@ -898,10 +937,17 @@ img{display:block;max-width:100%}
       </svg>
     </button>
 
-    <div class="brandMark" aria-label="CajaModa Colombia">
-      <div class="brandMonogram">CM</div>
-      <div class="brandName">CAJAMODA</div>
-      <div class="brandCountry">COLOMBIA</div>
+    <div class="brandLockup" aria-label="CajaModa Colombia">
+      <div class="brandMonogram">
+        <span class="brandC">C</span>
+        <span class="brandM">M</span>
+      </div>
+      <div class="brandWord">CAJAMODA</div>
+      <div class="brandCountryRow">
+        <span class="brandCountryLine"></span>
+        <span class="brandCountry">COLOMBIA</span>
+        <span class="brandCountryLine"></span>
+      </div>
     </div>
 
     <button

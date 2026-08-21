@@ -1084,11 +1084,11 @@ svg{
 
   z-index:3;
 
-  top:5px;
-  right:5px;
+  top:0;
+  right:0;
 
-  width:27px;
-  height:27px;
+  width:42px;
+  height:42px;
 
   border-radius:50%;
 
@@ -1097,12 +1097,9 @@ svg{
 
   color:#111;
 
-  background:
-    rgba(255,255,255,.90);
+  background:transparent;
 
-  border:
-    1px solid
-    rgba(255,255,255,.97);
+  border:0;
 
   backdrop-filter:
     blur(12px);
@@ -1115,7 +1112,11 @@ svg{
     color .17s ease;
 }
 
+.productHeart::before{content:"";position:absolute;width:29px;height:29px;border-radius:50%;background:rgba(255,255,255,.90);border:1px solid rgba(255,255,255,.97);box-shadow:0 4px 14px rgba(0,0,0,.06)}
+
 .productHeart svg{
+  position:relative;
+  z-index:1;
   width:15px;
   height:15px;
   stroke-width:1.7;
@@ -1187,7 +1188,7 @@ svg{
   box-shadow:none;
 }
 
-.placeholderCard .productHeart{pointer-events:none;opacity:.58}
+.placeholderCard .productHeart{opacity:.72}
 
 .placeholderMedia{
   position:relative;
@@ -3501,7 +3502,10 @@ svg{
     favorites:
       new Set(
         readFavorites()
-      )
+      ),
+
+    placeholderFavorites:
+      new Set(readJson("cajamoda-placeholder-favorites",[]).map(String))
   };
 
   /* ============================================================
@@ -4487,6 +4491,7 @@ svg{
   }
 
   function placeholderCard(
+    categoryId,
     slot
   ){
 
@@ -4497,6 +4502,9 @@ svg{
           "0"
         );
 
+    const placeholderId = `${categoryId}:${slot}`;
+    const favorite = state.placeholderFavorites.has(placeholderId);
+
     return `
       <article
         class="productCard placeholderCard"
@@ -4505,7 +4513,7 @@ svg{
 
         <div class="productMedia">
 
-          <button class="productHeart" type="button" disabled aria-label="Producto próximamente">${heartIcon(false)}</button>
+          <button class="productHeart ${favorite?"active":""}" type="button" data-placeholder-favorite="${placeholderId}" aria-label="${favorite?"Quitar de Wishlist":"Agregar a Wishlist"}">${heartIcon(favorite)}</button>
 
           <div class="placeholderMedia">
 
@@ -4674,7 +4682,7 @@ svg{
               ){
 
                 cards.push(
-                  placeholderCard(slot)
+                  placeholderCard(category.id,slot)
                 );
               }
             }
@@ -4839,6 +4847,20 @@ svg{
           };
       }
     );
+
+    qsa("[data-placeholder-favorite]").forEach(button => {
+      button.onclick = event => {
+        event.preventDefault();
+        event.stopPropagation();
+        const id = button.dataset.placeholderFavorite;
+        const active = state.placeholderFavorites.has(id);
+        if(active){state.placeholderFavorites.delete(id)}else{state.placeholderFavorites.add(id)}
+        saveJson("cajamoda-placeholder-favorites",[...state.placeholderFavorites]);
+        button.classList.toggle("active",!active);
+        button.setAttribute("aria-label",active?"Agregar a Wishlist":"Quitar de Wishlist");
+        button.innerHTML = heartIcon(!active);
+      };
+    });
 
     qsa(
       "[data-view]"
@@ -6049,6 +6071,7 @@ scheduleBagAutoClose();
   */
 
   if(
+    !readCart().items.length &&
     Array.isArray(incomingItems) &&
     incomingItems.length > 0
   ){

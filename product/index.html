@@ -6197,9 +6197,8 @@ function closeWishList(){
         */
 
         if(
-          Array.isArray(
-            incomingItems
-          ) &&
+          !readCart().items.length &&
+          Array.isArray(incomingItems) &&
           incomingItems.length
         ){
 

@@ -54,7 +54,7 @@ img{display:block;max-width:100%}
   position:sticky;
   z-index:50;
   top:0;
-  height:calc(84px + var(--safe-top));
+  height:calc(102px + var(--safe-top));
   padding:var(--safe-top) 20px 0;
   display:grid;
   grid-template-columns:44px 1fr 44px;
@@ -110,19 +110,19 @@ img{display:block;max-width:100%}
 }
 .brandMonogram{
   font-family:"Cormorant Garamond",Georgia,serif;
-  font-size:42px;
+  font-size:52px;
   letter-spacing:-5px;
-  height:37px
+  height:45px
 }
 .brandName{
   margin-top:3px;
   font-family:"Cormorant Garamond",Georgia,serif;
-  font-size:9px;
+  font-size:10.5px;
   letter-spacing:5px
 }
 .brandCountry{
   margin-top:4px;
-  font-size:4.8px;
+  font-size:5.5px;
   font-weight:700;
   letter-spacing:4px
 }
@@ -167,9 +167,9 @@ img{display:block;max-width:100%}
 .stepNav{
   position:sticky;
   z-index:40;
-  top:calc(84px + var(--safe-top));
+  top:calc(102px + var(--safe-top));
   display:grid;
-  grid-template-columns:repeat(3,1fr);
+  grid-template-columns:repeat(2,1fr);
   margin:0 28px;
   background:rgba(255,255,255,.9);
   border-bottom:1px solid rgba(0,0,0,.09);
@@ -177,8 +177,7 @@ img{display:block;max-width:100%}
   -webkit-backdrop-filter:blur(18px)
 }
 
-.checkoutApp.isPayment .checkoutIntro,
-.checkoutApp.isPayment .stepNav{
+.checkoutApp.isPayment .checkoutIntro{
   display:none
 }
 
@@ -947,14 +946,6 @@ img{display:block;max-width:100%}
     <button
       class="stepTab"
       type="button"
-      data-step="delivery"
-    >
-      Entrega
-    </button>
-
-    <button
-      class="stepTab"
-      type="button"
       data-step="payment"
     >
       Pago
@@ -1001,70 +992,6 @@ img{display:block;max-width:100%}
             class="primaryButton"
             type="button"
           >
-            <span>Continuar a entrega</span>
-            <svg viewBox="0 0 24 24">
-              <path d="m9 5 7 7-7 7"/>
-            </svg>
-          </button>
-        </div>
-
-        <div class="trustLine">
-          <svg viewBox="0 0 24 24">
-            <rect x="5" y="10" width="14" height="10" rx="2"/>
-            <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
-          </svg>
-          <span>Pago seguro y cifrado</span>
-        </div>
-      </section>
-
-      <section
-        class="stepPanel"
-        data-panel="delivery"
-        aria-label="Entrega"
-        aria-hidden="true"
-      >
-        <div class="deliveryIntro">
-          <h2>Correo de contacto</h2>
-          <p>
-            Usaremos tu correo para el recibo y el seguimiento.
-            La dirección final se verifica de forma segura al pagar.
-          </p>
-        </div>
-
-        <form id="checkoutForm" novalidate>
-          <div class="fieldGrid">
-            <label class="glassField" for="email">
-              <svg viewBox="0 0 24 24">
-                <rect x="3" y="5" width="18" height="14" rx="2"/>
-                <path d="m3 7 9 6 9-6"/>
-              </svg>
-
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autocomplete="email"
-                placeholder="Correo para recibo y seguimiento"
-                required
-              >
-            </label>
-          </div>
-        </form>
-
-        <div class="panelActions">
-          <button
-            id="backToBagButton"
-            class="secondaryButton"
-            type="button"
-          >
-            Volver
-          </button>
-
-          <button
-            id="toPaymentButton"
-            class="primaryButton"
-            type="button"
-          >
             <span>Continuar a pago</span>
             <svg viewBox="0 0 24 24">
               <path d="m9 5 7 7-7 7"/>
@@ -1095,20 +1022,17 @@ img{display:block;max-width:100%}
           </p>
         </div>
 
-        <div class="reviewEmailCard glassCard">
-          <div class="reviewCardTop">
-            <div class="reviewCardTitle">Correo de contacto</div>
-            <button
-              id="editContactButton"
-              class="editDelivery"
-              type="button"
-            >
-              Editar
-            </button>
+        <form id="checkoutForm" novalidate>
+          <div class="fieldGrid">
+            <label class="glassField" for="email">
+              <svg viewBox="0 0 24 24">
+                <rect x="3" y="5" width="18" height="14" rx="2"/>
+                <path d="m3 7 9 6 9-6"/>
+              </svg>
+              <input id="email" name="email" type="email" autocomplete="email" placeholder="Correo para recibo y seguimiento" required>
+            </label>
           </div>
-
-          <div id="reviewEmail" class="reviewEmail"></div>
-        </div>
+        </form>
 
         <div id="reviewList" class="reviewList"></div>
 
@@ -1156,7 +1080,7 @@ img{display:block;max-width:100%}
             <svg viewBox="0 0 24 24">
               <path d="m15 5-7 7 7 7"/>
             </svg>
-            <span>Volver al correo</span>
+            <span>Volver a la bolsa</span>
           </button>
         </div>
 
@@ -1230,7 +1154,7 @@ img{display:block;max-width:100%}
   "use strict";
 
   const $ = id => document.getElementById(id);
-  const STEPS = ["bag", "delivery", "payment"];
+  const STEPS = ["bag", "payment"];
 
   let activeStep = "bag";
   let paymentTimer = null;
@@ -1610,7 +1534,7 @@ img{display:block;max-width:100%}
 
           <div class="cartBottom">
             <div class="cartPrice">
-              ${money(item.unitPrice)}
+              ${money(item.unitPrice * item.quantity)}
             </div>
 
             <div class="quantityControl">
@@ -1797,8 +1721,10 @@ img{display:block;max-width:100%}
   function updateReviewCustomer() {
     const email = $("email")?.value?.trim();
 
-    $("reviewEmail").textContent =
-      email || "Correo pendiente";
+    if ($("reviewEmail")) {
+      $("reviewEmail").textContent =
+        email || "Correo pendiente";
+    }
   }
 
   customerFields.forEach(field => {
@@ -1825,8 +1751,6 @@ img{display:block;max-width:100%}
     const email = $("email");
 
     if (!email.value.trim()) {
-      goToStep("delivery");
-
       requestAnimationFrame(() => {
         email.focus();
       });
@@ -1839,8 +1763,6 @@ img{display:block;max-width:100%}
     }
 
     if (!email.checkValidity()) {
-      goToStep("delivery");
-
       requestAnimationFrame(() => {
         email.focus();
       });
@@ -1873,14 +1795,6 @@ img{display:block;max-width:100%}
     const index = STEPS.indexOf(step);
 
     if (index < 0) {
-      return;
-    }
-
-    if (
-      step === "payment" &&
-      !options.skipValidation &&
-      !validateContact()
-    ) {
       return;
     }
 
@@ -2036,23 +1950,11 @@ img{display:block;max-width:100%}
     });
 
   $("toDeliveryButton").onclick = () => {
-    goToStep("delivery");
-  };
-
-  $("backToBagButton").onclick = () => {
-    goToStep("bag");
-  };
-
-  $("toPaymentButton").onclick = () => {
     goToStep("payment");
   };
 
-  $("editContactButton").onclick = () => {
-    goToStep("delivery");
-  };
-
   $("backToContactButton").onclick = () => {
-    goToStep("delivery");
+    goToStep("bag");
   };
 
   $("checkoutButton").onclick =
@@ -2097,11 +1999,6 @@ img{display:block;max-width:100%}
 
   $("backButton").onclick = () => {
     if (activeStep === "payment") {
-      goToStep("delivery");
-      return;
-    }
-
-    if (activeStep === "delivery") {
       goToStep("bag");
       return;
     }
@@ -2145,6 +2042,12 @@ img{display:block;max-width:100%}
       );
     }
   );
+
+  window.addEventListener("storage", event => {
+    if(event.key === "cajamoda-cart") renderCart();
+  });
+
+  window.addEventListener("cajamoda:cart-updated", renderCart);
 
   document.fonts?.ready?.then(
     syncPanelHeight

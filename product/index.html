@@ -2151,6 +2151,34 @@ svg{
 .favoriteButton.active{color:#cf1738;animation:cajaHeartBeat 2.4s ease-in-out infinite;transform-origin:center}
 @keyframes cajaHeartBeat{0%,42%,100%{transform:scale(1)}7%{transform:scale(1.13)}14%{transform:scale(1)}21%{transform:scale(1.09)}29%{transform:scale(1)}}
 @media (prefers-reduced-motion:reduce){.favoriteButton.active{animation:none}}
+
+.choiceTopRow{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:end;
+  gap:16px;
+}
+.choiceTopRow .quantitySection{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:9px;
+  margin-top:0;
+}
+.detailsSheet{
+  background:linear-gradient(145deg,rgba(255,255,255,.95),rgba(255,255,255,.60));
+  border:1px solid rgba(255,255,255,.98);
+  box-shadow:0 0 0 1px rgba(0,0,0,.04),inset 0 1px 0 #fff,0 20px 48px rgba(0,0,0,.10);
+  backdrop-filter:blur(31px) saturate(178%);
+  -webkit-backdrop-filter:blur(31px) saturate(178%);
+}
+.detailsBag,.circleControl,.quantityCapsule{
+  background:linear-gradient(145deg,rgba(255,255,255,.83),rgba(255,255,255,.36));
+  border:1px solid rgba(255,255,255,.96);
+  box-shadow:0 0 0 1px rgba(0,0,0,.026),inset 0 1px 0 rgba(255,255,255,1),0 8px 24px rgba(0,0,0,.055);
+  backdrop-filter:blur(25px) saturate(165%);
+  -webkit-backdrop-filter:blur(25px) saturate(165%);
+}
 </style>
 
 </head>
@@ -2396,9 +2424,10 @@ svg{
 
       </section>
 
-      <!-- COLOR -->
+      <!-- COLOR + QUANTITY -->
 
-      <section class="optionSection">
+      <div class="choiceTopRow">
+      <section class="optionSection colorOption">
 
         <div class="optionLabel">
 
@@ -2436,6 +2465,17 @@ svg{
         </div>
 
       </section>
+
+            <!-- QUANTITY -->
+      <section class="quantitySection" aria-label="Cantidad">
+        <div class="optionLabel">Cantidad</div>
+        <div class="quantityCapsule">
+          <button id="quantityMinus" class="quantityButton" type="button" aria-label="Disminuir cantidad">−</button>
+          <output id="quantityValue" class="quantityValue" aria-live="polite">1</output>
+          <button id="quantityPlus" class="quantityButton" type="button" aria-label="Aumentar cantidad">+</button>
+        </div>
+      </section>
+      </div>
 
       <!-- SIZE -->
 
@@ -2493,16 +2533,6 @@ svg{
 
         </div>
 
-      </section>
-
-      <!-- QUANTITY -->
-      <section class="quantitySection" aria-label="Cantidad">
-        <div class="optionLabel">Cantidad</div>
-        <div class="quantityCapsule">
-          <button id="quantityMinus" class="quantityButton" type="button" aria-label="Disminuir cantidad">−</button>
-          <output id="quantityValue" class="quantityValue" aria-live="polite">1</output>
-          <button id="quantityPlus" class="quantityButton" type="button" aria-label="Aumentar cantidad">+</button>
-        </div>
       </section>
 
       <!-- PURCHASE -->
@@ -4444,14 +4474,17 @@ function normalizePrice(
       return null;
     }
 
-    const numeric =
-      Number(candidate);
+    if(typeof candidate === "string"){
+      const cleaned=candidate
+        .replace(/[^0-9,.-]/g,"")
+        .replace(/\.(?=\d{3}(?:\D|$))/g,"")
+        .replace(",",".");
+      const parsed=Number(cleaned);
+      return Number.isFinite(parsed)?parsed:null;
+    }
 
-    return Number.isFinite(
-      numeric
-    )
-      ?numeric
-      :null;
+    const numeric=Number(candidate);
+    return Number.isFinite(numeric)?numeric:null;
   }
 
   for(
@@ -4660,6 +4693,11 @@ price:
 
     saveJson(
       "cajamoda-cart",
+      normalized
+    );
+
+    saveJson(
+      "cajamoda-checkout-cart",
       normalized
     );
 

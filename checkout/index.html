@@ -871,6 +871,14 @@ img{display:block;max-width:100%}
     transition:none!important
   }
 }
+
+.headerButton{
+  background:linear-gradient(145deg,rgba(255,255,255,.83),rgba(255,255,255,.36));
+  border:1px solid rgba(255,255,255,.96);
+  box-shadow:0 0 0 1px rgba(0,0,0,.026),inset 0 1px 0 rgba(255,255,255,1),0 8px 24px rgba(0,0,0,.055);
+  backdrop-filter:blur(25px) saturate(165%);
+  -webkit-backdrop-filter:blur(25px) saturate(165%);
+}
 </style>
 </head>
 
@@ -1394,7 +1402,7 @@ img{display:block;max-width:100%}
 
         quantity: Math.max(
           1,
-          Number(item.quantity || 1)
+          Math.floor(Number(item.quantity || 1))
         ),
 
         unitPrice,
@@ -1430,9 +1438,9 @@ img{display:block;max-width:100%}
       null
     );
 
-    const chosen = checkoutCart?.items?.length
-      ? checkoutCart
-      : regularCart;
+    const chosen = regularCart?.items?.length
+      ? regularCart
+      : checkoutCart;
 
     return normalizeCart(
       chosen || { items: [] }

@@ -220,14 +220,17 @@ function normalizePrice(
       return null;
     }
 
-    const numeric =
-      Number(candidate);
+    if(typeof candidate === "string"){
+      const cleaned=candidate
+        .replace(/[^0-9,.-]/g,"")
+        .replace(/\.(?=\d{3}(?:\D|$))/g,"")
+        .replace(",",".");
+      const parsed=Number(cleaned);
+      return Number.isFinite(parsed)?parsed:null;
+    }
 
-    return Number.isFinite(
-      numeric
-    )
-      ? numeric
-      : null;
+    const numeric=Number(candidate);
+    return Number.isFinite(numeric)?numeric:null;
   }
 
   for (
@@ -1617,16 +1620,16 @@ async function syncLocalCartToWix(
     hasn't returned enough display fields yet.
   */
 
-  const saved =
-    normalizedWix.items.length
-      ? saveLocalCart(
-          normalizedWix
-        )
-      : saveLocalCart(
-          cart
-        );
+  /*
+    Wix confirms the backend cart, but the local cart remains
+    authoritative for IDs, selected size/color and visible quantity.
+    This prevents an asynchronous Wix response from resetting the UI.
+  */
+  if(normalizedWix.items.length !== cart.items.length){
+    console.warn("[CajaModa] Wix returned a different line count; keeping the visible cart.");
+  }
 
-  return saved;
+  return saveLocalCart(cart);
 }
 
 /* ============================================================

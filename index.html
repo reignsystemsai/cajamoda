@@ -3579,9 +3579,16 @@ svg{
     cart
   ){
 
+    const normalized = normalizeCart(cart);
+
     saveJson(
       "cajamoda-cart",
-      normalizeCart(cart)
+      normalized
+    );
+
+    saveJson(
+      "cajamoda-checkout-cart",
+      normalized
     );
   }
 
@@ -3973,6 +3980,27 @@ svg{
      CARRITO
      ============================================================ */
 
+  function normalizeMoneyValue(value){
+    if(value === null || value === undefined || value === ""){
+      return 0;
+    }
+    if(typeof value === "object"){
+      return normalizeMoneyValue(
+        value.amount ?? value.value ?? value.discountedPrice ?? value.price
+      );
+    }
+    if(typeof value === "string"){
+      const cleaned=value
+        .replace(/[^0-9,.-]/g,"")
+        .replace(/\.(?=\d{3}(?:\D|$))/g,"")
+        .replace(",",".");
+      const parsed=Number(cleaned);
+      return Number.isFinite(parsed)?parsed:0;
+    }
+    const parsed=Number(value);
+    return Number.isFinite(parsed)?parsed:0;
+  }
+
   function normalizeCart(
     payload
   ){
@@ -4036,6 +4064,14 @@ svg{
               item.selectedOptions?.size ||
               "",
 
+            color:
+              item.color ||
+              item.options?.Color ||
+              item.options?.color ||
+              item.selectedOptions?.Color ||
+              item.selectedOptions?.color ||
+              "",
+
             quantity:
               Math.max(
                 1,
@@ -4045,14 +4081,26 @@ svg{
                 )
               ),
 
-            price:
-              Number(
+            unitPrice:
+              normalizeMoneyValue(
+                item.unitPrice ??
                 item.price?.amount ??
                 item.price ??
                 item.lineItemPrice?.amount ??
-                product?.price ??
-                0
-              )
+                product?.price
+              ),
+
+            price:
+              normalizeMoneyValue(
+                item.unitPrice ??
+                item.price?.amount ??
+                item.price ??
+                item.lineItemPrice?.amount ??
+                product?.price
+              ),
+
+            autoSelected:
+              item.autoSelected === true
           };
         }
       );
@@ -4421,7 +4469,10 @@ svg{
           product.category === categoryId &&
           matchesSearch(product)
       )
-      ;
+      .slice(
+        0,
+        CONFIG.maxSlotsPerCategory
+      );
   }
 
   function placeholderCard(
@@ -4597,8 +4648,22 @@ svg{
                 productCard
               );
 
-            if(!searching && products.length === 0){
-              cards.push(placeholderCard(1));
+            if(!searching){
+
+              for(
+                let slot =
+                  products.length + 1;
+
+                slot <=
+                  CONFIG.maxSlotsPerCategory;
+
+                slot += 1
+              ){
+
+                cards.push(
+                  placeholderCard(slot)
+                );
+              }
             }
 
             return `

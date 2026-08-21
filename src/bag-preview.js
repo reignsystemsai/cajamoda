@@ -90,12 +90,17 @@
         return null;
       }
 
-      const numeric =
-        Number(candidate);
+      if(typeof candidate === "string"){
+        const cleaned=candidate
+          .replace(/[^0-9,.-]/g,"")
+          .replace(/\.(?=\d{3}(?:\D|$))/g,"")
+          .replace(",",".");
+        const parsed=Number(cleaned);
+        return Number.isFinite(parsed)?parsed:null;
+      }
 
-      return Number.isFinite(numeric)
-        ? numeric
-        : null;
+      const numeric=Number(candidate);
+      return Number.isFinite(numeric)?numeric:null;
     }
 
     for(
@@ -203,9 +208,9 @@
       );
 
     return normalizeCart(
-      checkoutCart?.items?.length
-        ? checkoutCart
-        : regularCart
+      regularCart?.items?.length
+        ? regularCart
+        : checkoutCart
     );
   }
 

@@ -1893,6 +1893,14 @@ async function loadCatalog() {
         .queryCollections()
         .limit(100)
         .find()
+        .catch(error => {
+          console.warn(
+            "[CajaModa] Wix category read warning:",
+            error
+          );
+
+          return { items: [] };
+        })
     ]);
 
   const wixProducts =
@@ -1943,6 +1951,7 @@ async function loadCatalog() {
             index,
             collectionVibes
           )
+      )
       .filter(
         product =>
           product.id

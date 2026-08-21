@@ -3828,7 +3828,8 @@ svg{
   }
 
   function inferCategory(
-    product
+    product,
+    productIndex = 0
   ){
 
     const explicit =
@@ -3916,11 +3917,23 @@ svg{
       }
     }
 
-    return "late";
+    return (
+      CATEGORIES[
+        Math.abs(
+          Number(
+            productIndex
+          ) ||
+          0
+        ) %
+        CATEGORIES.length
+      ]?.id ||
+      ""
+    );
   }
 
   function normalizeProduct(
-    product
+    product,
+    productIndex = 0
   ){
 
     const media =
@@ -3938,7 +3951,10 @@ svg{
         "Producto CajaModa",
 
       category:
-        inferCategory(product),
+        inferCategory(
+          product,
+          productIndex
+        ),
 
       productType:
         product.productType ||

@@ -5537,6 +5537,10 @@ price:
   $("buyNowButton")
     .onclick =
       () => {
+        if(state.selectedSize && Number(state.selectedQuantity||0) < 1){
+          showToast("Selecciona una cantidad.");
+          return;
+        }
         if(state.selectedSize && productColorValues().length > 1 && !state.selectedColor){
           showToast("Selecciona un color.");
           return;

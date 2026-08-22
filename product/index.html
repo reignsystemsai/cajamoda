@@ -5205,35 +5205,21 @@ const desiredKey =
    let line =
   cart.items.find(
     item =>
-      cartLineKey(item) ===
-        desiredKey &&
-      item.autoSelected ===
-      true
+      cartLineKey(item) === desiredKey
   ) ||
   cart.items.find(
     item =>
       !item.variantId &&
-      String(
-        item.productId
-      ) ===
-        String(
-          state.product.id
-        ) &&
-      normalizeChoice(
-        item.size
-      ) ===
-        normalizeChoice(
-          state.selectedSize
-        ) &&
-      normalizeChoice(
-        item.color
-      ) ===
-        normalizeChoice(
-          state.selectedColor
-        ) &&
-      item.autoSelected ===
-        true
+      String(item.productId) === String(state.product.id) &&
+      normalizeChoice(item.size) === normalizeChoice(state.selectedSize) &&
+      normalizeChoice(item.color) === normalizeChoice(state.selectedColor)
   );
+
+  if (line) {
+    cart.items = cart.items.filter(item =>
+      item === line || cartLineKey(item) !== desiredKey
+    );
+  }
 
     const image =
       getMedia(
@@ -5342,7 +5328,7 @@ price:
           Math.max(1,Number(state.selectedQuantity||1)),
 
         selectionMode:
-          "SIZE_SELECTION",
+          "EXACT_QUANTITY",
 
         cart:
           saved

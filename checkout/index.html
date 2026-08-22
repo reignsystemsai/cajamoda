@@ -1443,15 +1443,34 @@ img{display:block;max-width:100%}
       };
     });
 
-    return {
-      items,
+    const canonicalItems=[];
+    items.forEach(item=>{
+      const key=[
+        String(item.productId||""),
+        String(item.variantId||""),
+        normalizeChoice(item.size),
+        normalizeChoice(item.color)
+      ].join("::");
+      const existing=canonicalItems.find(candidate=>candidate._lineKey===key);
+      if(existing){
+        existing.quantity+=item.quantity;
+        existing.unitPrice=item.unitPrice;
+        existing.price=item.unitPrice;
+      }else{
+        canonicalItems.push({...item,_lineKey:key});
+      }
+    });
+    const syncedItems=canonicalItems.map(({_lineKey,...item})=>item);
 
-      count: items.reduce(
+    return {
+      items:syncedItems,
+
+      count: syncedItems.reduce(
         (sum, item) => sum + item.quantity,
         0
       ),
 
-      total: items.reduce(
+      total: syncedItems.reduce(
         (sum, item) =>
           sum + item.unitPrice * item.quantity,
         0
@@ -1944,6 +1963,17 @@ img{display:block;max-width:100%}
       item.unitPrice
     );
     item.price = item.unitPrice;
+
+    const duplicate=cart.items.find(candidate=>
+      candidate!==item &&
+      String(candidate.productId)===String(item.productId) &&
+      normalizeChoice(candidate.size)===normalizeChoice(item.size) &&
+      normalizeChoice(candidate.color)===normalizeChoice(item.color)
+    );
+    if(duplicate){
+      item.quantity+=duplicate.quantity;
+      cart.items=cart.items.filter(candidate=>candidate!==duplicate);
+    }
 
     saveCart(cart);
     showToast("Producto actualizado.");

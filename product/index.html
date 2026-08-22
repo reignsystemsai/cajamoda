@@ -2210,6 +2210,11 @@ textarea.reviewField{min-height:76px;resize:vertical}
 .favoriteButton.active{color:#cf1738;animation:cajaHeartBeat 2.4s ease-in-out infinite;transform-origin:center}
 @keyframes cajaHeartBeat{0%,42%,100%{transform:scale(1)}7%{transform:scale(1.13)}14%{transform:scale(1)}21%{transform:scale(1.09)}29%{transform:scale(1)}}
 @media (prefers-reduced-motion:reduce){.favoriteButton.active{animation:none}}
+.productProfileOverlay{position:fixed;inset:0;z-index:180;display:none;align-items:flex-end;padding:12px 12px calc(var(--nav-h) + 18px + var(--safe-bottom));background:rgba(255,255,255,.16);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.productProfileOverlay.open{display:flex}.productProfilePanel{width:100%;padding:16px;border-radius:24px;background:linear-gradient(145deg,rgba(255,255,255,.93),rgba(255,255,255,.66));border:1px solid rgba(255,255,255,.96);box-shadow:0 22px 55px rgba(0,0,0,.14)}
+.productProfileHead{display:flex;align-items:center;justify-content:space-between}.productProfileTitle{font:800 15px/1.2 Inter,sans-serif}.productProfileClose{width:36px;height:36px;border:0;border-radius:50%;background:rgba(255,255,255,.58);font-size:22px}.productProfileOffer{margin:12px 0;padding:12px;border-radius:16px;background:rgba(255,255,255,.5)}
+.productProfileOffer strong{font:800 16px/1.2 Inter,sans-serif}.productProfileOffer p{font:500 9px/1.5 Inter,sans-serif;color:#444}.productProfileBenefits{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font:700 8px/1.3 Inter,sans-serif;text-align:center}
+.productProfileInput{width:100%;height:43px;margin-top:8px;padding:0 12px;border:1px solid rgba(0,0,0,.1);border-radius:13px;background:rgba(255,255,255,.64)}.productProfileActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.productProfileAction{height:42px;border-radius:13px;border:1px solid rgba(0,0,0,.1);background:rgba(255,255,255,.5);font-weight:750}.productProfileAction.primary{background:#111;color:#fff}
 
 .choiceTopRow{
   display:grid;
@@ -2663,6 +2668,16 @@ textarea.reviewField{min-height:76px;resize:vertical}
 
   </section>
 
+</div>
+
+<div id="productProfileOverlay" class="productProfileOverlay" aria-hidden="true">
+  <section class="productProfilePanel" role="dialog" aria-modal="true" aria-label="Tu perfil">
+    <header class="productProfileHead"><div><small>MIEMBROS CAJAMODA</small><div class="productProfileTitle">Tu perfil</div></div><button id="productProfileClose" class="productProfileClose" type="button" aria-label="Cerrar">×</button></header>
+    <div class="productProfileOffer"><strong>Únete y recibe 10% de descuento</strong><p>Crea tu perfil CajaModa para mantener tus pedidos juntos, rastrear tus compras y recibir acceso anticipado.</p><div class="productProfileBenefits"><span>10% DTO.<br>Primera compra</span><span>RASTREA<br>Tus pedidos</span><span>PRIMERO<br>Lanzamientos</span></div></div>
+    <input id="productProfileName" class="productProfileInput" type="text" autocomplete="name" placeholder="Tu nombre">
+    <input id="productProfileEmail" class="productProfileInput" type="email" autocomplete="email" placeholder="tu@email.com">
+    <div class="productProfileActions"><button id="productProfileLogin" class="productProfileAction" type="button">Iniciar sesión</button><button id="productProfileCreate" class="productProfileAction primary" type="button">Crear perfil + 10%</button></div>
+  </section>
 </div>
 
 <!-- ==========================================================
@@ -6226,10 +6241,31 @@ function closeWishList(){
   $("navProfile")
     .onclick =
       () => {
-        showToast(
-          "Crea o administra tu perfil desde Inicio."
-        );
+        const profile=readJson("cajamoda-member-profile",{});
+        $("productProfileName").value=profile.name||"";
+        $("productProfileEmail").value=profile.email||"";
+        $("productProfileOverlay").classList.add("open");
+        $("productProfileOverlay").setAttribute("aria-hidden","false");
       };
+
+  function closeProductProfile(){
+    $("productProfileOverlay").classList.remove("open");
+    $("productProfileOverlay").setAttribute("aria-hidden","true");
+  }
+  $("productProfileClose").onclick=closeProductProfile;
+  $("productProfileOverlay").onclick=event=>{if(event.target===$("productProfileOverlay")){closeProductProfile();}};
+  function saveProductProfile(mode){
+    const email=$("productProfileEmail").value.trim().toLowerCase();
+    if(!email||!email.includes("@")){showToast("Ingresa un correo electrónico válido.");return;}
+    const existing=readJson("cajamoda-member-profile",{});
+    const profile={...existing,name:$("productProfileName").value.trim(),email,marketingOptIn:true,welcomePromo:existing.welcomePromo||(mode==="signup"?"CAJAMODA10":null),updatedAt:new Date().toISOString()};
+    saveJson("cajamoda-member-profile",profile);
+    sendBridge("MEMBER_AUTH_REQUEST",{mode,...profile});
+    closeProductProfile();
+    showToast(mode==="signup"?"Perfil creado. Tu descuento está listo.":"Perfil actualizado.");
+  }
+  $("productProfileLogin").onclick=()=>saveProductProfile("login");
+  $("productProfileCreate").onclick=()=>saveProductProfile("signup");
 
   /* ============================================================
      PLUS MENU

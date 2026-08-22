@@ -5567,16 +5567,6 @@ function cancelBagAutoClose(){
 
 function scheduleBagAutoClose(){
   cancelBagAutoClose();
-
-  bagAutoCloseTimer =
-    setTimeout(
-      () => {
-        closeOverlay(
-          $("bagOverlay")
-        );
-      },
-      3000
-    );
 }
 
   function openBag(){
@@ -6410,7 +6400,7 @@ scheduleBagAutoClose();
 
   function scheduleFavoritesAutoClose(){
     clearTimeout(favoritesAutoCloseTimer);
-    favoritesAutoCloseTimer = setTimeout(closeFavorites,3000);
+    favoritesAutoCloseTimer = null;
   }
 
   $("navFavorites")

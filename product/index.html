@@ -5899,20 +5899,13 @@ function closeWishList(){
   }
 
   function getSharePayload(){
+    const productUrl = new URL("/product/", location.origin);
+    productUrl.searchParams.set("productId", state.product?.id || "");
 
     return {
-
-      title:
-        safeText(
-          state.product?.name,
-          "CajaModa"
-        ),
-
-      text:
-        `Mira este producto en CajaModa: ${safeText(state.product?.name,"Producto")}`,
-
-      url:
-        location.href
+      title: safeText(state.product?.name, "CajaModa"),
+      text: `Mira este producto en CajaModa: ${safeText(state.product?.name,"Producto")}`,
+      url: productUrl.toString()
     };
   }
 

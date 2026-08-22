@@ -1174,6 +1174,19 @@ svg{
   font-weight:550;
 }
 
+.productRating{
+  min-height:12px;
+  margin-top:2px;
+  color:#111;
+  font-size:7px;
+  line-height:1.2;
+  white-space:nowrap;
+}
+
+.productRating.unrated{
+  color:#777;
+}
+
 .productPrice{
   margin-top:3px;
 
@@ -3957,6 +3970,17 @@ svg{
         product.description ||
         "",
 
+      reviews:
+        Array.isArray(product.reviews)
+          ? product.reviews
+          : [],
+
+      reviewSummary:
+        product.reviewSummary || {
+          average: 0,
+          count: 0
+        },
+
       raw:
         product
     };
@@ -4645,6 +4669,12 @@ svg{
 
           <div class="productName">
             ${escapeHtml(product.name)}
+          </div>
+
+          <div class="productRating ${product.reviewSummary?.count ? "" : "unrated"}">
+            ${product.reviewSummary?.count
+              ? `★★★★★ ${Number(product.reviewSummary.average || 0).toFixed(1)} (${product.reviewSummary.count})`
+              : "☆ Sin reseñas"}
           </div>
 
           <div class="productPrice">

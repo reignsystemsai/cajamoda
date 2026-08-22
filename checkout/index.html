@@ -1585,7 +1585,12 @@ img{display:block;max-width:100%}
 
   function productDescription(item){
     const product=catalogProduct(item.productId);
-    return String(item.description || product?.description || "").trim();
+    const source=String(item.description || product?.description || "").trim();
+    if(!source){return ""}
+    const text=document.createElement("div");
+    text.innerHTML=source;
+    const clean=String(text.textContent || "").replace(/\s+/g," ").trim();
+    return clean.length>92 ? `${clean.slice(0,89).trim()}…` : clean;
   }
 
   function productRatingLabel(item){

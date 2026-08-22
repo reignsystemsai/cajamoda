@@ -5322,7 +5322,6 @@ const desiredKey =
   ) ||
   cart.items.find(
     item =>
-      !item.variantId &&
       String(
         item.productId
       ) ===
@@ -5462,7 +5461,7 @@ price:
           Math.max(1,Number(state.selectedQuantity||1)),
 
         selectionMode:
-          "SIZE_SELECTION",
+          "EXACT_QUANTITY",
 
         cart:
           saved
@@ -5476,9 +5475,13 @@ price:
      ADD TO BAG
      ============================================================ */
 
+  let addBagLocked = false;
+
   $("addBagButton")
     .onclick =
       () => {
+
+        if(addBagLocked){return}
 
         if(
           !state.selectedSize
@@ -5496,6 +5499,9 @@ price:
           return;
         }
 
+        addBagLocked = true;
+        $("addBagButton").disabled = true;
+
         syncSelectionToBag();
 
         animateBag();
@@ -5512,6 +5518,11 @@ price:
             18
           );
         }
+
+        window.setTimeout(() => {
+          addBagLocked = false;
+          $("addBagButton").disabled = false;
+        },450);
       };
 
   /* ============================================================

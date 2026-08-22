@@ -1071,6 +1071,71 @@ svg{
     transform .38s ease;
 }
 
+/* ============================================================
+   HOME QUICK PREVIEW — PRESS AND HOLD
+   ============================================================ */
+
+.quickPreviewOverlay{
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  background:rgba(255,255,255,.20);
+  backdrop-filter:blur(18px) saturate(140%);
+  -webkit-backdrop-filter:blur(18px) saturate(140%);
+}
+.quickPreviewOverlay.open{display:flex}
+.quickPreviewPanel{
+  position:relative;
+  width:min(100%,410px);
+  max-height:calc(100dvh - 36px);
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.96);
+  border-radius:26px;
+  background:linear-gradient(145deg,rgba(255,255,255,.90),rgba(255,255,255,.56));
+  box-shadow:0 24px 65px rgba(0,0,0,.16),inset 0 1px 0 #fff;
+}
+.quickPreviewRail{
+  display:flex;
+  width:100%;
+  overflow-x:auto;
+  scroll-snap-type:x mandatory;
+  scrollbar-width:none;
+  overscroll-behavior-inline:contain;
+  -webkit-overflow-scrolling:touch;
+}
+.quickPreviewRail::-webkit-scrollbar{display:none}
+.quickPreviewSlide{
+  flex:0 0 100%;
+  height:min(65dvh,590px);
+  scroll-snap-align:center;
+  background:#eee;
+}
+.quickPreviewSlide img{width:100%;height:100%;display:block;object-fit:contain;object-position:center top;background:#f7f7f7}
+.quickPreviewClose,.quickPreviewHeart{
+  position:absolute;
+  z-index:3;
+  top:14px;
+  width:42px;
+  height:42px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(255,255,255,.96);
+  border-radius:50%;
+  background:rgba(255,255,255,.76);
+  box-shadow:0 8px 24px rgba(0,0,0,.08);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+}
+.quickPreviewClose{right:14px;font-size:23px;font-weight:300}
+.quickPreviewHeart{right:64px;color:#111}
+.quickPreviewHeart svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5}
+.quickPreviewHeart.active{color:#cf1738;animation:cajaHeartBeat 2.4s ease-in-out infinite}
+.quickPreviewHeart.active svg{fill:currentColor;stroke:currentColor}
+.quickPreviewMeta{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:15px 17px 17px}
+.quickPreviewName{font-size:14px;font-weight:800;line-height:1.25}
+.quickPreviewPrice{margin-top:8px;font-size:13px;font-weight:800}
+.quickPreviewDetails{height:39px;padding:0 16px;border-radius:999px;background:#111;color:#fff;font-size:9px;font-weight:800}
+
 @media(hover:hover){
   .productCard:hover .productMedia img{
     transform:scale(1.04);
@@ -2718,6 +2783,22 @@ svg{
   </button>
 
 </nav>
+
+<!-- HOME PRODUCT QUICK PREVIEW -->
+<div id="quickPreviewOverlay" class="overlay quickPreviewOverlay" aria-hidden="true">
+  <section class="quickPreviewPanel" role="dialog" aria-modal="true" aria-label="Vista rápida del producto">
+    <button id="quickPreviewClose" class="quickPreviewClose" type="button" aria-label="Cerrar">×</button>
+    <button id="quickPreviewHeart" class="quickPreviewHeart" type="button" aria-label="Agregar a Favorita"></button>
+    <div id="quickPreviewRail" class="quickPreviewRail"></div>
+    <div class="quickPreviewMeta">
+      <div>
+        <div id="quickPreviewName" class="quickPreviewName"></div>
+        <div id="quickPreviewPrice" class="quickPreviewPrice"></div>
+      </div>
+      <button id="quickPreviewDetails" class="quickPreviewDetails" type="button">Ver detalles</button>
+    </div>
+  </section>
+</div>
 
 <!-- ============================================================
      MENÚ +
@@ -4802,6 +4883,46 @@ svg{
     renderSearchStatus();
   }
 
+  function productUrl(product){
+    const url = new URL(CONFIG.productPage,location.origin);
+    url.searchParams.set("productId",product.id);
+    url.searchParams.set("category",product.category);
+    return url.toString();
+  }
+
+  function syncQuickPreviewHeart(){
+    const product = state.quickPreviewProduct;
+    if(!product){return}
+    const active = state.favorites.has(String(product.id));
+    const button = $("quickPreviewHeart");
+    button.classList.toggle("active",active);
+    button.setAttribute("aria-label",active ? "Quitar de Favorita" : "Agregar a Favorita");
+    button.innerHTML = heartIcon(active);
+  }
+
+  function openQuickPreview(product){
+    const media = normalizeMedia(product);
+    if(!media.length){return}
+    state.quickPreviewProduct = product;
+    $("quickPreviewRail").innerHTML = media.map((src,index) => `
+      <div class="quickPreviewSlide">
+        <img src="${escapeHtml(src)}" alt="${escapeHtml(product.name)}${media.length > 1 ? ` ${index + 1}` : ""}">
+      </div>
+    `).join("");
+    $("quickPreviewName").textContent = product.name;
+    $("quickPreviewPrice").textContent = money(product.price);
+    syncQuickPreviewHeart();
+    openOverlay($("quickPreviewOverlay"));
+    $("quickPreviewOverlay").setAttribute("aria-hidden","false");
+    $("quickPreviewRail").scrollLeft = 0;
+  }
+
+  function closeQuickPreview(){
+    closeOverlay($("quickPreviewOverlay"),false);
+    $("quickPreviewOverlay").setAttribute("aria-hidden","true");
+    state.quickPreviewProduct = null;
+  }
+
   function bindProductCards(){
 
     qsa(
@@ -4811,6 +4932,11 @@ svg{
 
         card.onclick =
           event => {
+
+            if(card.dataset.quickPreviewSuppress === "true"){
+              card.dataset.quickPreviewSuppress = "false";
+              return;
+            }
 
             if(
               event.target.closest(
@@ -4865,6 +4991,44 @@ svg{
               url.toString();
 
           };
+
+        const media = card.querySelector(".productMedia img");
+        if(media){
+          let holdTimer = null;
+          let startX = 0;
+          let startY = 0;
+
+          const cancelHold = () => {
+            if(holdTimer){
+              clearTimeout(holdTimer);
+              holdTimer = null;
+            }
+          };
+
+          media.addEventListener("pointerdown", event => {
+            if(event.button !== undefined && event.button !== 0){return}
+            startX = event.clientX;
+            startY = event.clientY;
+            cancelHold();
+            holdTimer = setTimeout(() => {
+              holdTimer = null;
+              const product = findProduct(card.dataset.product);
+              if(!product){return}
+              card.dataset.quickPreviewSuppress = "true";
+              setTimeout(() => {card.dataset.quickPreviewSuppress = "false"},800);
+              openQuickPreview(product);
+            }, 400);
+          });
+
+          media.addEventListener("pointermove", event => {
+            if(Math.hypot(event.clientX - startX,event.clientY - startY) > 10){
+              cancelHold();
+            }
+          });
+          media.addEventListener("pointerup",cancelHold);
+          media.addEventListener("pointercancel",cancelHold);
+          media.addEventListener("pointerleave",cancelHold);
+        }
       }
     );
 
@@ -6718,6 +6882,24 @@ scheduleBagAutoClose();
   /* ============================================================
      INICIO
      ============================================================ */
+
+  $("quickPreviewClose").onclick = closeQuickPreview;
+  $("quickPreviewOverlay").onclick = event => {
+    if(event.target === $("quickPreviewOverlay")){closeQuickPreview()}
+  };
+  $("quickPreviewHeart").onclick = event => {
+    event.stopPropagation();
+    if(!state.quickPreviewProduct){return}
+    toggleFavorite(state.quickPreviewProduct.id);
+    syncQuickPreviewHeart();
+  };
+  $("quickPreviewDetails").onclick = () => {
+    const product = state.quickPreviewProduct;
+    if(!product){return}
+    saveJson("cajamoda-active-product",product);
+    track("PRODUCT_CLICK",{productId:product.id,categoryId:product.category,source:"quick-preview"});
+    location.href = productUrl(product);
+  };
 
   const cachedCatalog =
     readJson(

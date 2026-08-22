@@ -1061,6 +1061,19 @@ svg{
     scale(.97);
 }
 
+.productRatingSummary{
+  position:absolute;
+  z-index:22;
+  left:19px;
+  bottom:calc(var(--nav-h) + 19px + var(--safe-bottom));
+  padding:0;
+  border:0;
+  background:transparent;
+  color:#111;
+  font:600 10px/1.2 Inter,system-ui,sans-serif;
+  text-align:left;
+}
+
 @media(hover:hover){
 
   .priceCapsule:hover{
@@ -1548,30 +1561,25 @@ svg{
   color:#444;
 }
 
-.productReviews{
-  margin-top:12px;
-  padding-top:12px;
-  border-top:1px solid rgba(0,0,0,.08);
-  color:#111;
-}
+.productReviews{position:relative;margin-top:12px;padding:20px;border:1px solid rgba(255,255,255,.94);border-radius:24px;background:linear-gradient(145deg,rgba(255,255,255,.76),rgba(255,255,255,.48));box-shadow:0 20px 55px rgba(0,0,0,.13);backdrop-filter:blur(30px) saturate(150%);-webkit-backdrop-filter:blur(30px) saturate(150%);color:#080808}
 .productReviews[hidden]{display:none}
-.reviewSummaryLine{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#111}
-.reviewSummaryText{font:700 10px/1.3 Inter,system-ui,sans-serif;color:#111}
-.reviewClose{width:30px;height:30px;border:0;border-radius:50%;background:rgba(255,255,255,.58);color:#111;font:400 20px/1 Inter,system-ui,sans-serif;display:grid;place-items:center}
-.reviewActions{display:flex;gap:8px;margin-top:9px}
-.reviewAction{border:1px solid rgba(0,0,0,.12);border-radius:999px;padding:8px 12px;background:rgba(255,255,255,.48);color:#111;font:700 8px/1 Inter,system-ui,sans-serif}
+.reviewSummaryLine{display:flex;align-items:center;justify-content:center;color:#080808}
+.reviewSummaryText{font:700 11px/1.3 Inter,system-ui,sans-serif;color:#080808}
+.reviewClose{position:absolute;top:10px;right:12px;width:32px;height:32px;border:0;background:transparent;color:#080808;font:300 24px/1 Inter,system-ui,sans-serif;display:grid;place-items:center}
+.reviewActions{display:flex;justify-content:center;gap:28px;margin-top:16px;padding-bottom:14px;border-bottom:1px solid rgba(0,0,0,.12)}
+.reviewAction{border:0;border-bottom:1px solid #080808;padding:2px 0;background:transparent;color:#080808;font:600 9px/1.2 Inter,system-ui,sans-serif}
 .reviewList{display:grid;gap:8px;margin-top:10px}
 .reviewEntry{padding:10px;border-top:1px solid rgba(0,0,0,.07);color:#111}
 .reviewEntryTop{display:flex;justify-content:space-between;gap:10px;font:700 8px/1.3 Inter,system-ui,sans-serif;color:#111}
 .reviewEntryText{margin-top:5px;font:400 8px/1.45 Inter,system-ui,sans-serif;color:#111}
 .reviewEmpty{padding:10px 0;font:500 8px/1.4 Inter,system-ui,sans-serif;color:#111}
-.reviewForm{display:grid;gap:9px;margin-top:10px;padding:12px;border:1px solid rgba(255,255,255,.9);border-radius:18px;background:linear-gradient(145deg,rgba(255,255,255,.62),rgba(255,255,255,.30));box-shadow:0 10px 28px rgba(0,0,0,.06);color:#111}
+.reviewForm{display:grid;gap:9px;margin-top:15px;color:#080808}
 .reviewForm[hidden]{display:none}
-.reviewFormTitle{font:700 11px/1.2 Inter,system-ui,sans-serif;color:#111}
-.reviewStars{display:flex;gap:4px}
+.reviewFormTitle{font:700 11px/1.2 Inter,system-ui,sans-serif;color:#080808;text-align:center}
+.reviewStars{display:flex;justify-content:center;gap:8px}
 .reviewStar{border:0;background:transparent;padding:2px;color:#9a9a9a;font-size:20px;line-height:1}
 .reviewStar.selected{color:#111}
-.reviewField{width:100%;border:1px solid rgba(0,0,0,.12);border-radius:12px;background:rgba(255,255,255,.64);padding:10px;color:#111;font:500 9px/1.4 Inter,system-ui,sans-serif;outline:none}
+.reviewField{width:100%;border:1px solid rgba(0,0,0,.19);border-radius:15px;background:rgba(255,255,255,.38);padding:12px;color:#080808;font:500 10px/1.4 Inter,system-ui,sans-serif;outline:none}
 textarea.reviewField{min-height:76px;resize:vertical}
 .reviewSubmit{border:0;border-radius:999px;background:#111;color:#fff;padding:11px 14px;font:700 9px/1 Inter,system-ui,sans-serif}
 
@@ -2350,6 +2358,10 @@ textarea.reviewField{min-height:76px;resize:vertical}
 
     </button>
 
+    <button id="productRatingSummary" class="productRatingSummary" type="button" aria-label="Abrir reseñas">
+      ☆ Sin reseñas →
+    </button>
+
   </main>
 
 </div>
@@ -2455,7 +2467,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
         </div>
         <div class="reviewActions">
           <button id="readReviewsButton" class="reviewAction" type="button">Leer reseñas</button>
-          <button id="writeReviewButton" class="reviewAction" type="button">Escribir reseña</button>
+          <button id="writeReviewButton" class="reviewAction" type="button" disabled>Escribir reseña</button>
         </div>
         <div id="productReviewList" class="reviewList"></div>
         <form id="reviewForm" class="reviewForm" hidden>
@@ -2467,9 +2479,8 @@ textarea.reviewField{min-height:76px;resize:vertical}
             <button class="reviewStar" type="button" data-review-rating="4">★</button>
             <button class="reviewStar" type="button" data-review-rating="5">★</button>
           </div>
-          <input id="reviewAuthor" class="reviewField" type="text" maxlength="80" autocomplete="name" placeholder="Tu nombre" required>
           <textarea id="reviewContent" class="reviewField" maxlength="1200" placeholder="Cuéntanos qué te pareció" required></textarea>
-          <button id="reviewSubmit" class="reviewSubmit" type="submit">Enviar reseña</button>
+          <button id="reviewSubmit" class="reviewSubmit" type="submit" disabled>Enviar reseña</button>
         </form>
       </section>
 
@@ -3878,6 +3889,8 @@ textarea.reviewField{min-height:76px;resize:vertical}
         );
 
     $("productReviews").hidden = true;
+    $("writeReviewButton").disabled = true;
+    $("reviewSubmit").disabled = true;
 
     /*
       Number always represents position inside
@@ -4439,6 +4452,9 @@ textarea.reviewField{min-height:76px;resize:vertical}
     $("reviewSummaryText").textContent = count > 0
       ? `★★★★★ ${rating.toFixed(1)} · ${count} reseñas`
       : "☆ Sin reseñas";
+    $("productRatingSummary").textContent = count > 0
+      ? `★★★★★ ${rating.toFixed(1)} · ${count} reseñas →`
+      : "☆ Sin reseñas →";
     $("productReviewList").innerHTML = reviews.length
       ? reviews.map(review => `
           <article class="reviewEntry">
@@ -4460,10 +4476,15 @@ textarea.reviewField{min-height:76px;resize:vertical}
       if(!response.ok){return}
       const payload=await response.json();
       if(String(state.product?.id)!==productId){return}
+      $("writeReviewButton").disabled=false;
+      $("reviewSubmit").disabled=false;
       state.product.reviews=Array.isArray(payload.reviews)?payload.reviews:[];
       state.product.reviewSummary=payload.summary||{averageRating:0,reviewCount:0};
       renderProductReviews();
-    }catch{}
+    }catch{
+      $("writeReviewButton").disabled=true;
+      $("reviewSubmit").disabled=true;
+    }
   }
 
   function openProductReviews(){
@@ -4478,6 +4499,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
     .onclick =
       openDetails;
 
+  $("productRatingSummary").onclick = openProductReviews;
   $("readReviewsButton").onclick = openProductReviews;
   $("reviewClose").onclick = () => {
     $("productReviews").hidden = true;
@@ -4492,7 +4514,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
     $("writeReviewButton").setAttribute("aria-expanded","true");
     requestAnimationFrame(()=>{
       $("reviewForm").scrollIntoView({behavior:"smooth",block:"start"});
-      $("reviewAuthor").focus({preventScroll:true});
+      $("reviewContent").focus({preventScroll:true});
     });
   };
 
@@ -4515,7 +4537,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
         headers:{"Content-Type":"application/json","Accept":"application/json"},
         body:JSON.stringify({
           productId:state.product?.id,
-          authorName:$("reviewAuthor").value.trim(),
+          authorName:safeText(readJson("cajamoda-member-profile",{})?.name,"Cliente CajaModa"),
           content:$("reviewContent").value.trim(),
           rating:state.reviewRating
         })
@@ -5404,30 +5426,6 @@ price:
         cart
       );
 
-    sendBridge(
-      "ADD_TO_CART",
-      {
-
-        productId:
-          state.product.id,
-
-        size:
-          state.selectedSize,
-
-        color:
-          state.selectedColor,
-
-        quantity:
-          Math.max(1,Number(state.selectedQuantity||1)),
-
-        selectionMode:
-          "EXACT_QUANTITY",
-
-        cart:
-          saved
-      }
-    );
-
     return saved;
   }
 
@@ -5503,7 +5501,13 @@ price:
       showToast("Selecciona una cantidad.");
       return;
     }
-    const cart = syncSelectionToBag();
+    const currentCart = readCart();
+    const existingLine = currentCart.items.find(item =>
+      String(item.productId)===String(state.product?.id) &&
+      normalizeChoice(item.size)===normalizeChoice(state.selectedSize) &&
+      normalizeChoice(item.color)===normalizeChoice(state.selectedColor)
+    );
+    const cart = existingLine ? currentCart : syncSelectionToBag();
     if(!cart){return}
     saveJson("cajamoda-checkout-cart",cart);
     location.href = CONFIG.checkoutPage;

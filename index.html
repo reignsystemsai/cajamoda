@@ -2072,6 +2072,12 @@ svg{
 
   object-fit:cover;
   object-position:center top;
+
+  -webkit-touch-callout:none;
+
+  -webkit-user-select:none;
+
+  user-select:none;
 }
 
 .favoriteMiniName{
@@ -5028,6 +5034,7 @@ svg{
           media.addEventListener("pointerup",cancelHold);
           media.addEventListener("pointercancel",cancelHold);
           media.addEventListener("pointerleave",cancelHold);
+          media.addEventListener("contextmenu",event=>event.preventDefault());
         }
       }
     );

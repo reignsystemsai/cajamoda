@@ -329,10 +329,10 @@ img{display:block;max-width:100%}
 }
 .cartItem{
   display:grid;
-  grid-template-columns:104px 1fr;
-  gap:18px;
-  min-height:164px;
-  padding:14px;
+  grid-template-columns:96px 1fr;
+  gap:14px;
+  min-height:150px;
+  padding:12px;
   border-radius:22px;
   background:linear-gradient(
     145deg,
@@ -347,8 +347,8 @@ img{display:block;max-width:100%}
   -webkit-backdrop-filter:blur(30px) saturate(155%)
 }
 .cartImage{
-  width:104px;
-  height:136px;
+  width:96px;
+  height:126px;
   overflow:hidden;
   border-radius:16px;
   background:#f2f2f2
@@ -356,7 +356,7 @@ img{display:block;max-width:100%}
 .cartImage img{
   width:100%;
   height:100%;
-  object-fit:cover;
+  object-fit:contain;
   object-position:center top
 }
 .cartImagePlaceholder{
@@ -919,14 +919,14 @@ img{display:block;max-width:100%}
   }
 
   .checkoutIntro h1{font-size:46px}
-  .cartItem{grid-template-columns:88px 1fr}
+  .cartItem{grid-template-columns:88px 1fr;gap:11px;min-height:146px;padding:10px}
   .cartImage{
     width:88px;
     height:122px
   }
   .cartBottom{
-    align-items:flex-start;
-    flex-direction:column
+    align-items:flex-end;
+    flex-direction:row
   }
   .reviewItem{grid-template-columns:66px 1fr auto}
   .reviewImage{
@@ -1603,11 +1603,32 @@ img{display:block;max-width:100%}
     return clean.length>92 ? `${clean.slice(0,89).trim()}…` : clean;
   }
 
+  const liveReviewSummaries=new Map();
+
   function productRatingLabel(item){
+    const live=liveReviewSummaries.get(String(item.productId));
     const product=catalogProduct(item.productId);
-    const rating=Number(product?.reviewSummary?.averageRating || product?.rating || 0);
-    const count=Number(product?.reviewSummary?.reviewCount || product?.reviewCount || 0);
+    const rating=Number(live?.averageRating || product?.reviewSummary?.averageRating || product?.rating || 0);
+    const count=Number(live?.reviewCount || product?.reviewSummary?.reviewCount || product?.reviewCount || 0);
     return count>0 ? `★★★★★ ${rating.toFixed(1)} · ${count} reseñas` : "☆ Sin reseñas";
+  }
+
+  async function hydrateCheckoutReviews(items){
+    const ids=[...new Set(items.map(item=>String(item.productId||"")).filter(Boolean))];
+    await Promise.all(ids.map(async productId=>{
+      if(liveReviewSummaries.has(productId)){return}
+      liveReviewSummaries.set(productId,null);
+      try{
+        const response=await fetch(`/api/reviews?productId=${encodeURIComponent(productId)}`,{headers:{Accept:"application/json"}});
+        if(!response.ok){return}
+        const payload=await response.json();
+        liveReviewSummaries.set(productId,payload.summary||{averageRating:0,reviewCount:0});
+        document.querySelectorAll(`[data-review-product="${CSS.escape(productId)}"]`).forEach(node=>{
+          const item=items.find(candidate=>String(candidate.productId)===productId);
+          if(item){node.textContent=productRatingLabel(item)}
+        });
+      }catch{}
+    }));
   }
 
   function sizeChoices(item){
@@ -1746,7 +1767,7 @@ img{display:block;max-width:100%}
             <div>
               <div class="cartName">${escapeHtml(item.name)}</div>
               ${productDescription(item)?`<div class="cartDescription">${escapeHtml(productDescription(item))}</div>`:""}
-              <div class="cartRating">${productRatingLabel(item)}</div>
+              <div class="cartRating" data-review-product="${escapeHtml(item.productId)}">${productRatingLabel(item)}</div>
             </div>
 
             <div class="cartTopActions">
@@ -1770,18 +1791,7 @@ img{display:block;max-width:100%}
             </div>
           </div>
 
-          <div class="cartOptions">
-            ${
-              visibleColor(item)
-                ? `Color: ${escapeHtml(visibleColor(item))}<br>`
-                : ""
-            }
-            ${
-              item.size
-                ? `Talla: ${escapeHtml(item.size)}`
-                : ""
-            }
-          </div>
+          ${optionValues(item,"Color").length===1?`<div class="cartOptions">Color: ${escapeHtml(visibleColor(item))}</div>`:""}
 
           <div class="cartOptionControls">
             ${colorChoices(item)}
@@ -1830,7 +1840,7 @@ img{display:block;max-width:100%}
             <div>
               <div class="cartName">${escapeHtml(item.name)}</div>
               ${productDescription(item)?`<div class="cartDescription">${escapeHtml(productDescription(item))}</div>`:""}
-              <div class="cartRating">${productRatingLabel(item)}</div>
+              <div class="cartRating" data-review-product="${escapeHtml(item.productId)}">${productRatingLabel(item)}</div>
             </div>
 
             <div class="cartTopActions">
@@ -1843,10 +1853,7 @@ img{display:block;max-width:100%}
             </div>
           </div>
 
-          <div class="cartOptions">
-            ${visibleColor(item)?`Color: ${escapeHtml(visibleColor(item))}<br>`:""}
-            ${item.size?`Talla: ${escapeHtml(item.size)}`:""}
-          </div>
+          ${optionValues(item,"Color").length===1?`<div class="cartOptions">Color: ${escapeHtml(visibleColor(item))}</div>`:""}
 
           <div class="cartOptionControls">
             ${colorChoices(item)}
@@ -1933,6 +1940,7 @@ img{display:block;max-width:100%}
         );
       });
 
+    hydrateCheckoutReviews(cart.items);
     syncPanelHeight();
   }
 

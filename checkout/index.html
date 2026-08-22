@@ -1540,10 +1540,18 @@ img{display:block;max-width:100%}
   function optionSelect(item, name, label, current) {
     const values = optionValues(item, name);
     if (!values.length) return "";
+    if (values.length === 1) {
+      return `<span class="cartOptionFixed">${escapeHtml(label)}: ${escapeHtml(values[0])}</span>`;
+    }
 
     return `<select class="cartOptionSelect" data-cart-option="${name.toLowerCase()}" data-item-id="${escapeHtml(item.id)}" aria-label="${escapeHtml(label)}">
       ${values.map(value => `<option value="${escapeHtml(value)}" ${normalizeChoice(value) === normalizeChoice(current) ? "selected" : ""}>${escapeHtml(label)}: ${escapeHtml(value)}</option>`).join("")}
     </select>`;
+  }
+
+  function visibleColor(item) {
+    const colors = optionValues(item, "Color");
+    return colors.length ? (item.color || colors[0]) : "";
   }
 
   function productUrl(item) {
@@ -1695,8 +1703,8 @@ img{display:block;max-width:100%}
 
           <div class="cartOptions">
             ${
-              item.color
-                ? `Color: ${escapeHtml(item.color)}<br>`
+              visibleColor(item)
+                ? `Color: ${escapeHtml(visibleColor(item))}<br>`
                 : ""
             }
             ${
@@ -1757,8 +1765,8 @@ img{display:block;max-width:100%}
 
           <div class="reviewOptions">
             ${
-              item.color
-                ? `Color: ${escapeHtml(item.color)}<br>`
+              visibleColor(item)
+                ? `Color: ${escapeHtml(visibleColor(item))}<br>`
                 : ""
             }
             ${

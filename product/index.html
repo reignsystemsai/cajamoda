@@ -1073,6 +1073,7 @@ svg{
   font:600 10px/1.2 Inter,system-ui,sans-serif;
   text-align:left;
 }
+.productRatingSummary[hidden]{display:none}
 
 @media(hover:hover){
 
@@ -2358,7 +2359,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
 
     </button>
 
-    <button id="productRatingSummary" class="productRatingSummary" type="button" aria-label="Abrir reseñas">
+    <button id="productRatingSummary" class="productRatingSummary" type="button" aria-label="Abrir reseñas" hidden>
       ☆ Sin reseñas →
     </button>
 
@@ -5502,12 +5503,30 @@ price:
       return;
     }
     const currentCart = readCart();
+    const selectedVariant = state.product?.variants?.find(variant =>
+      normalizeChoice(variant.size)===normalizeChoice(state.selectedSize) &&
+      (!variant.color || normalizeChoice(variant.color)===normalizeChoice(state.selectedColor))
+    ) || null;
+    const selectedKey = cartLineKey({
+      productId:state.product?.id,
+      variantId:selectedVariant?.id || null,
+      size:state.selectedSize,
+      color:state.selectedColor
+    });
     const existingLine = currentCart.items.find(item =>
-      String(item.productId)===String(state.product?.id) &&
-      normalizeChoice(item.size)===normalizeChoice(state.selectedSize) &&
-      normalizeChoice(item.color)===normalizeChoice(state.selectedColor)
+      cartLineKey(item)===selectedKey || (
+        String(item.productId)===String(state.product?.id) &&
+        normalizeChoice(item.size)===normalizeChoice(state.selectedSize) &&
+        normalizeChoice(item.color)===normalizeChoice(state.selectedColor)
+      )
     );
-    const cart = existingLine ? currentCart : syncSelectionToBag();
+    let cart = currentCart;
+    if(!existingLine){
+      const selectedQuantity = state.selectedQuantity;
+      state.selectedQuantity = 1;
+      cart = syncSelectionToBag();
+      state.selectedQuantity = selectedQuantity;
+    }
     if(!cart){return}
     saveJson("cajamoda-checkout-cart",cart);
     location.href = CONFIG.checkoutPage;

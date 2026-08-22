@@ -3117,6 +3117,10 @@ svg{
 
     selectedColor:"",
 
+    mediaOrder:[],
+
+    mediaProductId:null,
+
     favorites:
       new Set(
         Array.isArray(
@@ -3366,144 +3370,41 @@ svg{
       return null;
     }
 
-    const explicit =
-      normalizeText(
-        [
-          product.category,
-          product.vibeId,
-          product.vibe,
-          product.productType,
-          product.type
-        ]
-          .filter(Boolean)
-          .join(" ")
-      );
+    const exactRoutes = {
+      late:"late",
+      "noches largas":"late",
+      "long nights":"late",
+      chill:"chill",
+      "dias tranquilos":"chill",
+      "quiet days":"chill",
+      quick:"quick",
+      "rapido y facil":"quick",
+      "quick and easy":"quick",
+      sun:"sun",
+      "bano de sol":"sun",
+      sunbathing:"sun"
+    };
 
-    if(
-      explicit === "late" ||
-      explicit.includes(
-        "noches largas"
-      ) ||
-      explicit.includes(
-        "long nights"
-      )
+    const explicitValues = [
+      product.category,
+      product.vibeId,
+      product.vibe
+    ]
+      .filter(Boolean)
+      .map(normalizeText);
+
+    for(
+      const value
+      of explicitValues
     ){
-      return "late";
+      if(
+        exactRoutes[value]
+      ){
+        return exactRoutes[value];
+      }
     }
 
-    if(
-      explicit === "chill" ||
-      explicit.includes(
-        "dias tranquilos"
-      ) ||
-      explicit.includes(
-        "quiet days"
-      )
-    ){
-      return "chill";
-    }
-
-    if(
-      explicit === "quick" ||
-      explicit.includes(
-        "rapido y facil"
-      ) ||
-      explicit.includes(
-        "quick and easy"
-      )
-    ){
-      return "quick";
-    }
-
-    if(
-      explicit === "sun" ||
-      explicit.includes(
-        "bano de sol"
-      ) ||
-      explicit.includes(
-        "sunbathing"
-      )
-    ){
-      return "sun";
-    }
-
-    const searchable =
-      normalizeText(
-        [
-          product.name,
-          product.description,
-          product.productType,
-          product.type,
-          product.collectionName
-        ]
-          .filter(Boolean)
-          .join(" ")
-      );
-
-    if(
-      searchable.includes(
-        "vestido"
-      ) ||
-      searchable.includes(
-        "dress"
-      ) ||
-      searchable.includes(
-        "noche"
-      )
-    ){
-      return "late";
-    }
-
-    if(
-      searchable.includes(
-        "top"
-      ) ||
-      searchable.includes(
-        "blusa"
-      ) ||
-      searchable.includes(
-        "camisa"
-      ) ||
-      searchable.includes(
-        "casual"
-      )
-    ){
-      return "chill";
-    }
-
-    if(
-      searchable.includes(
-        "conjunto"
-      ) ||
-      searchable.includes(
-        "set"
-      )
-    ){
-      return "quick";
-    }
-
-    if(
-      searchable.includes(
-        "bikini"
-      ) ||
-      searchable.includes(
-        "swim"
-      ) ||
-      searchable.includes(
-        "playa"
-      ) ||
-      searchable.includes(
-        "enterizo"
-      )
-    ){
-      return "sun";
-    }
-
-    return (
-      product.category ||
-      product.vibeId ||
-      null
-    );
+    return null;
   }
 
   /* ============================================================
@@ -3890,10 +3791,21 @@ svg{
       return;
     }
 
+    if(
+      state.mediaProductId !==
+      String(product.id)
+    ){
+      state.mediaProductId =
+        String(product.id);
+
+      state.mediaOrder =
+        getMedia(
+          product
+        );
+    }
+
     const media =
-      getMedia(
-        product
-      );
+      state.mediaOrder;
 
     state.imageIndex =
       Math.min(
@@ -4036,9 +3948,11 @@ svg{
   function renderThumbnails(){
 
     const media =
-      getMedia(
-        state.product
-      );
+      state.mediaOrder.length
+        ?state.mediaOrder
+        :getMedia(
+          state.product
+        );
 
     const five =
       media.slice(
@@ -4152,9 +4066,11 @@ svg{
   ){
 
     const media =
-      getMedia(
-        state.product
-      );
+      state.mediaOrder.length
+        ?state.mediaOrder
+        :getMedia(
+          state.product
+        );
 
     if(
       !media[index]
@@ -4170,10 +4086,30 @@ svg{
 
     nextImage.onload =
       () => {
-        state.imageIndex = index;
-        image.src = media[index];
+
+        const previousMain =
+          media[0];
+
+        media[0] =
+          media[index];
+
+        media[index] =
+          previousMain;
+
+        state.mediaOrder =
+          media;
+
+        state.imageIndex =
+          0;
+
+        image.src =
+          media[0];
+
         renderThumbnails();
-        image.classList.remove("changing");
+
+        image.classList.remove(
+          "changing"
+        );
       };
 
     nextImage.onerror =
@@ -6069,7 +6005,7 @@ function closeWishList(){
       () => {
 
         location.href =
-          "/?perfil=1";
+          "/#perfil";
       };
 
   /* ============================================================

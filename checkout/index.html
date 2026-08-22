@@ -436,6 +436,7 @@ img{display:block;max-width:100%}
 .cartSizeChoices{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .cartSizeChoice{min-width:29px;height:29px;padding:0 8px;border:1px solid rgba(0,0,0,.10);border-radius:999px;background:rgba(255,255,255,.48);font-size:9px}
 .cartSizeChoice.selected{background:#111;color:#fff;border-color:#111}
+.cartSizeChoice:disabled{opacity:.28;cursor:not-allowed;text-decoration:line-through}
 .cartImageLink,
 .reviewImageLink{
   display:block;
@@ -1603,8 +1604,11 @@ img{display:block;max-width:100%}
   function sizeChoices(item){
     const values=optionValues(item,"Size");
     if(!values.length){return ""}
+    const canonical=["S","M","L","XL"];
+    const alias=value=>({small:"S",pequeno:"S",pequeño:"S",medium:"M",mediano:"M",large:"L",grande:"L","extra large":"XL",extra_grande:"XL"}[normalizeChoice(value)]||String(value).toUpperCase());
+    const available=new Set(values.map(alias));
     return `<div class="cartSizeChoices" aria-label="Talla">
-      ${values.map(value=>`<button class="cartSizeChoice ${normalizeChoice(value)===normalizeChoice(item.size)?"selected":""}" type="button" data-cart-size="${escapeHtml(value)}" data-item-id="${escapeHtml(item.id)}">${escapeHtml(value)}</button>`).join("")}
+      ${canonical.map(value=>`<button class="cartSizeChoice ${alias(item.size)===value?"selected":""}" type="button" data-cart-size="${escapeHtml(value)}" data-item-id="${escapeHtml(item.id)}" ${available.has(value)?"":"disabled aria-disabled=\"true\""}>${value}</button>`).join("")}
     </div>`;
   }
 

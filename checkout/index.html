@@ -387,6 +387,12 @@ img{display:block;max-width:100%}
   -webkit-line-clamp:2;
   -webkit-box-orient:vertical
 }
+.cartDescription{margin-top:5px;color:#333;font-size:8px;line-height:1.4}
+.cartRating{margin-top:7px;color:#666;font-size:8px;font-weight:650}
+.cartTopActions{display:flex;align-items:center;gap:4px}
+.cartHeart{width:30px;height:30px;display:grid;place-items:center;border-radius:50%;color:#111}
+.cartHeart svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5}
+.cartHeart.active svg{fill:#d9344d;stroke:#d9344d}
 .removeButton{
   flex:0 0 auto;
   width:30px;
@@ -405,7 +411,6 @@ img{display:block;max-width:100%}
   height:16px;
   stroke-width:1.35
 }
-.cartRating{margin-top:3px;font-size:8px;font-weight:650;color:#111;cursor:pointer}.cartRating.unrated{color:#777}
 .cartOptions{
   margin-top:12px;
   color:#777;
@@ -428,6 +433,9 @@ img{display:block;max-width:100%}
   color:#333;
   font-size:9px
 }
+.cartSizeChoices{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.cartSizeChoice{min-width:29px;height:29px;padding:0 8px;border:1px solid rgba(0,0,0,.10);border-radius:999px;background:rgba(255,255,255,.48);font-size:9px}
+.cartSizeChoice.selected{background:#111;color:#fff;border-color:#111}
 .cartImageLink,
 .reviewImageLink{
   display:block;
@@ -1540,18 +1548,35 @@ img{display:block;max-width:100%}
   function optionSelect(item, name, label, current) {
     const values = optionValues(item, name);
     if (!values.length) return "";
-    if (values.length === 1) {
-      return `<span class="cartOptionFixed">${escapeHtml(label)}: ${escapeHtml(values[0])}</span>`;
-    }
 
     return `<select class="cartOptionSelect" data-cart-option="${name.toLowerCase()}" data-item-id="${escapeHtml(item.id)}" aria-label="${escapeHtml(label)}">
       ${values.map(value => `<option value="${escapeHtml(value)}" ${normalizeChoice(value) === normalizeChoice(current) ? "selected" : ""}>${escapeHtml(label)}: ${escapeHtml(value)}</option>`).join("")}
     </select>`;
   }
 
-  function visibleColor(item) {
-    const colors = optionValues(item, "Color");
-    return colors.length ? (item.color || colors[0]) : "";
+  function productDescription(item){
+    const product=catalogProduct(item.productId);
+    return String(item.description || product?.description || "").trim();
+  }
+
+  function productRatingLabel(item){
+    const product=catalogProduct(item.productId);
+    const rating=Number(product?.reviewSummary?.averageRating || product?.rating || 0);
+    const count=Number(product?.reviewSummary?.reviewCount || product?.reviewCount || 0);
+    return count>0 ? `★★★★★ ${rating.toFixed(1)} · ${count} reseñas` : "☆ Sin reseñas";
+  }
+
+  function sizeChoices(item){
+    const values=optionValues(item,"Size");
+    if(!values.length){return ""}
+    return `<div class="cartSizeChoices" aria-label="Talla">
+      ${values.map(value=>`<button class="cartSizeChoice ${normalizeChoice(value)===normalizeChoice(item.size)?"selected":""}" type="button" data-cart-size="${escapeHtml(value)}" data-item-id="${escapeHtml(item.id)}">${escapeHtml(value)}</button>`).join("")}
+    </div>`;
+  }
+
+  function isFavorite(productId){
+    const saved=readJson("cajamoda-favorites",[]);
+    return Array.isArray(saved)&&saved.map(String).includes(String(productId));
   }
 
   function productUrl(item) {
@@ -1587,14 +1612,6 @@ img{display:block;max-width:100%}
       </div>
       </a>
     `;
-  }
-
-  function productRatingMarkup(item){
-    const product = catalogProduct(item.productId);
-    const summary = product?.reviewSummary || { average:0, count:0 };
-    return summary.count
-      ? `<button class="cartRating" type="button" data-review-product="${escapeHtml(item.productId)}">★★★★★ ${Number(summary.average||0).toFixed(1)} (${summary.count})</button>`
-      : `<button class="cartRating unrated" type="button" data-review-product="${escapeHtml(item.productId)}">☆ Sin reseñas</button>`;
   }
 
   function renderCart() {
@@ -1679,12 +1696,16 @@ img{display:block;max-width:100%}
 
         <div class="cartInfo">
           <div class="cartTop">
-            <div class="cartName">
-              ${escapeHtml(item.name)}
+            <div>
+              <div class="cartName">${escapeHtml(item.name)}</div>
+              ${productDescription(item)?`<div class="cartDescription">${escapeHtml(productDescription(item))}</div>`:""}
+              <div class="cartRating">${productRatingLabel(item)}</div>
             </div>
 
-            ${productRatingMarkup(item)}
-
+            <div class="cartTopActions">
+            <button class="cartHeart ${isFavorite(item.productId)?"active":""}" type="button" data-cart-favorite="${escapeHtml(item.productId)}" aria-label="Wishlist">
+              <svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.7-7.5 1.1-1.1a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+            </button>
             <button
               class="removeButton"
               type="button"
@@ -1699,12 +1720,13 @@ img{display:block;max-width:100%}
                 <path d="M6 6l12 12M18 6 6 18"/>
               </svg>
             </button>
+            </div>
           </div>
 
           <div class="cartOptions">
             ${
-              visibleColor(item)
-                ? `Color: ${escapeHtml(visibleColor(item))}<br>`
+              item.color
+                ? `Color: ${escapeHtml(item.color)}<br>`
                 : ""
             }
             ${
@@ -1716,7 +1738,7 @@ img{display:block;max-width:100%}
 
           <div class="cartOptionControls">
             ${optionSelect(item, "Color", "Color", item.color)}
-            ${optionSelect(item, "Size", "Talla", item.size)}
+            ${sizeChoices(item)}
           </div>
 
           <div class="cartBottom">
@@ -1761,12 +1783,10 @@ img{display:block;max-width:100%}
             ${escapeHtml(item.name)}
           </div>
 
-          ${productRatingMarkup(item)}
-
           <div class="reviewOptions">
             ${
-              visibleColor(item)
-                ? `Color: ${escapeHtml(visibleColor(item))}<br>`
+              item.color
+                ? `Color: ${escapeHtml(item.color)}<br>`
                 : ""
             }
             ${
@@ -1819,12 +1839,6 @@ img{display:block;max-width:100%}
         };
       });
 
-    document.querySelectorAll("[data-review-product]").forEach(button => {
-      button.onclick = () => {
-        location.href = `/product/?id=${encodeURIComponent(button.dataset.reviewProduct)}#reviews`;
-      };
-    });
-
     document
       .querySelectorAll("[data-cart-option]")
       .forEach(select => {
@@ -1832,6 +1846,21 @@ img{display:block;max-width:100%}
           changeOption(select.dataset.itemId, select.dataset.cartOption, select.value);
         };
       });
+
+    document.querySelectorAll("[data-cart-size]").forEach(button=>{
+      button.onclick=()=>changeOption(button.dataset.itemId,"size",button.dataset.cartSize);
+    });
+
+    document.querySelectorAll("[data-cart-favorite]").forEach(button=>{
+      button.onclick=()=>{
+        const id=String(button.dataset.cartFavorite);
+        const saved=readJson("cajamoda-favorites",[]);
+        const favorites=new Set(Array.isArray(saved)?saved.map(String):[]);
+        favorites.has(id)?favorites.delete(id):favorites.add(id);
+        saveJson("cajamoda-favorites",[...favorites]);
+        button.classList.toggle("active",favorites.has(id));
+      };
+    });
 
     document
       .querySelectorAll(

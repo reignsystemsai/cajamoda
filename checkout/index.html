@@ -1547,11 +1547,21 @@ img{display:block;max-width:100%}
 
   function optionSelect(item, name, label, current) {
     const values = optionValues(item, name);
-    if (!values.length) return "";
+    if (!values.length || values.length === 1) return "";
 
     return `<select class="cartOptionSelect" data-cart-option="${name.toLowerCase()}" data-item-id="${escapeHtml(item.id)}" aria-label="${escapeHtml(label)}">
+      ${!current?`<option value="" selected disabled>${escapeHtml(label)}: Selecciona</option>`:""}
       ${values.map(value => `<option value="${escapeHtml(value)}" ${normalizeChoice(value) === normalizeChoice(current) ? "selected" : ""}>${escapeHtml(label)}: ${escapeHtml(value)}</option>`).join("")}
     </select>`;
+  }
+
+  function visibleColor(item){
+    const colors=optionValues(item,"Color");
+    if(!colors.length){return ""}
+    if(colors.length===1){return colors[0]}
+    return colors.some(color=>normalizeChoice(color)===normalizeChoice(item.color))
+      ?item.color
+      :"";
   }
 
   function productDescription(item){
@@ -1725,8 +1735,8 @@ img{display:block;max-width:100%}
 
           <div class="cartOptions">
             ${
-              item.color
-                ? `Color: ${escapeHtml(item.color)}<br>`
+              visibleColor(item)
+                ? `Color: ${escapeHtml(visibleColor(item))}<br>`
                 : ""
             }
             ${

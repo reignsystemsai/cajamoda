@@ -5170,18 +5170,18 @@ price:
 
     if(colors.length === 1){
       state.selectedColor = colors[0];
-      section.hidden = true;
+      section.hidden = false;
       row.innerHTML = "";
       $("selectedColorLabel").textContent = colors[0];
       return;
     }
 
     if(!colors.some(color => normalizeChoice(color) === normalizeChoice(state.selectedColor))){
-      state.selectedColor = colors[0];
+      state.selectedColor = "";
     }
 
     section.hidden = false;
-    $("selectedColorLabel").textContent = state.selectedColor;
+    $("selectedColorLabel").textContent = state.selectedColor || "Selecciona";
     row.innerHTML = colors.map(color => `
       <button
         class="colorButton ${normalizeChoice(color) === normalizeChoice(state.selectedColor) ? "active" : ""}"
@@ -5491,6 +5491,11 @@ price:
           return;
         }
 
+        if(productColorValues().length > 1 && !state.selectedColor){
+          showToast("Selecciona un color.");
+          return;
+        }
+
         syncSelectionToBag();
 
         animateBag();
@@ -5516,6 +5521,10 @@ price:
   $("buyNowButton")
     .onclick =
       () => {
+        if(state.selectedSize && productColorValues().length > 1 && !state.selectedColor){
+          showToast("Selecciona un color.");
+          return;
+        }
         const cart = state.selectedSize
           ? syncSelectionToBag() || readCart()
           : readCart();

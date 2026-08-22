@@ -104,6 +104,15 @@
 }
 .productReviewSummary.unrated{color:#666}
 
+.reviewsBlock{margin:12px 0 14px;padding:12px;border-radius:16px;background:rgba(255,255,255,.48);border:1px solid rgba(0,0,0,.07)}
+.reviewsHead{display:flex;justify-content:space-between;gap:10px;align-items:center}.reviewsStars{font-size:10px;font-weight:750}
+.reviewsActions{display:flex;gap:12px;margin-top:9px}.reviewAction{font-size:8px;font-weight:700;text-decoration:underline}
+.reviewList{display:none;margin-top:10px}.reviewList.open{display:block}.reviewItem{padding:9px 0;border-top:1px solid rgba(0,0,0,.07)}
+.reviewItemTitle{font-size:8px;font-weight:750}.reviewItemBody{margin-top:3px;color:#555;font-size:7.5px;line-height:1.45}
+.reviewForm{display:none;margin-top:10px;gap:7px}.reviewForm.open{display:grid}
+.reviewForm input,.reviewForm textarea,.reviewForm select{width:100%;padding:9px;border:1px solid rgba(0,0,0,.1);border-radius:10px;background:rgba(255,255,255,.7);font-size:8px}
+.reviewForm textarea{min-height:70px;resize:vertical}.reviewSubmit{padding:10px;border-radius:10px;background:#111;color:#fff;font-size:8px;font-weight:750}
+
 /* ============================================================
    RESET
    ============================================================ */
@@ -2468,6 +2477,18 @@ svg{
 
       </section>
 
+      <section id="productReviews" class="reviewsBlock">
+        <div class="reviewsHead"><div><div class="sectionTitle">Reseñas</div><div id="reviewsSummary" class="reviewsStars">☆ Sin reseñas</div></div></div>
+        <div class="reviewsActions"><button id="readReviews" class="reviewAction" type="button">Leer reseñas</button><button id="writeReview" class="reviewAction" type="button">Escribir reseña</button></div>
+        <div id="reviewsList" class="reviewList"></div>
+        <form id="reviewForm" class="reviewForm">
+          <select id="reviewRating" required><option value="">Selecciona estrellas</option><option value="5">5 estrellas</option><option value="4">4 estrellas</option><option value="3">3 estrellas</option><option value="2">2 estrellas</option><option value="1">1 estrella</option></select>
+          <input id="reviewName" required autocomplete="name" placeholder="Tu nombre"><input id="reviewEmail" required type="email" autocomplete="email" placeholder="Tu correo">
+          <input id="reviewTitle" maxlength="160" placeholder="Título (opcional)"><textarea id="reviewBody" required maxlength="2000" placeholder="Escribe tu reseña"></textarea>
+          <button class="reviewSubmit" type="submit">Enviar reseña</button>
+        </form>
+      </section>
+
       <!-- COLOR + QUANTITY -->
 
       <div class="choiceTopRow">
@@ -3884,6 +3905,8 @@ svg{
           "Producto seleccionado de CajaModa. Elige tu color y tu talla para agregarlo a tu bolsa."
         );
 
+    renderProductReviews(product);
+
     const reviewSummary = product.reviewSummary || { average:0, count:0 };
     const reviewSummaryButton = $("productReviewSummary");
     reviewSummaryButton.classList.toggle("unrated", !reviewSummary.count);
@@ -4387,6 +4410,17 @@ svg{
   /* ============================================================
      DETAILS
      ============================================================ */
+
+  function reviewStars(rating){const value=Math.max(0,Math.min(5,Math.round(Number(rating||0))));return "★".repeat(value)+"☆".repeat(5-value)}
+  function renderProductReviews(product){
+    const reviews=Array.isArray(product?.reviews)?product.reviews:[];const summary=product?.reviewSummary||{average:0,count:reviews.length};
+    $("reviewsSummary").textContent=summary.count?`${reviewStars(summary.average)} ${Number(summary.average||0).toFixed(1)} · ${summary.count} reseñas`:"☆ Sin reseñas";
+    $("readReviews").disabled=!reviews.length;
+    $("reviewsList").innerHTML=reviews.map(review=>`<article class="reviewItem"><div class="reviewItemTitle">${reviewStars(review.rating)} · ${escapeHtml(review.author||"Cliente CajaModa")}</div><div class="reviewItemBody">${escapeHtml(review.title||"")}${review.title&&review.body?"<br>":""}${escapeHtml(review.body||"")}</div></article>`).join("");
+  }
+  $("readReviews").onclick=()=>{$("reviewsList").classList.toggle("open");$("reviewForm").classList.remove("open")};
+  $("writeReview").onclick=()=>{$("reviewForm").classList.toggle("open");$("reviewsList").classList.remove("open")};
+  $("reviewForm").onsubmit=async event=>{event.preventDefault();if(!state.product)return;const button=event.currentTarget.querySelector("button[type=submit]");button.disabled=true;try{const response=await fetch("/api/reviews",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({productId:state.product.id,rating:Number($("reviewRating").value),name:$("reviewName").value,email:$("reviewEmail").value,title:$("reviewTitle").value,body:$("reviewBody").value})});const payload=await response.json().catch(()=>({}));if(!response.ok)throw new Error(payload?.error||payload?.message||"No pudimos enviar tu reseña.");event.currentTarget.reset();event.currentTarget.classList.remove("open");showToast("Gracias. Tu reseña fue enviada a Wix para aprobación.")}catch(error){showToast(error?.message||"No pudimos enviar tu reseña.")}finally{button.disabled=false}};
 
   let detailsAutoCloseTimer = null;
 

@@ -1069,6 +1069,20 @@ svg{
     scale(.97);
 }
 
+.productRatingSummary{
+  position:absolute;
+  z-index:22;
+  left:19px;
+  bottom:calc(var(--nav-h) + 19px + var(--safe-bottom));
+  border:0;
+  padding:0;
+  background:transparent;
+  color:#111;
+  font:600 10px/1.2 Inter,system-ui,sans-serif;
+  letter-spacing:.01em;
+  text-align:left;
+}
+
 @media(hover:hover){
 
   .priceCapsule:hover{
@@ -2346,6 +2360,10 @@ svg{
         <path d="m9 5 7 7-7 7"/>
       </svg>
 
+    </button>
+
+    <button id="productRatingSummary" class="productRatingSummary" type="button" aria-label="Abrir reseñas">
+      ☆ Sin reseñas
     </button>
 
   </main>
@@ -3861,6 +3879,12 @@ svg{
           product.description,
           "Producto seleccionado de CajaModa. Elige tu color y tu talla para agregarlo a tu bolsa."
         );
+
+    const rating = Number(product?.reviewSummary?.averageRating || product?.rating || 0);
+    const reviewCount = Number(product?.reviewSummary?.reviewCount || product?.reviewCount || 0);
+    $("productRatingSummary").textContent = reviewCount > 0
+      ? `★★★★★ ${rating.toFixed(1)} · ${reviewCount} reseñas`
+      : "☆ Sin reseñas";
 
     /*
       Number always represents position inside

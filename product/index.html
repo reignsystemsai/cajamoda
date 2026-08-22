@@ -1766,6 +1766,18 @@ textarea.reviewField{min-height:76px;resize:vertical}
   color:#fff;
 }
 
+.buyNowDirectButton{
+  width:100%;
+  height:43px;
+  margin-top:7px;
+  border:1px solid rgba(0,0,0,.18);
+  border-radius:11px;
+  background:rgba(255,255,255,.54);
+  color:#111;
+  font-size:9px;
+  font-weight:750;
+}
+
 .purchaseMeta{
 
   display:flex;
@@ -2576,6 +2588,14 @@ textarea.reviewField{min-height:76px;resize:vertical}
           class="addBagButton"
         >
           Agregar a la bolsa
+        </button>
+
+        <button
+          id="buyNowDirectButton"
+          class="buyNowDirectButton"
+          type="button"
+        >
+          Comprar ahora
         </button>
 
         <div class="purchaseMeta">
@@ -5492,6 +5512,25 @@ price:
           $("addBagButton").disabled = false;
         },450);
       };
+
+  $("buyNowDirectButton").onclick = () => {
+    if(!state.selectedSize){
+      showToast("Selecciona una talla.");
+      return;
+    }
+    if(productColorValues().length > 1 && !state.selectedColor){
+      showToast("Selecciona un color.");
+      return;
+    }
+    if(Number(state.selectedQuantity||0) < 1){
+      showToast("Selecciona una cantidad.");
+      return;
+    }
+    const cart = syncSelectionToBag();
+    if(!cart){return}
+    saveJson("cajamoda-checkout-cart",cart);
+    location.href = CONFIG.checkoutPage;
+  };
 
   /* ============================================================
      FAVORITE

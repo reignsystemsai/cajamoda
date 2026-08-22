@@ -2544,6 +2544,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
           <button
             class="sizeButton"
             data-size="XS"
+            type="button"
           >
             XS
           </button>
@@ -2551,6 +2552,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
           <button
             class="sizeButton"
             data-size="S"
+            type="button"
           >
             S
           </button>
@@ -2558,6 +2560,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
           <button
             class="sizeButton"
             data-size="M"
+            type="button"
           >
             M
           </button>
@@ -2565,6 +2568,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
           <button
             class="sizeButton"
             data-size="L"
+            type="button"
           >
             L
           </button>
@@ -2572,6 +2576,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
           <button
             class="sizeButton"
             data-size="XL"
+            type="button"
           >
             XL
           </button>
@@ -5060,10 +5065,7 @@ price:
     }
 
     state.selectedSize=size;
-    const existing=findExistingAutoLine(state.product.id);
-    state.selectedQuantity=existing?.size===size
-      ?Math.max(1,Number(existing.quantity||1))
-      :0;
+    state.selectedQuantity=0;
     $("selectedSizeLabel").textContent=size;
     renderSizeState();
     renderQuantityState();
@@ -5078,7 +5080,10 @@ price:
       button => {
 
         button.onclick =
-          () => {
+          event => {
+
+            event.preventDefault();
+            event.stopPropagation();
 
             selectSize(
               button.dataset.size

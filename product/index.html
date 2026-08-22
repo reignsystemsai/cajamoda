@@ -1784,8 +1784,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
   margin-top:17px;
 }
 
-.addBagButton,
-.buyNowButton{
+.addBagButton{
 
   width:100%;
 
@@ -1803,17 +1802,6 @@ textarea.reviewField{min-height:76px;resize:vertical}
   background:#080808;
 
   color:#fff;
-}
-
-.buyNowButton{
-
-  margin-top:6px;
-
-  background:
-    rgba(255,255,255,.42);
-
-  border:
-    1px solid #111;
 }
 
 .purchaseMeta{
@@ -2626,13 +2614,6 @@ textarea.reviewField{min-height:76px;resize:vertical}
           class="addBagButton"
         >
           Agregar a la bolsa
-        </button>
-
-        <button
-          id="buyNowButton"
-          class="buyNowButton"
-        >
-          Comprar ahora
         </button>
 
         <div class="purchaseMeta">
@@ -5546,48 +5527,6 @@ price:
           addBagLocked = false;
           $("addBagButton").disabled = false;
         },450);
-      };
-
-  /* ============================================================
-     BUY NOW
-     ============================================================ */
-
-  $("buyNowButton")
-    .onclick =
-      () => {
-        if(state.selectedSize && Number(state.selectedQuantity||0) < 1){
-          showToast("Selecciona una cantidad.");
-          return;
-        }
-        if(state.selectedSize && productColorValues().length > 1 && !state.selectedColor){
-          showToast("Selecciona un color.");
-          return;
-        }
-        const cart = state.selectedSize
-          ? syncSelectionToBag() || readCart()
-          : readCart();
-
-        saveJson(
-          "cajamoda-checkout-cart",
-          cart
-        );
-
-        track(
-          "BUY_NOW",
-          {
-            cartCount:
-              cart.count,
-
-            size:
-              state.selectedSize,
-
-            color:
-              state.selectedColor
-          }
-        );
-
-        location.href =
-          CONFIG.checkoutPage;
       };
 
   /* ============================================================

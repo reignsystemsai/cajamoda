@@ -1570,6 +1570,7 @@ svg{
 .reviewActions{display:flex;justify-content:center;gap:28px;margin-top:16px;padding-bottom:14px;border-bottom:1px solid rgba(0,0,0,.12)}
 .reviewAction{border:0;border-bottom:1px solid #080808;padding:2px 0;background:transparent;color:#080808;font:600 9px/1.2 Inter,system-ui,sans-serif}
 .reviewList{display:grid;gap:8px;margin-top:10px}
+.reviewList[hidden],.reviewClose[hidden],.reviewAction[hidden]{display:none!important}
 .reviewEntry{padding:10px;border-top:1px solid rgba(0,0,0,.07);color:#111}
 .reviewEntryTop{display:flex;justify-content:space-between;gap:10px;font:700 8px/1.3 Inter,system-ui,sans-serif;color:#111}
 .reviewEntryText{margin-top:5px;font:400 8px/1.45 Inter,system-ui,sans-serif;color:#111}
@@ -2461,16 +2462,16 @@ textarea.reviewField{min-height:76px;resize:vertical}
 
       </section>
 
-      <section id="productReviews" class="productReviews" hidden role="dialog" aria-modal="false" aria-label="Leer y escribir reseñas">
+      <section id="productReviews" class="productReviews" role="region" aria-label="Reseñas de Wix">
         <div class="reviewSummaryLine">
-          <div id="reviewSummaryText" class="reviewSummaryText">☆ Sin reseñas</div>
-          <button id="reviewClose" class="reviewClose" type="button" aria-label="Cerrar reseñas">×</button>
+          <div id="reviewSummaryText" class="reviewSummaryText">☆☆☆☆☆ Sin reseñas</div>
+          <button id="reviewClose" class="reviewClose" type="button" aria-label="Cerrar reseñas" hidden>×</button>
         </div>
         <div class="reviewActions">
-          <button id="readReviewsButton" class="reviewAction" type="button">Leer reseñas</button>
-          <button id="writeReviewButton" class="reviewAction" type="button" disabled>Escribir reseña</button>
+          <button id="readReviewsButton" class="reviewAction" type="button" aria-expanded="false">Leer reseñas</button>
+          <button id="writeReviewButton" class="reviewAction" type="button" disabled hidden>Escribir reseña</button>
         </div>
-        <div id="productReviewList" class="reviewList"></div>
+        <div id="productReviewList" class="reviewList" hidden></div>
         <form id="reviewForm" class="reviewForm" hidden>
           <div class="reviewFormTitle">Deja tu reseña</div>
           <div id="reviewStars" class="reviewStars" aria-label="Calificación">
@@ -3889,7 +3890,10 @@ textarea.reviewField{min-height:76px;resize:vertical}
           "Producto seleccionado de CajaModa. Elige tu color y tu talla para agregarlo a tu bolsa."
         );
 
-    $("productReviews").hidden = true;
+    $("productReviews").hidden = false;
+    $("productReviewList").hidden = true;
+    $("readReviewsButton").textContent = "Leer reseñas";
+    $("readReviewsButton").setAttribute("aria-expanded","false");
     $("writeReviewButton").disabled = true;
     $("reviewSubmit").disabled = true;
 
@@ -4450,12 +4454,14 @@ textarea.reviewField{min-height:76px;resize:vertical}
       : [];
     const rating = Number(state.product?.reviewSummary?.averageRating || state.product?.rating || 0);
     const count = Number(state.product?.reviewSummary?.reviewCount || state.product?.reviewCount || reviews.length || 0);
+    const starCount = Math.max(0,Math.min(5,Math.round(rating)));
+    const stars = `${"★".repeat(starCount)}${"☆".repeat(5-starCount)}`;
     $("reviewSummaryText").textContent = count > 0
-      ? `★★★★★ ${rating.toFixed(1)} · ${count} reseñas`
-      : "☆ Sin reseñas";
+      ? `${stars} ${rating.toFixed(1)} · ${count} reseñas`
+      : "☆☆☆☆☆ Sin reseñas";
     $("productRatingSummary").textContent = count > 0
-      ? `★★★★★ ${rating.toFixed(1)} · ${count} reseñas →`
-      : "☆ Sin reseñas →";
+      ? `${stars} ${rating.toFixed(1)} · ${count} reseñas →`
+      : "☆☆☆☆☆ Sin reseñas →";
     $("productReviewList").innerHTML = reviews.length
       ? reviews.map(review => `
           <article class="reviewEntry">
@@ -4501,7 +4507,13 @@ textarea.reviewField{min-height:76px;resize:vertical}
       openDetails;
 
   $("productRatingSummary").onclick = openProductReviews;
-  $("readReviewsButton").onclick = openProductReviews;
+  $("readReviewsButton").onclick = () => {
+    cancelDetailsAutoClose();
+    const list = $("productReviewList");
+    list.hidden = !list.hidden;
+    $("readReviewsButton").textContent = list.hidden ? "Leer reseñas" : "Ocultar reseñas";
+    $("readReviewsButton").setAttribute("aria-expanded",String(!list.hidden));
+  };
   $("reviewClose").onclick = () => {
     $("productReviews").hidden = true;
     $("reviewForm").hidden = true;

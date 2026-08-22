@@ -1853,7 +1853,7 @@ function sendInit() {
 
       features: {
         reviewsEnabled:
-          false
+          true
       },
 
       supplyContext: {
@@ -1964,6 +1964,36 @@ async function loadRenderCategoryRoutes() {
     );
 
     return new Map();
+  }
+}
+
+async function loadReviewData(products) {
+  const ids = products.map(product => product.id).filter(Boolean);
+  if (!ids.length) return;
+
+  try {
+    const response = await fetch(
+      `/api/reviews?productIds=${encodeURIComponent(ids.join(","))}`,
+      { credentials: "same-origin" }
+    );
+    if (!response.ok) throw new Error("Reviews unavailable");
+    const payload = await response.json();
+
+    products.forEach(product => {
+      const reviews = payload?.reviews?.[product.id] || [];
+      const summary = payload?.summaries?.[product.id] || {};
+      product.reviews = reviews;
+      product.reviewSummary = {
+        count: Number(summary.count || 0),
+        average: Number(summary.average || 0)
+      };
+    });
+  } catch (error) {
+    console.warn("[CajaModa] Wix reviews warning:", error);
+    products.forEach(product => {
+      product.reviews = [];
+      product.reviewSummary = { count: 0, average: 0 };
+    });
   }
 }
 
@@ -2182,6 +2212,8 @@ async function loadCatalog() {
         product =>
           product.id
       );
+
+  await loadReviewData(catalog);
 
   console.log(
     `[CajaModa] Loaded ${catalog.length} Wix products`

@@ -2838,7 +2838,7 @@ svg{
         data-plus="contact"
       >
         <span>
-          Contáctanos
+          Ayúdame por email
         </span>
 
         <span>
@@ -6183,7 +6183,7 @@ function closeWishList(){
               );
 
               window.open(
-                `https://wa.me/?text=${encodeURIComponent(text)}`,
+                `https://wa.me/13055189384?text=${encodeURIComponent(text)}`,
                 "_blank",
                 "noopener,noreferrer"
               );
@@ -6207,9 +6207,8 @@ function closeWishList(){
                 }
               );
 
-              showToast(
-                "Abriendo contacto CajaModa…"
-              );
+              window.location.href =
+                `mailto:auyda@cajamoda.com?subject=${encodeURIComponent("Ayuda con " + safeText(state.product?.name,"un producto CajaModa"))}&body=${encodeURIComponent(location.href)}`;
 
               closePlus();
 

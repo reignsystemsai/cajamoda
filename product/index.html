@@ -113,6 +113,8 @@
 .reviewForm input,.reviewForm textarea,.reviewForm select{width:100%;padding:9px;border:1px solid rgba(0,0,0,.1);border-radius:10px;background:rgba(255,255,255,.7);font-size:8px}
 .reviewForm textarea{min-height:70px;resize:vertical}.reviewSubmit{padding:10px;border-radius:10px;background:#111;color:#fff;font-size:8px;font-weight:750}
 
+.productProfileOverlay{position:fixed;z-index:120;inset:0;display:none;place-items:end center;padding:16px 12px calc(var(--nav-h) + 18px + var(--safe-bottom));background:rgba(0,0,0,.2);backdrop-filter:blur(10px)}.productProfileOverlay.open{display:grid}.productProfileCard{width:min(100%,410px);padding:16px;border-radius:22px;background:rgba(255,255,255,.78);border:1px solid rgba(255,255,255,.8);box-shadow:0 20px 60px rgba(0,0,0,.15)}.productProfileHead{display:flex;justify-content:space-between;align-items:center}.productProfileCard input{width:100%;margin-top:8px;padding:11px;border:1px solid rgba(0,0,0,.1);border-radius:12px;background:rgba(255,255,255,.7);font-size:9px}.productProfileSave{width:100%;margin-top:9px;padding:11px;border-radius:12px;background:#111;color:#fff;font-size:9px;font-weight:750}
+
 /* ============================================================
    RESET
    ============================================================ */
@@ -2874,6 +2876,15 @@ svg{
 
   </section>
 
+</div>
+
+<div id="productProfileOverlay" class="productProfileOverlay">
+  <section class="productProfileCard" aria-label="Perfil">
+    <div class="productProfileHead"><strong>Tu perfil</strong><button id="closeProductProfile" type="button">×</button></div>
+    <input id="productProfileName" autocomplete="name" placeholder="Nombre">
+    <input id="productProfileEmail" type="email" autocomplete="email" placeholder="Correo">
+    <button id="saveProductProfile" class="productProfileSave" type="button">Guardar perfil</button>
+  </section>
 </div>
 
 <!-- ==========================================================
@@ -6056,13 +6067,25 @@ function closeWishList(){
         openWishList();
       };
 
-  $("navProfile")
-    .onclick =
-      () => {
-
-        location.href =
-          "/#perfil";
-      };
+  function openProductProfile(){
+    const profile=readJson("cajamoda-profile",{});
+    $("productProfileName").value=profile?.name||"";
+    $("productProfileEmail").value=profile?.email||"";
+    $("productProfileOverlay").classList.add("open");
+    document.body.classList.add("locked");
+  }
+  function closeProductProfile(){
+    $("productProfileOverlay").classList.remove("open");
+    document.body.classList.remove("locked");
+  }
+  $("navProfile").onclick=openProductProfile;
+  $("closeProductProfile").onclick=closeProductProfile;
+  $("productProfileOverlay").onclick=event=>{if(event.target===$("productProfileOverlay"))closeProductProfile()};
+  $("saveProductProfile").onclick=()=>{
+    saveJson("cajamoda-profile",{name:$("productProfileName").value.trim(),email:$("productProfileEmail").value.trim()});
+    closeProductProfile();
+    showToast("Perfil guardado.");
+  };
 
   /* ============================================================
      PLUS MENU

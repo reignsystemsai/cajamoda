@@ -2568,6 +2568,143 @@ async function handleTrackOrder(
 }
 
 /* ============================================================
+   PUBLIC WIX PRODUCT REVIEWS
+   ============================================================ */
+
+async function wixReviewsRequest(path, body) {
+  if (!WIX_API_KEY || !WIX_SITE_ID) {
+    throw new Error("Wix reviews are not configured.");
+  }
+
+  const response = await fetch(
+    `https://www.wixapis.com${path}`,
+    {
+      method: "POST",
+      headers: {
+        "Authorization": WIX_API_KEY,
+        "wix-site-id": WIX_SITE_ID,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body || {})
+    }
+  );
+
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(
+      payload?.message ||
+      payload?.details?.applicationError?.description ||
+      "Wix reviews request failed."
+    );
+  }
+
+  return payload;
+}
+
+function normalizeWixReview(review) {
+  const content = review?.content || {};
+  return {
+    id: safeText(review?._id || review?.id, 100),
+    productId: safeText(review?.entityId, 100),
+    rating: Math.max(0, Math.min(5, Number(content?.rating || review?.rating || 0))),
+    title: safeText(content?.title || "", 160),
+    body: safeText(content?.body || content?.description || "", 2000),
+    author: safeText(review?.author?.contactName || review?.author?.name || "Cliente CajaModa", 120),
+    createdDate: review?._createdDate || review?.createdDate || ""
+  };
+}
+
+async function handleGetReviews(request, response, url) {
+  const productIds = safeText(url.searchParams.get("productIds"), 4000)
+    .split(",")
+    .map(value => value.trim())
+    .filter(Boolean);
+
+  if (!productIds.length) {
+    sendJson(response, 200, { reviews: {}, summaries: {} });
+    return;
+  }
+
+  const reviews = {};
+  const summaries = {};
+
+  await Promise.all(productIds.map(async productId => {
+    try {
+      const payload = await wixReviewsRequest(
+        "/reviews/v1/reviews/query",
+        {
+          query: {
+            filter: {
+              entityId: productId,
+              "moderation.moderationStatus": "APPROVED"
+            },
+            paging: { limit: 100 }
+          }
+        }
+      );
+
+      const list = (payload?.reviews || [])
+        .map(normalizeWixReview)
+        .filter(review => review.rating > 0);
+
+      reviews[productId] = list;
+      summaries[productId] = {
+        count: list.length,
+        average: list.length
+          ? list.reduce((sum, review) => sum + review.rating, 0) / list.length
+          : 0
+      };
+    } catch (error) {
+      console.error("[Wix Reviews]", productId, error?.message || error);
+      reviews[productId] = [];
+      summaries[productId] = { count: 0, average: 0 };
+    }
+  }));
+
+  sendJson(response, 200, { reviews, summaries });
+}
+
+async function handleCreateReview(request, response) {
+  const body = await readBody(request);
+  const productId = safeText(body?.productId, 100);
+  const rating = Math.max(1, Math.min(5, Number(body?.rating || 0)));
+  const title = safeText(body?.title, 160);
+  const reviewBody = safeText(body?.body, 2000);
+  const authorName = safeText(body?.name, 120);
+  const email = safeText(body?.email, 250).toLowerCase();
+
+  if (!productId || !rating || !reviewBody || !authorName || !email) {
+    sendError(response, 400, "Completa nombre, correo, estrellas y reseña.");
+    return;
+  }
+
+  const payload = await wixReviewsRequest(
+    "/reviews/v1/reviews",
+    {
+      review: {
+        namespace: "stores",
+        entityId: productId,
+        content: {
+          rating,
+          title,
+          body: reviewBody
+        },
+        author: {
+          contactName: authorName,
+          email
+        }
+      }
+    }
+  );
+
+  sendJson(response, 201, {
+    ok: true,
+    review: normalizeWixReview(payload?.review || {})
+  });
+}
+
+/* ============================================================
    REAL WIX INVENTORY
    ============================================================ */
 
@@ -2918,6 +3055,26 @@ if (
 
   return;
 }
+/* ------------------------------------------------------
+   PUBLIC WIX REVIEWS
+   ------------------------------------------------------ */
+
+if (
+  request.method === "GET" &&
+  url.pathname === "/api/reviews"
+) {
+  await handleGetReviews(request, response, url);
+  return;
+}
+
+if (
+  request.method === "POST" &&
+  url.pathname === "/api/reviews"
+) {
+  await handleCreateReview(request, response);
+  return;
+}
+
 /* ------------------------------------------------------
    REAL INVENTORY
    ------------------------------------------------------ */

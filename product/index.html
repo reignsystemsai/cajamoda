@@ -1072,8 +1072,12 @@ svg{
   color:#111;
   font:600 10px/1.2 Inter,system-ui,sans-serif;
   text-align:left;
+  display:flex;
+  align-items:center;
+  gap:7px;
 }
 .productRatingSummary[hidden]{display:none}
+.productRatingSummary svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9}
 
 @media(hover:hover){
 
@@ -2359,8 +2363,11 @@ textarea.reviewField{min-height:76px;resize:vertical}
 
     </button>
 
-    <button id="productRatingSummary" class="productRatingSummary" type="button" aria-label="Abrir reseñas" hidden>
-      ☆ Sin reseñas →
+    <button id="productRatingSummary" class="productRatingSummary" type="button" aria-label="Abrir reseñas">
+      <span id="productRatingSummaryText">☆ Sin reseñas</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+        <path d="m9 5 7 7-7 7"/>
+      </svg>
     </button>
 
   </main>
@@ -4453,9 +4460,9 @@ textarea.reviewField{min-height:76px;resize:vertical}
     $("reviewSummaryText").textContent = count > 0
       ? `★★★★★ ${rating.toFixed(1)} · ${count} reseñas`
       : "☆ Sin reseñas";
-    $("productRatingSummary").textContent = count > 0
-      ? `★★★★★ ${rating.toFixed(1)} · ${count} reseñas →`
-      : "☆ Sin reseñas →";
+    $("productRatingSummaryText").textContent = count > 0
+      ? `★★★★★ ${rating.toFixed(1)} · ${count} reseñas`
+      : "☆ Sin reseñas";
     $("productReviewList").innerHTML = reviews.length
       ? reviews.map(review => `
           <article class="reviewEntry">

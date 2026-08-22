@@ -329,10 +329,10 @@ img{display:block;max-width:100%}
 }
 .cartItem{
   display:grid;
-  grid-template-columns:96px 1fr;
-  gap:14px;
-  min-height:150px;
-  padding:12px;
+  grid-template-columns:118px 1fr;
+  gap:18px;
+  min-height:194px;
+  padding:14px;
   border-radius:22px;
   background:linear-gradient(
     145deg,
@@ -347,8 +347,8 @@ img{display:block;max-width:100%}
   -webkit-backdrop-filter:blur(30px) saturate(155%)
 }
 .cartImage{
-  width:96px;
-  height:126px;
+  width:118px;
+  height:166px;
   overflow:hidden;
   border-radius:16px;
   background:#f2f2f2
@@ -356,7 +356,7 @@ img{display:block;max-width:100%}
 .cartImage img{
   width:100%;
   height:100%;
-  object-fit:contain;
+  object-fit:cover;
   object-position:center top
 }
 .cartImagePlaceholder{
@@ -390,8 +390,8 @@ img{display:block;max-width:100%}
 .cartDescription{margin-top:5px;color:#333;font-size:8px;line-height:1.4}
 .cartRating{margin-top:7px;color:#666;font-size:8px;font-weight:650}
 .cartTopActions{display:flex;align-items:center;gap:4px}
-.cartHeart{width:42px;height:42px;display:grid;place-items:center;border-radius:50%;color:#111;background:linear-gradient(145deg,rgba(255,255,255,.83),rgba(255,255,255,.36));border:1px solid rgba(255,255,255,.96);box-shadow:0 0 0 1px rgba(0,0,0,.026),inset 0 1px 0 #fff,0 8px 24px rgba(0,0,0,.055);backdrop-filter:blur(25px) saturate(165%);-webkit-backdrop-filter:blur(25px) saturate(165%)}
-.cartHeart svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5}
+.cartHeart{width:42px;height:42px;padding:0;display:grid;place-items:center;border-radius:50%;color:#111;background:linear-gradient(145deg,rgba(255,255,255,.83),rgba(255,255,255,.36));border:1px solid rgba(255,255,255,.96);box-shadow:0 0 0 1px rgba(0,0,0,.026),inset 0 1px 0 #fff,0 8px 24px rgba(0,0,0,.055);backdrop-filter:blur(25px) saturate(165%);-webkit-backdrop-filter:blur(25px) saturate(165%)}
+.cartHeart svg{display:block;width:20px;height:20px;margin:0;fill:none;stroke:currentColor;stroke-width:1.5}
 .cartHeart.active svg{fill:#d9344d;stroke:#d9344d}
 .cartHeart.active{color:#d9344d;animation:cajaHeartBeat 2.4s ease-in-out infinite;transform-origin:center}
 @keyframes cajaHeartBeat{0%,42%,100%{transform:scale(1)}7%{transform:scale(1.13)}14%{transform:scale(1)}21%{transform:scale(1.09)}29%{transform:scale(1)}}
@@ -421,7 +421,7 @@ img{display:block;max-width:100%}
   line-height:1.65
 }
 .cartOptionControls{
-  margin-top:10px;
+  margin-top:4px;
   display:flex;
   flex-wrap:wrap;
   gap:7px
@@ -436,10 +436,11 @@ img{display:block;max-width:100%}
   color:#333;
   font-size:9px
 }
-.cartSizeChoices{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.cartSizeChoice{min-width:29px;height:29px;padding:0 8px;border:1px solid rgba(0,0,0,.10);border-radius:999px;background:rgba(255,255,255,.48);font-size:9px}
+.cartSizeLabel{margin-top:9px;color:#333;font-size:9px;line-height:1}
+.cartSizeChoices{display:flex;align-items:center;gap:5px;flex-wrap:nowrap}
+.cartSizeChoice{min-width:27px;height:27px;padding:0 6px;border:0;border-radius:999px;background:transparent;font-size:9px}
 .cartSizeChoice.selected{background:#111;color:#fff;border-color:#111}
-.cartSizeChoice:disabled{opacity:.28;cursor:not-allowed;text-decoration:line-through}
+.cartSizeChoice:disabled{opacity:.32;cursor:not-allowed}
 .cartColorChoices{display:flex;align-items:center;gap:7px}.cartColorChoice{width:25px;height:25px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.18);background:var(--swatch,#ddd)}.cartColorChoice.selected{box-shadow:0 0 0 2px #111}
 .cartImageLink,
 .reviewImageLink{
@@ -448,21 +449,22 @@ img{display:block;max-width:100%}
   overflow:hidden
 }
 .cartBottom{
-  margin-top:auto;
+  margin-top:10px;
   display:flex;
   justify-content:space-between;
-  align-items:flex-end;
-  gap:10px
+  align-items:center;
+  gap:7px
 }
 .cartPrice{
-  font-size:14px;
-  font-weight:750
+  margin-top:10px;
+  font-size:17px;
+  font-weight:800
 }
 
 .quantityControl{
-  height:38px;
+  height:34px;
   display:grid;
-  grid-template-columns:38px 34px 38px;
+  grid-template-columns:30px 30px 30px;
   align-items:center;
   border:1px solid rgba(0,0,0,.11);
   border-radius:999px;
@@ -471,8 +473,8 @@ img{display:block;max-width:100%}
   overflow:hidden
 }
 .quantityButton{
-  width:38px;
-  height:38px;
+  width:30px;
+  height:34px;
   display:grid;
   place-items:center;
   font-size:17px;
@@ -919,10 +921,10 @@ img{display:block;max-width:100%}
   }
 
   .checkoutIntro h1{font-size:46px}
-  .cartItem{grid-template-columns:88px 1fr;gap:11px;min-height:146px;padding:10px}
+  .cartItem{grid-template-columns:102px 1fr;gap:12px;min-height:178px;padding:12px}
   .cartImage{
-    width:88px;
-    height:122px
+    width:102px;
+    height:150px
   }
   .cartBottom{
     align-items:flex-end;
@@ -1633,12 +1635,11 @@ img{display:block;max-width:100%}
 
   function sizeChoices(item){
     const values=optionValues(item,"Size");
-    if(!values.length){return ""}
     const canonical=["S","M","L","XL"];
     const alias=value=>({small:"S",pequeno:"S",pequeño:"S",medium:"M",mediano:"M",large:"L",grande:"L","extra large":"XL",extra_grande:"XL"}[normalizeChoice(value)]||String(value).toUpperCase());
     const available=new Set(values.map(alias));
     return `<div class="cartSizeChoices" aria-label="Talla">
-      ${canonical.map(value=>`<button class="cartSizeChoice ${alias(item.size)===value?"selected":""}" type="button" data-cart-size="${escapeHtml(value)}" data-item-id="${escapeHtml(item.id)}" ${available.has(value)?"":"disabled aria-disabled=\"true\""}>${value}</button>`).join("")}
+      ${canonical.map(value=>`<button class="cartSizeChoice ${alias(item.size)===value?"selected":""}" type="button" data-cart-size="${escapeHtml(value)}" data-item-id="${escapeHtml(item.id)}" ${values.length&&!available.has(value)?"disabled aria-disabled=\"true\"":""}>${value}</button>`).join("")}
     </div>`;
   }
 
@@ -1793,14 +1794,13 @@ img{display:block;max-width:100%}
 
           ${optionValues(item,"Color").length===1?`<div class="cartOptions">Color: ${escapeHtml(visibleColor(item))}</div>`:""}
 
-          <div class="cartOptionControls">
-            ${colorChoices(item)}
-            ${sizeChoices(item)}
-          </div>
+          <div class="cartPrice">${money(item.unitPrice * item.quantity)} COP</div>
+          <div class="cartSizeLabel">Talla</div>
 
           <div class="cartBottom">
-            <div class="cartPrice">
-              ${money(item.unitPrice * item.quantity)}
+            <div class="cartOptionControls">
+              ${colorChoices(item)}
+              ${sizeChoices(item)}
             </div>
 
             <div class="quantityControl">
@@ -1855,13 +1855,14 @@ img{display:block;max-width:100%}
 
           ${optionValues(item,"Color").length===1?`<div class="cartOptions">Color: ${escapeHtml(visibleColor(item))}</div>`:""}
 
-          <div class="cartOptionControls">
-            ${colorChoices(item)}
-            ${sizeChoices(item)}
-          </div>
+          <div class="cartPrice">${money(item.unitPrice * item.quantity)} COP</div>
+          <div class="cartSizeLabel">Talla</div>
 
           <div class="cartBottom">
-            <div class="cartPrice">${money(item.unitPrice * item.quantity)}</div>
+            <div class="cartOptionControls">
+              ${colorChoices(item)}
+              ${sizeChoices(item)}
+            </div>
             <div class="quantityControl">
               <button class="quantityButton" type="button" data-minus="${escapeHtml(item.id)}" aria-label="Reducir cantidad">−</button>
               <span class="quantityValue">${item.quantity}</span>

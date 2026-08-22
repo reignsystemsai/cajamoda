@@ -5226,7 +5226,15 @@ price:
       }else{
         line.quantity=next;
       }
-      saveCart(cart);
+      const saved=saveCart(cart);
+      sendBridge("CART_QUANTITY_CHANGED",{
+        productId:state.product?.id,
+        size:state.selectedSize,
+        color:state.selectedColor,
+        quantity:next,
+        cart:saved
+      });
+      syncBagCount();
     }
     if(navigator.vibrate){navigator.vibrate(12)}
   }

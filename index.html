@@ -6481,6 +6481,20 @@ scheduleBagAutoClose();
 
       };
 
+  function openProfileFromHash(){
+    if(location.hash.toLowerCase() !== "#perfil"){
+      return;
+    }
+
+    setNavActive("profile");
+    loadProfile();
+    openOverlay($("profileOverlay"));
+    track("PROFILE_OPEN",{source:"hash"});
+  }
+
+  window.addEventListener("hashchange",openProfileFromHash);
+  setTimeout(openProfileFromHash,0);
+
   $("profileClose")
     .onclick =
       () =>

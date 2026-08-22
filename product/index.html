@@ -258,7 +258,7 @@ svg{
 
   height:100%;
 
-  object-fit:cover;
+  object-fit:contain;
 
   object-position:center top;
 
@@ -2449,7 +2449,7 @@ svg{
       <!-- COLOR + QUANTITY -->
 
       <div class="choiceTopRow">
-      <section class="optionSection colorOption">
+      <section id="colorOption" class="optionSection colorOption">
 
         <div class="optionLabel">
 
@@ -2464,7 +2464,7 @@ svg{
 
         </div>
 
-        <div class="colorRow">
+        <div id="colorRow" class="colorRow">
 
           <button
             class="colorButton colorBlack active"
@@ -3115,7 +3115,7 @@ svg{
 
     selectedQuantity:1,
 
-    selectedColor:"Negro",
+    selectedColor:"",
 
     favorites:
       new Set(
@@ -3671,9 +3671,29 @@ svg{
     if(
       !products.length
     ){
+      state.categoryId = categoryId;
+      state.categoryProducts = [];
+      state.productIndex = 0;
+      state.product = null;
+      state.imageIndex = 0;
+      state.selectedSize = null;
+      state.selectedQuantity = 1;
+      state.selectedColor = "";
+
+      renderCategoryNav();
+      renderEmptyProduct();
+      $("thumbnailRail").innerHTML = "";
 
       showToast(
-        `No hay productos en ${category.name}.`
+        `Próximamente en ${category.name}.`
+      );
+
+      track(
+        "PRODUCT_CATEGORY_SWITCH",
+        {
+          categoryId,
+          empty:true
+        }
       );
 
       return;
@@ -3698,7 +3718,7 @@ svg{
       null;
 
     state.selectedColor =
-      "Negro";
+      "";
 
     resetColorControls();
 
@@ -3895,28 +3915,17 @@ svg{
     const photo =
       $("mainPhoto");
 
-    photo.classList.add(
+    photo.src =
+      currentImage;
+
+    photo.alt =
+      safeText(
+        product.name,
+        "Producto CajaModa"
+      );
+
+    photo.classList.remove(
       "changing"
-    );
-
-    setTimeout(
-      () => {
-
-        photo.src =
-          currentImage;
-
-        photo.alt =
-          safeText(
-            product.name,
-            "Producto CajaModa"
-          );
-
-        photo.classList.remove(
-          "changing"
-        );
-
-      },
-      70
     );
 
     $("priceCapsuleText")
@@ -3972,6 +3981,7 @@ svg{
     state.selectedQuantity =
       findExistingAutoLine(product.id)?.quantity || 1;
 
+    renderColorState();
     renderSizeState();
     renderQuantityState();
 
@@ -4155,28 +4165,25 @@ svg{
     const image =
       $("mainPhoto");
 
-    image.classList.add(
-      "changing"
-    );
+    const nextImage =
+      new Image();
 
-    setTimeout(
+    nextImage.onload =
       () => {
-
-        state.imageIndex =
-          index;
-
-        image.src =
-          media[index];
-
+        state.imageIndex = index;
+        image.src = media[index];
         renderThumbnails();
+        image.classList.remove("changing");
+      };
 
-        image.classList.remove(
-          "changing"
-        );
+    nextImage.onerror =
+      () => {
+        image.classList.remove("changing");
+        showToast("No pudimos cargar esa foto.");
+      };
 
-      },
-      90
-    );
+    image.classList.add("changing");
+    nextImage.src = media[index];
   }
 
   /* ============================================================
@@ -4344,7 +4351,7 @@ svg{
       null;
 
     state.selectedColor =
-      "Negro";
+      "";
 
     resetColorControls();
 
@@ -4395,7 +4402,7 @@ svg{
       null;
 
     state.selectedColor =
-      "Negro";
+      "";
 
     resetColorControls();
 
@@ -4998,87 +5005,99 @@ price:
      COLORS
      ============================================================ */
 
+  function productColorValues(){
+    const variants =
+      Array.isArray(state.product?.variants)
+        ?state.product.variants.filter(variant => variant.inStock !== false)
+        :[];
+
+    return [
+      ...new Set(
+        variants
+          .map(variant => String(variant.color || "").trim())
+          .filter(Boolean)
+      )
+    ];
+  }
+
+  function colorSwatchValue(color){
+    const value = normalizeChoice(color);
+    const swatches = {
+      negro:"#151515", black:"#151515",
+      blanco:"#f7f7f4", white:"#f7f7f4",
+      crema:"#e8d8bd", cream:"#e8d8bd",
+      rojo:"#c83b4c", red:"#c83b4c",
+      azul:"#315a9a", blue:"#315a9a",
+      verde:"#51765b", green:"#51765b",
+      cafe:"#76513c", brown:"#76513c",
+      rosa:"#d88ca0", pink:"#d88ca0",
+      dorado:"#b5964d", gold:"#b5964d",
+      gris:"#888888", gray:"#888888", grey:"#888888"
+    };
+    return swatches[value] || "#b8b8b8";
+  }
+
+  function renderColorState(){
+    const colors = productColorValues();
+    const section = $("colorOption");
+    const row = $("colorRow");
+
+    if(!colors.length){
+      state.selectedColor = "";
+      section.hidden = true;
+      row.innerHTML = "";
+      $("selectedColorLabel").textContent = "";
+      return;
+    }
+
+    if(colors.length === 1){
+      state.selectedColor = colors[0];
+      section.hidden = true;
+      row.innerHTML = "";
+      $("selectedColorLabel").textContent = colors[0];
+      return;
+    }
+
+    if(!colors.some(color => normalizeChoice(color) === normalizeChoice(state.selectedColor))){
+      state.selectedColor = colors[0];
+    }
+
+    section.hidden = false;
+    $("selectedColorLabel").textContent = state.selectedColor;
+    row.innerHTML = colors.map(color => `
+      <button
+        class="colorButton ${normalizeChoice(color) === normalizeChoice(state.selectedColor) ? "active" : ""}"
+        data-color="${escapeHtml(color)}"
+        aria-label="${escapeHtml(color)}"
+        title="${escapeHtml(color)}"
+        style="background:${colorSwatchValue(color)}"
+      ></button>
+    `).join("");
+
+    qsa("[data-color]").forEach(button => {
+      button.onclick = () => selectColor(button.dataset.color,button);
+    });
+  }
+
   function resetColorControls(){
-
-    state.selectedColor =
-      "Negro";
-
-    $("selectedColorLabel")
-      .textContent =
-        "Negro";
-
-    qsa(
-      "[data-color]"
-    )
-      .forEach(
-        button => {
-
-          button.classList.toggle(
-            "active",
-            button.dataset.color ===
-            "Negro"
-          );
-
-        }
-      );
+    state.selectedColor = "";
+    renderColorState();
   }
 
   function selectColor(
     color,
     selectedButton
   ){
+    state.selectedColor = color;
+    $("selectedColorLabel").textContent = color;
 
-    state.selectedColor =
-      color;
-
-    $("selectedColorLabel")
-      .textContent =
-        color;
-
-    qsa(
-      "[data-color]"
-    )
-      .forEach(
-        button => {
-
-          button.classList.toggle(
-            "active",
-            button ===
-            selectedButton
-          );
-
-        }
-      );
+    qsa("[data-color]").forEach(button => {
+      button.classList.toggle("active",button === selectedButton);
+    });
 
     renderSizeState();
     renderQuantityState();
-
-    track(
-      "COLOR_SELECTED",
-      {
-        color
-      }
-    );
   }
-
-  qsa(
-    "[data-color]"
-  )
-    .forEach(
-      button => {
-
-        button.onclick =
-          () => {
-
-            selectColor(
-              button.dataset.color,
-              button
-            );
-
-          };
-
-      }
-    );
 
   /* ============================================================
      QUANTITY

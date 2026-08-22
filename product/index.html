@@ -1119,7 +1119,7 @@ svg{
   padding:
     2px 5px;
 
-  border-radius:18px;
+  border-radius:0;
 
   display:grid;
 
@@ -1131,35 +1131,15 @@ svg{
 
   align-items:center;
 
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255,255,255,.67),
-      rgba(255,255,255,.28)
-    );
+  background:transparent;
 
-  border:
-    1px solid
-    rgba(255,255,255,.95);
+  border:0;
 
-  box-shadow:
+  box-shadow:none;
 
-    0 0 0 1px
-    rgba(0,0,0,.028),
+  backdrop-filter:none;
 
-    inset 0 1px 0
-    rgba(255,255,255,.98),
-
-    0 8px 25px
-    rgba(0,0,0,.075);
-
-  backdrop-filter:
-    blur(29px)
-    saturate(170%);
-
-  -webkit-backdrop-filter:
-    blur(29px)
-    saturate(170%);
+  -webkit-backdrop-filter:none;
 }
 
 .navButton{
@@ -1213,8 +1193,7 @@ svg{
     transform:
       translateY(-2px);
 
-    background:
-      rgba(255,255,255,.65);
+    background:transparent;
   }
 }
 
@@ -1223,8 +1202,7 @@ svg{
   transform:
     scale(.94);
 
-  background:
-    rgba(255,255,255,.72);
+  background:transparent;
 }
 
 .navPlusOrb{

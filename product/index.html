@@ -4555,7 +4555,11 @@ textarea.reviewField{min-height:76px;resize:vertical}
   $("writeReviewButton").onclick=()=>{
     cancelDetailsAutoClose();
     $("reviewForm").hidden=false;
-    $("reviewAuthor").focus();
+    $("writeReviewButton").setAttribute("aria-expanded","true");
+    requestAnimationFrame(()=>{
+      $("reviewForm").scrollIntoView({behavior:"smooth",block:"start"});
+      $("reviewAuthor").focus({preventScroll:true});
+    });
   };
 
   qsa("[data-review-rating]").forEach(button=>{

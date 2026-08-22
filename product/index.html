@@ -86,6 +86,35 @@
     );
 }
 
+.productReviewSummary{
+  position:absolute;
+  z-index:21;
+  left:22px;
+  bottom:calc(var(--nav-h) + 74px + var(--safe-bottom));
+  min-height:24px;
+  padding:5px 10px;
+  border-radius:12px;
+  color:#111;
+  background:rgba(255,255,255,.62);
+  border:1px solid rgba(0,0,0,.07);
+  backdrop-filter:blur(16px) saturate(135%);
+  -webkit-backdrop-filter:blur(16px) saturate(135%);
+  font-size:8px;
+  font-weight:650;
+}
+.productReviewSummary.unrated{color:#666}
+
+.reviewsBlock{margin:12px 0 14px;padding:12px;border-radius:16px;background:rgba(255,255,255,.48);border:1px solid rgba(0,0,0,.07)}
+.reviewsHead{display:flex;justify-content:space-between;gap:10px;align-items:center}.reviewsStars{font-size:10px;font-weight:750}
+.reviewsActions{display:flex;gap:12px;margin-top:9px}.reviewAction{font-size:8px;font-weight:700;text-decoration:underline}
+.reviewList{display:none;margin-top:10px}.reviewList.open{display:block}.reviewItem{padding:9px 0;border-top:1px solid rgba(0,0,0,.07)}
+.reviewItemTitle{font-size:8px;font-weight:750}.reviewItemBody{margin-top:3px;color:#555;font-size:7.5px;line-height:1.45}
+.reviewForm{display:none;margin-top:10px;gap:7px}.reviewForm.open{display:grid}
+.reviewForm input,.reviewForm textarea,.reviewForm select{width:100%;padding:9px;border:1px solid rgba(0,0,0,.1);border-radius:10px;background:rgba(255,255,255,.7);font-size:8px}
+.reviewForm textarea{min-height:70px;resize:vertical}.reviewSubmit{padding:10px;border-radius:10px;background:#111;color:#fff;font-size:8px;font-weight:750}
+
+.productProfileOverlay{position:fixed;z-index:120;inset:0;display:none;place-items:end center;padding:16px 12px calc(var(--nav-h) + 18px + var(--safe-bottom));background:rgba(0,0,0,.2);backdrop-filter:blur(10px)}.productProfileOverlay.open{display:grid}.productProfileCard{width:min(100%,410px);padding:16px;border-radius:22px;background:rgba(255,255,255,.78);border:1px solid rgba(255,255,255,.8);box-shadow:0 20px 60px rgba(0,0,0,.15)}.productProfileHead{display:flex;justify-content:space-between;align-items:center}.productProfileCard input{width:100%;margin-top:8px;padding:11px;border:1px solid rgba(0,0,0,.1);border-radius:12px;background:rgba(255,255,255,.7);font-size:9px}.productProfileSave{width:100%;margin-top:9px;padding:11px;border-radius:12px;background:#111;color:#fff;font-size:9px;font-weight:750}
+
 /* ============================================================
    RESET
    ============================================================ */
@@ -2348,6 +2377,10 @@ svg{
 
     </button>
 
+    <button id="productReviewSummary" class="productReviewSummary unrated" type="button">
+      ☆ Sin reseñas
+    </button>
+
   </main>
 
 </div>
@@ -2444,6 +2477,18 @@ svg{
           Descubre este producto CajaModa.
         </div>
 
+      </section>
+
+      <section id="productReviews" class="reviewsBlock">
+        <div class="reviewsHead"><div><div class="sectionTitle">Reseñas</div><div id="reviewsSummary" class="reviewsStars">☆ Sin reseñas</div></div></div>
+        <div class="reviewsActions"><button id="readReviews" class="reviewAction" type="button">Leer reseñas</button><button id="writeReview" class="reviewAction" type="button">Escribir reseña</button></div>
+        <div id="reviewsList" class="reviewList"></div>
+        <form id="reviewForm" class="reviewForm">
+          <select id="reviewRating" required><option value="">Selecciona estrellas</option><option value="5">5 estrellas</option><option value="4">4 estrellas</option><option value="3">3 estrellas</option><option value="2">2 estrellas</option><option value="1">1 estrella</option></select>
+          <input id="reviewName" required autocomplete="name" placeholder="Tu nombre"><input id="reviewEmail" required type="email" autocomplete="email" placeholder="Tu correo">
+          <input id="reviewTitle" maxlength="160" placeholder="Título (opcional)"><textarea id="reviewBody" required maxlength="2000" placeholder="Escribe tu reseña"></textarea>
+          <button class="reviewSubmit" type="submit">Enviar reseña</button>
+        </form>
       </section>
 
       <!-- COLOR + QUANTITY -->
@@ -2793,7 +2838,7 @@ svg{
         data-plus="contact"
       >
         <span>
-          Contáctanos
+          Ayúdame por email
         </span>
 
         <span>
@@ -2831,6 +2876,15 @@ svg{
 
   </section>
 
+</div>
+
+<div id="productProfileOverlay" class="productProfileOverlay">
+  <section class="productProfileCard" aria-label="Perfil">
+    <div class="productProfileHead"><strong>Tu perfil</strong><button id="closeProductProfile" type="button">×</button></div>
+    <input id="productProfileName" autocomplete="name" placeholder="Nombre">
+    <input id="productProfileEmail" type="email" autocomplete="email" placeholder="Correo">
+    <button id="saveProductProfile" class="productProfileSave" type="button">Guardar perfil</button>
+  </section>
 </div>
 
 <!-- ==========================================================
@@ -3862,6 +3916,15 @@ svg{
           "Producto seleccionado de CajaModa. Elige tu color y tu talla para agregarlo a tu bolsa."
         );
 
+    renderProductReviews(product);
+
+    const reviewSummary = product.reviewSummary || { average:0, count:0 };
+    const reviewSummaryButton = $("productReviewSummary");
+    reviewSummaryButton.classList.toggle("unrated", !reviewSummary.count);
+    reviewSummaryButton.textContent = reviewSummary.count
+      ? `★★★★★ ${Number(reviewSummary.average || 0).toFixed(1)} · ${reviewSummary.count} reseñas`
+      : "☆ Sin reseñas";
+
     /*
       Number always represents position inside
       the active category.
@@ -4359,6 +4422,17 @@ svg{
      DETAILS
      ============================================================ */
 
+  function reviewStars(rating){const value=Math.max(0,Math.min(5,Math.round(Number(rating||0))));return "★".repeat(value)+"☆".repeat(5-value)}
+  function renderProductReviews(product){
+    const reviews=Array.isArray(product?.reviews)?product.reviews:[];const summary=product?.reviewSummary||{average:0,count:reviews.length};
+    $("reviewsSummary").textContent=summary.count?`${reviewStars(summary.average)} ${Number(summary.average||0).toFixed(1)} · ${summary.count} reseñas`:"☆ Sin reseñas";
+    $("readReviews").disabled=!reviews.length;
+    $("reviewsList").innerHTML=reviews.map(review=>`<article class="reviewItem"><div class="reviewItemTitle">${reviewStars(review.rating)} · ${escapeHtml(review.author||"Cliente CajaModa")}</div><div class="reviewItemBody">${escapeHtml(review.title||"")}${review.title&&review.body?"<br>":""}${escapeHtml(review.body||"")}</div></article>`).join("");
+  }
+  $("readReviews").onclick=()=>{$("reviewsList").classList.toggle("open");$("reviewForm").classList.remove("open")};
+  $("writeReview").onclick=()=>{$("reviewForm").classList.toggle("open");$("reviewsList").classList.remove("open")};
+  $("reviewForm").onsubmit=async event=>{event.preventDefault();if(!state.product)return;const button=event.currentTarget.querySelector("button[type=submit]");button.disabled=true;try{const response=await fetch("/api/reviews",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({productId:state.product.id,rating:Number($("reviewRating").value),name:$("reviewName").value,email:$("reviewEmail").value,title:$("reviewTitle").value,body:$("reviewBody").value})});const payload=await response.json().catch(()=>({}));if(!response.ok)throw new Error(payload?.error||payload?.message||"No pudimos enviar tu reseña.");event.currentTarget.reset();event.currentTarget.classList.remove("open");showToast("Gracias. Tu reseña fue enviada a Wix para aprobación.")}catch(error){showToast(error?.message||"No pudimos enviar tu reseña.")}finally{button.disabled=false}};
+
   let detailsAutoCloseTimer = null;
 
   function cancelDetailsAutoClose(){
@@ -4414,6 +4488,13 @@ svg{
   $("priceCapsule")
     .onclick =
       openDetails;
+
+  $("productReviewSummary").onclick = () => {
+    openDetails();
+    requestAnimationFrame(() => {
+      $("productReviews")?.scrollIntoView({ behavior:"smooth", block:"start" });
+    });
+  };
 
   $("detailsBackdrop")
     .onclick =
@@ -5135,35 +5216,21 @@ const desiredKey =
    let line =
   cart.items.find(
     item =>
-      cartLineKey(item) ===
-        desiredKey &&
-      item.autoSelected ===
-      true
+      cartLineKey(item) === desiredKey
   ) ||
   cart.items.find(
     item =>
       !item.variantId &&
-      String(
-        item.productId
-      ) ===
-        String(
-          state.product.id
-        ) &&
-      normalizeChoice(
-        item.size
-      ) ===
-        normalizeChoice(
-          state.selectedSize
-        ) &&
-      normalizeChoice(
-        item.color
-      ) ===
-        normalizeChoice(
-          state.selectedColor
-        ) &&
-      item.autoSelected ===
-        true
+      String(item.productId) === String(state.product.id) &&
+      normalizeChoice(item.size) === normalizeChoice(state.selectedSize) &&
+      normalizeChoice(item.color) === normalizeChoice(state.selectedColor)
   );
+
+  if (line) {
+    cart.items = cart.items.filter(item =>
+      item === line || cartLineKey(item) !== desiredKey
+    );
+  }
 
     const image =
       getMedia(
@@ -5272,7 +5339,7 @@ price:
           Math.max(1,Number(state.selectedQuantity||1)),
 
         selectionMode:
-          "SIZE_SELECTION",
+          "EXACT_QUANTITY",
 
         cart:
           saved
@@ -5832,20 +5899,13 @@ function closeWishList(){
   }
 
   function getSharePayload(){
+    const productUrl = new URL("/product/", location.origin);
+    productUrl.searchParams.set("productId", state.product?.id || "");
 
     return {
-
-      title:
-        safeText(
-          state.product?.name,
-          "CajaModa"
-        ),
-
-      text:
-        `Mira este producto en CajaModa: ${safeText(state.product?.name,"Producto")}`,
-
-      url:
-        location.href
+      title: safeText(state.product?.name, "CajaModa"),
+      text: `Mira este producto en CajaModa: ${safeText(state.product?.name,"Producto")}`,
+      url: productUrl.toString()
     };
   }
 
@@ -6000,13 +6060,25 @@ function closeWishList(){
         openWishList();
       };
 
-  $("navProfile")
-    .onclick =
-      () => {
-
-        location.href =
-          "/#perfil";
-      };
+  function openProductProfile(){
+    const profile=readJson("cajamoda-profile",{});
+    $("productProfileName").value=profile?.name||"";
+    $("productProfileEmail").value=profile?.email||"";
+    $("productProfileOverlay").classList.add("open");
+    document.body.classList.add("locked");
+  }
+  function closeProductProfile(){
+    $("productProfileOverlay").classList.remove("open");
+    document.body.classList.remove("locked");
+  }
+  $("navProfile").onclick=openProductProfile;
+  $("closeProductProfile").onclick=closeProductProfile;
+  $("productProfileOverlay").onclick=event=>{if(event.target===$("productProfileOverlay"))closeProductProfile()};
+  $("saveProductProfile").onclick=()=>{
+    saveJson("cajamoda-profile",{name:$("productProfileName").value.trim(),email:$("productProfileEmail").value.trim()});
+    closeProductProfile();
+    showToast("Perfil guardado.");
+  };
 
   /* ============================================================
      PLUS MENU
@@ -6104,7 +6176,7 @@ function closeWishList(){
               );
 
               window.open(
-                `https://wa.me/?text=${encodeURIComponent(text)}`,
+                `https://wa.me/13055189384?text=${encodeURIComponent(text)}`,
                 "_blank",
                 "noopener,noreferrer"
               );
@@ -6128,9 +6200,8 @@ function closeWishList(){
                 }
               );
 
-              showToast(
-                "Abriendo contacto CajaModa…"
-              );
+              window.location.href =
+                `mailto:auyda@cajamoda.com?subject=${encodeURIComponent("Ayuda con " + safeText(state.product?.name,"un producto CajaModa"))}&body=${encodeURIComponent(location.href)}`;
 
               closePlus();
 

@@ -405,6 +405,7 @@ img{display:block;max-width:100%}
   height:16px;
   stroke-width:1.35
 }
+.cartRating{margin-top:3px;font-size:8px;font-weight:650;color:#111;cursor:pointer}.cartRating.unrated{color:#777}
 .cartOptions{
   margin-top:12px;
   color:#777;
@@ -1539,10 +1540,18 @@ img{display:block;max-width:100%}
   function optionSelect(item, name, label, current) {
     const values = optionValues(item, name);
     if (!values.length) return "";
+    if (values.length === 1) {
+      return `<span class="cartOptionFixed">${escapeHtml(label)}: ${escapeHtml(values[0])}</span>`;
+    }
 
     return `<select class="cartOptionSelect" data-cart-option="${name.toLowerCase()}" data-item-id="${escapeHtml(item.id)}" aria-label="${escapeHtml(label)}">
       ${values.map(value => `<option value="${escapeHtml(value)}" ${normalizeChoice(value) === normalizeChoice(current) ? "selected" : ""}>${escapeHtml(label)}: ${escapeHtml(value)}</option>`).join("")}
     </select>`;
+  }
+
+  function visibleColor(item) {
+    const colors = optionValues(item, "Color");
+    return colors.length ? (item.color || colors[0]) : "";
   }
 
   function productUrl(item) {
@@ -1578,6 +1587,14 @@ img{display:block;max-width:100%}
       </div>
       </a>
     `;
+  }
+
+  function productRatingMarkup(item){
+    const product = catalogProduct(item.productId);
+    const summary = product?.reviewSummary || { average:0, count:0 };
+    return summary.count
+      ? `<button class="cartRating" type="button" data-review-product="${escapeHtml(item.productId)}">★★★★★ ${Number(summary.average||0).toFixed(1)} (${summary.count})</button>`
+      : `<button class="cartRating unrated" type="button" data-review-product="${escapeHtml(item.productId)}">☆ Sin reseñas</button>`;
   }
 
   function renderCart() {
@@ -1666,6 +1683,8 @@ img{display:block;max-width:100%}
               ${escapeHtml(item.name)}
             </div>
 
+            ${productRatingMarkup(item)}
+
             <button
               class="removeButton"
               type="button"
@@ -1684,8 +1703,8 @@ img{display:block;max-width:100%}
 
           <div class="cartOptions">
             ${
-              item.color
-                ? `Color: ${escapeHtml(item.color)}<br>`
+              visibleColor(item)
+                ? `Color: ${escapeHtml(visibleColor(item))}<br>`
                 : ""
             }
             ${
@@ -1742,10 +1761,12 @@ img{display:block;max-width:100%}
             ${escapeHtml(item.name)}
           </div>
 
+          ${productRatingMarkup(item)}
+
           <div class="reviewOptions">
             ${
-              item.color
-                ? `Color: ${escapeHtml(item.color)}<br>`
+              visibleColor(item)
+                ? `Color: ${escapeHtml(visibleColor(item))}<br>`
                 : ""
             }
             ${
@@ -1797,6 +1818,12 @@ img{display:block;max-width:100%}
           );
         };
       });
+
+    document.querySelectorAll("[data-review-product]").forEach(button => {
+      button.onclick = () => {
+        location.href = `/product/?id=${encodeURIComponent(button.dataset.reviewProduct)}#reviews`;
+      };
+    });
 
     document
       .querySelectorAll("[data-cart-option]")

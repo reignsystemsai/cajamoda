@@ -1593,6 +1593,23 @@ svg{
   color:#444;
 }
 
+.productReviews{
+  margin-top:12px;
+  padding-top:12px;
+  border-top:1px solid rgba(0,0,0,.08);
+  color:#111;
+}
+.productReviews[hidden]{display:none}
+.reviewSummaryLine{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#111}
+.reviewSummaryText{font:700 10px/1.3 Inter,system-ui,sans-serif;color:#111}
+.reviewActions{display:flex;gap:8px;margin-top:9px}
+.reviewAction{border:1px solid rgba(0,0,0,.12);border-radius:999px;padding:8px 12px;background:rgba(255,255,255,.48);color:#111;font:700 8px/1 Inter,system-ui,sans-serif}
+.reviewList{display:grid;gap:8px;margin-top:10px}
+.reviewEntry{padding:10px;border-top:1px solid rgba(0,0,0,.07);color:#111}
+.reviewEntryTop{display:flex;justify-content:space-between;gap:10px;font:700 8px/1.3 Inter,system-ui,sans-serif;color:#111}
+.reviewEntryText{margin-top:5px;font:400 8px/1.45 Inter,system-ui,sans-serif;color:#111}
+.reviewEmpty{padding:10px 0;font:500 8px/1.4 Inter,system-ui,sans-serif;color:#111}
+
 /* ============================================================
    OPTIONS
    ============================================================ */
@@ -2462,6 +2479,17 @@ svg{
           Descubre este producto CajaModa.
         </div>
 
+      </section>
+
+      <section id="productReviews" class="productReviews" hidden aria-label="Reseñas del producto">
+        <div class="reviewSummaryLine">
+          <div id="reviewSummaryText" class="reviewSummaryText">☆ Sin reseñas</div>
+        </div>
+        <div class="reviewActions">
+          <button id="readReviewsButton" class="reviewAction" type="button">Leer reseñas</button>
+          <button id="writeReviewButton" class="reviewAction" type="button">Escribir reseña</button>
+        </div>
+        <div id="productReviewList" class="reviewList"></div>
       </section>
 
       <!-- COLOR + QUANTITY -->
@@ -3885,6 +3913,7 @@ svg{
     $("productRatingSummary").textContent = reviewCount > 0
       ? `★★★★★ ${rating.toFixed(1)} · ${reviewCount} reseñas`
       : "☆ Sin reseñas";
+    $("productReviews").hidden = true;
 
     /*
       Number always represents position inside
@@ -4435,9 +4464,42 @@ svg{
       );
   }
 
+  function renderProductReviews(){
+    const reviews = Array.isArray(state.product?.reviews)
+      ? state.product.reviews.filter(review => review?.status !== "REJECTED")
+      : [];
+    const rating = Number(state.product?.reviewSummary?.averageRating || state.product?.rating || 0);
+    const count = Number(state.product?.reviewSummary?.reviewCount || state.product?.reviewCount || reviews.length || 0);
+    $("reviewSummaryText").textContent = count > 0
+      ? `★★★★★ ${rating.toFixed(1)} · ${count} reseñas`
+      : "☆ Sin reseñas";
+    $("productReviewList").innerHTML = reviews.length
+      ? reviews.map(review => `
+          <article class="reviewEntry">
+            <div class="reviewEntryTop">
+              <span>${"★".repeat(Math.max(1,Math.min(5,Number(review.rating || 5))))}</span>
+              <span>${escapeHtml(review.authorName || "Cliente CajaModa")}</span>
+            </div>
+            <div class="reviewEntryText">${escapeHtml(review.content || review.body || "")}</div>
+          </article>
+        `).join("")
+      : '<div class="reviewEmpty">Este producto todavía no tiene reseñas.</div>';
+  }
+
+  function openProductReviews(){
+    openDetails();
+    cancelDetailsAutoClose();
+    renderProductReviews();
+    $("productReviews").hidden = false;
+    $("productReviews").scrollIntoView({behavior:"smooth",block:"start"});
+  }
+
   $("priceCapsule")
     .onclick =
       openDetails;
+
+  $("productRatingSummary").onclick = openProductReviews;
+  $("readReviewsButton").onclick = openProductReviews;
 
   $("detailsBackdrop")
     .onclick =

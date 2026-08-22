@@ -1602,6 +1602,7 @@ svg{
 .productReviews[hidden]{display:none}
 .reviewSummaryLine{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#111}
 .reviewSummaryText{font:700 10px/1.3 Inter,system-ui,sans-serif;color:#111}
+.reviewClose{width:30px;height:30px;border:0;border-radius:50%;background:rgba(255,255,255,.58);color:#111;font:400 20px/1 Inter,system-ui,sans-serif;display:grid;place-items:center}
 .reviewActions{display:flex;gap:8px;margin-top:9px}
 .reviewAction{border:1px solid rgba(0,0,0,.12);border-radius:999px;padding:8px 12px;background:rgba(255,255,255,.48);color:#111;font:700 8px/1 Inter,system-ui,sans-serif}
 .reviewList{display:grid;gap:8px;margin-top:10px}
@@ -2484,6 +2485,7 @@ svg{
       <section id="productReviews" class="productReviews" hidden aria-label="Reseñas del producto">
         <div class="reviewSummaryLine">
           <div id="reviewSummaryText" class="reviewSummaryText">☆ Sin reseñas</div>
+          <button id="reviewClose" class="reviewClose" type="button" aria-label="Cerrar reseñas">×</button>
         </div>
         <div class="reviewActions">
           <button id="readReviewsButton" class="reviewAction" type="button">Leer reseñas</button>
@@ -4500,6 +4502,10 @@ svg{
 
   $("productRatingSummary").onclick = openProductReviews;
   $("readReviewsButton").onclick = openProductReviews;
+  $("reviewClose").onclick = () => {
+    $("productReviews").hidden = true;
+    scheduleDetailsAutoClose();
+  };
 
   $("detailsBackdrop")
     .onclick =

@@ -2352,7 +2352,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
     </button>
 
     <button id="productRatingSummary" class="productRatingSummary" type="button" aria-label="Abrir reseñas">
-      ☆ Sin reseñas
+      ☆ Sin reseñas →
     </button>
 
   </main>
@@ -3880,8 +3880,8 @@ textarea.reviewField{min-height:76px;resize:vertical}
     const rating = Number(product?.reviewSummary?.averageRating || product?.rating || 0);
     const reviewCount = Number(product?.reviewSummary?.reviewCount || product?.reviewCount || 0);
     $("productRatingSummary").textContent = reviewCount > 0
-      ? `★★★★★ ${rating.toFixed(1)} · ${reviewCount} reseñas`
-      : "☆ Sin reseñas";
+      ? `★★★★★ ${rating.toFixed(1)} · ${reviewCount} reseñas →`
+      : "☆ Sin reseñas →";
     $("productReviews").hidden = true;
 
     /*
@@ -4470,8 +4470,8 @@ textarea.reviewField{min-height:76px;resize:vertical}
       const rating=Number(state.product.reviewSummary.averageRating||0);
       const count=Number(state.product.reviewSummary.reviewCount||0);
       $("productRatingSummary").textContent=count>0
-        ?`★★★★★ ${rating.toFixed(1)} · ${count} reseñas`
-        :"☆ Sin reseñas";
+        ?`★★★★★ ${rating.toFixed(1)} · ${count} reseñas →`
+        :"☆ Sin reseñas →";
       renderProductReviews();
     }catch{}
   }

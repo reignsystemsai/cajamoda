@@ -1610,6 +1610,15 @@ svg{
 .reviewEntryTop{display:flex;justify-content:space-between;gap:10px;font:700 8px/1.3 Inter,system-ui,sans-serif;color:#111}
 .reviewEntryText{margin-top:5px;font:400 8px/1.45 Inter,system-ui,sans-serif;color:#111}
 .reviewEmpty{padding:10px 0;font:500 8px/1.4 Inter,system-ui,sans-serif;color:#111}
+.reviewForm{display:grid;gap:9px;margin-top:10px;padding:12px;border:1px solid rgba(255,255,255,.9);border-radius:18px;background:linear-gradient(145deg,rgba(255,255,255,.62),rgba(255,255,255,.30));box-shadow:0 10px 28px rgba(0,0,0,.06);color:#111}
+.reviewForm[hidden]{display:none}
+.reviewFormTitle{font:700 11px/1.2 Inter,system-ui,sans-serif;color:#111}
+.reviewStars{display:flex;gap:4px}
+.reviewStar{border:0;background:transparent;padding:2px;color:#9a9a9a;font-size:20px;line-height:1}
+.reviewStar.selected{color:#111}
+.reviewField{width:100%;border:1px solid rgba(0,0,0,.12);border-radius:12px;background:rgba(255,255,255,.64);padding:10px;color:#111;font:500 9px/1.4 Inter,system-ui,sans-serif;outline:none}
+textarea.reviewField{min-height:76px;resize:vertical}
+.reviewSubmit{border:0;border-radius:999px;background:#111;color:#fff;padding:11px 14px;font:700 9px/1 Inter,system-ui,sans-serif}
 
 /* ============================================================
    OPTIONS
@@ -2492,6 +2501,19 @@ svg{
           <button id="writeReviewButton" class="reviewAction" type="button">Escribir reseña</button>
         </div>
         <div id="productReviewList" class="reviewList"></div>
+        <form id="reviewForm" class="reviewForm" hidden>
+          <div class="reviewFormTitle">Deja tu reseña</div>
+          <div id="reviewStars" class="reviewStars" aria-label="Calificación">
+            <button class="reviewStar" type="button" data-review-rating="1">★</button>
+            <button class="reviewStar" type="button" data-review-rating="2">★</button>
+            <button class="reviewStar" type="button" data-review-rating="3">★</button>
+            <button class="reviewStar" type="button" data-review-rating="4">★</button>
+            <button class="reviewStar" type="button" data-review-rating="5">★</button>
+          </div>
+          <input id="reviewAuthor" class="reviewField" type="text" maxlength="80" autocomplete="name" placeholder="Tu nombre" required>
+          <textarea id="reviewContent" class="reviewField" maxlength="1200" placeholder="Cuéntanos qué te pareció" required></textarea>
+          <button id="reviewSubmit" class="reviewSubmit" type="submit">Enviar reseña</button>
+        </form>
       </section>
 
       <!-- COLOR + QUANTITY -->
@@ -3164,6 +3186,8 @@ svg{
     selectedQuantity:1,
 
     selectedColor:"",
+
+    reviewRating:0,
 
     mediaOrder:[],
 
@@ -3964,6 +3988,8 @@ svg{
     );
 
     updateUrlWithoutReload();
+
+    loadProductReviews();
   }
 
   function updateUrlWithoutReload(){
@@ -4488,6 +4514,25 @@ svg{
       : '<div class="reviewEmpty">Este producto todavía no tiene reseñas.</div>';
   }
 
+  async function loadProductReviews(){
+    if(!state.product?.id){return}
+    const productId=String(state.product.id);
+    try{
+      const response=await fetch(`/api/reviews?productId=${encodeURIComponent(productId)}`,{headers:{Accept:"application/json"}});
+      if(!response.ok){return}
+      const payload=await response.json();
+      if(String(state.product?.id)!==productId){return}
+      state.product.reviews=Array.isArray(payload.reviews)?payload.reviews:[];
+      state.product.reviewSummary=payload.summary||{averageRating:0,reviewCount:0};
+      const rating=Number(state.product.reviewSummary.averageRating||0);
+      const count=Number(state.product.reviewSummary.reviewCount||0);
+      $("productRatingSummary").textContent=count>0
+        ?`★★★★★ ${rating.toFixed(1)} · ${count} reseñas`
+        :"☆ Sin reseñas";
+      renderProductReviews();
+    }catch{}
+  }
+
   function openProductReviews(){
     openDetails();
     cancelDetailsAutoClose();
@@ -4505,6 +4550,51 @@ svg{
   $("reviewClose").onclick = () => {
     $("productReviews").hidden = true;
     scheduleDetailsAutoClose();
+  };
+
+  $("writeReviewButton").onclick=()=>{
+    cancelDetailsAutoClose();
+    $("reviewForm").hidden=false;
+    $("reviewAuthor").focus();
+  };
+
+  qsa("[data-review-rating]").forEach(button=>{
+    button.onclick=()=>{
+      state.reviewRating=Number(button.dataset.reviewRating);
+      qsa("[data-review-rating]").forEach(star=>{
+        star.classList.toggle("selected",Number(star.dataset.reviewRating)<=state.reviewRating);
+      });
+    };
+  });
+
+  $("reviewForm").onsubmit=async event=>{
+    event.preventDefault();
+    const submit=$("reviewSubmit");
+    submit.disabled=true;
+    try{
+      const response=await fetch("/api/reviews",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Accept":"application/json"},
+        body:JSON.stringify({
+          productId:state.product?.id,
+          authorName:$("reviewAuthor").value.trim(),
+          content:$("reviewContent").value.trim(),
+          rating:state.reviewRating
+        })
+      });
+      const payload=await response.json().catch(()=>({}));
+      if(!response.ok){throw new Error(payload.error||"No se pudo enviar la reseña.")}
+      $("reviewForm").reset();
+      $("reviewForm").hidden=true;
+      state.reviewRating=0;
+      qsa("[data-review-rating]").forEach(star=>star.classList.remove("selected"));
+      showToast("Reseña enviada para aprobación.");
+      await loadProductReviews();
+    }catch(error){
+      showToast(error.message||"No se pudo enviar la reseña.");
+    }finally{
+      submit.disabled=false;
+    }
   };
 
   $("detailsBackdrop")

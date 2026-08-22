@@ -86,6 +86,24 @@
     );
 }
 
+.productReviewSummary{
+  position:absolute;
+  z-index:21;
+  left:22px;
+  bottom:calc(var(--nav-h) + 74px + var(--safe-bottom));
+  min-height:24px;
+  padding:5px 10px;
+  border-radius:12px;
+  color:#111;
+  background:rgba(255,255,255,.62);
+  border:1px solid rgba(0,0,0,.07);
+  backdrop-filter:blur(16px) saturate(135%);
+  -webkit-backdrop-filter:blur(16px) saturate(135%);
+  font-size:8px;
+  font-weight:650;
+}
+.productReviewSummary.unrated{color:#666}
+
 /* ============================================================
    RESET
    ============================================================ */
@@ -2348,6 +2366,10 @@ svg{
 
     </button>
 
+    <button id="productReviewSummary" class="productReviewSummary unrated" type="button">
+      ☆ Sin reseñas
+    </button>
+
   </main>
 
 </div>
@@ -3862,6 +3884,13 @@ svg{
           "Producto seleccionado de CajaModa. Elige tu color y tu talla para agregarlo a tu bolsa."
         );
 
+    const reviewSummary = product.reviewSummary || { average:0, count:0 };
+    const reviewSummaryButton = $("productReviewSummary");
+    reviewSummaryButton.classList.toggle("unrated", !reviewSummary.count);
+    reviewSummaryButton.textContent = reviewSummary.count
+      ? `★★★★★ ${Number(reviewSummary.average || 0).toFixed(1)} · ${reviewSummary.count} reseñas`
+      : "☆ Sin reseñas";
+
     /*
       Number always represents position inside
       the active category.
@@ -4414,6 +4443,13 @@ svg{
   $("priceCapsule")
     .onclick =
       openDetails;
+
+  $("productReviewSummary").onclick = () => {
+    openDetails();
+    requestAnimationFrame(() => {
+      $("productReviews")?.scrollIntoView({ behavior:"smooth", block:"start" });
+    });
+  };
 
   $("detailsBackdrop")
     .onclick =

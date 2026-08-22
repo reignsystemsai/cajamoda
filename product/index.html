@@ -730,7 +730,7 @@ svg{
 }
 
 /* ============================================================
-   WISHLIST OVERLAY
+   FAVORITA OVERLAY
    ============================================================ */
 
 .wishListOverlay{
@@ -2318,7 +2318,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
       <button
         id="favoriteButton"
         class="circleControl favoriteButton"
-        aria-label="Agregar a Wishlist"
+        aria-label="Agregar a Favorita"
       >
 
         <svg
@@ -2666,7 +2666,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
 </div>
 
 <!-- ==========================================================
-     WISHLIST
+     FAVORITA
      ========================================================== -->
 
 <div
@@ -2695,7 +2695,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
           id="wishListTitle"
           class="wishListTitle"
         >
-          Wishlist
+          Favorita
         </div>
 
       </div>
@@ -2704,7 +2704,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
         id="wishListClose"
         class="wishListClose"
         type="button"
-        aria-label="Cerrar Wishlist"
+        aria-label="Cerrar Favorita"
       >
 
         <svg viewBox="0 0 24 24">
@@ -2935,7 +2935,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
   <button
     id="navFavorites"
     class="navButton"
-    aria-label="Wishlist"
+    aria-label="Favorita"
   >
 
     <svg
@@ -2947,7 +2947,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
     </svg>
 
     <span>
-      Wishlist
+      Favorita
     </span>
 
   </button>
@@ -5683,7 +5683,7 @@ price:
 
                     <span class="wishListSelect ${selectedWishListItems.has(String(product.id)) ? "selected" : ""}" data-wishlist-select="${escapeHtml(product.id)}" role="checkbox" aria-checked="${selectedWishListItems.has(String(product.id))}" tabindex="0"></span>
 
-                    <span class="wishListHeart" data-wishlist-remove="${escapeHtml(product.id)}" role="button" aria-label="Quitar de Wishlist" tabindex="0">${heartIcon(true)}</span>
+                    <span class="wishListHeart" data-wishlist-remove="${escapeHtml(product.id)}" role="button" aria-label="Quitar de Favorita" tabindex="0">${heartIcon(true)}</span>
 
                     ${
                       image
@@ -5724,7 +5724,7 @@ price:
                 <path d="M20.3 5.7a5.2 5.2 0 0 0-7.4 0L12 6.6l-.9-.9a5.2 5.2 0 0 0-7.4 7.4L12 21l8.3-7.9a5.2 5.2 0 0 0 0-7.4Z"/>
               </svg>
 
-              Tu Wishlist está vacía.
+              Tu Favorita está vacía.
             </div>
           `;
 
@@ -5889,7 +5889,7 @@ function closeWishList(){
       ){
 
         showToast(
-          "Puedes guardar hasta 20 productos en tu Wishlist."
+          "Puedes guardar hasta 20 productos en tu Favorita."
         );
 
         openWishList();

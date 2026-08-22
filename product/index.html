@@ -5248,6 +5248,20 @@ price:
     if(next===state.selectedQuantity){return}
     state.selectedQuantity=next;
     renderQuantityState();
+    const cart=readCart();
+    const matches=item=>
+      String(item.productId)===String(state.product?.id)&&
+      normalizeChoice(item.size)===normalizeChoice(state.selectedSize)&&
+      normalizeChoice(item.color)===normalizeChoice(state.selectedColor);
+    const line=cart.items.find(matches);
+    if(line){
+      if(next===0){
+        cart.items=cart.items.filter(item=>!matches(item));
+      }else{
+        line.quantity=next;
+      }
+      saveCart(cart);
+    }
     if(navigator.vibrate){navigator.vibrate(12)}
   }
 

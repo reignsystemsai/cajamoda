@@ -1566,14 +1566,14 @@ svg{
   color:#444;
 }
 
-.productReviews{position:relative;margin-top:12px;padding:20px;border:1px solid rgba(255,255,255,.94);border-radius:24px;background:linear-gradient(145deg,rgba(255,255,255,.76),rgba(255,255,255,.48));box-shadow:0 20px 55px rgba(0,0,0,.13);backdrop-filter:blur(30px) saturate(150%);-webkit-backdrop-filter:blur(30px) saturate(150%);color:#080808}
+.productReviews{position:relative;margin-top:10px;padding:12px 14px;border:1px solid rgba(255,255,255,.94);border-radius:18px;background:linear-gradient(145deg,rgba(255,255,255,.76),rgba(255,255,255,.48));box-shadow:0 12px 30px rgba(0,0,0,.10);backdrop-filter:blur(24px) saturate(150%);-webkit-backdrop-filter:blur(24px) saturate(150%);color:#080808}
 .productReviews[hidden]{display:none}
 .reviewSummaryLine{display:flex;align-items:center;justify-content:center;color:#080808}
 .reviewSummaryText{font:700 11px/1.3 Inter,system-ui,sans-serif;color:#080808}
-.reviewClose{position:absolute;top:10px;right:12px;width:32px;height:32px;border:0;background:transparent;color:#080808;font:300 24px/1 Inter,system-ui,sans-serif;display:grid;place-items:center}
-.reviewActions{display:flex;justify-content:center;gap:28px;margin-top:16px;padding-bottom:14px;border-bottom:1px solid rgba(0,0,0,.12)}
+.reviewClose{position:absolute;top:4px;right:6px;width:28px;height:28px;border:0;background:transparent;color:#080808;font:300 21px/1 Inter,system-ui,sans-serif;display:grid;place-items:center}
+.reviewActions{display:flex;justify-content:center;gap:24px;margin-top:10px;padding-bottom:4px}
 .reviewAction{border:0;border-bottom:1px solid #080808;padding:2px 0;background:transparent;color:#080808;font:600 9px/1.2 Inter,system-ui,sans-serif}
-.reviewList{display:grid;gap:8px;margin-top:10px}
+.reviewList{display:grid;gap:8px;margin-top:6px}
 .reviewEntry{padding:10px;border-top:1px solid rgba(0,0,0,.07);color:#111}
 .reviewEntryTop{display:flex;justify-content:space-between;gap:10px;font:700 8px/1.3 Inter,system-ui,sans-serif;color:#111}
 .reviewEntryText{margin-top:5px;font:400 8px/1.45 Inter,system-ui,sans-serif;color:#111}
@@ -1745,34 +1745,14 @@ textarea.reviewField{min-height:76px;resize:vertical}
   margin-top:17px;
 }
 
-.addBagButton{
-
-  width:100%;
-
-  height:43px;
-
-  border-radius:11px;
-
-  font-size:9px;
-
-  font-weight:750;
-}
-
-.addBagButton{
-
-  background:#080808;
-
-  color:#fff;
-}
-
 .buyNowDirectButton{
   width:100%;
   height:43px;
-  margin-top:7px;
-  border:1px solid rgba(0,0,0,.18);
+  margin-top:0;
+  border:1px solid #080808;
   border-radius:11px;
-  background:rgba(255,255,255,.54);
-  color:#111;
+  background:#080808;
+  color:#fff;
   font-size:9px;
   font-weight:750;
 }
@@ -2581,13 +2561,6 @@ textarea.reviewField{min-height:76px;resize:vertical}
       <!-- PURCHASE -->
 
       <section class="purchaseActions">
-
-        <button
-          id="addBagButton"
-          class="addBagButton"
-        >
-          Agregar a la bolsa
-        </button>
 
         <button
           id="buyNowDirectButton"
@@ -4473,7 +4446,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
             <div class="reviewEntryText">${escapeHtml(review.content || review.body || "")}</div>
           </article>
         `).join("")
-      : '<div class="reviewEmpty">Este producto todavía no tiene reseñas.</div>';
+      : "";
   }
 
   async function loadProductReviews(){
@@ -4500,7 +4473,6 @@ textarea.reviewField{min-height:76px;resize:vertical}
     cancelDetailsAutoClose();
     renderProductReviews();
     $("productReviews").hidden = false;
-    $("productReviews").scrollIntoView({behavior:"smooth",block:"start"});
   }
 
   $("priceCapsule")
@@ -5233,6 +5205,9 @@ price:
         cart:saved
       });
       syncBagCount();
+    }else if(next>0){
+      syncSelectionToBag();
+      syncBagCount();
     }
     if(navigator.vibrate){navigator.vibrate(12)}
   }
@@ -5365,6 +5340,9 @@ const desiredKey =
       line.image =
         image;
 
+      line.description =
+        state.product.description || "";
+
       line.variantId =
   variantId;
 
@@ -5398,6 +5376,9 @@ line.quantity =
           state.product.name,
 
         image,
+
+        description:
+          state.product.description || "",
 
         size:
           state.selectedSize,
@@ -5436,65 +5417,6 @@ price:
 
     return saved;
   }
-
-  /* ============================================================
-     ADD TO BAG
-     ============================================================ */
-
-  let addBagLocked = false;
-
-  $("addBagButton")
-    .onclick =
-      () => {
-
-        if(addBagLocked){return}
-
-        if(
-          !state.selectedSize
-        ){
-
-          showToast(
-            "Selecciona una talla."
-          );
-
-          return;
-        }
-
-        if(productColorValues().length > 1 && !state.selectedColor){
-          showToast("Selecciona un color.");
-          return;
-        }
-
-        if(Number(state.selectedQuantity||0) < 1){
-          showToast("Selecciona una cantidad.");
-          return;
-        }
-
-        addBagLocked = true;
-        $("addBagButton").disabled = true;
-
-        syncSelectionToBag();
-
-        animateBag();
-
-        showToast(
-          "Producto guardado en tu bolsa."
-        );
-
-        if(
-          navigator.vibrate
-        ){
-
-          navigator.vibrate(
-            18
-          );
-        }
-
-        window.setTimeout(() => {
-          addBagLocked = false;
-          $("addBagButton").disabled = false;
-        },450);
-      };
 
   $("buyNowDirectButton").onclick = () => {
     if(!state.selectedSize){

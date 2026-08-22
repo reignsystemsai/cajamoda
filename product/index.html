@@ -2453,7 +2453,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
 
       </section>
 
-      <section id="productReviews" class="productReviews" hidden aria-label="Reseñas del producto">
+      <section id="productReviews" class="productReviews" hidden role="dialog" aria-modal="false" aria-label="Leer y escribir reseñas">
         <div class="reviewSummaryLine">
           <div id="reviewSummaryText" class="reviewSummaryText">☆ Sin reseñas</div>
           <button id="reviewClose" class="reviewClose" type="button" aria-label="Cerrar reseñas">×</button>
@@ -4492,6 +4492,8 @@ textarea.reviewField{min-height:76px;resize:vertical}
   $("readReviewsButton").onclick = openProductReviews;
   $("reviewClose").onclick = () => {
     $("productReviews").hidden = true;
+    $("reviewForm").hidden = true;
+    $("writeReviewButton").setAttribute("aria-expanded","false");
     scheduleDetailsAutoClose();
   };
 

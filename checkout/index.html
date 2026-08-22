@@ -1822,35 +1822,44 @@ img{display:block;max-width:100%}
     `).join("");
 
     $("reviewList").innerHTML = cart.items.map(item => `
-      <article class="reviewItem">
-        ${productImage(item, true)}
+      <article class="cartItem finalCheckoutItem" data-cart-item="${escapeHtml(item.id)}">
+        ${productImage(item)}
 
-        <div class="reviewInfo">
-          <div class="reviewName">
-            ${escapeHtml(item.name)}
+        <div class="cartInfo">
+          <div class="cartTop">
+            <div>
+              <div class="cartName">${escapeHtml(item.name)}</div>
+              ${productDescription(item)?`<div class="cartDescription">${escapeHtml(productDescription(item))}</div>`:""}
+              <div class="cartRating">${productRatingLabel(item)}</div>
+            </div>
+
+            <div class="cartTopActions">
+              <button class="cartHeart ${isFavorite(item.productId)?"active":""}" type="button" data-cart-favorite="${escapeHtml(item.productId)}" aria-label="Favorita">
+                <svg viewBox="0 0 24 24"><path d="M20.3 5.7a5.2 5.2 0 0 0-7.4 0L12 6.6l-.9-.9a5.2 5.2 0 0 0-7.4 7.4L12 21l8.3-7.9a5.2 5.2 0 0 0 0-7.4Z"/></svg>
+              </button>
+              <button class="removeButton" type="button" data-remove="${escapeHtml(item.id)}" aria-label="Eliminar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              </button>
+            </div>
           </div>
 
-          <div class="reviewOptions">
-            ${
-              item.color
-                ? `Color: ${escapeHtml(item.color)}<br>`
-                : ""
-            }
-            ${
-              item.size
-                ? `Talla: ${escapeHtml(item.size)}`
-                : ""
-            }
-          </div>
-        </div>
-
-        <div class="reviewNumbers">
-          <div class="reviewQuantity">
-            Cantidad ${item.quantity}
+          <div class="cartOptions">
+            ${visibleColor(item)?`Color: ${escapeHtml(visibleColor(item))}<br>`:""}
+            ${item.size?`Talla: ${escapeHtml(item.size)}`:""}
           </div>
 
-          <div class="reviewPrice">
-            ${money(item.unitPrice * item.quantity)}
+          <div class="cartOptionControls">
+            ${colorChoices(item)}
+            ${sizeChoices(item)}
+          </div>
+
+          <div class="cartBottom">
+            <div class="cartPrice">${money(item.unitPrice * item.quantity)}</div>
+            <div class="quantityControl">
+              <button class="quantityButton" type="button" data-minus="${escapeHtml(item.id)}" aria-label="Reducir cantidad">−</button>
+              <span class="quantityValue">${item.quantity}</span>
+              <button class="quantityButton" type="button" data-plus="${escapeHtml(item.id)}" aria-label="Aumentar cantidad">+</button>
+            </div>
           </div>
         </div>
       </article>

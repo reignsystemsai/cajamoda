@@ -320,8 +320,7 @@ svg{
 
   overflow-y:hidden;
 
-  background:
-    rgba(255,255,255,.96);
+  background:transparent;
 
   border:0;
 
@@ -349,9 +348,9 @@ svg{
 
   flex:0 0 auto;
 
-  height:100%;
+  height:34px;
 
-  padding:0 2px;
+  padding:0 10px 5px;
 
   display:flex;
 
@@ -370,6 +369,14 @@ svg{
   letter-spacing:.08px;
 
   text-transform:uppercase;
+
+  border-radius:999px;
+
+  background:rgba(255,255,255,.42);
+
+  backdrop-filter:blur(12px);
+
+  -webkit-backdrop-filter:blur(12px);
 
   transition:
     color .18s ease,
@@ -393,7 +400,7 @@ svg{
 
   right:0;
 
-  bottom:5px;
+  bottom:2px;
 
   height:2px;
 
@@ -723,7 +730,7 @@ svg{
 }
 
 /* ============================================================
-   WISHLIST OVERLAY
+   FAVORITA OVERLAY
    ============================================================ */
 
 .wishListOverlay{
@@ -2210,6 +2217,11 @@ textarea.reviewField{min-height:76px;resize:vertical}
 .favoriteButton.active{color:#cf1738;animation:cajaHeartBeat 2.4s ease-in-out infinite;transform-origin:center}
 @keyframes cajaHeartBeat{0%,42%,100%{transform:scale(1)}7%{transform:scale(1.13)}14%{transform:scale(1)}21%{transform:scale(1.09)}29%{transform:scale(1)}}
 @media (prefers-reduced-motion:reduce){.favoriteButton.active{animation:none}}
+.productProfileOverlay{position:fixed;inset:0;z-index:180;display:none;align-items:flex-end;padding:12px 12px calc(var(--nav-h) + 18px + var(--safe-bottom));background:rgba(255,255,255,.16);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.productProfileOverlay.open{display:flex}.productProfilePanel{width:100%;padding:16px;border-radius:24px;background:linear-gradient(145deg,rgba(255,255,255,.93),rgba(255,255,255,.66));border:1px solid rgba(255,255,255,.96);box-shadow:0 22px 55px rgba(0,0,0,.14)}
+.productProfileHead{display:flex;align-items:center;justify-content:space-between}.productProfileTitle{font:800 15px/1.2 Inter,sans-serif}.productProfileClose{width:36px;height:36px;border:0;border-radius:50%;background:rgba(255,255,255,.58);font-size:22px}.productProfileOffer{margin:12px 0;padding:12px;border-radius:16px;background:rgba(255,255,255,.5)}
+.productProfileOffer strong{font:800 16px/1.2 Inter,sans-serif}.productProfileOffer p{font:500 9px/1.5 Inter,sans-serif;color:#444}.productProfileBenefits{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font:700 8px/1.3 Inter,sans-serif;text-align:center}
+.productProfileInput{width:100%;height:43px;margin-top:8px;padding:0 12px;border:1px solid rgba(0,0,0,.1);border-radius:13px;background:rgba(255,255,255,.64)}.productProfileActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.productProfileAction{height:42px;border-radius:13px;border:1px solid rgba(0,0,0,.1);background:rgba(255,255,255,.5);font-weight:750}.productProfileAction.primary{background:#111;color:#fff}
 
 .choiceTopRow{
   display:grid;
@@ -2306,7 +2318,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
       <button
         id="favoriteButton"
         class="circleControl favoriteButton"
-        aria-label="Agregar a Wishlist"
+        aria-label="Agregar a Favorita"
       >
 
         <svg
@@ -2528,33 +2540,11 @@ textarea.reviewField{min-height:76px;resize:vertical}
           <span
             id="selectedColorLabel"
             class="optionLabelValue"
-          >
-            Negro
-          </span>
+          ></span>
 
         </div>
 
-        <div id="colorRow" class="colorRow">
-
-          <button
-            class="colorButton colorBlack active"
-            data-color="Negro"
-            aria-label="Negro"
-          ></button>
-
-          <button
-            class="colorButton colorRed"
-            data-color="Rojo"
-            aria-label="Rojo"
-          ></button>
-
-          <button
-            class="colorButton colorCream"
-            data-color="Crema"
-            aria-label="Crema"
-          ></button>
-
-        </div>
+        <div id="colorRow" class="colorRow"></div>
 
       </section>
 
@@ -2563,7 +2553,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
         <div class="optionLabel">Cantidad</div>
         <div class="quantityCapsule">
           <button id="quantityMinus" class="quantityButton" type="button" aria-label="Disminuir cantidad">−</button>
-          <output id="quantityValue" class="quantityValue" aria-live="polite">1</output>
+          <output id="quantityValue" class="quantityValue" aria-live="polite">0</output>
           <button id="quantityPlus" class="quantityButton" type="button" aria-label="Aumentar cantidad">+</button>
         </div>
       </section>
@@ -2665,8 +2655,18 @@ textarea.reviewField{min-height:76px;resize:vertical}
 
 </div>
 
+<div id="productProfileOverlay" class="productProfileOverlay" aria-hidden="true">
+  <section class="productProfilePanel" role="dialog" aria-modal="true" aria-label="Tu perfil">
+    <header class="productProfileHead"><div><small>MIEMBROS CAJAMODA</small><div class="productProfileTitle">Tu perfil</div></div><button id="productProfileClose" class="productProfileClose" type="button" aria-label="Cerrar">×</button></header>
+    <div class="productProfileOffer"><strong>Únete y recibe 10% de descuento</strong><p>Crea tu perfil CajaModa para mantener tus pedidos juntos, rastrear tus compras y recibir acceso anticipado.</p><div class="productProfileBenefits"><span>10% DTO.<br>Primera compra</span><span>RASTREA<br>Tus pedidos</span><span>PRIMERO<br>Lanzamientos</span></div></div>
+    <input id="productProfileName" class="productProfileInput" type="text" autocomplete="name" placeholder="Tu nombre">
+    <input id="productProfileEmail" class="productProfileInput" type="email" autocomplete="email" placeholder="tu@email.com">
+    <div class="productProfileActions"><button id="productProfileLogin" class="productProfileAction" type="button">Iniciar sesión</button><button id="productProfileCreate" class="productProfileAction primary" type="button">Crear perfil + 10%</button></div>
+  </section>
+</div>
+
 <!-- ==========================================================
-     WISHLIST
+     FAVORITA
      ========================================================== -->
 
 <div
@@ -2695,7 +2695,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
           id="wishListTitle"
           class="wishListTitle"
         >
-          Wishlist
+          Favorita
         </div>
 
       </div>
@@ -2704,7 +2704,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
         id="wishListClose"
         class="wishListClose"
         type="button"
-        aria-label="Cerrar Wishlist"
+        aria-label="Cerrar Favorita"
       >
 
         <svg viewBox="0 0 24 24">
@@ -2935,7 +2935,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
   <button
     id="navFavorites"
     class="navButton"
-    aria-label="Wishlist"
+    aria-label="Favorita"
   >
 
     <svg
@@ -2947,7 +2947,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
     </svg>
 
     <span>
-      Wishlist
+      Favorita
     </span>
 
   </button>
@@ -3183,7 +3183,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
 
     selectedSize:null,
 
-    selectedQuantity:1,
+    selectedQuantity:0,
 
     selectedColor:"",
 
@@ -3650,7 +3650,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
       state.product = null;
       state.imageIndex = 0;
       state.selectedSize = null;
-      state.selectedQuantity = 1;
+      state.selectedQuantity = 0;
       state.selectedColor = "";
 
       renderCategoryNav();
@@ -3970,7 +3970,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
         "Selecciona";
 
     state.selectedQuantity =
-      findExistingAutoLine(product.id)?.quantity || 1;
+      findExistingAutoLine(product.id)?.quantity || 0;
 
     renderColorState();
     renderSizeState();
@@ -4555,7 +4555,11 @@ textarea.reviewField{min-height:76px;resize:vertical}
   $("writeReviewButton").onclick=()=>{
     cancelDetailsAutoClose();
     $("reviewForm").hidden=false;
-    $("reviewAuthor").focus();
+    $("writeReviewButton").setAttribute("aria-expanded","true");
+    requestAnimationFrame(()=>{
+      $("reviewForm").scrollIntoView({behavior:"smooth",block:"start"});
+      $("reviewAuthor").focus({preventScroll:true});
+    });
   };
 
   qsa("[data-review-rating]").forEach(button=>{
@@ -5025,7 +5029,7 @@ price:
       !availableSizes.has(normalizeChoice(state.selectedSize))
     ){
       state.selectedSize = null;
-      state.selectedQuantity = 1;
+      state.selectedQuantity = 0;
       $("selectedSizeLabel").textContent = "Selecciona";
     }
 
@@ -5080,7 +5084,7 @@ price:
 
     if(state.selectedSize===size){
       state.selectedSize=null;
-      state.selectedQuantity=1;
+      state.selectedQuantity=0;
       $("selectedSizeLabel").textContent="Selecciona";
       renderSizeState();
       renderQuantityState();
@@ -5093,7 +5097,7 @@ price:
     const existing=findExistingAutoLine(state.product.id);
     state.selectedQuantity=existing?.size===size
       ?Math.max(1,Number(existing.quantity||1))
-      :1;
+      :0;
     $("selectedSizeLabel").textContent=size;
     renderSizeState();
     renderQuantityState();
@@ -5231,16 +5235,16 @@ price:
   }
 
   function renderQuantityState(){
-    const value=Math.max(1,Math.min(selectedInventoryLimit(),Number(state.selectedQuantity||1)));
+    const value=Math.max(0,Math.min(selectedInventoryLimit(),Number(state.selectedQuantity||0)));
     state.selectedQuantity=value;
     $("quantityValue").textContent=String(value);
-    $("quantityMinus").disabled=value<=1;
+    $("quantityMinus").disabled=value<=0;
     $("quantityPlus").disabled=value>=selectedInventoryLimit();
   }
 
   function changeSelectedQuantity(amount){
     if(!state.selectedSize){showToast("Selecciona una talla primero.");return}
-    const next=Math.max(1,Math.min(selectedInventoryLimit(),Number(state.selectedQuantity||1)+amount));
+    const next=Math.max(0,Math.min(selectedInventoryLimit(),Number(state.selectedQuantity||0)+amount));
     if(next===state.selectedQuantity){return}
     state.selectedQuantity=next;
     renderQuantityState();
@@ -5322,7 +5326,6 @@ const desiredKey =
   ) ||
   cart.items.find(
     item =>
-      !item.variantId &&
       String(
         item.productId
       ) ===
@@ -5462,7 +5465,7 @@ price:
           Math.max(1,Number(state.selectedQuantity||1)),
 
         selectionMode:
-          "SIZE_SELECTION",
+          "EXACT_QUANTITY",
 
         cart:
           saved
@@ -5476,9 +5479,13 @@ price:
      ADD TO BAG
      ============================================================ */
 
+  let addBagLocked = false;
+
   $("addBagButton")
     .onclick =
       () => {
+
+        if(addBagLocked){return}
 
         if(
           !state.selectedSize
@@ -5496,6 +5503,14 @@ price:
           return;
         }
 
+        if(Number(state.selectedQuantity||0) < 1){
+          showToast("Selecciona una cantidad.");
+          return;
+        }
+
+        addBagLocked = true;
+        $("addBagButton").disabled = true;
+
         syncSelectionToBag();
 
         animateBag();
@@ -5512,6 +5527,11 @@ price:
             18
           );
         }
+
+        window.setTimeout(() => {
+          addBagLocked = false;
+          $("addBagButton").disabled = false;
+        },450);
       };
 
   /* ============================================================
@@ -5521,6 +5541,10 @@ price:
   $("buyNowButton")
     .onclick =
       () => {
+        if(state.selectedSize && Number(state.selectedQuantity||0) < 1){
+          showToast("Selecciona una cantidad.");
+          return;
+        }
         if(state.selectedSize && productColorValues().length > 1 && !state.selectedColor){
           showToast("Selecciona un color.");
           return;
@@ -5659,7 +5683,7 @@ price:
 
                     <span class="wishListSelect ${selectedWishListItems.has(String(product.id)) ? "selected" : ""}" data-wishlist-select="${escapeHtml(product.id)}" role="checkbox" aria-checked="${selectedWishListItems.has(String(product.id))}" tabindex="0"></span>
 
-                    <span class="wishListHeart" data-wishlist-remove="${escapeHtml(product.id)}" role="button" aria-label="Quitar de Wishlist" tabindex="0">${heartIcon(true)}</span>
+                    <span class="wishListHeart" data-wishlist-remove="${escapeHtml(product.id)}" role="button" aria-label="Quitar de Favorita" tabindex="0">${heartIcon(true)}</span>
 
                     ${
                       image
@@ -5700,7 +5724,7 @@ price:
                 <path d="M20.3 5.7a5.2 5.2 0 0 0-7.4 0L12 6.6l-.9-.9a5.2 5.2 0 0 0-7.4 7.4L12 21l8.3-7.9a5.2 5.2 0 0 0 0-7.4Z"/>
               </svg>
 
-              Tu Wishlist está vacía.
+              Tu Favorita está vacía.
             </div>
           `;
 
@@ -5865,7 +5889,7 @@ function closeWishList(){
       ){
 
         showToast(
-          "Puedes guardar hasta 20 productos en tu Wishlist."
+          "Puedes guardar hasta 20 productos en tu Favorita."
         );
 
         openWishList();
@@ -6202,10 +6226,31 @@ function closeWishList(){
   $("navProfile")
     .onclick =
       () => {
-        showToast(
-          "Crea o administra tu perfil desde Inicio."
-        );
+        const profile=readJson("cajamoda-member-profile",{});
+        $("productProfileName").value=profile.name||"";
+        $("productProfileEmail").value=profile.email||"";
+        $("productProfileOverlay").classList.add("open");
+        $("productProfileOverlay").setAttribute("aria-hidden","false");
       };
+
+  function closeProductProfile(){
+    $("productProfileOverlay").classList.remove("open");
+    $("productProfileOverlay").setAttribute("aria-hidden","true");
+  }
+  $("productProfileClose").onclick=closeProductProfile;
+  $("productProfileOverlay").onclick=event=>{if(event.target===$("productProfileOverlay")){closeProductProfile();}};
+  function saveProductProfile(mode){
+    const email=$("productProfileEmail").value.trim().toLowerCase();
+    if(!email||!email.includes("@")){showToast("Ingresa un correo electrónico válido.");return;}
+    const existing=readJson("cajamoda-member-profile",{});
+    const profile={...existing,name:$("productProfileName").value.trim(),email,marketingOptIn:true,welcomePromo:existing.welcomePromo||(mode==="signup"?"CAJAMODA10":null),updatedAt:new Date().toISOString()};
+    saveJson("cajamoda-member-profile",profile);
+    sendBridge("MEMBER_AUTH_REQUEST",{mode,...profile});
+    closeProductProfile();
+    showToast(mode==="signup"?"Perfil creado. Tu descuento está listo.":"Perfil actualizado.");
+  }
+  $("productProfileLogin").onclick=()=>saveProductProfile("login");
+  $("productProfileCreate").onclick=()=>saveProductProfile("signup");
 
   /* ============================================================
      PLUS MENU

@@ -393,6 +393,9 @@ img{display:block;max-width:100%}
 .cartHeart{width:30px;height:30px;display:grid;place-items:center;border-radius:50%;color:#111}
 .cartHeart svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5}
 .cartHeart.active svg{fill:#d9344d;stroke:#d9344d}
+.cartHeart.active{color:#d9344d;animation:cajaHeartBeat 2.4s ease-in-out infinite;transform-origin:center}
+@keyframes cajaHeartBeat{0%,42%,100%{transform:scale(1)}7%{transform:scale(1.13)}14%{transform:scale(1)}21%{transform:scale(1.09)}29%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.cartHeart.active{animation:none}}
 .removeButton{
   flex:0 0 auto;
   width:30px;
@@ -436,6 +439,8 @@ img{display:block;max-width:100%}
 .cartSizeChoices{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .cartSizeChoice{min-width:29px;height:29px;padding:0 8px;border:1px solid rgba(0,0,0,.10);border-radius:999px;background:rgba(255,255,255,.48);font-size:9px}
 .cartSizeChoice.selected{background:#111;color:#fff;border-color:#111}
+.cartSizeChoice:disabled{opacity:.28;cursor:not-allowed;text-decoration:line-through}
+.cartColorChoices{display:flex;align-items:center;gap:7px}.cartColorChoice{width:25px;height:25px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.18);background:var(--swatch,#ddd)}.cartColorChoice.selected{box-shadow:0 0 0 2px #111}
 .cartImageLink,
 .reviewImageLink{
   display:block;
@@ -1214,7 +1219,7 @@ img{display:block;max-width:100%}
     <svg viewBox="0 0 24 24">
       <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z"/>
     </svg>
-    <span>Wishlist</span>
+    <span>Favorita</span>
   </a>
 
   <a class="bottomNavItem" href="/">
@@ -1583,9 +1588,21 @@ img{display:block;max-width:100%}
       :"";
   }
 
+  function colorChoices(item){
+    const values=optionValues(item,"Color");
+    if(values.length<2){return ""}
+    const swatch=value=>({negro:"#111",black:"#111",blanco:"#fff",white:"#fff",rojo:"#c91f37",red:"#c91f37",crema:"#eadcc7",cream:"#eadcc7",azul:"#315b8a",blue:"#315b8a",verde:"#55745a",green:"#55745a"}[normalizeChoice(value)]||"#d8d8d8");
+    return `<div class="cartColorChoices" aria-label="Color">${values.map(value=>`<button class="cartColorChoice ${normalizeChoice(value)===normalizeChoice(item.color)?"selected":""}" type="button" data-cart-color="${escapeHtml(value)}" data-item-id="${escapeHtml(item.id)}" aria-label="${escapeHtml(value)}" style="--swatch:${swatch(value)}"></button>`).join("")}</div>`;
+  }
+
   function productDescription(item){
     const product=catalogProduct(item.productId);
-    return String(item.description || product?.description || "").trim();
+    const source=String(item.description || product?.description || "").trim();
+    if(!source){return ""}
+    const text=document.createElement("div");
+    text.innerHTML=source;
+    const clean=String(text.textContent || "").replace(/\s+/g," ").trim();
+    return clean.length>92 ? `${clean.slice(0,89).trim()}…` : clean;
   }
 
   function productRatingLabel(item){
@@ -1598,8 +1615,11 @@ img{display:block;max-width:100%}
   function sizeChoices(item){
     const values=optionValues(item,"Size");
     if(!values.length){return ""}
+    const canonical=["S","M","L","XL"];
+    const alias=value=>({small:"S",pequeno:"S",pequeño:"S",medium:"M",mediano:"M",large:"L",grande:"L","extra large":"XL",extra_grande:"XL"}[normalizeChoice(value)]||String(value).toUpperCase());
+    const available=new Set(values.map(alias));
     return `<div class="cartSizeChoices" aria-label="Talla">
-      ${values.map(value=>`<button class="cartSizeChoice ${normalizeChoice(value)===normalizeChoice(item.size)?"selected":""}" type="button" data-cart-size="${escapeHtml(value)}" data-item-id="${escapeHtml(item.id)}">${escapeHtml(value)}</button>`).join("")}
+      ${canonical.map(value=>`<button class="cartSizeChoice ${alias(item.size)===value?"selected":""}" type="button" data-cart-size="${escapeHtml(value)}" data-item-id="${escapeHtml(item.id)}" ${available.has(value)?"":"disabled aria-disabled=\"true\""}>${value}</button>`).join("")}
     </div>`;
   }
 
@@ -1732,7 +1752,7 @@ img{display:block;max-width:100%}
             </div>
 
             <div class="cartTopActions">
-            <button class="cartHeart ${isFavorite(item.productId)?"active":""}" type="button" data-cart-favorite="${escapeHtml(item.productId)}" aria-label="Wishlist">
+            <button class="cartHeart ${isFavorite(item.productId)?"active":""}" type="button" data-cart-favorite="${escapeHtml(item.productId)}" aria-label="Favorita">
               <svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.7-7.5 1.1-1.1a5.5 5.5 0 0 0 0-7.8Z"/></svg>
             </button>
             <button
@@ -1766,7 +1786,7 @@ img{display:block;max-width:100%}
           </div>
 
           <div class="cartOptionControls">
-            ${optionSelect(item, "Color", "Color", item.color)}
+            ${colorChoices(item)}
             ${sizeChoices(item)}
           </div>
 
@@ -1878,6 +1898,9 @@ img{display:block;max-width:100%}
 
     document.querySelectorAll("[data-cart-size]").forEach(button=>{
       button.onclick=()=>changeOption(button.dataset.itemId,"size",button.dataset.cartSize);
+    });
+    document.querySelectorAll("[data-cart-color]").forEach(button=>{
+      button.onclick=()=>changeOption(button.dataset.itemId,"color",button.dataset.cartColor);
     });
 
     document.querySelectorAll("[data-cart-favorite]").forEach(button=>{

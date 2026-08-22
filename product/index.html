@@ -1766,6 +1766,18 @@ textarea.reviewField{min-height:76px;resize:vertical}
   color:#fff;
 }
 
+.buyNowDirectButton{
+  width:100%;
+  height:43px;
+  margin-top:7px;
+  border:1px solid rgba(0,0,0,.18);
+  border-radius:11px;
+  background:rgba(255,255,255,.54);
+  color:#111;
+  font-size:9px;
+  font-weight:750;
+}
+
 .purchaseMeta{
 
   display:flex;
@@ -2201,7 +2213,8 @@ textarea.reviewField{min-height:76px;resize:vertical}
   -webkit-backdrop-filter:blur(25px) saturate(165%);
 }
 #photoBag,#detailsBag,#navBag{width:39px;height:39px;min-width:39px;min-height:39px;margin:auto;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,rgba(255,255,255,.83),rgba(255,255,255,.36));border:1px solid rgba(255,255,255,.96);box-shadow:0 0 0 1px rgba(0,0,0,.026),inset 0 1px 0 rgba(255,255,255,1),0 8px 24px rgba(0,0,0,.055);backdrop-filter:blur(25px) saturate(165%);-webkit-backdrop-filter:blur(25px) saturate(165%)}
-#photoBag,#detailsBag,#navBag{background:transparent;border-color:transparent;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
+#photoBag{width:42px;height:42px;min-width:42px;min-height:42px}
+#detailsBag,#navBag{background:transparent;border-color:transparent;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
 #photoBag svg,#detailsBag svg,#navBag svg{width:23px;height:23px;stroke-width:1.45}
 #photoBagBadge,#detailsBagCount,#navBagBadge{top:-2px;right:-2px;min-width:18px;height:18px;padding:0 4px;border:2px solid #fff;font-size:8px!important}
 </style>
@@ -2352,7 +2365,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
     </button>
 
     <button id="productRatingSummary" class="productRatingSummary" type="button" aria-label="Abrir reseñas">
-      ☆ Sin reseñas
+      ☆ Sin reseñas →
     </button>
 
   </main>
@@ -2453,7 +2466,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
 
       </section>
 
-      <section id="productReviews" class="productReviews" hidden aria-label="Reseñas del producto">
+      <section id="productReviews" class="productReviews" hidden role="dialog" aria-modal="false" aria-label="Leer y escribir reseñas">
         <div class="reviewSummaryLine">
           <div id="reviewSummaryText" class="reviewSummaryText">☆ Sin reseñas</div>
           <button id="reviewClose" class="reviewClose" type="button" aria-label="Cerrar reseñas">×</button>
@@ -2531,6 +2544,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
           <button
             class="sizeButton"
             data-size="XS"
+            type="button"
           >
             XS
           </button>
@@ -2538,6 +2552,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
           <button
             class="sizeButton"
             data-size="S"
+            type="button"
           >
             S
           </button>
@@ -2545,6 +2560,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
           <button
             class="sizeButton"
             data-size="M"
+            type="button"
           >
             M
           </button>
@@ -2552,6 +2568,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
           <button
             class="sizeButton"
             data-size="L"
+            type="button"
           >
             L
           </button>
@@ -2559,6 +2576,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
           <button
             class="sizeButton"
             data-size="XL"
+            type="button"
           >
             XL
           </button>
@@ -2576,6 +2594,14 @@ textarea.reviewField{min-height:76px;resize:vertical}
           class="addBagButton"
         >
           Agregar a la bolsa
+        </button>
+
+        <button
+          id="buyNowDirectButton"
+          class="buyNowDirectButton"
+          type="button"
+        >
+          Comprar ahora
         </button>
 
         <div class="purchaseMeta">
@@ -3880,8 +3906,8 @@ textarea.reviewField{min-height:76px;resize:vertical}
     const rating = Number(product?.reviewSummary?.averageRating || product?.rating || 0);
     const reviewCount = Number(product?.reviewSummary?.reviewCount || product?.reviewCount || 0);
     $("productRatingSummary").textContent = reviewCount > 0
-      ? `★★★★★ ${rating.toFixed(1)} · ${reviewCount} reseñas`
-      : "☆ Sin reseñas";
+      ? `★★★★★ ${rating.toFixed(1)} · ${reviewCount} reseñas →`
+      : "☆ Sin reseñas →";
     $("productReviews").hidden = true;
 
     /*
@@ -4470,8 +4496,8 @@ textarea.reviewField{min-height:76px;resize:vertical}
       const rating=Number(state.product.reviewSummary.averageRating||0);
       const count=Number(state.product.reviewSummary.reviewCount||0);
       $("productRatingSummary").textContent=count>0
-        ?`★★★★★ ${rating.toFixed(1)} · ${count} reseñas`
-        :"☆ Sin reseñas";
+        ?`★★★★★ ${rating.toFixed(1)} · ${count} reseñas →`
+        :"☆ Sin reseñas →";
       renderProductReviews();
     }catch{}
   }
@@ -4492,6 +4518,8 @@ textarea.reviewField{min-height:76px;resize:vertical}
   $("readReviewsButton").onclick = openProductReviews;
   $("reviewClose").onclick = () => {
     $("productReviews").hidden = true;
+    $("reviewForm").hidden = true;
+    $("writeReviewButton").setAttribute("aria-expanded","false");
     scheduleDetailsAutoClose();
   };
 
@@ -5037,10 +5065,7 @@ price:
     }
 
     state.selectedSize=size;
-    const existing=findExistingAutoLine(state.product.id);
-    state.selectedQuantity=existing?.size===size
-      ?Math.max(1,Number(existing.quantity||1))
-      :0;
+    state.selectedQuantity=0;
     $("selectedSizeLabel").textContent=size;
     renderSizeState();
     renderQuantityState();
@@ -5055,7 +5080,10 @@ price:
       button => {
 
         button.onclick =
-          () => {
+          event => {
+
+            event.preventDefault();
+            event.stopPropagation();
 
             selectSize(
               button.dataset.size
@@ -5203,7 +5231,15 @@ price:
       }else{
         line.quantity=next;
       }
-      saveCart(cart);
+      const saved=saveCart(cart);
+      sendBridge("CART_QUANTITY_CHANGED",{
+        productId:state.product?.id,
+        size:state.selectedSize,
+        color:state.selectedColor,
+        quantity:next,
+        cart:saved
+      });
+      syncBagCount();
     }
     if(navigator.vibrate){navigator.vibrate(12)}
   }
@@ -5490,6 +5526,25 @@ price:
           $("addBagButton").disabled = false;
         },450);
       };
+
+  $("buyNowDirectButton").onclick = () => {
+    if(!state.selectedSize){
+      showToast("Selecciona una talla.");
+      return;
+    }
+    if(productColorValues().length > 1 && !state.selectedColor){
+      showToast("Selecciona un color.");
+      return;
+    }
+    if(Number(state.selectedQuantity||0) < 1){
+      showToast("Selecciona una cantidad.");
+      return;
+    }
+    const cart = syncSelectionToBag();
+    if(!cart){return}
+    saveJson("cajamoda-checkout-cart",cart);
+    location.href = CONFIG.checkoutPage;
+  };
 
   /* ============================================================
      FAVORITE

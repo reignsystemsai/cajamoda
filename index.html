@@ -2641,7 +2641,7 @@ svg{
     id="navFavorites"
     class="navButton"
     data-nav-name="favorites"
-    aria-label="Wishlist"
+    aria-label="Favorita"
   >
 
     <svg
@@ -2653,7 +2653,7 @@ svg{
     </svg>
 
     <span>
-      Wishlist
+      Favorita
     </span>
 
   </button>
@@ -3098,7 +3098,7 @@ svg{
         </div>
 
         <div class="panelHeadTitle">
-          Wishlist
+          Favorita
         </div>
 
       </div>
@@ -4560,7 +4560,7 @@ svg{
 
         <div class="productMedia">
 
-          <button class="productHeart ${favorite?"active":""}" type="button" data-placeholder-favorite="${placeholderId}" aria-label="${favorite?"Quitar de Wishlist":"Agregar a Wishlist"}">${heartIcon(favorite)}</button>
+          <button class="productHeart ${favorite?"active":""}" type="button" data-placeholder-favorite="${placeholderId}" aria-label="${favorite?"Quitar de Favorita":"Agregar a Favorita"}">${heartIcon(favorite)}</button>
 
           <div class="placeholderMedia">
 
@@ -4910,7 +4910,7 @@ svg{
         if(active){state.placeholderFavorites.delete(id)}else{state.placeholderFavorites.add(id)}
         saveJson("cajamoda-placeholder-favorites",[...state.placeholderFavorites]);
         button.classList.toggle("active",!active);
-        button.setAttribute("aria-label",active?"Agregar a Wishlist":"Quitar de Wishlist");
+        button.setAttribute("aria-label",active?"Agregar a Favorita":"Quitar de Favorita");
         button.innerHTML = heartIcon(!active);
       };
     });
@@ -5179,7 +5179,7 @@ svg{
 
                 <span class="favoriteMiniSelect ${selectedFavorites.has(String(product.id)) ? "selected" : ""}" data-favorite-select="${escapeHtml(product.id)}" role="checkbox" aria-checked="${selectedFavorites.has(String(product.id))}" tabindex="0"></span>
 
-                <span class="favoriteMiniHeart" data-favorite-remove="${escapeHtml(product.id)}" role="button" aria-label="Quitar de Wishlist" tabindex="0">${heartIcon(true)}</span>
+                <span class="favoriteMiniHeart" data-favorite-remove="${escapeHtml(product.id)}" role="button" aria-label="Quitar de Favorita" tabindex="0">${heartIcon(true)}</span>
 
                 <div class="favoriteMiniImage">
 

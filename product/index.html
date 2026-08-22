@@ -1005,15 +1005,13 @@ svg{
       var(--safe-bottom)
     );
 
-  min-width:172px;
+  min-width:0;
 
-  height:49px;
+  height:auto;
 
-  padding:
-    0 15px
-    0 17px;
+  padding:8px 0;
 
-  border-radius:999px;
+  border-radius:0;
 
   display:flex;
 
@@ -1024,28 +1022,15 @@ svg{
 
   gap:14px;
 
-  background:
-    rgba(255,255,255,.55);
+  background:transparent;
 
-  border:
-    1px solid
-    rgba(255,255,255,.95);
+  border:0;
 
-  box-shadow:
+  box-shadow:none;
 
-    0 0 0 1px
-    rgba(0,0,0,.035),
+  backdrop-filter:none;
 
-    0 9px 28px
-    rgba(0,0,0,.095);
-
-  backdrop-filter:
-    blur(22px)
-    saturate(155%);
-
-  -webkit-backdrop-filter:
-    blur(22px)
-    saturate(155%);
+  -webkit-backdrop-filter:none;
 
   transition:
     transform .17s ease,
@@ -1097,8 +1082,7 @@ svg{
     transform:
       translateY(-2px);
 
-    background:
-      rgba(255,255,255,.70);
+    background:transparent;
   }
 }
 

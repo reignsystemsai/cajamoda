@@ -390,8 +390,8 @@ img{display:block;max-width:100%}
 .cartDescription{margin-top:5px;color:#333;font-size:8px;line-height:1.4}
 .cartRating{margin-top:7px;color:#666;font-size:8px;font-weight:650}
 .cartTopActions{display:flex;align-items:center;gap:4px}
-.cartHeart{width:30px;height:30px;display:grid;place-items:center;border-radius:50%;color:#111}
-.cartHeart svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5}
+.cartHeart{width:42px;height:42px;display:grid;place-items:center;border-radius:50%;color:#111;background:linear-gradient(145deg,rgba(255,255,255,.83),rgba(255,255,255,.36));border:1px solid rgba(255,255,255,.96);box-shadow:0 0 0 1px rgba(0,0,0,.026),inset 0 1px 0 #fff,0 8px 24px rgba(0,0,0,.055);backdrop-filter:blur(25px) saturate(165%);-webkit-backdrop-filter:blur(25px) saturate(165%)}
+.cartHeart svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5}
 .cartHeart.active svg{fill:#d9344d;stroke:#d9344d}
 .cartHeart.active{color:#d9344d;animation:cajaHeartBeat 2.4s ease-in-out infinite;transform-origin:center}
 @keyframes cajaHeartBeat{0%,42%,100%{transform:scale(1)}7%{transform:scale(1.13)}14%{transform:scale(1)}21%{transform:scale(1.09)}29%{transform:scale(1)}}
@@ -1751,7 +1751,7 @@ img{display:block;max-width:100%}
 
             <div class="cartTopActions">
             <button class="cartHeart ${isFavorite(item.productId)?"active":""}" type="button" data-cart-favorite="${escapeHtml(item.productId)}" aria-label="Favorita">
-              <svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.7-7.5 1.1-1.1a5.5 5.5 0 0 0 0-7.8Z"/></svg>
+              <svg viewBox="0 0 24 24"><path d="M20.3 5.7a5.2 5.2 0 0 0-7.4 0L12 6.6l-.9-.9a5.2 5.2 0 0 0-7.4 7.4L12 21l8.3-7.9a5.2 5.2 0 0 0 0-7.4Z"/></svg>
             </button>
             <button
               class="removeButton"
@@ -1822,35 +1822,44 @@ img{display:block;max-width:100%}
     `).join("");
 
     $("reviewList").innerHTML = cart.items.map(item => `
-      <article class="reviewItem">
-        ${productImage(item, true)}
+      <article class="cartItem finalCheckoutItem" data-cart-item="${escapeHtml(item.id)}">
+        ${productImage(item)}
 
-        <div class="reviewInfo">
-          <div class="reviewName">
-            ${escapeHtml(item.name)}
+        <div class="cartInfo">
+          <div class="cartTop">
+            <div>
+              <div class="cartName">${escapeHtml(item.name)}</div>
+              ${productDescription(item)?`<div class="cartDescription">${escapeHtml(productDescription(item))}</div>`:""}
+              <div class="cartRating">${productRatingLabel(item)}</div>
+            </div>
+
+            <div class="cartTopActions">
+              <button class="cartHeart ${isFavorite(item.productId)?"active":""}" type="button" data-cart-favorite="${escapeHtml(item.productId)}" aria-label="Favorita">
+                <svg viewBox="0 0 24 24"><path d="M20.3 5.7a5.2 5.2 0 0 0-7.4 0L12 6.6l-.9-.9a5.2 5.2 0 0 0-7.4 7.4L12 21l8.3-7.9a5.2 5.2 0 0 0 0-7.4Z"/></svg>
+              </button>
+              <button class="removeButton" type="button" data-remove="${escapeHtml(item.id)}" aria-label="Eliminar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              </button>
+            </div>
           </div>
 
-          <div class="reviewOptions">
-            ${
-              item.color
-                ? `Color: ${escapeHtml(item.color)}<br>`
-                : ""
-            }
-            ${
-              item.size
-                ? `Talla: ${escapeHtml(item.size)}`
-                : ""
-            }
-          </div>
-        </div>
-
-        <div class="reviewNumbers">
-          <div class="reviewQuantity">
-            Cantidad ${item.quantity}
+          <div class="cartOptions">
+            ${visibleColor(item)?`Color: ${escapeHtml(visibleColor(item))}<br>`:""}
+            ${item.size?`Talla: ${escapeHtml(item.size)}`:""}
           </div>
 
-          <div class="reviewPrice">
-            ${money(item.unitPrice * item.quantity)}
+          <div class="cartOptionControls">
+            ${colorChoices(item)}
+            ${sizeChoices(item)}
+          </div>
+
+          <div class="cartBottom">
+            <div class="cartPrice">${money(item.unitPrice * item.quantity)}</div>
+            <div class="quantityControl">
+              <button class="quantityButton" type="button" data-minus="${escapeHtml(item.id)}" aria-label="Reducir cantidad">−</button>
+              <span class="quantityValue">${item.quantity}</span>
+              <button class="quantityButton" type="button" data-plus="${escapeHtml(item.id)}" aria-label="Aumentar cantidad">+</button>
+            </div>
           </div>
         </div>
       </article>
@@ -1908,7 +1917,7 @@ img{display:block;max-width:100%}
         const favorites=new Set(Array.isArray(saved)?saved.map(String):[]);
         favorites.has(id)?favorites.delete(id):favorites.add(id);
         saveJson("cajamoda-favorites",[...favorites]);
-        button.classList.toggle("active",favorites.has(id));
+        renderCart();
       };
     });
 

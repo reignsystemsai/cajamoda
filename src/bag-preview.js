@@ -696,12 +696,6 @@
 
   function scheduleAutoClose(){
     cancelAutoClose();
-
-    autoCloseTimer =
-      setTimeout(
-        closeBag,
-        3000
-      );
   }
 
   function renderBag(){

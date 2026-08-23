@@ -6605,13 +6605,14 @@ scheduleBagAutoClose();
     scheduleFavoritesAutoClose();
   };
 
-  $("favoritesRemoveSelected").onclick = () => {
-    selectedFavorites.forEach(id => state.favorites.delete(id));
-    selectedFavorites.clear();
-    saveFavorites();
-    renderFavorites();
-    scheduleFavoritesAutoClose();
-  };
+ $("favoritesRemoveSelected").onclick = () => {
+  selectedFavorites.forEach(id => state.favorites.delete(id));
+  selectedFavorites.clear();
+  saveFavorites();
+  renderSections();
+  renderFavorites();
+  scheduleFavoritesAutoClose();
+};
 
   $("favoritesOverlay")
     .onclick =

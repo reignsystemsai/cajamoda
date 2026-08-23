@@ -4534,14 +4534,15 @@ svg{
       : [];
     const rating = Number(state.product?.reviewSummary?.averageRating || state.product?.rating || 0);
     const count = Number(state.product?.reviewSummary?.reviewCount || state.product?.reviewCount || reviews.length || 0);
+    const stars = `${"★".repeat(Math.max(0,Math.min(5,Math.round(rating))))}${"☆".repeat(Math.max(0,5-Math.round(rating)))}`;
     $("reviewSummaryText").textContent = count > 0
-      ? `★★★★★ ${rating.toFixed(1)} · ${count} reseñas`
+      ? `${stars} ${rating.toFixed(1)} · ${count} reseñas`
       : "☆ Sin reseñas";
     $("detailsRatingSummaryText").textContent = count > 0
-      ? `★★★★★ ${rating.toFixed(1)} · ${count} reseñas`
+      ? `${stars} ${rating.toFixed(1)} · ${count} reseñas`
       : "☆ Sin reseñas";
     $("productRatingSummary").textContent = count > 0
-      ? `★★★★★ ${rating.toFixed(1)} · ${count} reseñas →`
+      ? `${stars} ${rating.toFixed(1)} · ${count} reseñas →`
       : "☆ Sin reseñas →";
     $("productReviewList").innerHTML = reviews.length
       ? reviews.map(review => `

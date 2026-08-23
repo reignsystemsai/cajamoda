@@ -1379,18 +1379,14 @@ svg{
 }
 
 .detailsScroll{
-
-  max-height:
-    min(
-      64dvh,
-      555px
-    );
-Add it directly below the existing `.detailsScroll` block, around line **1397** in `product/index.html`.
-
-```css
-.detailsScroll{
+  max-height:min(64dvh,555px);
+  overflow-y:auto;
+  overflow-x:hidden;
+  touch-action:pan-y;
+  -webkit-overflow-scrolling:touch;
   scrollbar-width:none;
   -ms-overflow-style:none;
+  padding:11px 14px 15px;
 }
 
 .detailsScroll::-webkit-scrollbar{

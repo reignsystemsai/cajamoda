@@ -2359,7 +2359,7 @@ async function createPaymentCheckout(
         .createRedirectSession({
           callbacks: {
             postFlowUrl:
-              `${window.location.origin}/?checkout=complete`
+              `${window.location.origin}/order-confirmation/`
           },
 
           ecomCheckout: {

@@ -2338,6 +2338,15 @@ img{display:block;max-width:100%}
           "";
 
         if (url) {
+          if (payload.checkoutId) {
+            try {
+              localStorage.setItem(
+                "cajamoda-pending-checkout",
+                payload.checkoutId
+              );
+            } catch {}
+          }
+
           location.href = url;
         }
       }

@@ -617,6 +617,18 @@ function normalizeProduct(
       )
     ];
 
+  const fulfillmentSku = String(
+    variants.find(variant => variant.sku)?.sku ||
+    product?.sku ||
+    ""
+  ).trim().toUpperCase();
+
+  const deliveryMode = fulfillmentSku.startsWith("P-")
+    ? "pickup"
+    : fulfillmentSku.startsWith("L-")
+      ? "ship"
+      : "fast";
+
   /*
     Preserve the existing four CajaModa category rails.
   */
@@ -723,11 +735,9 @@ function normalizeProduct(
 
     variants,
 
-    deliveryModes: [
-      "pickup",
-      "fast",
-      "ship"
-    ],
+    deliveryMode,
+
+    deliveryModes: [deliveryMode],
 
     inventoryMode:
       product
@@ -900,6 +910,10 @@ function normalizeLocalCart(
             ?.options
             ?.color ||
           "",
+
+        deliveryMode:
+          item.deliveryMode ||
+          "fast",
 
         quantity:
           Math.max(
@@ -1388,6 +1402,7 @@ function canonicalizeCartForWix(
       image: product.media?.[0] || item.image || "",
       size: variant?.size || item.size || "",
       color: variant?.color || item.color || "",
+      deliveryMode: product.deliveryMode || item.deliveryMode || "fast",
       quantity: Math.max(1,Math.floor(Number(item.quantity || 1))),
       unitPrice: normalizePrice(variant?.price,product.price),
       price: normalizePrice(variant?.price,product.price)

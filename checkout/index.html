@@ -1435,6 +1435,10 @@ img{display:block;max-width:100%}
           item.options?.color ||
           "",
 
+        deliveryMode:
+          item.deliveryMode ||
+          "fast",
+
         quantity: Math.max(
           1,
           Math.floor(Number(item.quantity || 1))

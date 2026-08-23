@@ -439,10 +439,11 @@ async function wixReviewsRequest(path,body){
 function normalizeWixReview(review){
   return {
     id:review?._id || review?.id || "",
-    rating:Number(review?.rating || 0),
-    authorName:review?.author?.displayName || review?.authorName || "Cliente CajaModa",
+    rating:Number(review?.content?.rating || review?.rating || 0),
+    authorName:review?.author?.authorName || review?.author?.displayName || review?.authorName || "Cliente CajaModa",
     content:review?.content?.body || review?.body || "",
-    status:review?.moderationStatus || review?.status || "APPROVED"
+    status:review?.moderation?.moderationStatus || review?.moderationStatus || review?.status || "SUBMITTED",
+    verified:review?.verified === true
   };
 }
 
@@ -458,33 +459,15 @@ async function handleGetProductReviews(request,response,url){
   });
   const reviews=(payload?.reviews || payload?.items || [])
     .map(normalizeWixReview)
-    .filter(review => review.status === "APPROVED" || review.status === "PUBLISHED");
+    .filter(review =>
+      review.verified &&
+      (review.status === "APPROVED" || review.status === "PUBLISHED")
+    );
   const count=reviews.length;
   const averageRating=count
     ? reviews.reduce((sum,review)=>sum+review.rating,0)/count
     : 0;
   sendJson(response,200,{ok:true,reviews,summary:{averageRating,reviewCount:count}});
-}
-
-async function handleCreateProductReview(request,response){
-  const body=await readBody(request);
-  const productId=String(body?.productId || "").trim();
-  const authorName=String(body?.authorName || "").trim();
-  const content=String(body?.content || "").trim();
-  const rating=Math.max(1,Math.min(5,Math.floor(Number(body?.rating || 0))));
-  if(!productId || !authorName || !content || !rating){
-    sendError(response,400,"Completa tu nombre, calificación y reseña.");return;
-  }
-  await wixReviewsRequest("/reviews/v1/reviews",{
-    review:{
-      namespace:WIX_REVIEW_NAMESPACE,
-      entityId:productId,
-      rating,
-      content:{body:content},
-      author:{displayName:authorName}
-    }
-  });
-  sendJson(response,201,{ok:true,moderation:"PENDING"});
 }
 
 /* ============================================================
@@ -2922,11 +2905,6 @@ const server =
 
         if(request.method === "GET" && url.pathname === "/api/reviews"){
           await handleGetProductReviews(request,response,url);
-          return;
-        }
-
-        if(request.method === "POST" && url.pathname === "/api/reviews"){
-          await handleCreateProductReview(request,response);
           return;
         }
 

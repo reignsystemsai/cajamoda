@@ -1535,13 +1535,7 @@ svg{
 
 .descriptionBlock{
 
-  margin-top:15px;
-
-  padding-top:12px;
-
-  border-top:
-    1px solid
-    rgba(0,0,0,.07);
+  margin-top:12px;
 }
 
 .sectionTitle{
@@ -1560,6 +1554,88 @@ svg{
   line-height:1.55;
 
   color:#444;
+}
+
+.fulfillmentPreview{
+  margin-top:15px;
+  padding-top:12px;
+  border-top:1px solid rgba(0,0,0,.07);
+}
+
+.fulfillmentOptions{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  overflow:hidden;
+  border:1px solid rgba(0,0,0,.09);
+  border-radius:13px 13px 0 0;
+  background:rgba(255,255,255,.40);
+}
+
+.fulfillmentOption{
+  min-width:0;
+  min-height:40px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  border:0;
+  border-right:1px solid rgba(0,0,0,.10);
+  background:transparent;
+  color:#111;
+  font:700 7.5px/1 Inter,system-ui,sans-serif;
+}
+
+.fulfillmentOption:last-child{border-right:0}
+
+.fulfillmentLetter{
+  width:21px;
+  height:21px;
+  flex:0 0 21px;
+  display:grid;
+  place-items:center;
+  border:1px solid #111;
+  border-radius:50%;
+  font:800 8px/1 Inter,system-ui,sans-serif;
+}
+
+.fulfillmentOption.active .fulfillmentLetter{
+  background:#111;
+  color:#fff;
+}
+
+.fulfillmentExplanation{
+  min-height:34px;
+  display:grid;
+  place-items:center;
+  padding:8px 12px;
+  border:1px solid rgba(0,0,0,.09);
+  border-top:0;
+  border-radius:0 0 13px 13px;
+  background:rgba(255,255,255,.30);
+  color:#444;
+  text-align:center;
+  font:500 7.5px/1.4 Inter,system-ui,sans-serif;
+}
+
+.detailsRatingSummary{
+  width:100%;
+  margin-top:9px;
+  padding:8px 0 2px;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  border:0;
+  border-top:1px solid rgba(0,0,0,.07);
+  background:transparent;
+  color:#111;
+  text-align:left;
+  font:700 8px/1.2 Inter,system-ui,sans-serif;
+}
+
+.detailsRatingSummaryArrow{
+  margin-left:auto;
+  font-size:13px;
+  font-weight:400;
 }
 
 .productReviews{position:relative;margin-top:12px;padding:20px;border:1px solid rgba(255,255,255,.94);border-radius:24px;background:linear-gradient(145deg,rgba(255,255,255,.76),rgba(255,255,255,.48));box-shadow:0 20px 55px rgba(0,0,0,.13);backdrop-filter:blur(30px) saturate(150%);-webkit-backdrop-filter:blur(30px) saturate(150%);color:#080808}
@@ -2444,6 +2520,28 @@ textarea.reviewField{min-height:76px;resize:vertical}
 
       </header>
 
+      <!-- P / R / L FULFILLMENT PREVIEW -->
+
+      <section class="fulfillmentPreview" aria-label="Opciones de entrega">
+        <div class="fulfillmentOptions">
+          <button class="fulfillmentOption" type="button" data-fulfillment-preview="pickup">
+            <span class="fulfillmentLetter">P</span>
+            <span>Pickup</span>
+          </button>
+          <button class="fulfillmentOption active" type="button" data-fulfillment-preview="rapido">
+            <span class="fulfillmentLetter">R</span>
+            <span>Rápido</span>
+          </button>
+          <button class="fulfillmentOption" type="button" data-fulfillment-preview="liberalo">
+            <span class="fulfillmentLetter">L</span>
+            <span>Libéralo</span>
+          </button>
+        </div>
+        <div id="fulfillmentExplanation" class="fulfillmentExplanation">
+          Entrega a tu dirección en 24–48 horas.
+        </div>
+      </section>
+
       <!-- DESCRIPTION -->
 
       <section class="descriptionBlock">
@@ -2458,6 +2556,11 @@ textarea.reviewField{min-height:76px;resize:vertical}
         >
           Descubre este producto CajaModa.
         </div>
+
+        <button id="detailsRatingSummary" class="detailsRatingSummary" type="button" aria-label="Abrir reseñas">
+          <span id="detailsRatingSummaryText">☆ Sin reseñas</span>
+          <span class="detailsRatingSummaryArrow" aria-hidden="true">›</span>
+        </button>
 
       </section>
 
@@ -4453,6 +4556,9 @@ textarea.reviewField{min-height:76px;resize:vertical}
     $("reviewSummaryText").textContent = count > 0
       ? `★★★★★ ${rating.toFixed(1)} · ${count} reseñas`
       : "☆ Sin reseñas";
+    $("detailsRatingSummaryText").textContent = count > 0
+      ? `★★★★★ ${rating.toFixed(1)} · ${count} reseñas`
+      : "☆ Sin reseñas";
     $("productRatingSummary").textContent = count > 0
       ? `★★★★★ ${rating.toFixed(1)} · ${count} reseñas →`
       : "☆ Sin reseñas →";
@@ -4501,6 +4607,7 @@ textarea.reviewField{min-height:76px;resize:vertical}
       openDetails;
 
   $("productRatingSummary").onclick = openProductReviews;
+  $("detailsRatingSummary").onclick = openProductReviews;
   $("readReviewsButton").onclick = openProductReviews;
   $("reviewClose").onclick = () => {
     $("productReviews").hidden = true;
@@ -4525,6 +4632,26 @@ textarea.reviewField{min-height:76px;resize:vertical}
       qsa("[data-review-rating]").forEach(star=>{
         star.classList.toggle("selected",Number(star.dataset.reviewRating)<=state.reviewRating);
       });
+    };
+  });
+
+  const fulfillmentPreviewCopy = {
+    pickup:
+      "Recoge en un punto aliado local o solicita entrega en moto.",
+    rapido:
+      "Entrega a tu dirección en 24–48 horas.",
+    liberalo:
+      "Compra desde nuestra bodega antes de la distribución. Consíguelo primero."
+  };
+
+  qsa("[data-fulfillment-preview]").forEach(button=>{
+    button.onclick=()=>{
+      qsa("[data-fulfillment-preview]").forEach(option=>{
+        option.classList.toggle("active",option===button);
+      });
+      $("fulfillmentExplanation").textContent =
+        fulfillmentPreviewCopy[button.dataset.fulfillmentPreview] ||
+        fulfillmentPreviewCopy.rapido;
     };
   });
 

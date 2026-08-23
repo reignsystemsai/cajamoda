@@ -11,6 +11,7 @@ const checks = [
   ["Review panel contains review-only UI", product.includes('aria-label="Reseñas del producto"')],
   ["Review panel has close control", product.includes('id="reviewClose"')],
   ["Reviews are read-only and loaded from backend", product.includes('fetch(`/api/reviews?productId=') && !product.includes('id="reviewForm"') && server.includes('url.pathname === "/api/reviews"')],
+  ["Only approved verified Wix reviews are returned", server.includes("review.verified &&") && server.includes('review?.content?.rating') && server.includes('review?.moderation?.moderationStatus') && !server.includes('request.method === "POST" && url.pathname === "/api/reviews"')],
   ["Bolsa includes wishlist and XS–XL sizing", checkout.includes("data-cart-favorite") && checkout.includes("cartSizeChoices")],
   ["Color is derived from Wix variants", checkout.includes("function visibleColor") && product.includes("function productColorValues")],
   ["Bag lines are canonicalized", checkout.includes("const canonicalItems=[]")],

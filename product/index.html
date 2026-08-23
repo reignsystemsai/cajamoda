@@ -1379,22 +1379,12 @@ svg{
 }
 
 .detailsScroll{
-  max-height:min(64dvh,555px);
-  overflow-y:auto;
-  overflow-x:hidden;
-  touch-action:pan-y;
-  -webkit-overflow-scrolling:touch;
-  scrollbar-width:none;
-  -ms-overflow-style:none;
-  padding:11px 14px 15px;
-}
 
-.detailsScroll::-webkit-scrollbar{
-  display:none;
-  width:0;
-  height:0;
-}
-```
+  max-height:
+    min(
+      64dvh,
+      555px
+    );
 
   overflow-y:auto;
 
@@ -1596,6 +1586,7 @@ svg{
 }
 
 .fulfillmentOption:last-child{border-right:0}
+.fulfillmentOption:disabled{cursor:default;opacity:1}
 
 .fulfillmentLetter{
   width:21px;
@@ -4003,8 +3994,9 @@ textarea.reviewField{min-height:76px;resize:vertical}
         );
 
     $("productReviews").hidden = true;
-    $("writeReviewButton").disabled = true;
-    $("reviewSubmit").disabled = true;
+    $("detailsSheet").classList.remove("reviewMode");
+
+    renderFulfillmentMethod();
 
     /*
       Number always represents position inside
@@ -4598,16 +4590,32 @@ textarea.reviewField{min-height:76px;resize:vertical}
       state.product.reviews=Array.isArray(payload.reviews)?payload.reviews:[];
       state.product.reviewSummary=payload.summary||{averageRating:0,reviewCount:0};
       renderProductReviews();
-    }catch{
-      $("writeReviewButton").disabled=true;
-      $("reviewSubmit").disabled=true;
-    }
+    }catch{}
+  }
+
+  const fulfillmentMethods = {
+    pickup:{key:"pickup",copy:"Recoge en un punto aliado local o solicita entrega en moto."},
+    fast:{key:"rapido",copy:"Entrega a tu dirección en 24–48 horas."},
+    ship:{key:"liberalo",copy:"Entrega estimada en 14–21 días."}
+  };
+
+  function renderFulfillmentMethod(){
+    const method=fulfillmentMethods[state.product?.deliveryMode]||fulfillmentMethods.fast;
+    qsa("[data-fulfillment-preview]").forEach(button=>{
+      const active=button.dataset.fulfillmentPreview===method.key;
+      button.classList.toggle("active",active);
+      button.disabled=true;
+      if(active){button.setAttribute("aria-current","true")}
+      else{button.removeAttribute("aria-current")}
+    });
+    $("fulfillmentExplanation").textContent=method.copy;
   }
 
   function openProductReviews(){
     openDetails();
     cancelDetailsAutoClose();
     renderProductReviews();
+    $("detailsSheet").classList.add("reviewMode");
     $("productReviews").hidden = false;
     $("productReviews").scrollIntoView({behavior:"smooth",block:"start"});
   }
@@ -4890,6 +4898,10 @@ function cartLineKey(
             item.options?.Color ||
             item.options?.color ||
             "Negro",
+
+          deliveryMode:
+            item.deliveryMode ||
+            "fast",
 
           quantity:
             Math.max(
@@ -5498,6 +5510,9 @@ const desiredKey =
       line.variantId =
   variantId;
 
+      line.deliveryMode =
+        state.product.deliveryMode || "fast";
+
 line.unitPrice =
   normalizePrice(
     selectedVariant?.price,
@@ -5534,6 +5549,9 @@ line.quantity =
 
         color:
           state.selectedColor,
+
+        deliveryMode:
+          state.product.deliveryMode || "fast",
 
         quantity:
           Math.max(1,Number(state.selectedQuantity||1)),

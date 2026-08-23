@@ -2627,6 +2627,158 @@ async function handleTrackOrder(
   );
 }
 
+const CONFIRMED_PAYMENT_STATUSES = new Set([
+  "PAID",
+  "PARTIALLY_PAID",
+  "AUTHORIZED"
+]);
+
+function isCheckoutId(value) {
+  return /^[a-z0-9-]{20,80}$/i.test(value);
+}
+
+async function findOrderByCheckoutId(checkoutId) {
+  if (!wix) throw new Error("Wix no está configurado.");
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const result = await wix.orders.searchOrders({
+      filter: { checkoutId },
+      cursorPaging: { limit: 10 }
+    });
+    const order = (result?.orders || []).find(
+      candidate => safeText(candidate?.checkoutId, 100) === checkoutId
+    );
+    if (order) return order;
+    if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 700));
+  }
+  return null;
+}
+
+function getConfirmationDelivery(order) {
+  const title = safeText(
+    order?.shippingInfo?.title ||
+    order?.shippingInfo?.logistics?.deliveryTime ||
+    order?.shippingInfo?.logistics?.shippingDestination?.address?.city,
+    160
+  ).trim();
+  const normalized = title.toLowerCase();
+
+  if (normalized.includes("pickup") || normalized.includes("recog")) {
+    return { method: title || "Pickup Ahora", message: "Te avisaremos cuando tu pedido esté listo." };
+  }
+  if (normalized.includes("libér") || normalized.includes("liber")) {
+    return { method: title || "Libéralo", message: "Te enviaremos actualizaciones durante los próximos 14–21 días." };
+  }
+  return { method: title || "Entrega CajaModa", message: "Te enviaremos la información de entrega por correo." };
+}
+
+async function handleOrderConfirmation(request, response, url) {
+  const checkoutId = safeText(url.searchParams.get("checkoutId"), 100).trim();
+  if (!isCheckoutId(checkoutId)) {
+    sendError(response, 400, "El identificador del pedido no es válido.");
+    return;
+  }
+
+  const order = await findOrderByCheckoutId(checkoutId);
+  if (!order) {
+    sendError(response, 404, "El pedido todavía no está disponible.");
+    return;
+  }
+
+  const paymentStatus = safeText(order?.paymentStatus, 100).toUpperCase();
+  const payment = paymentStatus === "AUTHORIZED"
+    ? "Pago autorizado"
+    : CONFIRMED_PAYMENT_STATUSES.has(paymentStatus)
+      ? "Pago confirmado"
+      : "Pedido recibido";
+
+  sendJson(response, 200, {
+    ok: true,
+    order: {
+      number: safeText(order?.number, 100),
+      payment,
+      delivery: getConfirmationDelivery(order)
+    }
+  });
+}
+
+async function wixCouponsRequest(path, body) {
+  if (!WIX_API_KEY || !WIX_SITE_ID) throw new Error("Wix Coupons no está configurado.");
+  const result = await fetch(`https://www.wixapis.com${path}`, {
+    method: "POST",
+    headers: {
+      "Authorization": WIX_API_KEY,
+      "wix-site-id": WIX_SITE_ID,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+  const payload = await result.json().catch(() => ({}));
+  if (!result.ok) {
+    throw new Error(payload?.message || payload?.error || "Wix Coupons rechazó la solicitud.");
+  }
+  return payload;
+}
+
+function createReferralCode(order) {
+  const orderNumber = safeText(order?.number, 40).replace(/[^a-z0-9]/gi, "");
+  const digest = crypto.createHash("sha256")
+    .update(safeText(order?.checkoutId, 100))
+    .digest("hex")
+    .slice(0, 5)
+    .toUpperCase();
+  return `AMIGA${orderNumber}${digest}`.slice(0, 20).toUpperCase();
+}
+
+async function ensureReferralCoupon(order) {
+  const code = createReferralCode(order);
+  const queried = await wixCouponsRequest("/stores/v2/coupons/query", {
+    query: {
+      filter: { "specification.code": code },
+      paging: { limit: 1 }
+    }
+  });
+  const existing = (queried?.coupons || []).find(
+    coupon => coupon?.specification?.code === code
+  );
+
+  if (!existing) {
+    await wixCouponsRequest("/stores/v2/coupons", {
+      specification: {
+        name: `Amiga pedido ${safeText(order?.number, 40)}`,
+        code,
+        percentOffRate: 10,
+        scope: { namespace: "stores", group: { name: "product" } },
+        startTime: new Date().toISOString(),
+        expirationTime: new Date(Date.now() + 30 * 86400000).toISOString(),
+        usageLimit: 1,
+        limitPerCustomer: 1,
+        active: true
+      }
+    });
+  }
+  return code;
+}
+
+async function handleCreateReferral(request, response) {
+  const body = await readBody(request);
+  const checkoutId = safeText(body?.checkoutId, 100).trim();
+  if (!isCheckoutId(checkoutId)) {
+    sendError(response, 400, "El identificador del pedido no es válido.");
+    return;
+  }
+
+  const order = await findOrderByCheckoutId(checkoutId);
+  const paymentStatus = safeText(order?.paymentStatus, 100).toUpperCase();
+  if (!order || !CONFIRMED_PAYMENT_STATUSES.has(paymentStatus)) {
+    sendError(response, 403, "El pedido debe estar confirmado antes de compartir un descuento.");
+    return;
+  }
+
+  const code = await ensureReferralCoupon(order);
+  sendJson(response, 200, { ok: true, code, url: "https://www.cajamoda.com/" });
+}
+
 /* ============================================================
    REAL WIX INVENTORY
    ============================================================ */
@@ -2905,6 +3057,16 @@ const server =
 
         if(request.method === "GET" && url.pathname === "/api/reviews"){
           await handleGetProductReviews(request,response,url);
+          return;
+        }
+
+        if(request.method === "GET" && url.pathname === "/api/order-confirmation"){
+          await handleOrderConfirmation(request,response,url);
+          return;
+        }
+
+        if(request.method === "POST" && url.pathname === "/api/referrals"){
+          await handleCreateReferral(request,response);
           return;
         }
 

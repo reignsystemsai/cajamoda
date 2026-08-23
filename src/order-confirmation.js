@@ -1,0 +1,77 @@
+const API_BASE =
+  import.meta.env.VITE_STORE_API_URL ||
+  "https://cajamoda-storeload-api.onrender.com";
+
+const $ = id => document.getElementById(id);
+
+const checkoutId = (() => {
+  const query = new URLSearchParams(location.search).get("checkoutId");
+  if (query) return query;
+  try { return localStorage.getItem("cajamoda-pending-checkout") || ""; }
+  catch { return ""; }
+})();
+
+let confirmation = null;
+
+function setStatus(message, error = false) {
+  $("statusText").textContent = message;
+  $("statusText").classList.toggle("error", error);
+}
+
+async function loadConfirmation() {
+  if (!checkoutId) throw new Error("No encontramos el identificador de tu compra.");
+
+  const response = await fetch(
+    `${API_BASE}/api/order-confirmation?checkoutId=${encodeURIComponent(checkoutId)}`,
+    { headers: { Accept: "application/json" } }
+  );
+  const payload = await response.json();
+  if (!response.ok || !payload?.ok) throw new Error(payload?.error || "No pudimos confirmar tu compra.");
+
+  confirmation = payload.order;
+  $("confirmationTitle").textContent = "COMPRA CONFIRMADA";
+  $("orderNumber").textContent = `Pedido #${confirmation.number}`;
+  $("paymentStatus").textContent = confirmation.payment;
+  $("deliveryMethod").textContent = confirmation.delivery?.method || "Método de entrega confirmado";
+  $("deliveryMessage").textContent = confirmation.delivery?.message || "Te enviaremos actualizaciones sobre tu pedido.";
+  $("shareButton").disabled = false;
+  $("shareButton").textContent = "Compartir descuento";
+  try { localStorage.removeItem("cajamoda-pending-checkout"); } catch {}
+}
+
+async function createReferral() {
+  if (!confirmation) return;
+  $("shareButton").disabled = true;
+  setStatus("Preparando el descuento…");
+
+  try {
+    const response = await fetch(`${API_BASE}/api/referrals`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ checkoutId })
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload?.ok) throw new Error(payload?.error || "No pudimos preparar el descuento.");
+
+    const shareText = `Te regalo 10% en CajaModa. Usa el código ${payload.code}: ${payload.url}`;
+    if (navigator.share) {
+      await navigator.share({ title: "10% en CajaModa", text: shareText, url: payload.url });
+      setStatus("Descuento listo para tu amiga.");
+    } else {
+      await navigator.clipboard.writeText(shareText);
+      setStatus("Enlace y código copiados.");
+    }
+  } catch (error) {
+    if (error?.name !== "AbortError") setStatus(error?.message || "No pudimos compartir el descuento.", true);
+  } finally {
+    $("shareButton").disabled = false;
+  }
+}
+
+$("shareButton").addEventListener("click", createReferral);
+
+loadConfirmation().catch(error => {
+  $("confirmationTitle").textContent = "COMPRA RECIBIDA";
+  $("paymentStatus").textContent = "Revisa tu correo de confirmación";
+  setStatus(error?.message || "No pudimos cargar los detalles.", true);
+});

@@ -1028,6 +1028,7 @@ img{display:block;max-width:100%}
 .referenceLabel{display:block;font-size:8px}.referenceLabel input{margin-top:8px}
 .confirmPayment{width:100%;height:52px;margin-top:13px;border-radius:14px;background:#080808;color:#fff;font-size:10px;font-weight:700}
 .pendingNote{margin:9px 0 0;text-align:center;color:#777;font-size:7.5px;line-height:1.45}
+.liberaloNotice{margin-bottom:14px;padding:16px;border:1px solid rgba(0,0,0,.08);border-radius:17px;background:rgba(255,255,255,.52);text-align:center}.liberaloNotice strong{display:block;font-family:"Cormorant Garamond",Georgia,serif;font-size:22px}.liberaloNotice p{margin:7px 0 0;color:#666;font-size:8.5px;line-height:1.55}
 .stripePane{text-align:left}.stripePane[hidden],.nequiPane[hidden]{display:none}.stripeTop{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:5px}.stripeTitle{font-family:"Cormorant Garamond",Georgia,serif;font-size:24px;font-weight:600}.stripeSecure{display:flex;align-items:center;gap:5px;color:#666;font-size:7.5px;white-space:nowrap}.stripeSecure svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.7}.stripeCopy{margin:0 0 16px;color:#737373;font-size:8.5px;line-height:1.5}.paymentElementShell{padding:13px;border:1px solid rgba(0,0,0,.08);border-radius:16px;background:rgba(255,255,255,.46);box-shadow:inset 0 1px 0 rgba(255,255,255,.85)}.paymentElementShell.isLocked{padding:18px 14px;text-align:center;color:#6f6f6f;font-size:9px;line-height:1.55}.stripePayButton{width:100%;height:52px;margin-top:13px;border-radius:14px;background:#080808;color:#fff;font-size:10px;font-weight:700;transition:opacity .18s}.stripePayButton:disabled{opacity:.38}.stripeError{min-height:16px;margin-top:8px;color:#a31919;text-align:center;font-size:8px;line-height:1.4}.stripeTrust{display:flex;justify-content:center;align-items:center;gap:5px;margin-top:2px;color:#777;font-size:7.5px}.stripeTrust svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:1.7}
 .paymentSummary{margin-top:16px;padding:16px 18px}
 @media(max-width:390px){.deliveryChoices,.nequiActions,.deliveryDetails{grid-template-columns:1fr}.deliveryDetails .wide{grid-column:auto}}
@@ -1254,6 +1255,11 @@ img{display:block;max-width:100%}
         <h2 class="paymentSectionTitle">Finaliza tu pago</h2>
         <section class="paymentGlass">
           <div id="nequiPane" class="nequiPane">
+            <div id="liberaloNotice" class="liberaloNotice" hidden>
+              <strong>Confirmemos disponibilidad</strong>
+              <p>Recibiremos tu solicitud y te enviaremos un enlace de pago Nequi en un máximo de 60 minutos. No envíes dinero todavía.</p>
+            </div>
+            <div id="nequiPaymentDetails">
             <div class="paymentEyebrow">Envía exactamente</div>
             <div id="nequiAmount" class="paymentAmount">$0 COP</div>
             <div class="nequiLabel">Número Nequi</div>
@@ -1266,8 +1272,9 @@ img{display:block;max-width:100%}
             <label class="referenceLabel" for="nequiReference">Referencia del pago (opcional)
               <input id="nequiReference" class="compactInput" inputmode="numeric" placeholder="Ingresa número o referencia">
             </label>
+            </div>
             <button id="confirmNequiButton" class="confirmPayment" type="button">Confirmar que ya pagué</button>
-            <p class="pendingNote">Tu pedido quedará pendiente hasta que confirmemos el pago.</p>
+            <p id="pendingNote" class="pendingNote">Tu pedido quedará pendiente hasta que confirmemos el pago.</p>
           </div>
 
           <div id="stripePane" class="stripePane" hidden>
@@ -1424,6 +1431,22 @@ img{display:block;max-width:100%}
     return readCart().total + checkoutDeliveryFee();
   }
 
+  function cartHasLiberalo() {
+    return readCart().items.some(item => ["ship", "liberalo", "libéralo", "l"].includes(String(item.deliveryMode || "").toLowerCase()));
+  }
+
+  function syncLiberaloNequiState() {
+    const pendingAvailability = cartHasLiberalo();
+    if ($("liberaloNotice")) $("liberaloNotice").hidden = !pendingAvailability;
+    if ($("nequiPaymentDetails")) $("nequiPaymentDetails").hidden = pendingAvailability;
+    if ($("confirmNequiButton")) $("confirmNequiButton").textContent = pendingAvailability
+      ? "Solicitar disponibilidad"
+      : "Confirmar que ya pagué";
+    if ($("pendingNote")) $("pendingNote").textContent = pendingAvailability
+      ? "No realizaremos ningún cobro antes de confirmar la disponibilidad."
+      : "Tu pedido quedará pendiente hasta que confirmemos el pago.";
+  }
+
   function renderPaymentTotals() {
     const subtotal = readCart().total;
     const total = checkoutTotal();
@@ -1436,6 +1459,7 @@ img{display:block;max-width:100%}
         ? `${selectedDelivery === "pickup" ? "Pronto · Recoger" : selectedDelivery === "national" ? "Rápido · Nacional" : `Pronto · Moto · ${deliveryQuote.distanceKm || ""} km`} · ${money(deliveryQuote.fee)}`
         : `${selectedDelivery === "national" ? "Rápido · Nacional" : "Pronto · Moto"} · Por calcular`;
     }
+    syncLiberaloNequiState();
   }
 
   let activeStep = "bag";
@@ -2666,11 +2690,13 @@ img{display:block;max-width:100%}
         throw new Error(result?.error || "No pudimos registrar el pedido.");
       }
       saveJson("cajamoda-pending-nequi-order", result);
-      location.href = `/order-confirmation/?nequiOrder=${encodeURIComponent(result.orderNumber)}`;
+      location.href = result.availabilityPending
+        ? `/order-confirmation/?liberaloRequest=${encodeURIComponent(result.orderNumber)}`
+        : `/order-confirmation/?nequiOrder=${encodeURIComponent(result.orderNumber)}`;
     } catch (error) {
       console.error("[CajaModa] Nequi order error:", error);
       button.disabled = false;
-      button.textContent = "Confirmar que ya pagué";
+      button.textContent = cartHasLiberalo() ? "Solicitar disponibilidad" : "Confirmar que ya pagué";
       showToast(error?.message || "No pudimos registrar el pedido.");
     }
   }

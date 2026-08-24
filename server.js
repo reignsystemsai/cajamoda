@@ -961,10 +961,15 @@ async function handleDeliveryDepartments(_request, response) {
   const payload = await externalJson("https://queries.envia.com/state?country_code=CO", {
     headers: { Authorization: `Bearer ${ENVIA_API_TOKEN}` }
   });
-  const departments = enviaDataArray(payload).map(item => ({
-    code: safeText(item?.code || item?.state_code || item?.abbreviation, 5),
+  const departments = enviaDataArray(payload)
+    .filter(item => !item?.country_code || String(item.country_code).toUpperCase() === "CO")
+    .map(item => ({
+    code: safeText(item?.code || item?.code_2_digits || item?.state_code || item?.abbreviation, 5),
     name: safeText(item?.name || item?.state || item?.description, 100)
-  })).filter(item => item.code && item.name);
+  })).filter(item => item.code && item.name)
+    .filter((item, index, all) => all.findIndex(candidate => candidate.code === item.code) === index)
+    .sort((a, b) => a.name.localeCompare(b.name, "es"));
+  if (!departments.length) return sendError(response, 502, "Envia no devolvió los departamentos de Colombia.");
   sendJson(response, 200, { ok: true, departments });
 }
 

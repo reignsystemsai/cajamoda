@@ -4086,6 +4086,23 @@ function renderInventory(){
 
                 </div>
 
+                ${order.liberaloStatus ? `
+                  <div style="margin:12px 0;padding:14px;border:1px solid rgba(0,0,0,.10);border-radius:16px;background:linear-gradient(145deg,rgba(255,255,255,.82),rgba(255,255,255,.52))">
+                    <div style="font-weight:800">Libérala · disponibilidad</div>
+                    <div style="margin-top:4px;font-size:11px;color:#666">${escapeHtml(order.delivery || "Solicitud pendiente")}</div>
+                    ${order.liberaloStatus === "awaiting_availability" ? `
+                      <div style="display:flex;gap:8px;margin-top:12px">
+                        <button type="button" data-approve-liberalo="${escapeHtml(order.id)}" style="flex:1;padding:10px;border:0;border-radius:999px;background:#080808;color:#fff;font-weight:700;cursor:pointer">Disponible</button>
+                        <button type="button" data-decline-liberalo="${escapeHtml(order.id)}" style="flex:1;padding:10px;border:1px solid #111;border-radius:999px;background:#fff;color:#111;font-weight:700;cursor:pointer">No disponible</button>
+                      </div>
+                    ` : order.liberaloStatus === "approved" ? `
+                      <div style="margin-top:10px;font-size:11px;font-weight:750">Disponibilidad confirmada · enlace listo</div>
+                    ` : order.liberaloStatus === "payment_submitted" ? `
+                      <div style="margin-top:10px;font-size:11px;font-weight:750;color:#4d0bb7">El cliente reportó el pago</div>
+                    ` : `<div style="margin-top:10px;font-size:11px;font-weight:750">Cerrado sin cobro</div>`}
+                  </div>
+                ` : ""}
+
                 ${order.paymentMethod === "nequi" ? `
                   <div style="margin:12px 0;padding:12px 14px;border:1px solid rgba(77,11,183,.18);border-radius:14px;background:rgba(255,255,255,.62)">
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
@@ -4289,6 +4306,43 @@ function renderInventory(){
           button.disabled = false;
           button.textContent = "Confirmar pago";
           showToast(error?.message || "No pudimos confirmar el pago.");
+        }
+      };
+    });
+
+    qsa("[data-approve-liberalo]").forEach(button => {
+      button.onclick = async () => {
+        const orderId = button.dataset.approveLiberalo;
+        button.disabled = true;
+        button.textContent = "Confirmando…";
+        try {
+          const result = await apiRequest(`/api/orders/${encodeURIComponent(orderId)}/approve-liberalo`, { method: "POST", body: {} });
+          if (result?.paymentUrl && navigator.clipboard) await navigator.clipboard.writeText(result.paymentUrl);
+          showToast(result?.customerNotificationSent
+            ? "Disponibilidad confirmada y enlace enviado."
+            : "Enlace copiado. Envíalo manualmente al cliente.");
+          await loadRealOrders(true);
+        } catch (error) {
+          button.disabled = false;
+          button.textContent = "Disponible";
+          showToast(error?.message || "No pudimos aprobar la solicitud.");
+        }
+      };
+    });
+
+    qsa("[data-decline-liberalo]").forEach(button => {
+      button.onclick = async () => {
+        const orderId = button.dataset.declineLiberalo;
+        button.disabled = true;
+        button.textContent = "Cerrando…";
+        try {
+          await apiRequest(`/api/orders/${encodeURIComponent(orderId)}/decline-liberalo`, { method: "POST", body: {} });
+          showToast("Solicitud cerrada sin cobro.");
+          await loadRealOrders(true);
+        } catch (error) {
+          button.disabled = false;
+          button.textContent = "No disponible";
+          showToast(error?.message || "No pudimos cerrar la solicitud.");
         }
       };
     });

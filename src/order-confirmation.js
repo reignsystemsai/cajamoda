@@ -13,6 +13,7 @@ const checkoutId = (() => {
 
 const stripeSessionId = new URLSearchParams(location.search).get("stripeSessionId") || "";
 const nequiOrderNumber = new URLSearchParams(location.search).get("nequiOrder") || "";
+const liberaloRequestNumber = new URLSearchParams(location.search).get("liberaloRequest") || "";
 
 let confirmation = null;
 
@@ -22,6 +23,17 @@ function setStatus(message, error = false) {
 }
 
 async function loadConfirmation() {
+  if (liberaloRequestNumber) {
+    $("confirmationTitle").textContent = "SOLICITUD RECIBIDA";
+    $("orderNumber").textContent = `Solicitud #${liberaloRequestNumber}`;
+    $("paymentStatus").textContent = "Confirmando disponibilidad";
+    $("deliveryMethod").textContent = "Libérala · 14–21 días";
+    $("deliveryMessage").textContent = "Te enviaremos tu enlace de pago Nequi en un máximo de 60 minutos cuando confirmemos disponibilidad.";
+    $("shareButton").hidden = true;
+    setStatus("No envíes dinero todavía. No se ha realizado ningún cobro.");
+    try { localStorage.removeItem("cajamoda-pending-nequi-order"); } catch {}
+    return;
+  }
   if (nequiOrderNumber) {
     $("confirmationTitle").textContent = "PEDIDO RECIBIDO";
     $("orderNumber").textContent = `Pedido #${nequiOrderNumber}`;

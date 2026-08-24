@@ -547,10 +547,9 @@ async function handleCreateStripeCheckout(request, response) {
       : `${delivery.quote.carrier || "Envia"} · ${delivery.quote.service || "Envío nacional"}`;
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
-    ui_mode: "embedded_page",
+    ui_mode: "elements",
     line_items: lineItems,
     customer_email: customerEmail || undefined,
-    billing_address_collection: "required",
     shipping_options: [{
       shipping_rate_data: {
         type: "fixed_amount",
@@ -562,7 +561,6 @@ async function handleCreateStripeCheckout(request, response) {
         }
           }
     }],
-    phone_number_collection: { enabled: true },
     locale: "es",
     return_url: `${STOREFRONT_URL}/order-confirmation/?stripeSessionId={CHECKOUT_SESSION_ID}`,
     metadata: {

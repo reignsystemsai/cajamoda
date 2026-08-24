@@ -558,6 +558,155 @@ async function handleStripeConfirmation(request, response, url) {
   });
 }
 
+function stripeAddressToWix(address = {}) {
+  return {
+    country: safeText(address.country, 2),
+    subdivision: safeText(address.state, 100),
+    city: safeText(address.city, 100),
+    postalCode: safeText(address.postal_code, 40),
+    addressLine: safeText(address.line1, 250),
+    addressLine2: safeText(address.line2, 250)
+  };
+}
+
+function splitCustomerName(value) {
+  const parts = safeText(value, 160).split(/\s+/).filter(Boolean);
+  return {
+    firstName: parts.shift() || "Cliente",
+    lastName: parts.join(" ") || "CajaModa"
+  };
+}
+
+async function getStripePurchasedLines(session) {
+  const result = await stripe.checkout.sessions.listLineItems(session.id, {
+    limit: 100,
+    expand: ["data.price.product"]
+  });
+  return result.data.map(line => {
+    const stripeProduct = typeof line?.price?.product === "object"
+      ? line.price.product
+      : {};
+    const productId = safeText(stripeProduct?.metadata?.productId, 80);
+    const variantId = safeText(stripeProduct?.metadata?.variantId, 80);
+    const quantity = Math.max(1, Math.floor(Number(line?.quantity || 1)));
+    const amount = Number(line?.price?.unit_amount || 0) / 100;
+    if (!productId || !variantId || !Number.isFinite(amount) || amount < 1) {
+      throw new Error("Stripe devolvió una línea de pedido incompleta.");
+    }
+    return {
+      productId,
+      variantId,
+      quantity,
+      amount,
+      name: safeText(line?.description || stripeProduct?.name, 300) || "Producto CajaModa"
+    };
+  });
+}
+
+async function findStripeWixOrder(sessionId) {
+  const result = await wix.orders.searchOrders({
+    filter: { number: `S-${sessionId.slice(-12).toUpperCase()}` },
+    cursorPaging: { limit: 10 }
+  });
+  return (result?.orders || [])[0] || null;
+}
+
+async function importStripeOrderIntoWix(session, lines) {
+  const existing = await findStripeWixOrder(session.id);
+  if (existing) return { order: existing, created: false };
+
+  const customer = session?.customer_details || {};
+  const shipping = session?.shipping_details || session?.collected_information?.shipping_details || {};
+  const name = splitCustomerName(shipping?.name || customer?.name);
+  const address = stripeAddressToWix(shipping?.address || customer?.address || {});
+  const subtotal = lines.reduce((sum, line) => sum + line.amount * line.quantity, 0);
+  const total = Number(session?.amount_total || 0) / 100;
+
+  const imported = await wix.orders.importOrder({
+    number: `S-${session.id.slice(-12).toUpperCase()}`,
+    status: "APPROVED",
+    paymentStatus: "PAID",
+    fulfillmentStatus: "NOT_FULFILLED",
+    channelInfo: { type: "OTHER_PLATFORM" },
+    currency: "COP",
+    currencyConversionDetails: { originalCurrency: "COP", conversionRate: "1" },
+    buyerInfo: { email: safeText(customer?.email, 250) },
+    billingInfo: {
+      contactDetails: {
+        firstName: name.firstName,
+        lastName: name.lastName,
+        email: safeText(customer?.email, 250),
+        phone: safeText(customer?.phone, 80)
+      },
+      address
+    },
+    shippingInfo: {
+      title: "Stripe – Entrega CajaModa",
+      cost: { amount: String(Math.max(0, total - subtotal)) },
+      logistics: {
+        shippingDestination: {
+          address,
+          contactDetails: {
+            firstName: name.firstName,
+            lastName: name.lastName,
+            email: safeText(customer?.email, 250),
+            phone: safeText(customer?.phone, 80)
+          }
+        }
+      }
+    },
+    lineItems: lines.map(line => ({
+      productName: { original: line.name },
+      quantity: line.quantity,
+      price: { amount: String(line.amount) },
+      itemType: { preset: "PHYSICAL" },
+      physicalProperties: { shippable: true },
+      catalogReference: {
+        appId: WIX_STORES_APP_ID,
+        catalogItemId: line.productId,
+        options: { variantId: line.variantId }
+      }
+    })),
+    priceSummary: {
+      subtotal: { amount: String(subtotal) },
+      shipping: { amount: String(Math.max(0, total - subtotal)) },
+      tax: { amount: "0" },
+      discount: { amount: "0" },
+      total: { amount: String(total) }
+    }
+  });
+  return { order: imported?.order || imported, created: true };
+}
+
+async function decrementStripeInventory(lines) {
+  await wix.inventoryItemsV3.bulkDecrementInventoryItemsByVariantAndLocation(
+    lines.map(line => ({
+      variantId: line.variantId,
+      decrementBy: line.quantity
+    })),
+    { restrictInventory: true, returnEntity: true, reason: "ORDER" }
+  );
+}
+
+async function syncCompletedStripeSession(session) {
+  if (!wix) throw new Error("Wix no está configurado para recibir el pedido.");
+  if (session.payment_status !== "paid") return;
+  if (session?.metadata?.wixSync === "complete") return;
+
+  const lines = await getStripePurchasedLines(session);
+  const imported = await importStripeOrderIntoWix(session, lines);
+  if (imported.created) {
+    await decrementStripeInventory(lines);
+  }
+  await stripe.checkout.sessions.update(session.id, {
+    metadata: {
+      ...session.metadata,
+      wixSync: "complete",
+      wixOrderId: safeText(imported?.order?._id || imported?.order?.id, 80)
+    }
+  });
+}
+
 async function handleStripeWebhook(request, response) {
   if (!stripe || !STRIPE_WEBHOOK_SECRET) {
     sendError(response, 503, "El webhook de Stripe no está configurado.");
@@ -567,9 +716,8 @@ async function handleStripeWebhook(request, response) {
   const signature = request.headers["stripe-signature"];
   const event = stripe.webhooks.constructEvent(rawBody, signature, STRIPE_WEBHOOK_SECRET);
   if (event.type === "checkout.session.completed") {
-    console.log(`[Stripe] Payment completed: ${event.data.object.id}`);
-    // Wix inventory/order synchronization must be implemented atomically
-    // before Stripe becomes the sole live payment processor.
+    await syncCompletedStripeSession(event.data.object);
+    console.log(`[Stripe] Payment synchronized with Wix: ${event.data.object.id}`);
   }
   sendJson(response, 200, { received: true });
 }

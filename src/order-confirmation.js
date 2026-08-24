@@ -11,6 +11,8 @@ const checkoutId = (() => {
   catch { return ""; }
 })();
 
+const stripeSessionId = new URLSearchParams(location.search).get("stripeSessionId") || "";
+
 let confirmation = null;
 
 function setStatus(message, error = false) {
@@ -19,6 +21,24 @@ function setStatus(message, error = false) {
 }
 
 async function loadConfirmation() {
+  if (stripeSessionId) {
+    const response = await fetch(
+      `${API_BASE}/api/stripe/confirmation?sessionId=${encodeURIComponent(stripeSessionId)}`,
+      { headers: { Accept: "application/json" } }
+    );
+    const payload = await response.json();
+    if (!response.ok || !payload?.ok || !payload?.order?.paid) {
+      throw new Error(payload?.error || "El pago todavía no está confirmado.");
+    }
+    confirmation = payload.order;
+    $("confirmationTitle").textContent = "COMPRA CONFIRMADA";
+    $("orderNumber").textContent = `Pago #${confirmation.number}`;
+    $("paymentStatus").textContent = confirmation.payment;
+    $("deliveryMethod").textContent = confirmation.delivery?.method || "Entrega CajaModa";
+    $("deliveryMessage").textContent = confirmation.delivery?.message || "Te enviaremos actualizaciones por correo.";
+    $("shareButton").hidden = true;
+    return;
+  }
   if (!checkoutId) throw new Error("No encontramos el identificador de tu compra.");
 
   const response = await fetch(

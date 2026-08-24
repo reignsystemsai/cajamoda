@@ -1,5 +1,6 @@
 import http from "node:http";
 import crypto from "node:crypto";
+import Stripe from "stripe";
 
 import {
   createClient,
@@ -46,6 +47,16 @@ const LOADER_PASSWORD =
 const ALLOWED_ORIGIN =
   process.env.ALLOWED_ORIGIN ||
   "https://cajamoda.onrender.com";
+
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
+const STOREFRONT_URL = String(
+  process.env.STOREFRONT_URL || "https://www.cajamoda.com"
+).replace(/\/$/, "");
+
+const stripe = STRIPE_SECRET_KEY
+  ? new Stripe(STRIPE_SECRET_KEY)
+  : null;
 
 /* ============================================================
    REQUIRED ENVIRONMENT
@@ -408,6 +419,307 @@ function readBody(
       );
     }
   );
+}
+
+function readRawBody(request, maxSize = 1024 * 1024) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    request.on("data", chunk => {
+      size += chunk.length;
+      if (size > maxSize) {
+        reject(new Error("La solicitud es demasiado grande."));
+        request.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    request.on("end", () => resolve(Buffer.concat(chunks)));
+    request.on("error", reject);
+  });
+}
+
+/* ============================================================
+   STRIPE CHECKOUT
+   ============================================================ */
+
+function stripeChoiceText(item) {
+  return [
+    item?.size ? `Talla ${safeText(item.size, 40)}` : "",
+    item?.color ? `Color ${safeText(item.color, 40)}` : ""
+  ].filter(Boolean).join(" · ");
+}
+
+function wixVariantPrice(variant) {
+  const candidates = [
+    variant?.price?.actualPrice?.amount,
+    variant?.priceData?.discountedPrice,
+    variant?.priceData?.price,
+    variant?.price?.amount,
+    variant?.price
+  ];
+  for (const candidate of candidates) {
+    const value = Number(candidate);
+    if (Number.isFinite(value) && value >= 0) return Math.round(value);
+  }
+  return null;
+}
+
+async function stripeLineItemFromCartItem(item) {
+  const productId = safeText(item?.productId, 80);
+  const variantId = safeText(item?.variantId, 80);
+  const quantity = Math.min(20, Math.max(1, Math.floor(Number(item?.quantity || 1))));
+  if (!productId) throw new Error("Uno de los productos no tiene un ID válido.");
+  if (!wix) throw new Error("Wix no está configurado para verificar precios.");
+
+  const product = await wix.productsV3.getProduct(productId);
+  if (!product || product.visible === false) throw new Error("Uno de los productos ya no está disponible.");
+  const variants = product?.variantsInfo?.variants || product?.variants || [];
+  const variant = variantId
+    ? variants.find(candidate => String(candidate?._id || candidate?.id || candidate?.variantId) === variantId)
+    : variants[0];
+  if (!variant) throw new Error(`La variante seleccionada de ${safeText(product?.name, 80)} ya no está disponible.`);
+  if (variant.visible === false || String(variant.inventoryStatus || "").toUpperCase() === "OUT_OF_STOCK") {
+    throw new Error(`${safeText(product?.name, 80)} está agotado.`);
+  }
+
+  const unitAmount = wixVariantPrice(variant);
+  if (!Number.isInteger(unitAmount) || unitAmount < 1) {
+    throw new Error(`No pudimos verificar el precio de ${safeText(product?.name, 80)}.`);
+  }
+
+  return {
+    quantity,
+    price_data: {
+      currency: "cop",
+      // Stripe treats COP as a two-decimal currency in API requests.
+      unit_amount: unitAmount * 100,
+      product_data: {
+        name: safeText(product?.name, 80) || "Producto CajaModa",
+        description: stripeChoiceText(item) || undefined,
+        metadata: { productId, variantId }
+      }
+    }
+  };
+}
+
+async function handleCreateStripeCheckout(request, response) {
+  if (!stripe) {
+    sendError(response, 503, "Stripe todavía no está configurado en el servidor.");
+    return;
+  }
+  const body = await readBody(request);
+  const items = Array.isArray(body?.cart?.items) ? body.cart.items.slice(0, 50) : [];
+  if (!items.length) {
+    sendError(response, 400, "Tu bolsa está vacía.");
+    return;
+  }
+  const lineItems = await Promise.all(items.map(stripeLineItemFromCartItem));
+  const customerEmail = safeText(body?.customer?.email, 250);
+  const session = await stripe.checkout.sessions.create({
+    mode: "payment",
+    line_items: lineItems,
+    customer_email: customerEmail || undefined,
+    billing_address_collection: "required",
+    shipping_address_collection: { allowed_countries: ["CO", "US"] },
+    phone_number_collection: { enabled: true },
+    locale: "es",
+    success_url: `${STOREFRONT_URL}/order-confirmation/?stripeSessionId={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${STOREFRONT_URL}/checkout/`,
+    metadata: { source: "cajamoda-storefront" }
+  }, {
+    idempotencyKey: safeText(body?.requestId, 100) || undefined
+  });
+  sendJson(response, 200, { ok: true, url: session.url, sessionId: session.id });
+}
+
+async function handleStripeConfirmation(request, response, url) {
+  if (!stripe) {
+    sendError(response, 503, "Stripe todavía no está configurado.");
+    return;
+  }
+  const sessionId = safeText(url.searchParams.get("sessionId"), 100);
+  if (!/^cs_(test|live)_[A-Za-z0-9]+$/.test(sessionId)) {
+    sendError(response, 400, "La sesión de pago no es válida.");
+    return;
+  }
+  const session = await stripe.checkout.sessions.retrieve(sessionId);
+  sendJson(response, 200, {
+    ok: true,
+    order: {
+      number: session.id.slice(-10).toUpperCase(),
+      payment: session.payment_status === "paid" ? "Pago confirmado" : "Pago pendiente",
+      paid: session.payment_status === "paid",
+      delivery: {
+        method: "Entrega CajaModa",
+        message: "Te enviaremos la información de entrega por correo."
+      }
+    }
+  });
+}
+
+function stripeAddressToWix(address = {}) {
+  return {
+    country: safeText(address.country, 2),
+    subdivision: safeText(address.state, 100),
+    city: safeText(address.city, 100),
+    postalCode: safeText(address.postal_code, 40),
+    addressLine: safeText(address.line1, 250),
+    addressLine2: safeText(address.line2, 250)
+  };
+}
+
+function splitCustomerName(value) {
+  const parts = safeText(value, 160).split(/\s+/).filter(Boolean);
+  return {
+    firstName: parts.shift() || "Cliente",
+    lastName: parts.join(" ") || "CajaModa"
+  };
+}
+
+async function getStripePurchasedLines(session) {
+  const result = await stripe.checkout.sessions.listLineItems(session.id, {
+    limit: 100,
+    expand: ["data.price.product"]
+  });
+  return result.data.map(line => {
+    const stripeProduct = typeof line?.price?.product === "object"
+      ? line.price.product
+      : {};
+    const productId = safeText(stripeProduct?.metadata?.productId, 80);
+    const variantId = safeText(stripeProduct?.metadata?.variantId, 80);
+    const quantity = Math.max(1, Math.floor(Number(line?.quantity || 1)));
+    const amount = Number(line?.price?.unit_amount || 0) / 100;
+    if (!productId || !variantId || !Number.isFinite(amount) || amount < 1) {
+      throw new Error("Stripe devolvió una línea de pedido incompleta.");
+    }
+    return {
+      productId,
+      variantId,
+      quantity,
+      amount,
+      name: safeText(line?.description || stripeProduct?.name, 300) || "Producto CajaModa"
+    };
+  });
+}
+
+async function findStripeWixOrder(sessionId) {
+  const result = await wix.orders.searchOrders({
+    filter: { number: `S-${sessionId.slice(-12).toUpperCase()}` },
+    cursorPaging: { limit: 10 }
+  });
+  return (result?.orders || [])[0] || null;
+}
+
+async function importStripeOrderIntoWix(session, lines) {
+  const existing = await findStripeWixOrder(session.id);
+  if (existing) return { order: existing, created: false };
+
+  const customer = session?.customer_details || {};
+  const shipping = session?.shipping_details || session?.collected_information?.shipping_details || {};
+  const name = splitCustomerName(shipping?.name || customer?.name);
+  const address = stripeAddressToWix(shipping?.address || customer?.address || {});
+  const subtotal = lines.reduce((sum, line) => sum + line.amount * line.quantity, 0);
+  const total = Number(session?.amount_total || 0) / 100;
+
+  const imported = await wix.orders.importOrder({
+    number: `S-${session.id.slice(-12).toUpperCase()}`,
+    status: "APPROVED",
+    paymentStatus: "PAID",
+    fulfillmentStatus: "NOT_FULFILLED",
+    channelInfo: { type: "OTHER_PLATFORM" },
+    currency: "COP",
+    currencyConversionDetails: { originalCurrency: "COP", conversionRate: "1" },
+    buyerInfo: { email: safeText(customer?.email, 250) },
+    billingInfo: {
+      contactDetails: {
+        firstName: name.firstName,
+        lastName: name.lastName,
+        email: safeText(customer?.email, 250),
+        phone: safeText(customer?.phone, 80)
+      },
+      address
+    },
+    shippingInfo: {
+      title: "Stripe – Entrega CajaModa",
+      cost: { amount: String(Math.max(0, total - subtotal)) },
+      logistics: {
+        shippingDestination: {
+          address,
+          contactDetails: {
+            firstName: name.firstName,
+            lastName: name.lastName,
+            email: safeText(customer?.email, 250),
+            phone: safeText(customer?.phone, 80)
+          }
+        }
+      }
+    },
+    lineItems: lines.map(line => ({
+      productName: { original: line.name },
+      quantity: line.quantity,
+      price: { amount: String(line.amount) },
+      itemType: { preset: "PHYSICAL" },
+      physicalProperties: { shippable: true },
+      catalogReference: {
+        appId: WIX_STORES_APP_ID,
+        catalogItemId: line.productId,
+        options: { variantId: line.variantId }
+      }
+    })),
+    priceSummary: {
+      subtotal: { amount: String(subtotal) },
+      shipping: { amount: String(Math.max(0, total - subtotal)) },
+      tax: { amount: "0" },
+      discount: { amount: "0" },
+      total: { amount: String(total) }
+    }
+  });
+  return { order: imported?.order || imported, created: true };
+}
+
+async function decrementStripeInventory(lines) {
+  await wix.inventoryItemsV3.bulkDecrementInventoryItemsByVariantAndLocation(
+    lines.map(line => ({
+      variantId: line.variantId,
+      decrementBy: line.quantity
+    })),
+    { restrictInventory: true, returnEntity: true, reason: "ORDER" }
+  );
+}
+
+async function syncCompletedStripeSession(session) {
+  if (!wix) throw new Error("Wix no está configurado para recibir el pedido.");
+  if (session.payment_status !== "paid") return;
+  if (session?.metadata?.wixSync === "complete") return;
+
+  const lines = await getStripePurchasedLines(session);
+  const imported = await importStripeOrderIntoWix(session, lines);
+  if (imported.created) {
+    await decrementStripeInventory(lines);
+  }
+  await stripe.checkout.sessions.update(session.id, {
+    metadata: {
+      ...session.metadata,
+      wixSync: "complete",
+      wixOrderId: safeText(imported?.order?._id || imported?.order?.id, 80)
+    }
+  });
+}
+
+async function handleStripeWebhook(request, response) {
+  if (!stripe || !STRIPE_WEBHOOK_SECRET) {
+    sendError(response, 503, "El webhook de Stripe no está configurado.");
+    return;
+  }
+  const rawBody = await readRawBody(request);
+  const signature = request.headers["stripe-signature"];
+  const event = stripe.webhooks.constructEvent(rawBody, signature, STRIPE_WEBHOOK_SECRET);
+  if (event.type === "checkout.session.completed") {
+    await syncCompletedStripeSession(event.data.object);
+    console.log(`[Stripe] Payment synchronized with Wix: ${event.data.object.id}`);
+  }
+  sendJson(response, 200, { received: true });
 }
 
 /* ============================================================
@@ -3067,6 +3379,21 @@ const server =
 
         if(request.method === "POST" && url.pathname === "/api/referrals"){
           await handleCreateReferral(request,response);
+          return;
+        }
+
+        if(request.method === "POST" && url.pathname === "/api/stripe/checkout"){
+          await handleCreateStripeCheckout(request,response);
+          return;
+        }
+
+        if(request.method === "GET" && url.pathname === "/api/stripe/confirmation"){
+          await handleStripeConfirmation(request,response,url);
+          return;
+        }
+
+        if(request.method === "POST" && url.pathname === "/api/stripe/webhook"){
+          await handleStripeWebhook(request,response);
           return;
         }
 

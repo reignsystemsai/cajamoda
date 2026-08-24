@@ -1263,6 +1263,7 @@ img{display:block;max-width:100%}
 
   const $ = id => document.getElementById(id);
   const STEPS = ["bag", "payment"];
+  const STORE_API_URL = "https://cajamoda-storeload-api.onrender.com";
 
   let activeStep = "bag";
   let paymentTimer = null;
@@ -2256,7 +2257,7 @@ img{display:block;max-width:100%}
     }
   }
 
-  function requestPayment() {
+  async function requestPayment() {
     if (!validateContact()) {
       return;
     }
@@ -2285,31 +2286,27 @@ img{display:block;max-width:100%}
       payload
     );
 
-    const message = {
-      source: "CAJAMODA_CHECKOUT",
-      type: "CREATE_CHECKOUT",
-      payload
-    };
-
-    window.postMessage(message, "*");
-
-    if (window.parent !== window) {
-      window.parent.postMessage(
-        message,
-        "*"
-      );
-    }
-
     showToast(
       "Preparando pago seguro…"
     );
 
-    clearTimeout(paymentTimer);
-
-    paymentTimer = setTimeout(
-      resetPaymentButton,
-      10000
-    );
+    try {
+      const response = await fetch(`${STORE_API_URL}/api/stripe/checkout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result?.url) {
+        throw new Error(result?.error || "No pudimos preparar el pago.");
+      }
+      saveJson("cajamoda-pending-stripe-session", result.sessionId || "");
+      location.href = result.url;
+    } catch (error) {
+      console.error("[CajaModa] Stripe checkout error:", error);
+      resetPaymentButton();
+      showToast(error?.message || "No pudimos continuar. Intenta nuevamente.");
+    }
   }
 
   function resetPaymentButton() {

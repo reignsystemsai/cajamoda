@@ -12,13 +12,14 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "@wix/categories_categories": "1.0.53",
+    "@wix/ecom": "1.0.2357",
+    "@wix/media": "1.0.270",
+    "@wix/redirects": "^1.0.112",
     "@wix/sdk": "1.21.14",
     "@wix/stores": "1.0.468",
-    "@wix/ecom": "1.0.2357",
-    "@wix/redirects": "^1.0.112",
-    "@wix/media": "1.0.270",
-    "@wix/categories_categories": "1.0.53",
-    "js-cookie": "3.0.8"
+    "js-cookie": "3.0.8",
+    "stripe": "^22.5.0"
   },
   "devDependencies": {
     "vite": "8.2.1"

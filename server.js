@@ -51,6 +51,8 @@ const ALLOWED_ORIGIN =
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 const NEQUI_PHONE = safeEnv(process.env.NEQUI_PHONE);
+const PICKUP_FEE_COP = 10;
+const CARTAGENA_PICKUP_ADDRESS = "Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar, Colombia";
 const STOREFRONT_URL = String(
   process.env.STOREFRONT_URL || "https://www.cajamoda.com"
 ).replace(/\/$/, "");
@@ -530,6 +532,19 @@ async function handleCreateStripeCheckout(request, response) {
     shipping_address_collection: deliveryMethod === "moto"
       ? { allowed_countries: ["CO"] }
       : undefined,
+    shipping_options: deliveryMethod === "pickup"
+      ? [{
+          shipping_rate_data: {
+            type: "fixed_amount",
+            fixed_amount: { amount: PICKUP_FEE_COP * 100, currency: "cop" },
+            display_name: "Recoger en punto · Cartagena",
+            delivery_estimate: {
+              minimum: { unit: "business_day", value: 1 },
+              maximum: { unit: "business_day", value: 2 }
+            }
+          }
+        }]
+      : undefined,
     phone_number_collection: { enabled: true },
     locale: "es",
     success_url: `${STOREFRONT_URL}/order-confirmation/?stripeSessionId={CHECKOUT_SESSION_ID}`,
@@ -772,8 +787,8 @@ function checkoutDelivery(body) {
   const method = body?.delivery?.method === "moto" ? "moto" : "pickup";
   const addressLine = method === "moto"
     ? safeText(body?.delivery?.address || body?.customer?.deliveryAddress, 250)
-    : "Recoger en punto CajaModa";
-  return { method, addressLine };
+    : CARTAGENA_PICKUP_ADDRESS;
+  return { method, addressLine, fee: method === "pickup" ? PICKUP_FEE_COP : 0 };
 }
 
 async function verifiedCheckoutLines(items) {
@@ -834,7 +849,7 @@ async function handleCreateNequiOrder(request, response) {
     },
     shippingInfo: {
       title,
-      cost: { amount: "0" },
+      cost: { amount: String(delivery.fee) },
       logistics: {
         shippingDestination: {
           address,
@@ -852,10 +867,10 @@ async function handleCreateNequiOrder(request, response) {
     })),
     priceSummary: {
       subtotal: { amount: String(subtotal) },
-      shipping: { amount: "0" },
+      shipping: { amount: String(delivery.fee) },
       tax: { amount: "0" },
       discount: { amount: "0" },
-      total: { amount: String(subtotal) }
+      total: { amount: String(subtotal + delivery.fee) }
     }
   });
 

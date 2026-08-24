@@ -1006,6 +1006,7 @@ img{display:block;max-width:100%}
 .deliveryChoice svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5}
 .deliveryChoice.isSelected{background:#080808;color:#fff;border-color:#080808}
 .deliveryNote{margin:12px 2px 0;color:#737373;font-size:8px}
+.pickupAddress{margin:10px 2px 0;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.58);border:1px solid rgba(0,0,0,.07);font-size:8px;line-height:1.5;color:#555}
 .deliveryDetails{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
 .deliveryDetails label{min-width:0}.deliveryDetails .wide{grid-column:1/-1}
 .compactInput{width:100%;height:45px;padding:0 13px;border:1px solid rgba(0,0,0,.10);border-radius:13px;outline:0;background:rgba(255,255,255,.58);font-size:9px}
@@ -1204,6 +1205,13 @@ img{display:block;max-width:100%}
             <button id="deliveryInfoButton" class="infoButton" type="button" aria-label="Ver tiempos de entrega">i</button>
           </div>
           <div class="deliveryDivider"></div>
+          <label class="referenceLabel" for="deliveryCity">Ciudad
+            <select id="deliveryCity" class="compactInput" style="margin-top:8px">
+              <option value="cartagena">Cartagena</option>
+              <option value="other">Otra ciudad</option>
+            </select>
+          </label>
+          <div class="deliveryDivider"></div>
           <div class="deliveryChoiceLabel">Elige cómo recibirlo</div>
           <div class="deliveryChoices">
             <button class="deliveryChoice isSelected" type="button" data-delivery="pickup">
@@ -1220,6 +1228,7 @@ img{display:block;max-width:100%}
             <label><input id="customerPhone" class="compactInput" autocomplete="tel" inputmode="tel" placeholder="Teléfono"></label>
             <label class="wide"><input id="deliveryAddress" class="compactInput" autocomplete="street-address" placeholder="Dirección para moto" disabled></label>
           </div>
+          <div id="pickupAddress" class="pickupAddress"><strong>Punto de recogida · 10 COP</strong><br>Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar.</div>
           <p class="deliveryNote">El costo se calcula según tu ubicación.</p>
         </section>
 
@@ -1375,6 +1384,28 @@ img{display:block;max-width:100%}
   let selectedDelivery = "pickup";
   let selectedPayment = "nequi";
   let nequiPhone = "";
+  const PICKUP_FEE_COP = 10;
+
+  function checkoutDeliveryFee() {
+    return selectedDelivery === "pickup" ? PICKUP_FEE_COP : 0;
+  }
+
+  function checkoutTotal() {
+    return readCart().total + checkoutDeliveryFee();
+  }
+
+  function renderPaymentTotals() {
+    const subtotal = readCart().total;
+    const total = checkoutTotal();
+    if ($("subtotalValue")) $("subtotalValue").textContent = money(subtotal);
+    if ($("totalValue")) $("totalValue").textContent = money(total);
+    if ($("nequiAmount")) $("nequiAmount").textContent = `${money(total)} COP`;
+    if ($("deliverySummary")) {
+      $("deliverySummary").textContent = selectedDelivery === "pickup"
+        ? "Pronto · Recoger · $10"
+        : "Pronto · Moto · Por calcular";
+    }
+  }
 
   let activeStep = "bag";
   let paymentTimer = null;
@@ -1868,9 +1899,7 @@ img{display:block;max-width:100%}
       $("confirmNequiButton").disabled = cart.items.length === 0;
     }
 
-    if ($("nequiAmount")) {
-      $("nequiAmount").textContent = `${totalText} COP`;
-    }
+    renderPaymentTotals();
 
     if (!cart.items.length) {
       $("cartList").innerHTML = `
@@ -2409,6 +2438,8 @@ img{display:block;max-width:100%}
       delivery: {
         method: selectedDelivery,
         promise: "pronto",
+        city: $("deliveryCity")?.value || "cartagena",
+        fee: checkoutDeliveryFee(),
         address: $("deliveryAddress")?.value.trim() || ""
       },
       currency: "COP",
@@ -2522,15 +2553,34 @@ img{display:block;max-width:100%}
 
   document.querySelectorAll("[data-delivery]").forEach(button => {
     button.onclick = () => {
+      if (button.dataset.delivery === "pickup" && $("deliveryCity")?.value !== "cartagena") {
+        showToast("La recogida en punto solo está disponible en Cartagena.");
+        return;
+      }
       selectedDelivery = button.dataset.delivery;
       document.querySelectorAll("[data-delivery]").forEach(candidate => candidate.classList.toggle("isSelected", candidate === button));
       const address = $("deliveryAddress");
       address.disabled = selectedDelivery !== "moto";
       address.placeholder = selectedDelivery === "moto" ? "Dirección para moto" : "No se requiere dirección para recoger";
-      $("deliverySummary").textContent = selectedDelivery === "moto" ? "Pronto · Moto · Por calcular" : "Pronto · Recoger · Por calcular";
+      $("pickupAddress").hidden = selectedDelivery !== "pickup";
+      renderPaymentTotals();
       syncPanelHeight();
     };
   });
+
+  $("deliveryCity").onchange = () => {
+    const pickupButton = document.querySelector('[data-delivery="pickup"]');
+    const isCartagena = $("deliveryCity").value === "cartagena";
+    pickupButton.disabled = !isCartagena;
+    pickupButton.setAttribute("aria-disabled", String(!isCartagena));
+    pickupButton.style.opacity = isCartagena ? "1" : ".38";
+    if (!isCartagena && selectedDelivery === "pickup") {
+      document.querySelector('[data-delivery="moto"]').click();
+    }
+    $("pickupAddress").hidden = !isCartagena || selectedDelivery !== "pickup";
+    renderPaymentTotals();
+    syncPanelHeight();
+  };
 
   document.querySelectorAll("[data-method]").forEach(button => {
     button.onclick = () => {

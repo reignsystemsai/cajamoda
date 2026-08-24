@@ -1565,6 +1565,40 @@ img{display:block;max-width:100%}
     return variant[name] || choices[name] || choices[name.toLowerCase()] || "";
   }
 
+  function selectedVariant(item) {
+    const variants = productVariants(item);
+    const byId = variants.find(variant =>
+      String(variant.id || variant._id || "") === String(item.variantId || "")
+    );
+    if (byId) return byId;
+
+    return variants.find(variant => {
+      const size = variantChoice(variant, "Size");
+      const color = variantChoice(variant, "Color");
+      return (!size || normalizeChoice(size) === normalizeChoice(item.size)) &&
+        (!color || normalizeChoice(color) === normalizeChoice(item.color));
+    }) || null;
+  }
+
+  function itemInventoryLimit(item) {
+    const variant = selectedVariant(item);
+    const product = catalogProduct(item.productId);
+    const raw = variant?.inventoryQuantity ??
+      variant?.stock?.quantity ??
+      variant?.quantity ??
+      product?.inventoryQuantity;
+    const limit = Number(raw);
+    return raw !== null && raw !== undefined && raw !== "" && Number.isFinite(limit) && limit >= 0
+      ? Math.max(0, Math.floor(limit))
+      : Infinity;
+  }
+
+  function quantityCapAttributes(item) {
+    return Number(item.quantity || 0) >= itemInventoryLimit(item)
+      ? 'disabled aria-disabled="true"'
+      : "";
+  }
+
   function optionValues(item, name) {
     return [...new Set(productVariants(item)
       .map(variant => String(variantChoice(variant, name)).trim())
@@ -1826,6 +1860,7 @@ img{display:block;max-width:100%}
                 type="button"
                 data-plus="${escapeHtml(item.id)}"
                 aria-label="Aumentar cantidad"
+                ${quantityCapAttributes(item)}
               >
                 +
               </button>
@@ -1869,7 +1904,7 @@ img{display:block;max-width:100%}
             <div class="quantityControl">
               <button class="quantityButton" type="button" data-minus="${escapeHtml(item.id)}" aria-label="Reducir cantidad">−</button>
               <span class="quantityValue">${item.quantity}</span>
-              <button class="quantityButton" type="button" data-plus="${escapeHtml(item.id)}" aria-label="Aumentar cantidad">+</button>
+              <button class="quantityButton" type="button" data-plus="${escapeHtml(item.id)}" aria-label="Aumentar cantidad" ${quantityCapAttributes(item)}>+</button>
             </div>
           </div>
         </div>
@@ -1960,7 +1995,12 @@ img{display:block;max-width:100%}
       return;
     }
 
-    item.quantity += amount;
+    const nextQuantity = item.quantity + amount;
+    if (amount > 0 && nextQuantity > itemInventoryLimit(item)) {
+      return;
+    }
+
+    item.quantity = nextQuantity;
 
     if (item.quantity <= 0) {
       cart.items = cart.items.filter(
@@ -2356,10 +2396,7 @@ img{display:block;max-width:100%}
       ) {
         resetPaymentButton();
 
-        showToast(
-          payload.message ||
-          "No pudimos abrir el pago."
-        );
+        showToast("No pudimos continuar. Intenta nuevamente.");
       }
     }
   );

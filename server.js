@@ -50,6 +50,7 @@ const ALLOWED_ORIGIN =
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
+const STRIPE_PUBLISHABLE_KEY = safeEnv(process.env.STRIPE_PUBLISHABLE_KEY);
 const NEQUI_PHONE = safeEnv(process.env.NEQUI_PHONE);
 const ENVIA_API_TOKEN = safeEnv(process.env.ENVIA_API_TOKEN);
 const ENVIA_ORIGIN_NAME = safeEnv(process.env.ENVIA_ORIGIN_NAME);
@@ -546,6 +547,7 @@ async function handleCreateStripeCheckout(request, response) {
       : `${delivery.quote.carrier || "Envia"} · ${delivery.quote.service || "Envío nacional"}`;
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
+    ui_mode: "embedded_page",
     line_items: lineItems,
     customer_email: customerEmail || undefined,
     billing_address_collection: "required",
@@ -562,8 +564,7 @@ async function handleCreateStripeCheckout(request, response) {
     }],
     phone_number_collection: { enabled: true },
     locale: "es",
-    success_url: `${STOREFRONT_URL}/order-confirmation/?stripeSessionId={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${STOREFRONT_URL}/checkout/`,
+    return_url: `${STOREFRONT_URL}/order-confirmation/?stripeSessionId={CHECKOUT_SESSION_ID}`,
     metadata: {
       source: "cajamoda-storefront",
       deliveryMethod,
@@ -578,7 +579,7 @@ async function handleCreateStripeCheckout(request, response) {
   }, {
     idempotencyKey: safeText(body?.requestId, 100) || undefined
   });
-  sendJson(response, 200, { ok: true, url: session.url, sessionId: session.id });
+  sendJson(response, 200, { ok: true, clientSecret: session.client_secret, sessionId: session.id });
 }
 
 async function handleStripeConfirmation(request, response, url) {
@@ -976,6 +977,10 @@ async function handleDeliveryDepartments(_request, response) {
 async function handleCheckoutConfig(_request, response) {
   sendJson(response, 200, {
     ok: true,
+    stripe: {
+      configured: Boolean(stripe && STRIPE_PUBLISHABLE_KEY),
+      publishableKey: STRIPE_PUBLISHABLE_KEY
+    },
     nequi: {
       configured: Boolean(NEQUI_PHONE),
       phone: NEQUI_PHONE,

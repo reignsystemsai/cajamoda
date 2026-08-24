@@ -551,6 +551,11 @@ function normalizeVariant(
       ?.stock
       ?.inStock !== false;
 
+  const inventoryQuantity =
+    raw?.stock?.quantity ??
+    variant?.stock?.quantity ??
+    null;
+
   return {
     id,
 
@@ -573,7 +578,12 @@ function normalizeVariant(
 
     price,
 
-    inStock
+    inStock,
+
+    inventoryQuantity:
+      inventoryQuantity !== null && Number.isFinite(Number(inventoryQuantity))
+        ? Math.max(0, Math.floor(Number(inventoryQuantity)))
+        : null
   };
 }
 
@@ -1456,14 +1466,14 @@ function assertWixCartMatches(expectedCart, rawWixCart) {
   const confirmed = normalizeWixCart(rawWixCart);
 
   if (cartFingerprint(expected) !== cartFingerprint(confirmed)) {
-    throw new Error("La cantidad confirmada por Wix no coincide con tu bolsa. Intenta nuevamente.");
+    throw new Error("No pudimos actualizar tu bolsa. Intenta nuevamente.");
   }
 
   const confirmedTotal = wixCartSubtotal(rawWixCart,confirmed);
   const expectedTotal = expected.total;
 
   if (Math.abs(confirmedTotal - expectedTotal) > 0.01) {
-    throw new Error(`Wix confirmó ${confirmedTotal} pero tu bolsa suma ${expectedTotal}. No abrimos un pago incorrecto.`);
+    throw new Error("No pudimos confirmar el total de tu bolsa. Intenta nuevamente.");
   }
 
   return confirmed;

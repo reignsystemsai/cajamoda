@@ -5280,7 +5280,9 @@ price:
     );
     const raw=matching?.inventoryQuantity??matching?.quantity??state.product?.inventoryQuantity;
     const limit=Number(raw);
-    return Number.isFinite(limit)&&limit>0?Math.max(1,Math.floor(limit)):99;
+    return raw!==null&&raw!==undefined&&raw!==""&&Number.isFinite(limit)&&limit>=0
+      ?Math.max(0,Math.floor(limit))
+      :99;
   }
 
   function renderQuantityState(){

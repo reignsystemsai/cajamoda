@@ -623,11 +623,15 @@ function normalizeProduct(
     ""
   ).trim().toUpperCase();
 
-  const deliveryMode = fulfillmentSku.startsWith("P-")
-    ? "pickup"
-    : fulfillmentSku.startsWith("L-")
-      ? "ship"
-      : "fast";
+  const fulfillmentCode = fulfillmentSku.split("-", 1)[0];
+  const deliveryModes = fulfillmentCode === "PR" || fulfillmentCode === "RP"
+    ? ["pickup", "fast"]
+    : fulfillmentCode === "P"
+      ? ["pickup"]
+      : fulfillmentCode === "L"
+        ? ["ship"]
+        : ["fast"];
+  const deliveryMode = deliveryModes[0];
 
   /*
     Preserve the existing four CajaModa category rails.
@@ -737,7 +741,7 @@ function normalizeProduct(
 
     deliveryMode,
 
-    deliveryModes: [deliveryMode],
+    deliveryModes,
 
     inventoryMode:
       product

@@ -1019,6 +1019,7 @@ img{display:block;max-width:100%}
 .paymentMethod.isSelected::after{content:"";position:absolute;left:16px;right:16px;bottom:-1px;height:2px;background:#080808;border-radius:4px}
 .paymentMethod[data-method="nequi"].isSelected{color:#4d0bb7}
 .paymentGlass{padding:19px}
+.paymentGlass.isStripe{padding:0;background:transparent;border:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
 .paymentEyebrow{color:#555;font-size:8px}.paymentAmount{margin-top:4px;font-size:24px;font-weight:760;letter-spacing:-.7px}
 .nequiLabel{margin-top:15px;font-size:8px}.nequiNumber{margin-top:5px;font-size:18px;font-weight:650;letter-spacing:.8px}
 .nequiActions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
@@ -1250,7 +1251,7 @@ img{display:block;max-width:100%}
         </section>
 
         <h2 class="paymentSectionTitle">Finaliza tu pago</h2>
-        <section class="paymentGlass">
+        <section id="paymentGlass" class="paymentGlass">
           <div id="nequiPane" class="nequiPane">
             <div class="paymentEyebrow">Envía exactamente</div>
             <div id="nequiAmount" class="paymentAmount">$0 COP</div>
@@ -2837,6 +2838,7 @@ img{display:block;max-width:100%}
           selectedPayment = tab.dataset.method;
           $("nequiPane").hidden = selectedPayment !== "nequi";
           $("stripePane").hidden = selectedPayment !== "stripe";
+          $("paymentGlass").classList.toggle("isStripe", selectedPayment === "stripe");
         }
         goToStep(tab.dataset.step);
         if (selectedPayment === "stripe" && tab.dataset.method === "stripe") {

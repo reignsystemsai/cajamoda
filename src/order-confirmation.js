@@ -12,6 +12,7 @@ const checkoutId = (() => {
 })();
 
 const stripeSessionId = new URLSearchParams(location.search).get("stripeSessionId") || "";
+const paymentIntentId = new URLSearchParams(location.search).get("paymentIntent") || "";
 const nequiOrderNumber = new URLSearchParams(location.search).get("nequiOrder") || "";
 
 let confirmation = null;
@@ -31,6 +32,25 @@ async function loadConfirmation() {
     $("shareButton").hidden = true;
     setStatus("Tu pedido está reservado mientras verificamos el pago.");
     try { localStorage.removeItem("cajamoda-pending-nequi-order"); } catch {}
+    return;
+  }
+  if (paymentIntentId) {
+    const response = await fetch(
+      `${API_BASE}/api/stripe/intent-confirmation?paymentIntent=${encodeURIComponent(paymentIntentId)}`,
+      { headers: { Accept: "application/json" } }
+    );
+    const payload = await response.json();
+    if (!response.ok || !payload?.ok || !payload?.order?.paid) {
+      throw new Error(payload?.error || "El pago todavía no está confirmado.");
+    }
+    confirmation = payload.order;
+    $("confirmationTitle").textContent = "COMPRA CONFIRMADA";
+    $("orderNumber").textContent = `Pago #${confirmation.number}`;
+    $("paymentStatus").textContent = confirmation.payment;
+    $("deliveryMethod").textContent = confirmation.delivery?.method || "Entrega CajaModa";
+    $("deliveryMessage").textContent = confirmation.delivery?.message || "Te enviaremos actualizaciones por correo.";
+    $("shareButton").hidden = true;
+    try { localStorage.removeItem("cajamoda-pending-stripe-intent"); } catch {}
     return;
   }
   if (stripeSessionId) {

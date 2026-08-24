@@ -269,25 +269,20 @@ img{display:block;max-width:100%}
   transition:height .48s var(--ease)
 }
 .stepTrack{
-  display:flex;
-  align-items:flex-start;
+  display:block;
   width:100%;
-  transition:transform .58s var(--ease);
-  will-change:transform
+  transform:none!important
 }
 .stepPanel{
-  flex:0 0 100%;
+  display:none;
   width:100%;
   padding:34px 28px 26px;
-  opacity:.28;
-  transform:scale(.985);
-  transition:opacity .38s ease,transform .5s var(--ease);
-  pointer-events:none
+  opacity:1;
+  transform:none;
+  pointer-events:auto
 }
 .stepPanel.isActive{
-  opacity:1;
-  transform:scale(1);
-  pointer-events:auto
+  display:block
 }
 
 .panelHeading{
@@ -1288,16 +1283,8 @@ img{display:block;max-width:100%}
               <label class="cardLabel" for="cardholderName">Nombre en la tarjeta
                 <input id="cardholderName" class="cardInput" autocomplete="cc-name" placeholder="Nombre completo">
               </label>
-              <div class="cardLabel">Número de tarjeta
-                <div id="cardNumber" class="stripeField"></div>
-              </div>
-              <div class="cardPair">
-                <div class="cardLabel">MM / AA
-                  <div id="cardExpiry" class="stripeField"></div>
-                </div>
-                <div class="cardLabel">CVC
-                  <div id="cardCvc" class="stripeField"></div>
-                </div>
+              <div class="cardLabel">Datos de la tarjeta
+                <div id="cardElement" class="stripeField"></div>
               </div>
               <label class="billingToggle"><input id="billingSame" type="checkbox" checked><span>La dirección de facturación es igual a la de entrega</span></label>
               <div id="billingFields" class="billingFields" hidden>
@@ -1446,10 +1433,8 @@ img{display:block;max-width:100%}
   let cardElements = null;
   let expressElements = null;
   let expressCheckoutElement = null;
-  let cardNumberElement = null;
-  let cardExpiryElement = null;
-  let cardCvcElement = null;
-  const cardComplete = { number: false, expiry: false, cvc: false };
+  let cardElement = null;
+  let cardComplete = false;
   let deliveryQuote = { method: "pickup", fee: 10 };
   let quoteTimer = null;
   const PICKUP_FEE_COP = 10;
@@ -2433,8 +2418,7 @@ img{display:block;max-width:100%}
         step === "payment"
       );
 
-    $("stepTrack").style.transform =
-      `translate3d(-${index * 100}%,0,0)`;
+    $("stepTrack").style.transform = "none";
 
     document
       .querySelectorAll("[data-panel]")
@@ -2601,16 +2585,16 @@ img{display:block;max-width:100%}
   }
 
   function updateCardPayState() {
-    const ready = cardComplete.number && cardComplete.expiry && cardComplete.cvc && Boolean($("cardholderName")?.value.trim());
+    const ready = cardComplete && Boolean($("cardholderName")?.value.trim());
     if ($("stripePayButton")) $("stripePayButton").disabled = !ready;
   }
 
-  function watchStripeField(element, containerId, stateKey) {
+  function watchStripeField(element, containerId) {
     const container = $(containerId);
     element.on("focus", () => container.classList.add("isFocused"));
     element.on("blur", () => container.classList.remove("isFocused"));
     element.on("change", event => {
-      cardComplete[stateKey] = Boolean(event.complete);
+      cardComplete = Boolean(event.complete);
       container.classList.toggle("hasError", Boolean(event.error));
       if (event.error) $("stripeError").textContent = event.error.message;
       else if ($("stripeError").textContent) $("stripeError").textContent = "";
@@ -2676,15 +2660,9 @@ img{display:block;max-width:100%}
       stripeClient ||= window.Stripe(stripePublishableKey);
       cardElements = stripeClient.elements({ locale: "es" });
       const options = { style: stripeFieldStyle(), showIcon: true };
-      cardNumberElement = cardElements.create("cardNumber", { ...options, placeholder: "1234 1234 1234 1234" });
-      cardExpiryElement = cardElements.create("cardExpiry", { ...options, placeholder: "MM / AA" });
-      cardCvcElement = cardElements.create("cardCvc", { ...options, placeholder: "CVC" });
-      cardNumberElement.mount("#cardNumber");
-      cardExpiryElement.mount("#cardExpiry");
-      cardCvcElement.mount("#cardCvc");
-      watchStripeField(cardNumberElement, "cardNumber", "number");
-      watchStripeField(cardExpiryElement, "cardExpiry", "expiry");
-      watchStripeField(cardCvcElement, "cardCvc", "cvc");
+      cardElement = cardElements.create("card", { ...options, hidePostalCode: true });
+      cardElement.mount("#cardElement");
+      watchStripeField(cardElement, "cardElement");
 
       try {
         expressElements = stripeClient.elements({
@@ -2745,13 +2723,13 @@ img{display:block;max-width:100%}
     errorBox.textContent = "";
     button.textContent = "Procesando pago…";
     try {
-      if (!cardElements || !cardNumberElement) throw new Error("El formulario de tarjeta todavía está cargando.");
+      if (!cardElements || !cardElement) throw new Error("El formulario de tarjeta todavía está cargando.");
       const name = $("cardholderName")?.value.trim();
       if (!name) {
         $("cardholderName")?.focus();
         throw new Error("Ingresa el nombre que aparece en la tarjeta.");
       }
-      if (!cardComplete.number || !cardComplete.expiry || !cardComplete.cvc) {
+      if (!cardComplete) {
         throw new Error("Completa correctamente los datos de la tarjeta.");
       }
       const address = billingAddress();
@@ -2760,7 +2738,7 @@ img{display:block;max-width:100%}
       const returnUrl = `${location.origin}/order-confirmation/?paymentIntent=${encodeURIComponent(intent.paymentIntentId)}`;
       const result = await stripeClient.confirmCardPayment(intent.clientSecret, {
         payment_method: {
-          card: cardNumberElement,
+          card: cardElement,
           billing_details: { name, email: customer.email, phone: customer.customerPhone, address }
         },
         receipt_email: customer.email,

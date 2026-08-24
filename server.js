@@ -83,7 +83,7 @@ function safeEnv(value) {
 }
 
 function isLiberaloMode(value) {
-  return ["ship", "liberalo", "libéralo", "l"].includes(
+  return ["ship", "liberalo", "libéralo", "liberala", "libérala", "l"].includes(
     String(value || "").trim().toLowerCase()
   );
 }
@@ -1054,7 +1054,7 @@ function liberaloOrderNumber(requestId) {
 }
 
 function liberaloPaymentToken(orderId, expiresAt = Date.now() + (2 * 60 * 60 * 1000)) {
-  if (!LIBERALO_LINK_SECRET) throw new Error("Falta configurar la firma de enlaces Libéralo.");
+  if (!LIBERALO_LINK_SECRET) throw new Error("Falta configurar la firma de enlaces Libérala.");
   const payload = Buffer.from(JSON.stringify({ orderId, expiresAt })).toString("base64url");
   const signature = crypto.createHmac("sha256", LIBERALO_LINK_SECRET).update(payload).digest("base64url");
   return `${payload}.${signature}`;
@@ -1163,7 +1163,7 @@ async function handleCreateNequiOrder(request, response) {
   const delivery = await checkoutDelivery(body);
   const reference = safeText(body?.reference, 100);
   const deliveryTitle = liberaloRequest
-    ? "Libéralo – Esperando confirmación de disponibilidad"
+    ? "Libérala – Esperando confirmación de disponibilidad"
     : delivery.method === "moto"
     ? "Pronto – Moto Cartagena"
     : delivery.method === "national"
@@ -1222,7 +1222,7 @@ async function handleCreateNequiOrder(request, response) {
   if (liberaloRequest) {
     const alert = await notifyWithoutBlocking(
       STAFF_ALERT_PHONE,
-      `CajaModa: nueva solicitud Libéralo ${number}. Confirma disponibilidad en Admin durante los próximos 60 minutos.`
+      `CajaModa: nueva solicitud Libérala ${number}. Confirma disponibilidad en Admin durante los próximos 60 minutos.`
     );
     return sendJson(response, 201, {
       ok: true,
@@ -1259,7 +1259,7 @@ async function handleApproveLiberalo(request, response, orderId) {
   if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
   if (!wix) return sendError(response, 503, "Wix no está configurado.");
   const order = await wix.orders.getOrder(orderId);
-  if (!String(order?.number || "").startsWith("L-")) return sendError(response, 400, "Este no es un pedido Libéralo.");
+  if (!String(order?.number || "").startsWith("L-")) return sendError(response, 400, "Este no es un pedido Libérala.");
   if (orderTitle(order).toLowerCase().includes("no disponible")) return sendError(response, 409, "La solicitud ya fue marcada como no disponible.");
 
   const token = liberaloPaymentToken(orderId);
@@ -1269,7 +1269,7 @@ async function handleApproveLiberalo(request, response, orderId) {
     `CajaModa: confirmamos la disponibilidad de tu pedido ${order.number}. Paga con Nequi aquí durante las próximas 2 horas: ${paymentUrl}`
   );
   const updated = await updateImportedOrder(order, {
-    shippingInfo: { ...order.shippingInfo, title: "Libéralo – Disponibilidad confirmada – Enlace de pago listo" }
+    shippingInfo: { ...order.shippingInfo, title: "Libérala – Disponibilidad confirmada – Enlace de pago listo" }
   });
   sendJson(response, 200, {
     ok: true,
@@ -1284,13 +1284,13 @@ async function handleDeclineLiberalo(request, response, orderId) {
   if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
   if (!wix) return sendError(response, 503, "Wix no está configurado.");
   const order = await wix.orders.getOrder(orderId);
-  if (!String(order?.number || "").startsWith("L-")) return sendError(response, 400, "Este no es un pedido Libéralo.");
+  if (!String(order?.number || "").startsWith("L-")) return sendError(response, 400, "Este no es un pedido Libérala.");
   const notification = await notifyWithoutBlocking(
     orderPhone(order),
     `CajaModa: por el momento no pudimos confirmar la disponibilidad de tu pedido ${order.number}. No se realizó ningún cobro.`
   );
   const updated = await updateImportedOrder(order, {
-    shippingInfo: { ...order.shippingInfo, title: "Libéralo – No disponible – Sin cobro" }
+    shippingInfo: { ...order.shippingInfo, title: "Libérala – No disponible – Sin cobro" }
   });
   sendJson(response, 200, { ok: true, order: normalizeWixOrder(updated), customerNotificationSent: notification.sent });
 }
@@ -1299,7 +1299,7 @@ async function getLiberaloOrderFromToken(token) {
   if (!wix) throw new Error("Wix no está configurado.");
   const verified = verifyLiberaloPaymentToken(token);
   const order = await wix.orders.getOrder(verified.orderId);
-  if (!String(order?.number || "").startsWith("L-")) throw new Error("El enlace no corresponde a un pedido Libéralo.");
+  if (!String(order?.number || "").startsWith("L-")) throw new Error("El enlace no corresponde a un pedido Libérala.");
   const title = orderTitle(order).toLowerCase();
   if (title.includes("no disponible")) throw new Error("Este producto ya no está disponible.");
   if (!title.includes("disponibilidad confirmada") && !title.includes("pago nequi por confirmar")) {
@@ -1334,7 +1334,7 @@ async function handleSubmitLiberaloPayment(request, response) {
   const updated = await updateImportedOrder(order, {
     shippingInfo: {
       ...order.shippingInfo,
-      title: `Libéralo – Pago Nequi por confirmar${reference ? ` · Ref ${reference}` : ""}`
+      title: `Libérala – Pago Nequi por confirmar${reference ? ` · Ref ${reference}` : ""}`
     }
   });
   await notifyWithoutBlocking(
@@ -3625,7 +3625,7 @@ function getConfirmationDelivery(order) {
     return { method: title || "Pickup Ahora", message: "Te avisaremos cuando tu pedido esté listo." };
   }
   if (normalized.includes("libér") || normalized.includes("liber")) {
-    return { method: title || "Libéralo", message: "Te enviaremos actualizaciones durante los próximos 14–21 días." };
+    return { method: title || "Libérala", message: "Te enviaremos actualizaciones durante los próximos 14–21 días." };
   }
   return { method: title || "Entrega CajaModa", message: "Te enviaremos la información de entrega por correo." };
 }

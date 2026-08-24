@@ -1005,6 +1005,7 @@ img{display:block;max-width:100%}
 .deliveryChoice{min-height:46px;padding:0 11px;border:1px solid rgba(0,0,0,.18);border-radius:999px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:9px;font-weight:600}
 .deliveryChoice svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5}
 .deliveryChoice.isSelected{background:#080808;color:#fff;border-color:#080808}
+.deliveryChoice[data-delivery="national"]:not([hidden]){grid-column:1/-1}
 .deliveryNote{margin:12px 2px 0;color:#737373;font-size:8px}
 .pickupAddress{margin:10px 2px 0;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.58);border:1px solid rgba(0,0,0,.07);font-size:8px;line-height:1.5;color:#555}
 .deliveryDetails{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
@@ -1222,10 +1223,15 @@ img{display:block;max-width:100%}
               <svg viewBox="0 0 24 24"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9 17h6l-2.5-6H8m5-3h3"/></svg>
               Moto a tu dirección
             </button>
+            <button class="deliveryChoice" type="button" data-delivery="national" hidden>
+              <svg viewBox="0 0 24 24"><path d="M3 7h11v10H3zM14 10h4l3 3v4h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+              Envío nacional · 4–7 días
+            </button>
           </div>
           <div class="deliveryDetails">
             <label><input id="customerName" class="compactInput" autocomplete="name" placeholder="Nombre completo"></label>
             <label><input id="customerPhone" class="compactInput" autocomplete="tel" inputmode="tel" placeholder="Teléfono"></label>
+            <label class="wide"><input id="deliveryDestinationCity" class="compactInput" autocomplete="address-level2" placeholder="Ciudad de entrega" hidden></label>
             <label class="wide"><input id="deliveryAddress" class="compactInput" autocomplete="street-address" placeholder="Dirección para moto" disabled></label>
           </div>
           <div id="pickupAddress" class="pickupAddress"><strong>Punto de recogida · 10 COP</strong><br>Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar.</div>
@@ -1403,7 +1409,9 @@ img{display:block;max-width:100%}
     if ($("deliverySummary")) {
       $("deliverySummary").textContent = selectedDelivery === "pickup"
         ? "Pronto · Recoger · $10"
-        : "Pronto · Moto · Por calcular";
+        : selectedDelivery === "national"
+          ? "Rápido · Nacional · Por calcular"
+          : "Pronto · Moto · Por calcular";
     }
   }
 
@@ -2223,7 +2231,7 @@ img{display:block;max-width:100%}
     showToast("Producto eliminado.");
   }
 
-  const customerFields = ["email", "customerName", "customerPhone", "deliveryAddress"];
+  const customerFields = ["email", "customerName", "customerPhone", "deliveryDestinationCity", "deliveryAddress"];
 
   function loadCustomer() {
     const saved = readJson(
@@ -2421,9 +2429,14 @@ img{display:block;max-width:100%}
       showToast("Ingresa tu número de teléfono.");
       return false;
     }
-    if (selectedDelivery === "moto" && !address) {
+    if (["moto", "national"].includes(selectedDelivery) && !address) {
       $("deliveryAddress")?.focus();
-      showToast("Ingresa la dirección para la entrega en moto.");
+      showToast("Ingresa la dirección de entrega.");
+      return false;
+    }
+    if (selectedDelivery === "national" && !$("deliveryDestinationCity")?.value.trim()) {
+      $("deliveryDestinationCity")?.focus();
+      showToast("Ingresa la ciudad de entrega.");
       return false;
     }
     saveCustomer();
@@ -2438,7 +2451,9 @@ img{display:block;max-width:100%}
       delivery: {
         method: selectedDelivery,
         promise: "pronto",
-        city: $("deliveryCity")?.value || "cartagena",
+        city: selectedDelivery === "national"
+          ? $("deliveryDestinationCity")?.value.trim() || ""
+          : "Cartagena",
         fee: checkoutDeliveryFee(),
         address: $("deliveryAddress")?.value.trim() || ""
       },
@@ -2560,8 +2575,13 @@ img{display:block;max-width:100%}
       selectedDelivery = button.dataset.delivery;
       document.querySelectorAll("[data-delivery]").forEach(candidate => candidate.classList.toggle("isSelected", candidate === button));
       const address = $("deliveryAddress");
-      address.disabled = selectedDelivery !== "moto";
-      address.placeholder = selectedDelivery === "moto" ? "Dirección para moto" : "No se requiere dirección para recoger";
+      address.disabled = selectedDelivery === "pickup";
+      address.placeholder = selectedDelivery === "moto"
+        ? "Dirección para moto"
+        : selectedDelivery === "national"
+          ? "Dirección completa de entrega"
+          : "No se requiere dirección para recoger";
+      $("deliveryDestinationCity").hidden = selectedDelivery !== "national";
       $("pickupAddress").hidden = selectedDelivery !== "pickup";
       renderPaymentTotals();
       syncPanelHeight();
@@ -2570,12 +2590,18 @@ img{display:block;max-width:100%}
 
   $("deliveryCity").onchange = () => {
     const pickupButton = document.querySelector('[data-delivery="pickup"]');
+    const motoButton = document.querySelector('[data-delivery="moto"]');
+    const nationalButton = document.querySelector('[data-delivery="national"]');
     const isCartagena = $("deliveryCity").value === "cartagena";
     pickupButton.disabled = !isCartagena;
     pickupButton.setAttribute("aria-disabled", String(!isCartagena));
     pickupButton.style.opacity = isCartagena ? "1" : ".38";
-    if (!isCartagena && selectedDelivery === "pickup") {
-      document.querySelector('[data-delivery="moto"]').click();
+    motoButton.hidden = !isCartagena;
+    nationalButton.hidden = isCartagena;
+    if (!isCartagena) {
+      nationalButton.click();
+    } else if (selectedDelivery === "national") {
+      pickupButton.click();
     }
     $("pickupAddress").hidden = !isCartagena || selectedDelivery !== "pickup";
     renderPaymentTotals();

@@ -523,13 +523,16 @@ async function handleCreateStripeCheckout(request, response) {
   }
   const lineItems = await Promise.all(items.map(stripeLineItemFromCartItem));
   const customerEmail = safeText(body?.customer?.email, 250);
-  const deliveryMethod = body?.delivery?.method === "moto" ? "moto" : "pickup";
+  const requestedDelivery = safeText(body?.delivery?.method, 20).toLowerCase();
+  const deliveryMethod = ["moto", "national"].includes(requestedDelivery)
+    ? requestedDelivery
+    : "pickup";
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     line_items: lineItems,
     customer_email: customerEmail || undefined,
     billing_address_collection: "required",
-    shipping_address_collection: deliveryMethod === "moto"
+    shipping_address_collection: deliveryMethod !== "pickup"
       ? { allowed_countries: ["CO"] }
       : undefined,
     shipping_options: deliveryMethod === "pickup"
@@ -672,7 +675,9 @@ async function importStripeOrderIntoWix(session, lines) {
     shippingInfo: {
       title: session?.metadata?.deliveryMethod === "pickup"
         ? "Stripe – Pronto – Recoger"
-        : "Stripe – Pronto – Moto",
+        : session?.metadata?.deliveryMethod === "national"
+          ? "Stripe – Rápido – Envío nacional 4–7 días"
+          : "Stripe – Pronto – Moto",
       cost: { amount: String(Math.max(0, total - subtotal)) },
       logistics: {
         shippingDestination: {
@@ -784,11 +789,15 @@ function checkoutCustomer(body) {
 }
 
 function checkoutDelivery(body) {
-  const method = body?.delivery?.method === "moto" ? "moto" : "pickup";
-  const addressLine = method === "moto"
+  const requested = safeText(body?.delivery?.method, 20).toLowerCase();
+  const method = ["moto", "national"].includes(requested) ? requested : "pickup";
+  const addressLine = method !== "pickup"
     ? safeText(body?.delivery?.address || body?.customer?.deliveryAddress, 250)
     : CARTAGENA_PICKUP_ADDRESS;
-  return { method, addressLine, fee: method === "pickup" ? PICKUP_FEE_COP : 0 };
+  const city = method === "national"
+    ? safeText(body?.delivery?.city || body?.customer?.deliveryDestinationCity, 100)
+    : "Cartagena";
+  return { method, addressLine, city, fee: method === "pickup" ? PICKUP_FEE_COP : 0 };
 }
 
 async function verifiedCheckoutLines(items) {
@@ -828,9 +837,15 @@ async function handleCreateNequiOrder(request, response) {
   const customer = checkoutCustomer(body);
   const delivery = checkoutDelivery(body);
   const reference = safeText(body?.reference, 100);
-  const title = `${delivery.method === "moto" ? "Pronto – Moto" : "Pronto – Recoger"}${reference ? ` · Ref ${reference}` : ""}`;
+  const deliveryTitle = delivery.method === "moto"
+    ? "Pronto – Moto Cartagena"
+    : delivery.method === "national"
+      ? `Rápido – Envío nacional 4–7 días – ${delivery.city}`
+      : "Pronto – Recoger Cartagena";
+  const title = `${deliveryTitle}${reference ? ` · Ref ${reference}` : ""}`;
   const address = {
     country: "CO",
+    city: delivery.city,
     addressLine: delivery.addressLine
   };
 

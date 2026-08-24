@@ -390,9 +390,10 @@ img{display:block;max-width:100%}
 }
 .cartDescription{margin-top:5px;color:#333;font-size:8px;line-height:1.4}
 .cartRating{margin-top:7px;color:#666;font-size:8px;font-weight:650}
-.cartTopActions{display:flex;align-items:center;gap:4px}
-.cartHeart{width:42px;height:42px;display:grid;place-items:center;border-radius:50%;color:#111;background:linear-gradient(145deg,rgba(255,255,255,.83),rgba(255,255,255,.36));border:1px solid rgba(255,255,255,.96);box-shadow:0 0 0 1px rgba(0,0,0,.026),inset 0 1px 0 #fff,0 8px 24px rgba(0,0,0,.055);backdrop-filter:blur(25px) saturate(165%);-webkit-backdrop-filter:blur(25px) saturate(165%)}
-.cartHeart svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5}
+.cartTopActions{display:flex;align-items:center;justify-content:center;gap:4px;flex:0 0 auto}
+.cartHeart{width:42px;height:42px;padding:0;display:flex;align-items:center;justify-content:center;flex:0 0 42px;border-radius:50%;color:#111;background:linear-gradient(145deg,rgba(255,255,255,.83),rgba(255,255,255,.36));border:1px solid rgba(255,255,255,.96);box-shadow:0 0 0 1px rgba(0,0,0,.026),inset 0 1px 0 #fff,0 8px 24px rgba(0,0,0,.055);backdrop-filter:blur(25px) saturate(165%);-webkit-backdrop-filter:blur(25px) saturate(165%)}
+.cartHeart svg{width:20px;height:20px;margin:0;display:block;fill:none;stroke:currentColor;stroke-width:1.5}
+.finalCheckoutItem .removeButton{display:none}
 .cartHeart.active svg{fill:#d9344d;stroke:#d9344d}
 .cartHeart.active{color:#d9344d;animation:cajaHeartBeat 2.4s ease-in-out infinite;transform-origin:center}
 @keyframes cajaHeartBeat{0%,42%,100%{transform:scale(1)}7%{transform:scale(1.13)}14%{transform:scale(1)}21%{transform:scale(1.09)}29%{transform:scale(1)}}
@@ -1006,12 +1007,13 @@ img{display:block;max-width:100%}
 .deliveryChoice{min-height:46px;padding:0 11px;border:1px solid rgba(0,0,0,.18);border-radius:999px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:9px;font-weight:600}
 .deliveryChoice svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5}
 .deliveryChoice.isSelected{background:#080808;color:#fff;border-color:#080808}
-.deliveryChoice[data-delivery="national"]:not([hidden]){grid-column:1/-1}
+.deliveryChoice[data-delivery="national"]{grid-column:1/-1;width:100%}
 .deliveryNote{margin:12px 2px 0;color:#737373;font-size:8px}
 .pickupAddress{margin:10px 2px 0;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.58);border:1px solid rgba(0,0,0,.07);font-size:8px;line-height:1.5;color:#555}
 .deliveryDetails{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
 .deliveryDetails label{min-width:0}.deliveryDetails .wide{grid-column:1/-1}
-.compactInput{width:100%;height:45px;padding:0 13px;border:1px solid rgba(0,0,0,.10);border-radius:13px;outline:0;background:rgba(255,255,255,.58);font-size:9px}
+.compactInput{width:100%;height:45px;padding:0 13px;border:1px solid rgba(0,0,0,.10);border-radius:13px;outline:0;background:rgba(255,255,255,.58);color:#080808;font-size:9px;accent-color:#080808}
+select.compactInput,select.compactInput option{color:#080808;-webkit-text-fill-color:#080808}
 .deliveryHelp{position:fixed;z-index:120;inset:0;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(255,255,255,.52);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
 .deliveryHelp.isOpen{display:flex}.deliveryHelpCard{width:min(360px,100%);padding:24px;border-radius:24px;background:rgba(255,255,255,.9);border:1px solid rgba(0,0,0,.08);box-shadow:0 24px 70px rgba(0,0,0,.15)}
 .deliveryHelpTop{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.deliveryHelpTitle{font-family:"Cormorant Garamond",Georgia,serif;font-size:25px;font-weight:600}.deliveryHelpClose{width:34px;height:34px;border-radius:50%;background:#f4f4f4;font-size:18px}
@@ -1234,7 +1236,7 @@ img{display:block;max-width:100%}
               <svg viewBox="0 0 24 24"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9 17h6l-2.5-6H8m5-3h3"/></svg>
               Moto a tu dirección
             </button>
-            <button class="deliveryChoice" type="button" data-delivery="national" hidden>
+            <button class="deliveryChoice" type="button" data-delivery="national">
               <svg viewBox="0 0 24 24"><path d="M3 7h11v10H3zM14 10h4l3 3v4h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>
               Envío nacional · 4–7 días
             </button>
@@ -2467,6 +2469,22 @@ img{display:block;max-width:100%}
     return true;
   }
 
+  function firstIncompletePaymentField() {
+    if (!$('customerName')?.value.trim()) return $('customerName');
+    if (!$('customerPhone')?.value.trim()) return $('customerPhone');
+    if (["moto", "national"].includes(selectedDelivery) && !$('deliveryAddress')?.value.trim()) return $('deliveryAddress');
+    if (selectedDelivery === "national" && !$('deliveryDestinationCity')?.value.trim()) return $('deliveryDestinationCity');
+    if (selectedDelivery === "national" && !$('deliveryDepartment')?.value) return $('deliveryDepartment');
+    return null;
+  }
+
+  function guideToPaymentDetails() {
+    const field = firstIncompletePaymentField();
+    if (!field) return false;
+    requestAnimationFrame(() => field.scrollIntoView({ behavior: "smooth", block: "center" }));
+    return true;
+  }
+
   function checkoutPayload() {
     return {
       requestId: createId(),
@@ -2715,6 +2733,7 @@ img{display:block;max-width:100%}
         }
         goToStep(tab.dataset.step);
         if (selectedPayment === "stripe" && tab.dataset.method === "stripe") {
+          if (guideToPaymentDetails()) return;
           await initializeStripePaymentElement();
         }
       };
@@ -2768,7 +2787,7 @@ img{display:block;max-width:100%}
     pickupButton.setAttribute("aria-disabled", String(!isCartagena));
     pickupButton.style.opacity = isCartagena ? "1" : ".38";
     motoButton.hidden = !isCartagena;
-    nationalButton.hidden = isCartagena;
+    nationalButton.hidden = false;
     if (!isCartagena) {
       nationalButton.click();
     } else if (selectedDelivery === "national") {

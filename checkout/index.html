@@ -1028,7 +1028,7 @@ img{display:block;max-width:100%}
 .referenceLabel{display:block;font-size:8px}.referenceLabel input{margin-top:8px}
 .confirmPayment{width:100%;height:52px;margin-top:13px;border-radius:14px;background:#080808;color:#fff;font-size:10px;font-weight:700}
 .pendingNote{margin:9px 0 0;text-align:center;color:#777;font-size:7.5px;line-height:1.45}
-.stripePane{text-align:left}.stripePane[hidden],.nequiPane[hidden]{display:none}.stripeTitle{text-align:center;font-size:15px;font-weight:750}.stripeCopy{max-width:310px;margin:8px auto 14px;color:#737373;text-align:center;font-size:9px;line-height:1.55}.embeddedCheckout{min-height:310px;border-radius:18px;overflow:hidden}.stripeLoading{padding:42px 12px;text-align:center;color:#737373;font-size:10px}
+.stripePane{text-align:left}.stripePane[hidden],.nequiPane[hidden]{display:none}.stripeTop{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:5px}.stripeTitle{font-family:"Cormorant Garamond",Georgia,serif;font-size:24px;font-weight:600}.stripeSecure{display:flex;align-items:center;gap:5px;color:#666;font-size:7.5px;white-space:nowrap}.stripeSecure svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.7}.stripeCopy{margin:0 0 16px;color:#737373;font-size:8.5px;line-height:1.5}.paymentElementShell{padding:13px;border:1px solid rgba(0,0,0,.08);border-radius:16px;background:rgba(255,255,255,.46);box-shadow:inset 0 1px 0 rgba(255,255,255,.85)}.paymentElementShell.isLocked{padding:18px 14px;text-align:center;color:#6f6f6f;font-size:9px;line-height:1.55}.stripePayButton{width:100%;height:52px;margin-top:13px;border-radius:14px;background:#080808;color:#fff;font-size:10px;font-weight:700;transition:opacity .18s}.stripePayButton:disabled{opacity:.38}.stripeError{min-height:16px;margin-top:8px;color:#a31919;text-align:center;font-size:8px;line-height:1.4}.stripeTrust{display:flex;justify-content:center;align-items:center;gap:5px;margin-top:2px;color:#777;font-size:7.5px}.stripeTrust svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:1.7}
 .paymentSummary{margin-top:16px;padding:16px 18px}
 @media(max-width:390px){.deliveryChoices,.nequiActions,.deliveryDetails{grid-template-columns:1fr}.deliveryDetails .wide{grid-column:auto}}
 </style>
@@ -1271,9 +1271,18 @@ img{display:block;max-width:100%}
           </div>
 
           <div id="stripePane" class="stripePane" hidden>
-            <div class="stripeTitle">Pago seguro con tarjeta o Link</div>
-            <p class="stripeCopy">Stripe procesará tu tarjeta de forma segura. CajaModa no guarda los datos de tu tarjeta.</p>
-            <div id="embeddedCheckout" class="embeddedCheckout"><div class="stripeLoading">Completa tus datos de entrega para cargar el pago seguro.</div></div>
+            <div class="stripeTop">
+              <div class="stripeTitle">Tarjeta o Link</div>
+              <div class="stripeSecure"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Pago seguro</div>
+            </div>
+            <p class="stripeCopy">Paga sin salir de CajaModa. Tus datos se cifran y se envían directamente a Stripe.</p>
+            <div id="paymentElementShell" class="paymentElementShell isLocked">
+              <div id="stripeLockedMessage">Completa tus datos de entrega para habilitar el pago.</div>
+              <div id="paymentElement" hidden></div>
+            </div>
+            <button id="stripePayButton" class="stripePayButton" type="button" disabled>Pagar de forma segura</button>
+            <div id="stripeError" class="stripeError" role="alert" aria-live="polite"></div>
+            <div class="stripeTrust"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>CajaModa no guarda los datos de tu tarjeta</div>
           </div>
         </section>
 
@@ -1399,8 +1408,10 @@ img{display:block;max-width:100%}
   let nequiPhone = "";
   let stripePublishableKey = "";
   let stripeClient = null;
-  let embeddedCheckout = null;
-  let embeddedFingerprint = "";
+  let checkoutElements = null;
+  let checkoutActions = null;
+  let paymentElement = null;
+  let stripeFingerprint = "";
   let deliveryQuote = { method: "pickup", fee: 10 };
   let quoteTimer = null;
   const PICKUP_FEE_COP = 10;
@@ -1419,6 +1430,7 @@ img{display:block;max-width:100%}
     if ($("subtotalValue")) $("subtotalValue").textContent = money(subtotal);
     if ($("totalValue")) $("totalValue").textContent = money(total);
     if ($("nequiAmount")) $("nequiAmount").textContent = `${money(total)} COP`;
+    if ($("stripePayButton") && !checkoutActions) $("stripePayButton").textContent = `Pagar ${money(total)} COP`;
     if ($("deliverySummary")) {
       $("deliverySummary").textContent = deliveryQuote?.method === selectedDelivery
         ? `${selectedDelivery === "pickup" ? "Pronto · Recoger" : selectedDelivery === "national" ? "Rápido · Nacional" : `Pronto · Moto · ${deliveryQuote.distanceKm || ""} km`} · ${money(deliveryQuote.fee)}`
@@ -2517,45 +2529,123 @@ img{display:block;max-width:100%}
     quoteTimer = setTimeout(() => refreshDeliveryQuote(), 650);
   }
 
-  async function initializeEmbeddedStripe() {
+  async function initializeStripePaymentElement() {
     if (!validatePaymentDetails()) return;
-    const mount = $("embeddedCheckout");
+    const mount = $("paymentElement");
+    const shell = $("paymentElementShell");
+    const locked = $("stripeLockedMessage");
+    const payButton = $("stripePayButton");
+    const errorBox = $("stripeError");
     if (!stripePublishableKey || typeof window.Stripe !== "function") {
-      mount.innerHTML = '<div class="stripeLoading">El pago con tarjeta todavía no está configurado.</div>';
+      locked.textContent = "El pago con tarjeta todavía no está configurado.";
       return showToast("Falta configurar la clave pública de Stripe.");
     }
     try {
       await refreshDeliveryQuote({ required: true });
       const payload = checkoutPayload();
       const fingerprint = JSON.stringify({ cart: payload.cart, customer: payload.customer, delivery: payload.delivery });
-      if (embeddedCheckout && embeddedFingerprint === fingerprint) return;
-      mount.innerHTML = '<div class="stripeLoading">Cargando pago seguro…</div>';
-      if (embeddedCheckout?.destroy) await embeddedCheckout.destroy();
-      embeddedCheckout = null;
+      if (checkoutElements && stripeFingerprint === fingerprint) return;
+      locked.textContent = "Preparando tu pago seguro…";
+      locked.hidden = false;
+      mount.hidden = true;
+      payButton.disabled = true;
+      errorBox.textContent = "";
+      paymentElement?.destroy?.();
+      paymentElement = null;
+      checkoutElements = null;
+      checkoutActions = null;
       stripeClient ||= window.Stripe(stripePublishableKey);
-      const fetchClientSecret = async () => {
-        const response = await fetch(`${STORE_API_URL}/api/stripe/checkout`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify(payload)
-        });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok || !result?.clientSecret) throw new Error(result?.error || "No pudimos preparar el pago.");
-        saveJson("cajamoda-pending-checkout", payload);
-        saveJson("cajamoda-pending-stripe-session", result.sessionId || "");
-        return result.clientSecret;
-      };
-      mount.innerHTML = "";
-      embeddedCheckout = stripeClient.createEmbeddedCheckoutPage
-        ? await stripeClient.createEmbeddedCheckoutPage({ fetchClientSecret })
-        : await stripeClient.initEmbeddedCheckout({ fetchClientSecret });
-      embeddedCheckout.mount("#embeddedCheckout");
-      embeddedFingerprint = fingerprint;
+      const response = await fetch(`${STORE_API_URL}/api/stripe/checkout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result?.clientSecret) throw new Error(result?.error || "No pudimos preparar el pago.");
+      saveJson("cajamoda-pending-checkout", payload);
+      saveJson("cajamoda-pending-stripe-session", result.sessionId || "");
+      checkoutElements = stripeClient.initCheckoutElementsSdk({
+        clientSecret: result.clientSecret,
+        elementsOptions: {
+          loader: "auto",
+          appearance: {
+            theme: "stripe",
+            variables: {
+              colorPrimary: "#080808",
+              colorBackground: "rgba(255,255,255,.78)",
+              colorText: "#080808",
+              colorDanger: "#a31919",
+              fontFamily: "Inter, Arial, sans-serif",
+              borderRadius: "13px",
+              spacingUnit: "4px"
+            },
+            rules: {
+              ".Input": { border: "1px solid rgba(0,0,0,.12)", boxShadow: "none" },
+              ".Input:focus": { border: "1px solid #080808", boxShadow: "0 0 0 1px #080808" },
+              ".Tab": { border: "1px solid rgba(0,0,0,.10)", boxShadow: "none" },
+              ".Tab--selected": { border: "1px solid #080808", boxShadow: "0 0 0 1px #080808" }
+            }
+          }
+        },
+        defaultValues: {
+          email: payload.customer.email,
+          phoneNumber: payload.customer.customerPhone,
+          billingAddress: {
+            name: payload.customer.customerName,
+            address: { country: "CO" }
+          }
+        }
+      });
+      const loaded = await checkoutElements.loadActions();
+      if (loaded.type !== "success") throw new Error(loaded.error?.message || "No pudimos preparar el pago.");
+      checkoutActions = loaded.actions;
+      const stripeSession = checkoutActions.getSession();
+      const stripeTotal = stripeSession.total.total.amount;
+      payButton.textContent = `Pagar ${stripeTotal}`;
+      paymentElement = checkoutElements.createPaymentElement({
+        layout: { type: "tabs" },
+        fields: { billingDetails: { name: "never", email: "never", phone: "never", address: "if_required" } },
+        wallets: { link: "auto", applePay: "auto", googlePay: "auto" }
+      });
+      paymentElement.mount("#paymentElement");
+      checkoutElements.on("change", session => { payButton.disabled = !session.canConfirm; });
+      locked.hidden = true;
+      mount.hidden = false;
+      shell.classList.remove("isLocked");
+      payButton.disabled = !stripeSession.canConfirm;
+      stripeFingerprint = fingerprint;
       syncPanelHeight();
     } catch (error) {
-      console.error("[CajaModa] Embedded Stripe error:", error);
-      mount.innerHTML = '<div class="stripeLoading">No pudimos cargar el pago. Revisa tus datos e intenta nuevamente.</div>';
+      console.error("[CajaModa] Stripe Payment Element error:", error);
+      locked.textContent = "No pudimos cargar el pago. Revisa tus datos e intenta nuevamente.";
+      locked.hidden = false;
+      mount.hidden = true;
+      shell.classList.add("isLocked");
+      payButton.disabled = true;
       showToast(error?.message || "No pudimos cargar el pago seguro.");
+    }
+  }
+
+  async function submitStripePayment() {
+    if (!checkoutActions) return initializeStripePaymentElement();
+    const button = $("stripePayButton");
+    const errorBox = $("stripeError");
+    button.disabled = true;
+    errorBox.textContent = "";
+    const originalLabel = button.textContent;
+    button.textContent = "Procesando pago…";
+    try {
+      const customer = collectCustomer();
+      const result = await checkoutActions.confirm({
+        email: customer.email,
+        phoneNumber: customer.customerPhone,
+        billingAddress: { name: customer.customerName, address: { country: "CO" } }
+      });
+      if (result?.type === "error") throw new Error(result.error?.message || "No pudimos procesar el pago.");
+    } catch (error) {
+      errorBox.textContent = error?.message || "No pudimos procesar el pago.";
+      button.textContent = originalLabel;
+      button.disabled = false;
     }
   }
 
@@ -2625,7 +2715,7 @@ img{display:block;max-width:100%}
         }
         goToStep(tab.dataset.step);
         if (selectedPayment === "stripe" && tab.dataset.method === "stripe") {
-          await initializeEmbeddedStripe();
+          await initializeStripePaymentElement();
         }
       };
     });
@@ -2643,6 +2733,7 @@ img{display:block;max-width:100%}
   };
 
   $("confirmNequiButton").onclick = submitNequiPayment;
+  $("stripePayButton").onclick = submitStripePayment;
 
   document.querySelectorAll("[data-delivery]").forEach(button => {
     button.onclick = () => {

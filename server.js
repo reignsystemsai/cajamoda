@@ -58,6 +58,11 @@ const ENVIA_ORIGIN_PHONE = safeEnv(process.env.ENVIA_ORIGIN_PHONE);
 const ENVIA_ORIGIN_STREET = safeEnv(process.env.ENVIA_ORIGIN_STREET);
 const ENVIA_ORIGIN_POSTAL_CODE = safeEnv(process.env.ENVIA_ORIGIN_POSTAL_CODE);
 const GOOGLE_MAPS_API_KEY = safeEnv(process.env.GOOGLE_MAPS_API_KEY);
+const TWILIO_ACCOUNT_SID = safeEnv(process.env.TWILIO_ACCOUNT_SID);
+const TWILIO_AUTH_TOKEN = safeEnv(process.env.TWILIO_AUTH_TOKEN);
+const TWILIO_FROM = safeEnv(process.env.TWILIO_FROM);
+const STAFF_ALERT_PHONE = safeEnv(process.env.STAFF_ALERT_PHONE);
+const LIBERALO_LINK_SECRET = safeEnv(process.env.LIBERALO_LINK_SECRET || LOADER_PASSWORD);
 const PICKUP_FEE_COP = 10;
 const MOTO_BASE_FEE_COP = 8000;
 const MOTO_INCLUDED_KM = 3;
@@ -75,6 +80,16 @@ const stripe = STRIPE_SECRET_KEY
 
 function safeEnv(value) {
   return String(value || "").trim();
+}
+
+function isLiberaloMode(value) {
+  return ["ship", "liberalo", "libéralo", "l"].includes(
+    String(value || "").trim().toLowerCase()
+  );
+}
+
+function hasLiberaloItems(items) {
+  return (Array.isArray(items) ? items : []).some(item => isLiberaloMode(item?.deliveryMode));
 }
 
 /* ============================================================
@@ -1033,6 +1048,99 @@ function nequiOrderNumber(requestId) {
   return `N-${digest}`;
 }
 
+function liberaloOrderNumber(requestId) {
+  const digest = crypto.createHash("sha256").update(requestId).digest("hex").slice(0, 10).toUpperCase();
+  return `L-${digest}`;
+}
+
+function liberaloPaymentToken(orderId, expiresAt = Date.now() + (2 * 60 * 60 * 1000)) {
+  if (!LIBERALO_LINK_SECRET) throw new Error("Falta configurar la firma de enlaces Libéralo.");
+  const payload = Buffer.from(JSON.stringify({ orderId, expiresAt })).toString("base64url");
+  const signature = crypto.createHmac("sha256", LIBERALO_LINK_SECRET).update(payload).digest("base64url");
+  return `${payload}.${signature}`;
+}
+
+function verifyLiberaloPaymentToken(token) {
+  const [payload, suppliedSignature] = String(token || "").split(".");
+  if (!payload || !suppliedSignature || !LIBERALO_LINK_SECRET) throw new Error("El enlace de pago no es válido.");
+  const expectedSignature = crypto.createHmac("sha256", LIBERALO_LINK_SECRET).update(payload).digest("base64url");
+  const supplied = Buffer.from(suppliedSignature);
+  const expected = Buffer.from(expectedSignature);
+  if (supplied.length !== expected.length || !crypto.timingSafeEqual(supplied, expected)) {
+    throw new Error("El enlace de pago no es válido.");
+  }
+  const decoded = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+  if (!decoded?.orderId || Number(decoded?.expiresAt) <= Date.now()) throw new Error("El enlace de pago venció.");
+  return decoded;
+}
+
+function colombiaPhone(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  if (digits.startsWith("57") && digits.length >= 12) return `+${digits}`;
+  if (digits.length === 10) return `+57${digits}`;
+  return String(value || "").trim();
+}
+
+async function sendStoreText(to, message) {
+  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_FROM || !to) {
+    return { sent: false, reason: "not_configured" };
+  }
+  const response = await fetch(
+    `https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(TWILIO_ACCOUNT_SID)}/Messages.json`,
+    {
+      method: "POST",
+      headers: {
+        "Authorization": `Basic ${Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString("base64")}`,
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: new URLSearchParams({ To: colombiaPhone(to), From: TWILIO_FROM, Body: message })
+    }
+  );
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result?.message || "El proveedor no pudo enviar el mensaje.");
+  return { sent: true, id: result.sid };
+}
+
+async function notifyWithoutBlocking(to, message) {
+  try {
+    return await sendStoreText(to, message);
+  } catch (error) {
+    console.error("[CajaModa notification]", error);
+    return { sent: false, reason: error?.message || "send_failed" };
+  }
+}
+
+function orderPhone(order) {
+  return safeText(
+    order?.billingInfo?.contactDetails?.phone ||
+    order?.shippingInfo?.logistics?.shippingDestination?.contactDetails?.phone,
+    80
+  );
+}
+
+function orderTitle(order) {
+  return safeText(order?.shippingInfo?.title, 300);
+}
+
+async function updateImportedOrder(order, changes = {}) {
+  const updated = await wix.orders.importOrder({
+    ...order,
+    ...changes,
+    shippingInfo: changes.shippingInfo || order.shippingInfo
+  });
+  return updated?.order || updated;
+}
+
+function liberaloLinesFromOrder(order) {
+  return (order?.lineItems || []).map(line => ({
+    productId: safeText(line?.catalogReference?.catalogItemId, 100),
+    variantId: safeText(line?.catalogReference?.options?.variantId, 100),
+    quantity: Math.max(1, Math.floor(Number(line?.quantity || 1))),
+    amount: Number(line?.price?.amount || line?.price?.value || 0),
+    name: safeText(line?.productName?.original || line?.productName, 300) || "Producto CajaModa"
+  })).filter(line => line.productId && line.variantId);
+}
+
 async function handleCreateNequiOrder(request, response) {
   if (!wix) return sendError(response, 503, "Wix no está configurado para recibir el pedido.");
   if (!NEQUI_PHONE) return sendError(response, 503, "El número Nequi todavía no está configurado.");
@@ -1041,7 +1149,8 @@ async function handleCreateNequiOrder(request, response) {
   const items = Array.isArray(body?.cart?.items) ? body.cart.items.slice(0, 50) : [];
   if (!requestId || !items.length) return sendError(response, 400, "El pedido no es válido.");
 
-  const number = nequiOrderNumber(requestId);
+  const liberaloRequest = hasLiberaloItems(items);
+  const number = liberaloRequest ? liberaloOrderNumber(requestId) : nequiOrderNumber(requestId);
   const existingResult = await wix.orders.searchOrders({ filter: { number }, cursorPaging: { limit: 1 } });
   const existing = existingResult?.orders?.[0];
   if (existing) {
@@ -1053,7 +1162,9 @@ async function handleCreateNequiOrder(request, response) {
   const customer = checkoutCustomer(body);
   const delivery = await checkoutDelivery(body);
   const reference = safeText(body?.reference, 100);
-  const deliveryTitle = delivery.method === "moto"
+  const deliveryTitle = liberaloRequest
+    ? "Libéralo – Esperando confirmación de disponibilidad"
+    : delivery.method === "moto"
     ? "Pronto – Moto Cartagena"
     : delivery.method === "national"
       ? `Rápido – Envío nacional 4–7 días – ${delivery.city}`
@@ -1107,8 +1218,22 @@ async function handleCreateNequiOrder(request, response) {
     }
   });
 
-  await decrementStripeInventory(lines);
   const order = imported?.order || imported;
+  if (liberaloRequest) {
+    const alert = await notifyWithoutBlocking(
+      STAFF_ALERT_PHONE,
+      `CajaModa: nueva solicitud Libéralo ${number}. Confirma disponibilidad en Admin durante los próximos 60 minutos.`
+    );
+    return sendJson(response, 201, {
+      ok: true,
+      orderId: order?._id || order?.id,
+      orderNumber: number,
+      paymentStatus: "AWAITING_AVAILABILITY",
+      availabilityPending: true,
+      staffNotificationSent: alert.sent
+    });
+  }
+  await decrementStripeInventory(lines);
   sendJson(response, 201, { ok: true, orderId: order?._id || order?.id, orderNumber: number, paymentStatus: "PENDING_MERCHANT" });
 }
 
@@ -1116,12 +1241,107 @@ async function handleConfirmNequiOrder(request, response, orderId) {
   if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
   if (!wix) return sendError(response, 503, "Wix no está configurado.");
   const order = await wix.orders.getOrder(orderId);
-  if (!String(order?.number || "").startsWith("N-")) return sendError(response, 400, "Este no es un pedido Nequi.");
+  if (!/^[NL]-/.test(String(order?.number || ""))) return sendError(response, 400, "Este no es un pedido Nequi.");
   if (String(order.paymentStatus).toUpperCase() === "PAID") {
     return sendJson(response, 200, { ok: true, order: normalizeWixOrder(order) });
   }
+  if (String(order?.number || "").startsWith("L-")) {
+    if (!orderTitle(order).toLowerCase().includes("pago nequi por confirmar")) {
+      return sendError(response, 409, "El cliente todavía no ha reportado el pago Nequi.");
+    }
+    await decrementStripeInventory(liberaloLinesFromOrder(order));
+  }
   const updated = await wix.orders.importOrder({ ...order, paymentStatus: "PAID" });
   sendJson(response, 200, { ok: true, order: normalizeWixOrder(updated?.order || updated) });
+}
+
+async function handleApproveLiberalo(request, response, orderId) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
+  if (!wix) return sendError(response, 503, "Wix no está configurado.");
+  const order = await wix.orders.getOrder(orderId);
+  if (!String(order?.number || "").startsWith("L-")) return sendError(response, 400, "Este no es un pedido Libéralo.");
+  if (orderTitle(order).toLowerCase().includes("no disponible")) return sendError(response, 409, "La solicitud ya fue marcada como no disponible.");
+
+  const token = liberaloPaymentToken(orderId);
+  const paymentUrl = `${STOREFRONT_URL}/liberalo-payment/?token=${encodeURIComponent(token)}`;
+  const notification = await notifyWithoutBlocking(
+    orderPhone(order),
+    `CajaModa: confirmamos la disponibilidad de tu pedido ${order.number}. Paga con Nequi aquí durante las próximas 2 horas: ${paymentUrl}`
+  );
+  const updated = await updateImportedOrder(order, {
+    shippingInfo: { ...order.shippingInfo, title: "Libéralo – Disponibilidad confirmada – Enlace de pago listo" }
+  });
+  sendJson(response, 200, {
+    ok: true,
+    order: normalizeWixOrder(updated),
+    paymentUrl,
+    customerNotificationSent: notification.sent,
+    notificationReason: notification.sent ? undefined : notification.reason
+  });
+}
+
+async function handleDeclineLiberalo(request, response, orderId) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
+  if (!wix) return sendError(response, 503, "Wix no está configurado.");
+  const order = await wix.orders.getOrder(orderId);
+  if (!String(order?.number || "").startsWith("L-")) return sendError(response, 400, "Este no es un pedido Libéralo.");
+  const notification = await notifyWithoutBlocking(
+    orderPhone(order),
+    `CajaModa: por el momento no pudimos confirmar la disponibilidad de tu pedido ${order.number}. No se realizó ningún cobro.`
+  );
+  const updated = await updateImportedOrder(order, {
+    shippingInfo: { ...order.shippingInfo, title: "Libéralo – No disponible – Sin cobro" }
+  });
+  sendJson(response, 200, { ok: true, order: normalizeWixOrder(updated), customerNotificationSent: notification.sent });
+}
+
+async function getLiberaloOrderFromToken(token) {
+  if (!wix) throw new Error("Wix no está configurado.");
+  const verified = verifyLiberaloPaymentToken(token);
+  const order = await wix.orders.getOrder(verified.orderId);
+  if (!String(order?.number || "").startsWith("L-")) throw new Error("El enlace no corresponde a un pedido Libéralo.");
+  const title = orderTitle(order).toLowerCase();
+  if (title.includes("no disponible")) throw new Error("Este producto ya no está disponible.");
+  if (!title.includes("disponibilidad confirmada") && !title.includes("pago nequi por confirmar")) {
+    throw new Error("La disponibilidad todavía no está confirmada.");
+  }
+  return { order, verified };
+}
+
+async function handleGetLiberaloPayment(request, response, url) {
+  const { order, verified } = await getLiberaloOrderFromToken(url.searchParams.get("token"));
+  sendJson(response, 200, {
+    ok: true,
+    request: {
+      number: safeText(order.number, 100),
+      customer: getOrderCustomerName(order),
+      products: getOrderProductsText(order),
+      total: getOrderTotal(order),
+      nequi: { phone: NEQUI_PHONE, masked: maskedNequiPhone(NEQUI_PHONE) },
+      expiresAt: verified.expiresAt,
+      paymentSubmitted: orderTitle(order).toLowerCase().includes("pago nequi por confirmar")
+    }
+  });
+}
+
+async function handleSubmitLiberaloPayment(request, response) {
+  const body = await readBody(request);
+  const { order } = await getLiberaloOrderFromToken(body?.token);
+  if (orderTitle(order).toLowerCase().includes("pago nequi por confirmar")) {
+    return sendJson(response, 200, { ok: true, orderNumber: order.number, alreadySubmitted: true });
+  }
+  const reference = safeText(body?.reference, 100);
+  const updated = await updateImportedOrder(order, {
+    shippingInfo: {
+      ...order.shippingInfo,
+      title: `Libéralo – Pago Nequi por confirmar${reference ? ` · Ref ${reference}` : ""}`
+    }
+  });
+  await notifyWithoutBlocking(
+    STAFF_ALERT_PHONE,
+    `CajaModa: ${updated.number} reportó su pago Nequi. Confirma la recepción en Admin.`
+  );
+  sendJson(response, 200, { ok: true, orderNumber: updated.number });
 }
 
 /* ============================================================
@@ -3089,13 +3309,25 @@ function normalizeWixOrder(
       ),
 
     paymentMethod:
-      String(order?.number || "").startsWith("N-")
+      /^[NL]-/.test(String(order?.number || ""))
         ? "nequi"
         : "card",
 
     canConfirmPayment:
-      String(order?.number || "").startsWith("N-") &&
+      /^[NL]-/.test(String(order?.number || "")) &&
+      (!String(order?.number || "").startsWith("L-") || orderTitle(order).toLowerCase().includes("pago nequi por confirmar")) &&
       !["PAID", "PARTIALLY_PAID"].includes(String(order?.paymentStatus || "").toUpperCase()),
+
+    liberaloStatus:
+      String(order?.number || "").startsWith("L-")
+        ? orderTitle(order).toLowerCase().includes("no disponible")
+          ? "declined"
+          : orderTitle(order).toLowerCase().includes("pago nequi por confirmar")
+            ? "payment_submitted"
+            : orderTitle(order).toLowerCase().includes("disponibilidad confirmada")
+              ? "approved"
+              : "awaiting_availability"
+        : "",
 
     delivery:
       safeText(order?.shippingInfo?.title, 250),
@@ -3831,9 +4063,31 @@ const server =
           return;
         }
 
+        if(request.method === "GET" && url.pathname === "/api/liberalo/payment"){
+          await handleGetLiberaloPayment(request,response,url);
+          return;
+        }
+
+        if(request.method === "POST" && url.pathname === "/api/liberalo/payment/submit"){
+          await handleSubmitLiberaloPayment(request,response);
+          return;
+        }
+
         const nequiConfirmMatch = url.pathname.match(/^\/api\/orders\/([^/]+)\/confirm-nequi$/);
         if(request.method === "POST" && nequiConfirmMatch){
           await handleConfirmNequiOrder(request,response,decodeURIComponent(nequiConfirmMatch[1]));
+          return;
+        }
+
+        const liberaloApproveMatch = url.pathname.match(/^\/api\/orders\/([^/]+)\/approve-liberalo$/);
+        if(request.method === "POST" && liberaloApproveMatch){
+          await handleApproveLiberalo(request,response,decodeURIComponent(liberaloApproveMatch[1]));
+          return;
+        }
+
+        const liberaloDeclineMatch = url.pathname.match(/^\/api\/orders\/([^/]+)\/decline-liberalo$/);
+        if(request.method === "POST" && liberaloDeclineMatch){
+          await handleDeclineLiberalo(request,response,decodeURIComponent(liberaloDeclineMatch[1]));
           return;
         }
 

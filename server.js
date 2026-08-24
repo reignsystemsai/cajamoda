@@ -64,6 +64,7 @@ const MOTO_INCLUDED_KM = 3;
 const MOTO_EXTRA_KM_COP = 1000;
 const MOTO_QUOTE_CACHE_TTL = 24 * 60 * 60 * 1000;
 const motoQuoteCache = new Map();
+const stripeIntentSyncLocks = new Map();
 const CARTAGENA_PICKUP_ADDRESS = "Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar, Colombia";
 const STOREFRONT_URL = String(
   process.env.STOREFRONT_URL || "https://www.cajamoda.com"
@@ -768,6 +769,219 @@ async function syncCompletedStripeSession(session) {
   });
 }
 
+function stripeIntentMetadata(lines, body, delivery) {
+  const metadata = {
+    source: "cajamoda-custom-card",
+    itemCount: String(lines.length),
+    deliveryMethod: safeText(body?.delivery?.method, 20),
+    deliveryPromise: safeText(body?.delivery?.promise, 40) || "pronto",
+    customerName: safeText(body?.customer?.customerName, 160),
+    customerPhone: safeText(body?.customer?.customerPhone, 80),
+    customerEmail: safeText(body?.customer?.email, 250),
+    deliveryAddress: safeText(delivery.addressLine, 250),
+    deliveryCity: safeText(delivery.city, 100),
+    deliveryState: safeText(delivery.state, 100),
+    deliveryPostalCode: safeText(delivery.postalCode, 40),
+    deliveryFee: String(Math.max(0, Number(delivery.fee || 0)))
+  };
+  lines.forEach((line, index) => {
+    metadata[`item${index}`] = Buffer.from(JSON.stringify({
+      p: line.productId,
+      v: line.variantId,
+      q: line.quantity,
+      a: line.amount,
+      n: safeText(line.name, 180)
+    })).toString("base64url");
+  });
+  return metadata;
+}
+
+function stripeIntentLines(intent) {
+  const count = Math.min(35, Math.max(0, Number(intent?.metadata?.itemCount || 0)));
+  return Array.from({ length: count }, (_, index) => {
+    const encoded = safeText(intent?.metadata?.[`item${index}`], 500);
+    const item = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8"));
+    return {
+      productId: safeText(item.p, 80),
+      variantId: safeText(item.v, 80),
+      quantity: Math.max(1, Math.floor(Number(item.q || 1))),
+      amount: Number(item.a || 0),
+      name: safeText(item.n, 300) || "Producto CajaModa"
+    };
+  }).filter(line => line.productId && line.variantId && Number.isFinite(line.amount) && line.amount >= 1);
+}
+
+async function handleCreateStripePaymentIntent(request, response) {
+  if (!stripe) return sendError(response, 503, "Stripe todavía no está configurado en el servidor.");
+  const body = await readBody(request);
+  const items = Array.isArray(body?.cart?.items) ? body.cart.items.slice(0, 35) : [];
+  if (!items.length) return sendError(response, 400, "Tu bolsa está vacía.");
+  const verified = await Promise.all(items.map(stripeLineItemFromCartItem));
+  const lines = verified.map(line => ({
+    productId: safeText(line?.price_data?.product_data?.metadata?.productId, 80),
+    variantId: safeText(line?.price_data?.product_data?.metadata?.variantId, 80),
+    quantity: Math.max(1, Math.floor(Number(line.quantity || 1))),
+    amount: Number(line?.price_data?.unit_amount || 0) / 100,
+    name: safeText(line?.price_data?.product_data?.name, 300) || "Producto CajaModa"
+  }));
+  const delivery = await checkoutDelivery(body);
+  const subtotalCents = lines.reduce((sum, line) => sum + Math.round(line.amount * 100) * line.quantity, 0);
+  const totalCents = subtotalCents + Math.round(Math.max(0, Number(delivery.fee || 0)) * 100);
+  const customerName = safeText(body?.customer?.customerName, 160) || "Cliente CajaModa";
+  const customerEmail = safeText(body?.customer?.email, 250);
+  const customerPhone = safeText(body?.customer?.customerPhone, 80);
+  const intent = await stripe.paymentIntents.create({
+    amount: totalCents,
+    currency: "cop",
+    payment_method_types: ["card", "link"],
+    receipt_email: customerEmail || undefined,
+    description: `CajaModa · ${lines.length} producto${lines.length === 1 ? "" : "s"}`,
+    shipping: {
+      name: customerName,
+      phone: customerPhone || undefined,
+      address: {
+        line1: delivery.addressLine || CARTAGENA_PICKUP_ADDRESS,
+        city: delivery.city || "Cartagena",
+        state: delivery.state || "BL",
+        postal_code: delivery.postalCode || "130001",
+        country: "CO"
+      }
+    },
+    metadata: stripeIntentMetadata(lines, body, delivery)
+  }, {
+    idempotencyKey: safeText(body?.requestId, 100) || undefined
+  });
+  sendJson(response, 200, {
+    ok: true,
+    clientSecret: intent.client_secret,
+    paymentIntentId: intent.id,
+    amount: totalCents
+  });
+}
+
+async function findStripeIntentWixOrder(intentId) {
+  const result = await wix.orders.searchOrders({
+    filter: { number: `S-${intentId.slice(-12).toUpperCase()}` },
+    cursorPaging: { limit: 10 }
+  });
+  return (result?.orders || [])[0] || null;
+}
+
+async function importStripeIntentIntoWix(intent, lines) {
+  const existing = await findStripeIntentWixOrder(intent.id);
+  if (existing) return { order: existing, created: false };
+  const paymentMethod = typeof intent.payment_method === "object"
+    ? intent.payment_method
+    : intent.payment_method
+      ? await stripe.paymentMethods.retrieve(intent.payment_method)
+      : null;
+  const billing = paymentMethod?.billing_details || {};
+  const name = splitCustomerName(billing.name || intent.metadata.customerName);
+  const deliveryMethod = safeText(intent.metadata.deliveryMethod, 20) || "pickup";
+  const address = deliveryMethod === "pickup"
+    ? { country: "CO", city: "Cartagena", subdivision: "BL", postalCode: "130001", addressLine: CARTAGENA_PICKUP_ADDRESS }
+    : {
+        country: "CO",
+        city: safeText(intent.metadata.deliveryCity, 100),
+        subdivision: safeText(intent.metadata.deliveryState, 100),
+        postalCode: safeText(intent.metadata.deliveryPostalCode, 40),
+        addressLine: safeText(intent.metadata.deliveryAddress, 250)
+      };
+  const subtotal = lines.reduce((sum, line) => sum + line.amount * line.quantity, 0);
+  const total = Number(intent.amount_received || intent.amount || 0) / 100;
+  const imported = await wix.orders.importOrder({
+    number: `S-${intent.id.slice(-12).toUpperCase()}`,
+    status: "APPROVED",
+    paymentStatus: "PAID",
+    fulfillmentStatus: "NOT_FULFILLED",
+    channelInfo: { type: "OTHER_PLATFORM" },
+    currency: "COP",
+    currencyConversionDetails: { originalCurrency: "COP", conversionRate: "1" },
+    buyerInfo: { email: safeText(billing.email || intent.receipt_email || intent.metadata.customerEmail, 250) },
+    billingInfo: {
+      contactDetails: {
+        firstName: name.firstName,
+        lastName: name.lastName,
+        email: safeText(billing.email || intent.receipt_email || intent.metadata.customerEmail, 250),
+        phone: safeText(billing.phone || intent.metadata.customerPhone, 80)
+      },
+      address
+    },
+    shippingInfo: {
+      title: deliveryMethod === "pickup"
+        ? "Stripe – Pronto – Recoger"
+        : deliveryMethod === "national"
+          ? "Stripe – Rápido – Envío nacional 4–7 días"
+          : "Stripe – Pronto – Moto",
+      cost: { amount: String(Math.max(0, total - subtotal)) },
+      logistics: { shippingDestination: { address, contactDetails: {
+        firstName: name.firstName, lastName: name.lastName,
+        email: safeText(billing.email || intent.receipt_email || intent.metadata.customerEmail, 250),
+        phone: safeText(intent.metadata.customerPhone, 80)
+      } } }
+    },
+    lineItems: lines.map(line => ({
+      productName: { original: line.name }, quantity: line.quantity,
+      price: { amount: String(line.amount) }, itemType: { preset: "PHYSICAL" },
+      physicalProperties: { shippable: true },
+      catalogReference: { appId: WIX_STORES_APP_ID, catalogItemId: line.productId, options: { variantId: line.variantId } }
+    })),
+    priceSummary: {
+      subtotal: { amount: String(subtotal) }, shipping: { amount: String(Math.max(0, total - subtotal)) },
+      tax: { amount: "0" }, discount: { amount: "0" }, total: { amount: String(total) }
+    }
+  });
+  return { order: imported?.order || imported, created: true };
+}
+
+async function syncSucceededStripeIntent(paymentIntent) {
+  const existingSync = stripeIntentSyncLocks.get(paymentIntent.id);
+  if (existingSync) return existingSync;
+  const sync = (async () => {
+    if (!wix) throw new Error("Wix no está configurado para recibir el pedido.");
+    if (paymentIntent.status !== "succeeded" || paymentIntent?.metadata?.wixSync === "complete") return;
+    const latest = await stripe.paymentIntents.retrieve(paymentIntent.id);
+    if (latest?.metadata?.wixSync === "complete") return;
+    const lines = stripeIntentLines(latest);
+    if (!lines.length) throw new Error("Stripe devolvió un pedido sin productos verificables.");
+    const imported = await importStripeIntentIntoWix(latest, lines);
+    if (imported.created) await decrementStripeInventory(lines);
+    await stripe.paymentIntents.update(latest.id, { metadata: {
+      ...latest.metadata,
+      wixSync: "complete",
+      wixOrderId: safeText(imported?.order?._id || imported?.order?.id, 80)
+    } });
+  })();
+  stripeIntentSyncLocks.set(paymentIntent.id, sync);
+  try {
+    return await sync;
+  } finally {
+    stripeIntentSyncLocks.delete(paymentIntent.id);
+  }
+}
+
+async function handleStripeIntentConfirmation(request, response, url) {
+  if (!stripe) return sendError(response, 503, "Stripe todavía no está configurado.");
+  const intentId = safeText(url.searchParams.get("paymentIntent"), 100);
+  if (!/^pi_[A-Za-z0-9]+$/.test(intentId)) return sendError(response, 400, "El pago no es válido.");
+  const intent = await stripe.paymentIntents.retrieve(intentId, { expand: ["payment_method"] });
+  if (intent.status === "succeeded") await syncSucceededStripeIntent(intent);
+  const deliveryTitle = intent.metadata.deliveryMethod === "pickup"
+    ? "Pronto – Recoger en punto"
+    : intent.metadata.deliveryMethod === "national"
+      ? "Rápido – Envío nacional 4–7 días"
+      : "Pronto – Moto Cartagena";
+  sendJson(response, 200, {
+    ok: true,
+    order: {
+      paid: intent.status === "succeeded",
+      number: `S-${intent.id.slice(-12).toUpperCase()}`,
+      payment: intent.status === "succeeded" ? "Pago con tarjeta confirmado" : "Pago en proceso",
+      delivery: getConfirmationDelivery({ shippingInfo: { title: deliveryTitle } })
+    }
+  });
+}
+
 async function handleStripeWebhook(request, response) {
   if (!stripe || !STRIPE_WEBHOOK_SECRET) {
     sendError(response, 503, "El webhook de Stripe no está configurado.");
@@ -779,6 +993,10 @@ async function handleStripeWebhook(request, response) {
   if (event.type === "checkout.session.completed") {
     await syncCompletedStripeSession(event.data.object);
     console.log(`[Stripe] Payment synchronized with Wix: ${event.data.object.id}`);
+  }
+  if (event.type === "payment_intent.succeeded") {
+    await syncSucceededStripeIntent(event.data.object);
+    console.log(`[Stripe] Card payment synchronized with Wix: ${event.data.object.id}`);
   }
   sendJson(response, 200, { received: true });
 }
@@ -3801,8 +4019,18 @@ const server =
           return;
         }
 
+        if(request.method === "POST" && url.pathname === "/api/stripe/payment-intent"){
+          await handleCreateStripePaymentIntent(request,response);
+          return;
+        }
+
         if(request.method === "GET" && url.pathname === "/api/stripe/confirmation"){
           await handleStripeConfirmation(request,response,url);
+          return;
+        }
+
+        if(request.method === "GET" && url.pathname === "/api/stripe/intent-confirmation"){
+          await handleStripeIntentConfirmation(request,response,url);
           return;
         }
 

@@ -1232,6 +1232,8 @@ img{display:block;max-width:100%}
             <label><input id="customerName" class="compactInput" autocomplete="name" placeholder="Nombre completo"></label>
             <label><input id="customerPhone" class="compactInput" autocomplete="tel" inputmode="tel" placeholder="Teléfono"></label>
             <label class="wide"><input id="deliveryDestinationCity" class="compactInput" autocomplete="address-level2" placeholder="Ciudad de entrega" hidden></label>
+            <label><select id="deliveryDepartment" class="compactInput" autocomplete="address-level1" hidden><option value="">Departamento</option></select></label>
+            <label><input id="deliveryPostalCode" class="compactInput" autocomplete="postal-code" inputmode="numeric" placeholder="Código postal (opcional)" hidden></label>
             <label class="wide"><input id="deliveryAddress" class="compactInput" autocomplete="street-address" placeholder="Dirección para moto" disabled></label>
           </div>
           <div id="pickupAddress" class="pickupAddress"><strong>Punto de recogida · 10 COP</strong><br>Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar.</div>
@@ -1390,10 +1392,12 @@ img{display:block;max-width:100%}
   let selectedDelivery = "pickup";
   let selectedPayment = "nequi";
   let nequiPhone = "";
+  let deliveryQuote = { method: "pickup", fee: 10 };
+  let quoteTimer = null;
   const PICKUP_FEE_COP = 10;
 
   function checkoutDeliveryFee() {
-    return selectedDelivery === "pickup" ? PICKUP_FEE_COP : 0;
+    return deliveryQuote?.method === selectedDelivery ? Number(deliveryQuote.fee || 0) : 0;
   }
 
   function checkoutTotal() {
@@ -1407,11 +1411,9 @@ img{display:block;max-width:100%}
     if ($("totalValue")) $("totalValue").textContent = money(total);
     if ($("nequiAmount")) $("nequiAmount").textContent = `${money(total)} COP`;
     if ($("deliverySummary")) {
-      $("deliverySummary").textContent = selectedDelivery === "pickup"
-        ? "Pronto · Recoger · $10"
-        : selectedDelivery === "national"
-          ? "Rápido · Nacional · Por calcular"
-          : "Pronto · Moto · Por calcular";
+      $("deliverySummary").textContent = deliveryQuote?.method === selectedDelivery
+        ? `${selectedDelivery === "pickup" ? "Pronto · Recoger" : selectedDelivery === "national" ? "Rápido · Nacional" : `Pronto · Moto · ${deliveryQuote.distanceKm || ""} km`} · ${money(deliveryQuote.fee)}`
+        : `${selectedDelivery === "national" ? "Rápido · Nacional" : "Pronto · Moto"} · Por calcular`;
     }
   }
 
@@ -2231,7 +2233,7 @@ img{display:block;max-width:100%}
     showToast("Producto eliminado.");
   }
 
-  const customerFields = ["email", "customerName", "customerPhone", "deliveryDestinationCity", "deliveryAddress"];
+  const customerFields = ["email", "customerName", "customerPhone", "deliveryDestinationCity", "deliveryDepartment", "deliveryPostalCode", "deliveryAddress"];
 
   function loadCustomer() {
     const saved = readJson(
@@ -2439,6 +2441,11 @@ img{display:block;max-width:100%}
       showToast("Ingresa la ciudad de entrega.");
       return false;
     }
+    if (selectedDelivery === "national" && !$("deliveryDepartment")?.value) {
+      $("deliveryDepartment")?.focus();
+      showToast("Selecciona el departamento de entrega.");
+      return false;
+    }
     saveCustomer();
     return true;
   }
@@ -2454,12 +2461,55 @@ img{display:block;max-width:100%}
         city: selectedDelivery === "national"
           ? $("deliveryDestinationCity")?.value.trim() || ""
           : "Cartagena",
+        state: selectedDelivery === "national" ? $("deliveryDepartment")?.value || "" : "BL",
+        postalCode: selectedDelivery === "national" ? $("deliveryPostalCode")?.value.trim() || "" : "130001",
         fee: checkoutDeliveryFee(),
         address: $("deliveryAddress")?.value.trim() || ""
       },
       currency: "COP",
       country: "CO"
     };
+  }
+
+  async function refreshDeliveryQuote(options = {}) {
+    if (selectedDelivery === "pickup") {
+      deliveryQuote = { method: "pickup", fee: PICKUP_FEE_COP };
+      renderPaymentTotals();
+      return deliveryQuote;
+    }
+    const address = $("deliveryAddress")?.value.trim();
+    const nationalReady = selectedDelivery !== "national" || ($("deliveryDestinationCity")?.value.trim() && $("deliveryDepartment")?.value);
+    if (!address || !nationalReady) {
+      deliveryQuote = null;
+      renderPaymentTotals();
+      if (options.required) throw new Error("Completa la dirección para calcular la entrega.");
+      return null;
+    }
+    try {
+      const response = await fetch(`${STORE_API_URL}/api/delivery/quote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(checkoutPayload())
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result?.quote) throw new Error(result?.error || "No pudimos calcular la entrega.");
+      deliveryQuote = result.quote;
+      renderPaymentTotals();
+      return deliveryQuote;
+    } catch (error) {
+      deliveryQuote = null;
+      renderPaymentTotals();
+      if (options.required) throw error;
+      showToast(error?.message || "No pudimos calcular la entrega.");
+      return null;
+    }
+  }
+
+  function scheduleDeliveryQuote() {
+    clearTimeout(quoteTimer);
+    deliveryQuote = selectedDelivery === "pickup" ? { method: "pickup", fee: PICKUP_FEE_COP } : null;
+    renderPaymentTotals();
+    quoteTimer = setTimeout(() => refreshDeliveryQuote(), 650);
   }
 
   async function requestPayment() {
@@ -2481,6 +2531,7 @@ img{display:block;max-width:100%}
     );
 
     try {
+      await refreshDeliveryQuote({ required: true });
       const response = await fetch(`${STORE_API_URL}/api/stripe/checkout`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -2513,6 +2564,7 @@ img{display:block;max-width:100%}
     button.disabled = true;
     button.textContent = "Registrando pedido…";
     try {
+      await refreshDeliveryQuote({ required: true });
       const response = await fetch(`${STORE_API_URL}/api/nequi/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -2540,6 +2592,23 @@ img{display:block;max-width:100%}
       $("nequiNumber").textContent = result?.nequi?.masked || "Número pendiente";
     } catch {
       $("nequiNumber").textContent = "Número pendiente";
+    }
+  }
+
+  async function loadDeliveryDepartments() {
+    try {
+      const response = await fetch(`${STORE_API_URL}/api/delivery/departments`, { headers: { Accept: "application/json" } });
+      const result = await response.json();
+      const select = $("deliveryDepartment");
+      (result?.departments || []).forEach(department => {
+        const option = document.createElement("option");
+        option.value = department.code;
+        option.textContent = department.name;
+        select.append(option);
+      });
+      loadCustomer();
+    } catch (error) {
+      console.error("[CajaModa] Departments error:", error);
     }
   }
 
@@ -2582,8 +2651,10 @@ img{display:block;max-width:100%}
           ? "Dirección completa de entrega"
           : "No se requiere dirección para recoger";
       $("deliveryDestinationCity").hidden = selectedDelivery !== "national";
+      $("deliveryDepartment").hidden = selectedDelivery !== "national";
+      $("deliveryPostalCode").hidden = selectedDelivery !== "national";
       $("pickupAddress").hidden = selectedDelivery !== "pickup";
-      renderPaymentTotals();
+      scheduleDeliveryQuote();
       syncPanelHeight();
     };
   });
@@ -2604,9 +2675,14 @@ img{display:block;max-width:100%}
       pickupButton.click();
     }
     $("pickupAddress").hidden = !isCartagena || selectedDelivery !== "pickup";
-    renderPaymentTotals();
+    scheduleDeliveryQuote();
     syncPanelHeight();
   };
+
+  ["customerName", "customerPhone", "deliveryAddress", "deliveryDestinationCity", "deliveryPostalCode"].forEach(id => {
+    $(id)?.addEventListener("input", scheduleDeliveryQuote);
+  });
+  $("deliveryDepartment")?.addEventListener("change", scheduleDeliveryQuote);
 
   document.querySelectorAll("[data-method]").forEach(button => {
     button.onclick = () => {
@@ -2748,6 +2824,7 @@ img{display:block;max-width:100%}
   loadCustomer();
   renderCart();
   loadCheckoutConfig();
+  loadDeliveryDepartments();
 
   window.postMessage({
     source:"CAJAMODA_CHECKOUT",

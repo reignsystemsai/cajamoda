@@ -51,7 +51,16 @@ const ALLOWED_ORIGIN =
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 const NEQUI_PHONE = safeEnv(process.env.NEQUI_PHONE);
+const ENVIA_API_TOKEN = safeEnv(process.env.ENVIA_API_TOKEN);
+const ENVIA_ORIGIN_NAME = safeEnv(process.env.ENVIA_ORIGIN_NAME);
+const ENVIA_ORIGIN_PHONE = safeEnv(process.env.ENVIA_ORIGIN_PHONE);
+const ENVIA_ORIGIN_STREET = safeEnv(process.env.ENVIA_ORIGIN_STREET);
+const ENVIA_ORIGIN_POSTAL_CODE = safeEnv(process.env.ENVIA_ORIGIN_POSTAL_CODE);
+const GOOGLE_MAPS_API_KEY = safeEnv(process.env.GOOGLE_MAPS_API_KEY);
 const PICKUP_FEE_COP = 10;
+const MOTO_BASE_FEE_COP = 8000;
+const MOTO_INCLUDED_KM = 3;
+const MOTO_EXTRA_KM_COP = 1000;
 const CARTAGENA_PICKUP_ADDRESS = "Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar, Colombia";
 const STOREFRONT_URL = String(
   process.env.STOREFRONT_URL || "https://www.cajamoda.com"
@@ -527,27 +536,28 @@ async function handleCreateStripeCheckout(request, response) {
   const deliveryMethod = ["moto", "national"].includes(requestedDelivery)
     ? requestedDelivery
     : "pickup";
+  const delivery = await checkoutDelivery(body);
+  const deliveryLabel = deliveryMethod === "pickup"
+    ? "Recoger en punto · Cartagena"
+    : deliveryMethod === "moto"
+      ? `Moto Cartagena · ${delivery.quote.distanceKm} km`
+      : `${delivery.quote.carrier || "Envia"} · ${delivery.quote.service || "Envío nacional"}`;
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     line_items: lineItems,
     customer_email: customerEmail || undefined,
     billing_address_collection: "required",
-    shipping_address_collection: deliveryMethod !== "pickup"
-      ? { allowed_countries: ["CO"] }
-      : undefined,
-    shipping_options: deliveryMethod === "pickup"
-      ? [{
-          shipping_rate_data: {
-            type: "fixed_amount",
-            fixed_amount: { amount: PICKUP_FEE_COP * 100, currency: "cop" },
-            display_name: "Recoger en punto · Cartagena",
-            delivery_estimate: {
-              minimum: { unit: "business_day", value: 1 },
-              maximum: { unit: "business_day", value: 2 }
-            }
+    shipping_options: [{
+      shipping_rate_data: {
+        type: "fixed_amount",
+        fixed_amount: { amount: delivery.fee * 100, currency: "cop" },
+        display_name: deliveryLabel,
+        delivery_estimate: {
+          minimum: { unit: "business_day", value: 1 },
+          maximum: { unit: "business_day", value: deliveryMethod === "national" ? 7 : 2 }
+        }
           }
-        }]
-      : undefined,
+    }],
     phone_number_collection: { enabled: true },
     locale: "es",
     success_url: `${STOREFRONT_URL}/order-confirmation/?stripeSessionId={CHECKOUT_SESSION_ID}`,
@@ -557,7 +567,11 @@ async function handleCreateStripeCheckout(request, response) {
       deliveryMethod,
       deliveryPromise: safeText(body?.delivery?.promise, 40) || "pronto",
       customerName: safeText(body?.customer?.customerName, 160),
-      customerPhone: safeText(body?.customer?.customerPhone, 80)
+      customerPhone: safeText(body?.customer?.customerPhone, 80),
+      deliveryAddress: delivery.addressLine,
+      deliveryCity: delivery.city,
+      deliveryState: delivery.state,
+      deliveryPostalCode: delivery.postalCode
     }
   }, {
     idempotencyKey: safeText(body?.requestId, 100) || undefined
@@ -650,7 +664,17 @@ async function importStripeOrderIntoWix(session, lines) {
   const customer = session?.customer_details || {};
   const shipping = session?.shipping_details || session?.collected_information?.shipping_details || {};
   const name = splitCustomerName(shipping?.name || customer?.name || session?.metadata?.customerName);
-  const address = stripeAddressToWix(shipping?.address || customer?.address || {});
+  const stripeAddress = stripeAddressToWix(shipping?.address || customer?.address || {});
+  const address = session?.metadata?.deliveryMethod === "pickup"
+    ? { country: "CO", city: "Cartagena", addressLine: CARTAGENA_PICKUP_ADDRESS }
+    : {
+        ...stripeAddress,
+        country: "CO",
+        city: safeText(session?.metadata?.deliveryCity, 100) || stripeAddress.city,
+        subdivision: safeText(session?.metadata?.deliveryState, 100) || stripeAddress.subdivision,
+        postalCode: safeText(session?.metadata?.deliveryPostalCode, 40) || stripeAddress.postalCode,
+        addressLine: safeText(session?.metadata?.deliveryAddress, 250) || stripeAddress.addressLine
+      };
   const subtotal = lines.reduce((sum, line) => sum + line.amount * line.quantity, 0);
   const total = Number(session?.amount_total || 0) / 100;
 
@@ -767,6 +791,175 @@ function maskedNequiPhone(phone) {
   return digits.length >= 4 ? `••• ••• ${digits.slice(-4)}` : "Número pendiente";
 }
 
+function requireDeliveryEnvironment(method) {
+  const origin = [ENVIA_ORIGIN_NAME, ENVIA_ORIGIN_PHONE, ENVIA_ORIGIN_STREET, ENVIA_ORIGIN_POSTAL_CODE];
+  if (method === "moto" && (!GOOGLE_MAPS_API_KEY || origin.some(value => !value))) {
+    throw new Error("La tarifa de moto todavía no está configurada.");
+  }
+  if (method === "national" && (!ENVIA_API_TOKEN || origin.some(value => !value))) {
+    throw new Error("El envío nacional todavía no está configurado.");
+  }
+}
+
+async function externalJson(url, options = {}, timeoutMs = 12000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const result = await fetch(url, { ...options, signal: controller.signal });
+    const payload = await result.json().catch(() => ({}));
+    if (!result.ok) {
+      const message = safeText(payload?.error?.message || payload?.message, 300);
+      throw new Error(message || `Servicio de entrega no disponible (${result.status}).`);
+    }
+    return payload;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function fullColombiaAddress(street, city, state = "Bolívar", postalCode = "") {
+  return [street, city, state, postalCode, "Colombia"].filter(Boolean).join(", ");
+}
+
+async function quoteMotoDelivery(delivery) {
+  requireDeliveryEnvironment("moto");
+  const destination = safeText(delivery?.address, 250);
+  if (!destination) throw new Error("Ingresa la dirección para calcular la moto.");
+  const payload = await externalJson("https://routes.googleapis.com/directions/v2:computeRoutes", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Goog-Api-Key": GOOGLE_MAPS_API_KEY,
+      "X-Goog-FieldMask": "routes.distanceMeters"
+    },
+    body: JSON.stringify({
+      origin: { address: fullColombiaAddress(ENVIA_ORIGIN_STREET, "Cartagena de Indias", "Bolívar", ENVIA_ORIGIN_POSTAL_CODE) },
+      destination: { address: fullColombiaAddress(destination, "Cartagena de Indias") },
+      travelMode: "TWO_WHEELER",
+      routingPreference: "TRAFFIC_UNAWARE",
+      languageCode: "es-CO",
+      units: "METRIC"
+    })
+  });
+  const distanceMeters = Number(payload?.routes?.[0]?.distanceMeters);
+  if (!Number.isFinite(distanceMeters) || distanceMeters <= 0) {
+    throw new Error("No pudimos calcular la ruta. Revisa la dirección.");
+  }
+  const distanceKm = Math.ceil(distanceMeters / 1000);
+  const fee = MOTO_BASE_FEE_COP + Math.max(0, distanceKm - MOTO_INCLUDED_KM) * MOTO_EXTRA_KM_COP;
+  return { method: "moto", fee, distanceKm, carrier: "Moto CajaModa", service: "Pronto", estimate: "24–48 horas" };
+}
+
+function enviaDataArray(payload) {
+  if (Array.isArray(payload)) return payload;
+  return Array.isArray(payload?.data) ? payload.data : [];
+}
+
+function ratePrice(rate) {
+  return Number(rate?.totalPrice ?? rate?.price ?? rate?.cost ?? rate?.amount);
+}
+
+function rateMaxDays(rate) {
+  const raw = safeText(rate?.deliveryEstimate || rate?.deliveryDate || rate?.estimatedDelivery, 100);
+  const numbers = raw.match(/\d+/g)?.map(Number) || [];
+  return numbers.length ? Math.max(...numbers) : 99;
+}
+
+async function locateColombiaCity(city, state) {
+  const payload = await externalJson("https://api.envia.com/locate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ city, state, country: "CO" })
+  });
+  const located = Array.isArray(payload?.data) ? payload.data[0] : payload?.data || payload;
+  if (!located?.city) throw new Error("No pudimos validar la ciudad de entrega.");
+  return located;
+}
+
+async function enviaCarriers() {
+  const payload = await externalJson("https://queries.envia.com/available-carrier/CO/0/1", {
+    headers: { Authorization: `Bearer ${ENVIA_API_TOKEN}` }
+  });
+  const names = enviaDataArray(payload)
+    .map(item => safeText(item?.name || item?.carrier, 60).toLowerCase())
+    .filter(Boolean);
+  return [...new Set(names)].slice(0, 16);
+}
+
+async function quoteNationalDelivery(delivery, customer, declaredValue) {
+  requireDeliveryEnvironment("national");
+  const city = safeText(delivery?.city, 100);
+  const state = safeText(delivery?.state, 5).toUpperCase();
+  const street = safeText(delivery?.address, 250);
+  const postalCode = safeText(delivery?.postalCode, 20);
+  if (!city || !state || !street) throw new Error("Completa la ciudad, departamento y dirección de entrega.");
+  const located = await locateColombiaCity(city, state);
+  const carriers = await enviaCarriers();
+  if (!carriers.length) throw new Error("Envia no devolvió transportadoras disponibles.");
+  const quoteBody = carrier => ({
+    origin: {
+      name: ENVIA_ORIGIN_NAME, phone: ENVIA_ORIGIN_PHONE, street: ENVIA_ORIGIN_STREET,
+      city: "13001000", state: "BL", country: "CO", postalCode: ENVIA_ORIGIN_POSTAL_CODE
+    },
+    destination: {
+      name: safeText(customer?.customerName || customer?.name, 120) || "Cliente CajaModa",
+      phone: safeText(customer?.customerPhone || customer?.phone, 50), street,
+      city: safeText(located.city, 20), state: safeText(located.state || state, 5), country: "CO",
+      postalCode: postalCode || safeText(located.postalCode || located.zipcode, 20)
+    },
+    packages: [{
+      type: "box", content: "Ropa para mujer", amount: 1,
+      declaredValue: Math.max(1, Math.round(Number(declaredValue) || 1)),
+      lengthUnit: "CM", weightUnit: "KG", weight: 0.5,
+      dimensions: { length: 30, width: 25, height: 5 }
+    }],
+    settings: { currency: "COP" },
+    shipment: { type: 1, carrier }
+  });
+  const responses = await Promise.allSettled(carriers.map(carrier => externalJson("https://api.envia.com/ship/rate/", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${ENVIA_API_TOKEN}`, "Content-Type": "application/json" },
+    body: JSON.stringify(quoteBody(carrier))
+  })));
+  const rates = responses.flatMap(result => result.status === "fulfilled" ? enviaDataArray(result.value) : [])
+    .filter(rate => Number.isFinite(ratePrice(rate)) && ratePrice(rate) >= 0);
+  if (!rates.length) throw new Error("No encontramos una tarifa nacional para esta dirección.");
+  const timely = rates.filter(rate => rateMaxDays(rate) <= 7);
+  const selected = (timely.length ? timely : rates).sort((a, b) => ratePrice(a) - ratePrice(b))[0];
+  return {
+    method: "national", fee: Math.ceil(ratePrice(selected)),
+    carrier: safeText(selected.carrier, 60),
+    service: safeText(selected.serviceDescription || selected.service, 100),
+    estimate: safeText(selected.deliveryEstimate || "4–7 días", 100)
+  };
+}
+
+async function calculateDeliveryQuote(body) {
+  const method = safeText(body?.delivery?.method, 20).toLowerCase();
+  if (method === "pickup") return { method, fee: PICKUP_FEE_COP, carrier: "CajaModa", service: "Recoger", estimate: "24–48 horas" };
+  if (method === "moto") return quoteMotoDelivery(body?.delivery || {});
+  if (method === "national") return quoteNationalDelivery(body?.delivery || {}, body?.customer || {}, body?.cart?.total);
+  throw new Error("Selecciona un método de entrega válido.");
+}
+
+async function handleDeliveryQuote(request, response) {
+  const body = await readBody(request);
+  const quote = await calculateDeliveryQuote(body);
+  sendJson(response, 200, { ok: true, quote });
+}
+
+async function handleDeliveryDepartments(_request, response) {
+  if (!ENVIA_API_TOKEN) return sendError(response, 503, "Envia todavía no está configurado.");
+  const payload = await externalJson("https://queries.envia.com/state?country_code=CO", {
+    headers: { Authorization: `Bearer ${ENVIA_API_TOKEN}` }
+  });
+  const departments = enviaDataArray(payload).map(item => ({
+    code: safeText(item?.code || item?.state_code || item?.abbreviation, 5),
+    name: safeText(item?.name || item?.state || item?.description, 100)
+  })).filter(item => item.code && item.name);
+  sendJson(response, 200, { ok: true, departments });
+}
+
 async function handleCheckoutConfig(_request, response) {
   sendJson(response, 200, {
     ok: true,
@@ -788,7 +981,7 @@ function checkoutCustomer(body) {
   };
 }
 
-function checkoutDelivery(body) {
+async function checkoutDelivery(body) {
   const requested = safeText(body?.delivery?.method, 20).toLowerCase();
   const method = ["moto", "national"].includes(requested) ? requested : "pickup";
   const addressLine = method !== "pickup"
@@ -797,7 +990,14 @@ function checkoutDelivery(body) {
   const city = method === "national"
     ? safeText(body?.delivery?.city || body?.customer?.deliveryDestinationCity, 100)
     : "Cartagena";
-  return { method, addressLine, city, fee: method === "pickup" ? PICKUP_FEE_COP : 0 };
+  const quote = await calculateDeliveryQuote(body);
+  return {
+    method, addressLine, city,
+    state: safeText(body?.delivery?.state, 5),
+    postalCode: safeText(body?.delivery?.postalCode, 20),
+    fee: quote.fee,
+    quote
+  };
 }
 
 async function verifiedCheckoutLines(items) {
@@ -835,7 +1035,7 @@ async function handleCreateNequiOrder(request, response) {
   const lines = await verifiedCheckoutLines(items);
   const subtotal = lines.reduce((sum, line) => sum + line.amount * line.quantity, 0);
   const customer = checkoutCustomer(body);
-  const delivery = checkoutDelivery(body);
+  const delivery = await checkoutDelivery(body);
   const reference = safeText(body?.reference, 100);
   const deliveryTitle = delivery.method === "moto"
     ? "Pronto – Moto Cartagena"
@@ -846,6 +1046,8 @@ async function handleCreateNequiOrder(request, response) {
   const address = {
     country: "CO",
     city: delivery.city,
+    subdivision: delivery.state,
+    postalCode: delivery.postalCode,
     addressLine: delivery.addressLine
   };
 
@@ -3595,6 +3797,16 @@ const server =
 
         if(request.method === "GET" && url.pathname === "/api/checkout/config"){
           await handleCheckoutConfig(request,response);
+          return;
+        }
+
+        if(request.method === "POST" && url.pathname === "/api/delivery/quote"){
+          await handleDeliveryQuote(request,response);
+          return;
+        }
+
+        if(request.method === "GET" && url.pathname === "/api/delivery/departments"){
+          await handleDeliveryDepartments(request,response);
           return;
         }
 

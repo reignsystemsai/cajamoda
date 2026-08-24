@@ -2643,10 +2643,10 @@ img{display:block;max-width:100%}
         fields: { billingDetails: "never" }
       });
       paymentElement.mount("#paymentElement");
+      $("stripePayButton").disabled = false;
       checkoutElements.on("change", session => {
         const stripeTotal = session?.total?.total?.amount;
         if (stripeTotal) $("stripePayButton").textContent = `Pagar ${stripeTotal}`;
-        $("stripePayButton").disabled = !session.canConfirm;
         if (session.canConfirm) errorBox.textContent = "";
         syncPanelHeight();
       });

@@ -1028,6 +1028,7 @@ img{display:block;max-width:100%}
 .confirmPayment{width:100%;height:52px;margin-top:13px;border-radius:14px;background:#080808;color:#fff;font-size:10px;font-weight:700}
 .pendingNote{margin:9px 0 0;text-align:center;color:#777;font-size:7.5px;line-height:1.45}
 .stripePane{text-align:left}.stripePane[hidden],.nequiPane[hidden]{display:none}.stripeTop{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:5px}.stripeTitle{font-family:"Cormorant Garamond",Georgia,serif;font-size:24px;font-weight:600}.stripeSecure{display:flex;align-items:center;gap:5px;color:#666;font-size:7.5px;white-space:nowrap}.stripeSecure svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.7}.stripeCopy{margin:0 0 16px;color:#737373;font-size:8.5px;line-height:1.5}.customCardShell{padding:16px;border:1px solid rgba(0,0,0,.08);border-radius:18px;background:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 12px 30px rgba(0,0,0,.035)}.billingGlass{margin-top:14px;padding:16px;border:1px solid rgba(255,255,255,.94);border-radius:18px;background:linear-gradient(145deg,rgba(255,255,255,.72),rgba(255,255,255,.44));box-shadow:inset 0 1px 0 rgba(255,255,255,.96),0 12px 30px rgba(0,0,0,.05);backdrop-filter:blur(28px) saturate(150%);-webkit-backdrop-filter:blur(28px) saturate(150%)}.billingTitle{font-size:10px;font-weight:700}.linkArea[hidden],.billingFields[hidden]{display:none}.linkHeading{margin-bottom:8px;text-align:center;font-size:9px;font-weight:700}.expressCheckout{min-height:48px}.cardDivider{display:flex;align-items:center;gap:12px;margin:16px 0;color:#777;font-size:8px}.cardDivider::before,.cardDivider::after{content:"";height:1px;flex:1;background:rgba(0,0,0,.12)}.cardLabel{display:block;margin-top:12px;font-size:8px;font-weight:600}.cardInput,.stripeField{width:100%;height:48px;margin-top:7px;border:1px solid rgba(0,0,0,.14);border-radius:13px;background:rgba(255,255,255,.72);padding:0 13px;color:#080808;font:500 10px/1 Inter,Arial,sans-serif;transition:border-color .16s,box-shadow .16s}.stripeField{display:flex;align-items:center;cursor:text}.stripeField .StripeElement,.stripeField iframe{width:100%!important;min-width:0}.stripeField.isFocused{border-color:#080808;box-shadow:0 0 0 1px #080808}.stripeField.hasError,.cardInput.hasError{border-color:#a31919}.cardPair{display:grid;grid-template-columns:1fr 1fr;gap:10px}.billingToggle{display:flex;align-items:flex-start;gap:9px;margin:16px 1px 3px;font-size:8px;line-height:1.4}.billingToggle input{width:18px;height:18px;flex:0 0 auto;accent-color:#080808}.billingFields{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}.billingFields .wide{grid-column:1/-1}.stripePayButton{width:100%;height:52px;margin-top:16px;border-radius:14px;background:#080808;color:#fff;font-size:10px;font-weight:700;transition:opacity .18s}.stripePayButton:disabled{opacity:.38}.stripeError{min-height:16px;margin-top:8px;color:#a31919;text-align:center;font-size:8px;line-height:1.4}.stripeTrust{display:flex;justify-content:center;align-items:center;gap:5px;margin-top:2px;color:#777;font-size:7.5px}.stripeTrust svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:1.7}
+.stripeStatus{padding:12px 0;color:#737373;text-align:center;font-size:8.5px}.stripeStatus[hidden]{display:none}
 .paymentSummary{margin-top:16px;padding:16px 18px}
 @media(max-width:390px){.deliveryChoices,.nequiActions,.deliveryDetails{grid-template-columns:1fr}.deliveryDetails .wide{grid-column:auto}.billingFields{grid-template-columns:1fr}.billingFields .wide{grid-column:auto}}
 </style>
@@ -1276,22 +1277,8 @@ img{display:block;max-width:100%}
             </div>
             <p class="stripeCopy">Paga sin salir de CajaModa. Tus datos se cifran y se envían directamente a Stripe.</p>
             <div class="customCardShell">
-              <div id="linkArea" class="linkArea">
-                <div class="linkHeading">Pagar rápido con Link</div>
-                <div id="expressCheckout" class="expressCheckout"></div>
-              </div>
-              <div id="cardDivider" class="cardDivider"><span>o paga con tarjeta</span></div>
-              <div class="cardLabel">Número de tarjeta
-                <div id="cardNumber" class="stripeField"></div>
-              </div>
-              <div class="cardPair">
-                <div class="cardLabel">MM / AA
-                  <div id="cardExpiry" class="stripeField"></div>
-                </div>
-                <div class="cardLabel">CVC
-                  <div id="cardCvc" class="stripeField"></div>
-                </div>
-              </div>
+              <div id="stripeStatus" class="stripeStatus">Preparando el formulario seguro de Stripe…</div>
+              <div id="paymentElement"></div>
             </div>
             <div class="billingGlass">
               <div class="billingTitle">Información de facturación</div>
@@ -1442,13 +1429,10 @@ img{display:block;max-width:100%}
   let nequiPhone = "";
   let stripePublishableKey = "";
   let stripeClient = null;
-  let cardElements = null;
-  let expressElements = null;
-  let expressCheckoutElement = null;
-  let cardNumberElement = null;
-  let cardExpiryElement = null;
-  let cardCvcElement = null;
-  const cardComplete = { number: false, expiry: false, cvc: false };
+  let checkoutElements = null;
+  let checkoutActions = null;
+  let paymentElement = null;
+  let stripeSessionId = "";
   let deliveryQuote = { method: "pickup", fee: 10 };
   let quoteTimer = null;
   const PICKUP_FEE_COP = 10;
@@ -1468,7 +1452,6 @@ img{display:block;max-width:100%}
     if ($("totalValue")) $("totalValue").textContent = money(total);
     if ($("nequiAmount")) $("nequiAmount").textContent = `${money(total)} COP`;
     if ($("stripePayButton")) $("stripePayButton").textContent = `Pagar ${money(total)} COP`;
-    expressElements?.update?.({ amount: Math.max(100, Math.round(total * 100)) });
     if ($("deliverySummary")) {
       $("deliverySummary").textContent = deliveryQuote?.method === selectedDelivery
         ? `${selectedDelivery === "pickup" ? "Pronto · Recoger" : selectedDelivery === "national" ? "Rápido · Nacional" : `Pronto · Moto · ${deliveryQuote.distanceKm || ""} km`} · ${money(deliveryQuote.fee)}`
@@ -2584,38 +2567,6 @@ img{display:block;max-width:100%}
     quoteTimer = setTimeout(() => refreshDeliveryQuote(), 650);
   }
 
-  function stripeFieldStyle() {
-    return {
-      base: {
-        color: "#080808",
-        fontFamily: "Inter, Arial, sans-serif",
-        fontSize: "16px",
-        fontWeight: "500",
-        lineHeight: "24px",
-        "::placeholder": { color: "#a4a4a4" }
-      },
-      invalid: { color: "#a31919" }
-    };
-  }
-
-  function updateCardPayState() {
-    const ready = cardComplete.number && cardComplete.expiry && cardComplete.cvc && Boolean($("cardholderName")?.value.trim());
-    if ($("stripePayButton")) $("stripePayButton").disabled = !ready;
-  }
-
-  function watchStripeField(element, containerId, stateKey) {
-    const container = $(containerId);
-    element.on("focus", () => container.classList.add("isFocused"));
-    element.on("blur", () => container.classList.remove("isFocused"));
-    element.on("change", event => {
-      cardComplete[stateKey] = Boolean(event.complete);
-      container.classList.toggle("hasError", Boolean(event.error));
-      if (event.error) $("stripeError").textContent = event.error.message;
-      else if ($("stripeError").textContent) $("stripeError").textContent = "";
-      updateCardPayState();
-    });
-  }
-
   function billingAddress() {
     if ($("billingSame")?.checked) {
       if (selectedDelivery === "pickup") throw new Error("Ingresa una dirección de facturación para el pago con tarjeta.");
@@ -2645,92 +2596,68 @@ img{display:block;max-width:100%}
     return address;
   }
 
-  async function createStripePaymentIntent() {
-    if (!validatePaymentDetails()) throw new Error("Completa tus datos de contacto y entrega.");
-    await refreshDeliveryQuote({ required: true });
-    const payload = checkoutPayload();
-    const response = await fetch(`${STORE_API_URL}/api/stripe/payment-intent`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify(payload)
-    });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok || !result?.clientSecret || !result?.paymentIntentId) {
-      throw new Error(result?.error || "No pudimos preparar el pago.");
-    }
-    saveJson("cajamoda-pending-checkout", payload);
-    saveJson("cajamoda-pending-stripe-intent", result.paymentIntentId);
-    return result;
-  }
-
-  async function initializeStripeCardFields() {
-    if (cardElements) return;
+  async function initializeStripePaymentElement() {
+    if (checkoutElements) return;
     const errorBox = $("stripeError");
+    const status = $("stripeStatus");
     if (!stripePublishableKey || typeof window.Stripe !== "function") {
       errorBox.textContent = "El pago con tarjeta todavía no está configurado.";
       return;
     }
     try {
+      errorBox.textContent = "";
+      status.hidden = false;
+      status.textContent = "Preparando el formulario seguro de Stripe…";
       stripeClient ||= window.Stripe(stripePublishableKey);
-      cardElements = stripeClient.elements({ locale: "es" });
-      const options = { style: stripeFieldStyle(), showIcon: true };
-      cardNumberElement = cardElements.create("cardNumber", { ...options, placeholder: "1234 1234 1234 1234" });
-      cardExpiryElement = cardElements.create("cardExpiry", { ...options, placeholder: "MM / AA" });
-      cardCvcElement = cardElements.create("cardCvc", { ...options, placeholder: "CVC" });
-      cardNumberElement.mount("#cardNumber");
-      cardExpiryElement.mount("#cardExpiry");
-      cardCvcElement.mount("#cardCvc");
-      watchStripeField(cardNumberElement, "cardNumber", "number");
-      watchStripeField(cardExpiryElement, "cardExpiry", "expiry");
-      watchStripeField(cardCvcElement, "cardCvc", "cvc");
-
-      try {
-        expressElements = stripeClient.elements({
-          mode: "payment",
-          amount: Math.max(100, Math.round(checkoutTotal() * 100)),
-          currency: "cop",
-          paymentMethodTypes: ["card", "link"],
-          appearance: { theme: "stripe", variables: { colorPrimary: "#080808", borderRadius: "13px" } }
-        });
-        expressCheckoutElement = expressElements.create("expressCheckout", {
-          buttonHeight: 48,
-          emailRequired: true,
-          billingAddressRequired: true,
-          paymentMethods: { link: "auto", applePay: "never", googlePay: "never" }
-        });
-        expressCheckoutElement.mount("#expressCheckout");
-        expressCheckoutElement.on("availablepaymentmethodschange", event => {
-          const available = Boolean(event?.paymentMethods?.link);
-          $("linkArea").hidden = !available;
-          $("cardDivider").hidden = !available;
-          syncPanelHeight();
-        });
-        expressCheckoutElement.on("confirm", async event => {
-          try {
-            const intent = await createStripePaymentIntent();
-            const returnUrl = `${location.origin}/order-confirmation/?paymentIntent=${encodeURIComponent(intent.paymentIntentId)}`;
-            const result = await stripeClient.confirmPayment({
-              elements: expressElements,
-              clientSecret: intent.clientSecret,
-              confirmParams: { return_url: returnUrl },
-              redirect: "if_required"
-            });
-            if (result.error) throw result.error;
-            location.href = returnUrl;
-          } catch (error) {
-            event.paymentFailed?.({ reason: "fail", message: error?.message || "No pudimos procesar el pago." });
-            errorBox.textContent = error?.message || "No pudimos procesar el pago.";
-          }
-        });
-      } catch (expressError) {
-        console.error("[CajaModa] Stripe Link error:", expressError);
-        $("linkArea").hidden = true;
-        $("cardDivider").hidden = true;
+      if (typeof stripeClient.initCheckoutElementsSdk !== "function") {
+        throw new Error("No se pudo cargar la versión actual del formulario de Stripe.");
       }
-      updateCardPayState();
+      if (selectedDelivery !== "pickup") await refreshDeliveryQuote({ required: true });
+      const payload = checkoutPayload();
+      const response = await fetch(`${STORE_API_URL}/api/stripe/checkout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result?.clientSecret || !result?.sessionId) {
+        throw new Error(result?.error || "No pudimos preparar el pago.");
+      }
+      saveJson("cajamoda-pending-checkout", payload);
+      saveJson("cajamoda-pending-stripe-session", result.sessionId);
+      stripeSessionId = result.sessionId;
+      checkoutElements = stripeClient.initCheckoutElementsSdk({
+        clientSecret: result.clientSecret,
+        elementsOptions: {
+          appearance: {
+            theme: "stripe",
+            variables: { colorPrimary: "#080808", borderRadius: "13px", fontFamily: "Inter, Arial, sans-serif" }
+          }
+        }
+      });
+      const loaded = await checkoutElements.loadActions();
+      if (loaded?.type === "error") throw new Error(loaded.error?.message || "No pudimos cargar el pago seguro.");
+      checkoutActions = loaded.actions;
+      paymentElement = checkoutElements.createPaymentElement({
+        layout: "accordion",
+        fields: { billingDetails: "never" }
+      });
+      paymentElement.mount("#paymentElement");
+      checkoutElements.on("change", session => {
+        const stripeTotal = session?.total?.total?.amount;
+        if (stripeTotal) $("stripePayButton").textContent = `Pagar ${stripeTotal}`;
+        $("stripePayButton").disabled = !session.canConfirm;
+        if (session.canConfirm) errorBox.textContent = "";
+        syncPanelHeight();
+      });
+      status.hidden = true;
       syncPanelHeight();
     } catch (error) {
-      console.error("[CajaModa] Stripe card fields error:", error);
+      checkoutElements = null;
+      checkoutActions = null;
+      paymentElement = null;
+      console.error("[CajaModa] Stripe Payment Element error:", error);
+      status.hidden = true;
       errorBox.textContent = error?.message || "No pudimos cargar el pago seguro.";
     }
   }
@@ -2743,33 +2670,26 @@ img{display:block;max-width:100%}
     errorBox.textContent = "";
     button.textContent = "Procesando pago…";
     try {
-      if (!cardElements || !cardNumberElement) throw new Error("El formulario de tarjeta todavía está cargando.");
+      if (!checkoutElements || !checkoutActions || !paymentElement) throw new Error("El formulario de Stripe todavía está cargando.");
+      if (!validatePaymentDetails()) throw new Error("Completa tus datos de contacto y entrega.");
       const name = $("cardholderName")?.value.trim();
       if (!name) {
         $("cardholderName")?.focus();
         throw new Error("Ingresa el nombre que aparece en la tarjeta.");
       }
-      if (!cardComplete.number || !cardComplete.expiry || !cardComplete.cvc) {
-        throw new Error("Completa correctamente los datos de la tarjeta.");
-      }
       const address = billingAddress();
       const customer = collectCustomer();
-      const intent = await createStripePaymentIntent();
-      const returnUrl = `${location.origin}/order-confirmation/?paymentIntent=${encodeURIComponent(intent.paymentIntentId)}`;
-      const result = await stripeClient.confirmCardPayment(intent.clientSecret, {
-        payment_method: {
-          card: cardNumberElement,
-          billing_details: { name, email: customer.email, phone: customer.customerPhone, address }
-        },
-        receipt_email: customer.email,
-        return_url: returnUrl
+      const result = await checkoutActions.confirm({
+        email: customer.email,
+        phoneNumber: customer.customerPhone,
+        billingAddress: { name, address }
       });
-      if (result.error) throw result.error;
-      location.href = returnUrl;
+      if (result?.type === "error") throw result.error;
+      location.href = `${location.origin}/order-confirmation/?stripeSessionId=${encodeURIComponent(stripeSessionId)}`;
     } catch (error) {
       errorBox.textContent = error?.message || "No pudimos procesar el pago.";
       button.textContent = originalLabel;
-      updateCardPayState();
+      button.disabled = false;
     }
   }
 
@@ -2842,11 +2762,11 @@ img{display:block;max-width:100%}
         }
         goToStep(tab.dataset.step);
         if (selectedPayment === "stripe" && tab.dataset.method === "stripe") {
-          await initializeStripeCardFields();
           if (selectedDelivery === "pickup" && $("billingSame")?.checked) {
             $("billingSame").checked = false;
             $("billingFields").hidden = false;
           }
+          await initializeStripePaymentElement();
           syncPanelHeight();
         }
       };
@@ -2866,7 +2786,6 @@ img{display:block;max-width:100%}
 
   $("confirmNequiButton").onclick = submitNequiPayment;
   $("stripePayButton").onclick = submitStripePayment;
-  $("cardholderName")?.addEventListener("input", updateCardPayState);
   $("billingSame")?.addEventListener("change", () => {
     $("billingFields").hidden = $("billingSame").checked;
     syncPanelHeight();

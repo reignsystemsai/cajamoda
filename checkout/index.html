@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500;6..96,600&family=Cormorant+Garamond:wght@500;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://js.stripe.com/dahlia/stripe.js"></script>
 
 <style>
 :root{
@@ -977,7 +978,7 @@ img{display:block;max-width:100%}
   font-weight:600;
   text-decoration:underline
 }
-.stepNav{grid-template-columns:1fr 1fr}
+.stepNav{grid-template-columns:repeat(3,1fr)}
 
 .paymentSectionTitle{
   margin:0 0 12px;
@@ -1027,7 +1028,7 @@ img{display:block;max-width:100%}
 .referenceLabel{display:block;font-size:8px}.referenceLabel input{margin-top:8px}
 .confirmPayment{width:100%;height:52px;margin-top:13px;border-radius:14px;background:#080808;color:#fff;font-size:10px;font-weight:700}
 .pendingNote{margin:9px 0 0;text-align:center;color:#777;font-size:7.5px;line-height:1.45}
-.stripePane{text-align:center}.stripePane[hidden],.nequiPane[hidden]{display:none}.stripeMark{width:48px;height:36px;margin:2px auto 13px;border:1px solid rgba(0,0,0,.1);border-radius:10px;display:grid;place-items:center;font-size:18px}.stripeTitle{font-size:15px;font-weight:750}.stripeCopy{max-width:310px;margin:8px auto 0;color:#737373;font-size:9px;line-height:1.55}.stripeButton{width:100%;height:52px;margin-top:18px;border-radius:14px;background:#080808;color:#fff;font-size:10px;font-weight:700}
+.stripePane{text-align:left}.stripePane[hidden],.nequiPane[hidden]{display:none}.stripeTitle{text-align:center;font-size:15px;font-weight:750}.stripeCopy{max-width:310px;margin:8px auto 14px;color:#737373;text-align:center;font-size:9px;line-height:1.55}.embeddedCheckout{min-height:310px;border-radius:18px;overflow:hidden}.stripeLoading{padding:42px 12px;text-align:center;color:#737373;font-size:10px}
 .paymentSummary{margin-top:16px;padding:16px 18px}
 @media(max-width:390px){.deliveryChoices,.nequiActions,.deliveryDetails{grid-template-columns:1fr}.deliveryDetails .wide{grid-column:auto}}
 </style>
@@ -1078,7 +1079,7 @@ img{display:block;max-width:100%}
     <div>
       <h1>Tu pedido</h1>
       <p>
-        Revisa tu bolsa y continúa al checkout seguro de Wix.
+        Revisa tu bolsa y elige cómo pagar de forma segura.
       </p>
     </div>
 
@@ -1102,8 +1103,18 @@ img{display:block;max-width:100%}
       class="stepTab"
       type="button"
       data-step="payment"
+      data-method="nequi"
     >
-      Pago
+      Nequi
+    </button>
+
+    <button
+      class="stepTab"
+      type="button"
+      data-step="payment"
+      data-method="stripe"
+    >
+      Tarjeta
     </button>
 
   </nav>
@@ -1241,11 +1252,6 @@ img{display:block;max-width:100%}
         </section>
 
         <h2 class="paymentSectionTitle">Finaliza tu pago</h2>
-        <div class="paymentMethodTabs" role="tablist" aria-label="Método de pago">
-          <button class="paymentMethod isSelected" type="button" data-method="nequi" role="tab" aria-selected="true">Nequi</button>
-          <button class="paymentMethod" type="button" data-method="stripe" role="tab" aria-selected="false">Tarjeta / Link</button>
-        </div>
-
         <section class="paymentGlass">
           <div id="nequiPane" class="nequiPane">
             <div class="paymentEyebrow">Envía exactamente</div>
@@ -1265,10 +1271,9 @@ img{display:block;max-width:100%}
           </div>
 
           <div id="stripePane" class="stripePane" hidden>
-            <div class="stripeMark">▣</div>
             <div class="stripeTitle">Pago seguro con tarjeta o Link</div>
             <p class="stripeCopy">Stripe procesará tu tarjeta de forma segura. CajaModa no guarda los datos de tu tarjeta.</p>
-            <button id="stripeCheckoutButton" class="stripeButton" type="button">Continuar con Stripe</button>
+            <div id="embeddedCheckout" class="embeddedCheckout"><div class="stripeLoading">Completa tus datos de entrega para cargar el pago seguro.</div></div>
           </div>
         </section>
 
@@ -1392,6 +1397,10 @@ img{display:block;max-width:100%}
   let selectedDelivery = "pickup";
   let selectedPayment = "nequi";
   let nequiPhone = "";
+  let stripePublishableKey = "";
+  let stripeClient = null;
+  let embeddedCheckout = null;
+  let embeddedFingerprint = "";
   let deliveryQuote = { method: "pickup", fee: 10 };
   let quoteTimer = null;
   const PICKUP_FEE_COP = 10;
@@ -1901,10 +1910,6 @@ img{display:block;max-width:100%}
     $("toDeliveryButton").disabled =
       cart.items.length === 0;
 
-    if ($("stripeCheckoutButton")) {
-      $("stripeCheckoutButton").disabled = cart.items.length === 0;
-    }
-
     if ($("confirmNequiButton")) {
       $("confirmNequiButton").disabled = cart.items.length === 0;
     }
@@ -2382,8 +2387,8 @@ img{display:block;max-width:100%}
     document
       .querySelectorAll("[data-step]")
       .forEach(tab => {
-        const active =
-          tab.dataset.step === step;
+        const active = tab.dataset.step === step &&
+          (step !== "payment" || tab.dataset.method === selectedPayment);
 
         tab.classList.toggle(
           "isActive",
@@ -2512,50 +2517,46 @@ img{display:block;max-width:100%}
     quoteTimer = setTimeout(() => refreshDeliveryQuote(), 650);
   }
 
-  async function requestPayment() {
+  async function initializeEmbeddedStripe() {
     if (!validatePaymentDetails()) return;
-
-    const button = $("stripeCheckoutButton");
-    button.disabled = true;
-    button.textContent = "Preparando Stripe…";
-
-    const payload = checkoutPayload();
-
-    saveJson(
-      "cajamoda-pending-checkout",
-      payload
-    );
-
-    showToast(
-      "Preparando pago seguro…"
-    );
-
+    const mount = $("embeddedCheckout");
+    if (!stripePublishableKey || typeof window.Stripe !== "function") {
+      mount.innerHTML = '<div class="stripeLoading">El pago con tarjeta todavía no está configurado.</div>';
+      return showToast("Falta configurar la clave pública de Stripe.");
+    }
     try {
       await refreshDeliveryQuote({ required: true });
-      const response = await fetch(`${STORE_API_URL}/api/stripe/checkout`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify(payload)
-      });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok || !result?.url) {
-        throw new Error(result?.error || "No pudimos preparar el pago.");
-      }
-      saveJson("cajamoda-pending-stripe-session", result.sessionId || "");
-      location.href = result.url;
+      const payload = checkoutPayload();
+      const fingerprint = JSON.stringify({ cart: payload.cart, customer: payload.customer, delivery: payload.delivery });
+      if (embeddedCheckout && embeddedFingerprint === fingerprint) return;
+      mount.innerHTML = '<div class="stripeLoading">Cargando pago seguro…</div>';
+      if (embeddedCheckout?.destroy) await embeddedCheckout.destroy();
+      embeddedCheckout = null;
+      stripeClient ||= window.Stripe(stripePublishableKey);
+      const fetchClientSecret = async () => {
+        const response = await fetch(`${STORE_API_URL}/api/stripe/checkout`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result?.clientSecret) throw new Error(result?.error || "No pudimos preparar el pago.");
+        saveJson("cajamoda-pending-checkout", payload);
+        saveJson("cajamoda-pending-stripe-session", result.sessionId || "");
+        return result.clientSecret;
+      };
+      mount.innerHTML = "";
+      embeddedCheckout = stripeClient.createEmbeddedCheckoutPage
+        ? await stripeClient.createEmbeddedCheckoutPage({ fetchClientSecret })
+        : await stripeClient.initEmbeddedCheckout({ fetchClientSecret });
+      embeddedCheckout.mount("#embeddedCheckout");
+      embeddedFingerprint = fingerprint;
+      syncPanelHeight();
     } catch (error) {
-      console.error("[CajaModa] Stripe checkout error:", error);
-      resetPaymentButton();
-      showToast(error?.message || "No pudimos continuar. Intenta nuevamente.");
+      console.error("[CajaModa] Embedded Stripe error:", error);
+      mount.innerHTML = '<div class="stripeLoading">No pudimos cargar el pago. Revisa tus datos e intenta nuevamente.</div>';
+      showToast(error?.message || "No pudimos cargar el pago seguro.");
     }
-  }
-
-  function resetPaymentButton() {
-    clearTimeout(paymentTimer);
-    const button = $("stripeCheckoutButton");
-    if (!button) return;
-    button.disabled = readCart().items.length === 0;
-    button.textContent = "Continuar con Stripe";
   }
 
   async function submitNequiPayment() {
@@ -2589,6 +2590,7 @@ img{display:block;max-width:100%}
       const response = await fetch(`${STORE_API_URL}/api/checkout/config`, { headers: { Accept: "application/json" } });
       const result = await response.json();
       nequiPhone = String(result?.nequi?.phone || "");
+      stripePublishableKey = String(result?.stripe?.publishableKey || "");
       $("nequiNumber").textContent = result?.nequi?.masked || "Número pendiente";
     } catch {
       $("nequiNumber").textContent = "Número pendiente";
@@ -2615,8 +2617,16 @@ img{display:block;max-width:100%}
   document
     .querySelectorAll("[data-step]")
     .forEach(tab => {
-      tab.onclick = () => {
+      tab.onclick = async () => {
+        if (tab.dataset.method) {
+          selectedPayment = tab.dataset.method;
+          $("nequiPane").hidden = selectedPayment !== "nequi";
+          $("stripePane").hidden = selectedPayment !== "stripe";
+        }
         goToStep(tab.dataset.step);
+        if (selectedPayment === "stripe" && tab.dataset.method === "stripe") {
+          await initializeEmbeddedStripe();
+        }
       };
     });
 
@@ -2632,7 +2642,6 @@ img{display:block;max-width:100%}
     goToStep("bag");
   };
 
-  $("stripeCheckoutButton").onclick = requestPayment;
   $("confirmNequiButton").onclick = submitNequiPayment;
 
   document.querySelectorAll("[data-delivery]").forEach(button => {
@@ -2683,20 +2692,6 @@ img{display:block;max-width:100%}
     $(id)?.addEventListener("change", scheduleDeliveryQuote);
   });
   $("deliveryDepartment")?.addEventListener("change", scheduleDeliveryQuote);
-
-  document.querySelectorAll("[data-method]").forEach(button => {
-    button.onclick = () => {
-      selectedPayment = button.dataset.method;
-      document.querySelectorAll("[data-method]").forEach(candidate => {
-        const selected = candidate === button;
-        candidate.classList.toggle("isSelected", selected);
-        candidate.setAttribute("aria-selected", String(selected));
-      });
-      $("nequiPane").hidden = selectedPayment !== "nequi";
-      $("stripePane").hidden = selectedPayment !== "stripe";
-      syncPanelHeight();
-    };
-  });
 
   $("deliveryInfoButton").onclick = () => $("deliveryHelp").classList.add("isOpen");
   $("deliveryHelpClose").onclick = () => $("deliveryHelp").classList.remove("isOpen");
@@ -2755,8 +2750,6 @@ img{display:block;max-width:100%}
       if (
         message.type === "CHECKOUT_ERROR"
       ) {
-        resetPaymentButton();
-
         showToast("No pudimos continuar. Intenta nuevamente.");
       }
     }

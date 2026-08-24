@@ -50,6 +50,7 @@ const ALLOWED_ORIGIN =
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
+const NEQUI_PHONE = safeEnv(process.env.NEQUI_PHONE);
 const STOREFRONT_URL = String(
   process.env.STOREFRONT_URL || "https://www.cajamoda.com"
 ).replace(/\/$/, "");
@@ -57,6 +58,10 @@ const STOREFRONT_URL = String(
 const stripe = STRIPE_SECRET_KEY
   ? new Stripe(STRIPE_SECRET_KEY)
   : null;
+
+function safeEnv(value) {
+  return String(value || "").trim();
+}
 
 /* ============================================================
    REQUIRED ENVIRONMENT
@@ -516,17 +521,26 @@ async function handleCreateStripeCheckout(request, response) {
   }
   const lineItems = await Promise.all(items.map(stripeLineItemFromCartItem));
   const customerEmail = safeText(body?.customer?.email, 250);
+  const deliveryMethod = body?.delivery?.method === "moto" ? "moto" : "pickup";
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     line_items: lineItems,
     customer_email: customerEmail || undefined,
     billing_address_collection: "required",
-    shipping_address_collection: { allowed_countries: ["CO", "US"] },
+    shipping_address_collection: deliveryMethod === "moto"
+      ? { allowed_countries: ["CO"] }
+      : undefined,
     phone_number_collection: { enabled: true },
     locale: "es",
     success_url: `${STOREFRONT_URL}/order-confirmation/?stripeSessionId={CHECKOUT_SESSION_ID}`,
     cancel_url: `${STOREFRONT_URL}/checkout/`,
-    metadata: { source: "cajamoda-storefront" }
+    metadata: {
+      source: "cajamoda-storefront",
+      deliveryMethod,
+      deliveryPromise: safeText(body?.delivery?.promise, 40) || "pronto",
+      customerName: safeText(body?.customer?.customerName, 160),
+      customerPhone: safeText(body?.customer?.customerPhone, 80)
+    }
   }, {
     idempotencyKey: safeText(body?.requestId, 100) || undefined
   });
@@ -617,7 +631,7 @@ async function importStripeOrderIntoWix(session, lines) {
 
   const customer = session?.customer_details || {};
   const shipping = session?.shipping_details || session?.collected_information?.shipping_details || {};
-  const name = splitCustomerName(shipping?.name || customer?.name);
+  const name = splitCustomerName(shipping?.name || customer?.name || session?.metadata?.customerName);
   const address = stripeAddressToWix(shipping?.address || customer?.address || {});
   const subtotal = lines.reduce((sum, line) => sum + line.amount * line.quantity, 0);
   const total = Number(session?.amount_total || 0) / 100;
@@ -636,12 +650,14 @@ async function importStripeOrderIntoWix(session, lines) {
         firstName: name.firstName,
         lastName: name.lastName,
         email: safeText(customer?.email, 250),
-        phone: safeText(customer?.phone, 80)
+        phone: safeText(customer?.phone || session?.metadata?.customerPhone, 80)
       },
       address
     },
     shippingInfo: {
-      title: "Stripe – Entrega CajaModa",
+      title: session?.metadata?.deliveryMethod === "pickup"
+        ? "Stripe – Pronto – Recoger"
+        : "Stripe – Pronto – Moto",
       cost: { amount: String(Math.max(0, total - subtotal)) },
       logistics: {
         shippingDestination: {
@@ -650,7 +666,7 @@ async function importStripeOrderIntoWix(session, lines) {
             firstName: name.firstName,
             lastName: name.lastName,
             email: safeText(customer?.email, 250),
-            phone: safeText(customer?.phone, 80)
+            phone: safeText(customer?.phone || session?.metadata?.customerPhone, 80)
           }
         }
       }
@@ -720,6 +736,144 @@ async function handleStripeWebhook(request, response) {
     console.log(`[Stripe] Payment synchronized with Wix: ${event.data.object.id}`);
   }
   sendJson(response, 200, { received: true });
+}
+
+/* ============================================================
+   CUSTOM CHECKOUT / NEQUI
+   ============================================================ */
+
+function maskedNequiPhone(phone) {
+  const digits = String(phone || "").replace(/\D/g, "");
+  return digits.length >= 4 ? `••• ••• ${digits.slice(-4)}` : "Número pendiente";
+}
+
+async function handleCheckoutConfig(_request, response) {
+  sendJson(response, 200, {
+    ok: true,
+    nequi: {
+      configured: Boolean(NEQUI_PHONE),
+      phone: NEQUI_PHONE,
+      masked: maskedNequiPhone(NEQUI_PHONE)
+    }
+  });
+}
+
+function checkoutCustomer(body) {
+  const customer = body?.customer || {};
+  const name = splitCustomerName(customer.customerName || customer.name);
+  return {
+    name,
+    email: safeText(customer.email, 250),
+    phone: safeText(customer.customerPhone || customer.phone, 80)
+  };
+}
+
+function checkoutDelivery(body) {
+  const method = body?.delivery?.method === "moto" ? "moto" : "pickup";
+  const addressLine = method === "moto"
+    ? safeText(body?.delivery?.address || body?.customer?.deliveryAddress, 250)
+    : "Recoger en punto CajaModa";
+  return { method, addressLine };
+}
+
+async function verifiedCheckoutLines(items) {
+  const verified = await Promise.all(items.map(stripeLineItemFromCartItem));
+  return verified.map(line => ({
+    productId: line.price_data.product_data.metadata.productId,
+    variantId: line.price_data.product_data.metadata.variantId,
+    quantity: line.quantity,
+    amount: Number(line.price_data.unit_amount) / 100,
+    name: line.price_data.product_data.name,
+    description: line.price_data.product_data.description || ""
+  }));
+}
+
+function nequiOrderNumber(requestId) {
+  const digest = crypto.createHash("sha256").update(requestId).digest("hex").slice(0, 10).toUpperCase();
+  return `N-${digest}`;
+}
+
+async function handleCreateNequiOrder(request, response) {
+  if (!wix) return sendError(response, 503, "Wix no está configurado para recibir el pedido.");
+  if (!NEQUI_PHONE) return sendError(response, 503, "El número Nequi todavía no está configurado.");
+  const body = await readBody(request);
+  const requestId = safeText(body?.requestId, 100);
+  const items = Array.isArray(body?.cart?.items) ? body.cart.items.slice(0, 50) : [];
+  if (!requestId || !items.length) return sendError(response, 400, "El pedido no es válido.");
+
+  const number = nequiOrderNumber(requestId);
+  const existingResult = await wix.orders.searchOrders({ filter: { number }, cursorPaging: { limit: 1 } });
+  const existing = existingResult?.orders?.[0];
+  if (existing) {
+    return sendJson(response, 200, { ok: true, orderId: existing._id || existing.id, orderNumber: number, paymentStatus: existing.paymentStatus });
+  }
+
+  const lines = await verifiedCheckoutLines(items);
+  const subtotal = lines.reduce((sum, line) => sum + line.amount * line.quantity, 0);
+  const customer = checkoutCustomer(body);
+  const delivery = checkoutDelivery(body);
+  const reference = safeText(body?.reference, 100);
+  const title = `${delivery.method === "moto" ? "Pronto – Moto" : "Pronto – Recoger"}${reference ? ` · Ref ${reference}` : ""}`;
+  const address = {
+    country: "CO",
+    addressLine: delivery.addressLine
+  };
+
+  const imported = await wix.orders.importOrder({
+    number,
+    status: "APPROVED",
+    paymentStatus: "PENDING_MERCHANT",
+    fulfillmentStatus: "NOT_FULFILLED",
+    channelInfo: { type: "OTHER_PLATFORM" },
+    currency: "COP",
+    currencyConversionDetails: { originalCurrency: "COP", conversionRate: "1" },
+    buyerInfo: { email: customer.email },
+    billingInfo: {
+      contactDetails: { firstName: customer.name.firstName, lastName: customer.name.lastName, email: customer.email, phone: customer.phone },
+      address
+    },
+    shippingInfo: {
+      title,
+      cost: { amount: "0" },
+      logistics: {
+        shippingDestination: {
+          address,
+          contactDetails: { firstName: customer.name.firstName, lastName: customer.name.lastName, email: customer.email, phone: customer.phone }
+        }
+      }
+    },
+    lineItems: lines.map(line => ({
+      productName: { original: line.name },
+      quantity: line.quantity,
+      price: { amount: String(line.amount) },
+      itemType: { preset: "PHYSICAL" },
+      physicalProperties: { shippable: true },
+      catalogReference: { appId: WIX_STORES_APP_ID, catalogItemId: line.productId, options: { variantId: line.variantId } }
+    })),
+    priceSummary: {
+      subtotal: { amount: String(subtotal) },
+      shipping: { amount: "0" },
+      tax: { amount: "0" },
+      discount: { amount: "0" },
+      total: { amount: String(subtotal) }
+    }
+  });
+
+  await decrementStripeInventory(lines);
+  const order = imported?.order || imported;
+  sendJson(response, 201, { ok: true, orderId: order?._id || order?.id, orderNumber: number, paymentStatus: "PENDING_MERCHANT" });
+}
+
+async function handleConfirmNequiOrder(request, response, orderId) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
+  if (!wix) return sendError(response, 503, "Wix no está configurado.");
+  const order = await wix.orders.getOrder(orderId);
+  if (!String(order?.number || "").startsWith("N-")) return sendError(response, 400, "Este no es un pedido Nequi.");
+  if (String(order.paymentStatus).toUpperCase() === "PAID") {
+    return sendJson(response, 200, { ok: true, order: normalizeWixOrder(order) });
+  }
+  const updated = await wix.orders.importOrder({ ...order, paymentStatus: "PAID" });
+  sendJson(response, 200, { ok: true, order: normalizeWixOrder(updated?.order || updated) });
 }
 
 /* ============================================================
@@ -2686,6 +2840,18 @@ function normalizeWixOrder(
         100
       ),
 
+    paymentMethod:
+      String(order?.number || "").startsWith("N-")
+        ? "nequi"
+        : "card",
+
+    canConfirmPayment:
+      String(order?.number || "").startsWith("N-") &&
+      !["PAID", "PARTIALLY_PAID"].includes(String(order?.paymentStatus || "").toUpperCase()),
+
+    delivery:
+      safeText(order?.shippingInfo?.title, 250),
+
     fulfillmentStatus:
       safeText(
         order
@@ -3394,6 +3560,22 @@ const server =
 
         if(request.method === "POST" && url.pathname === "/api/stripe/webhook"){
           await handleStripeWebhook(request,response);
+          return;
+        }
+
+        if(request.method === "GET" && url.pathname === "/api/checkout/config"){
+          await handleCheckoutConfig(request,response);
+          return;
+        }
+
+        if(request.method === "POST" && url.pathname === "/api/nequi/orders"){
+          await handleCreateNequiOrder(request,response);
+          return;
+        }
+
+        const nequiConfirmMatch = url.pathname.match(/^\/api\/orders\/([^/]+)\/confirm-nequi$/);
+        if(request.method === "POST" && nequiConfirmMatch){
+          await handleConfirmNequiOrder(request,response,decodeURIComponent(nequiConfirmMatch[1]));
           return;
         }
 

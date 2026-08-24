@@ -977,7 +977,59 @@ img{display:block;max-width:100%}
   font-weight:600;
   text-decoration:underline
 }
-[data-panel="payment"]{display:none!important}
+.stepNav{grid-template-columns:1fr 1fr}
+
+.paymentSectionTitle{
+  margin:0 0 12px;
+  font-family:"Cormorant Garamond",Georgia,serif;
+  font-size:27px;
+  line-height:1;
+  font-weight:600
+}
+.deliveryGlass,.paymentGlass,.paymentSummary{
+  border-radius:22px;
+  background:linear-gradient(145deg,rgba(255,255,255,.88),rgba(255,255,255,.58));
+  border:1px solid rgba(0,0,0,.075);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.98),0 14px 38px rgba(0,0,0,.065);
+  backdrop-filter:blur(30px) saturate(150%);
+  -webkit-backdrop-filter:blur(30px) saturate(150%)
+}
+.deliveryGlass{padding:17px;margin-bottom:24px}
+.promiseRow{display:grid;grid-template-columns:48px 1fr 36px;gap:12px;align-items:center}
+.promiseBadge{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:#080808;color:#fff;font-size:22px;font-weight:650}
+.promiseName{font-size:13px;font-weight:750}.promiseTime{margin-top:3px;color:#737373;font-size:9px}
+.infoButton{width:34px;height:34px;border:1px solid rgba(0,0,0,.13);border-radius:50%;display:grid;place-items:center;font-family:Georgia,serif;font-size:15px}
+.deliveryDivider,.paymentDivider{height:1px;margin:15px 0;background:rgba(0,0,0,.09)}
+.deliveryChoiceLabel{margin-bottom:10px;font-size:10px;font-weight:600}
+.deliveryChoices{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.deliveryChoice{min-height:46px;padding:0 11px;border:1px solid rgba(0,0,0,.18);border-radius:999px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:9px;font-weight:600}
+.deliveryChoice svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5}
+.deliveryChoice.isSelected{background:#080808;color:#fff;border-color:#080808}
+.deliveryChoice[data-delivery="national"]:not([hidden]){grid-column:1/-1}
+.deliveryNote{margin:12px 2px 0;color:#737373;font-size:8px}
+.pickupAddress{margin:10px 2px 0;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.58);border:1px solid rgba(0,0,0,.07);font-size:8px;line-height:1.5;color:#555}
+.deliveryDetails{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
+.deliveryDetails label{min-width:0}.deliveryDetails .wide{grid-column:1/-1}
+.compactInput{width:100%;height:45px;padding:0 13px;border:1px solid rgba(0,0,0,.10);border-radius:13px;outline:0;background:rgba(255,255,255,.58);font-size:9px}
+.deliveryHelp{position:fixed;z-index:120;inset:0;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(255,255,255,.52);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.deliveryHelp.isOpen{display:flex}.deliveryHelpCard{width:min(360px,100%);padding:24px;border-radius:24px;background:rgba(255,255,255,.9);border:1px solid rgba(0,0,0,.08);box-shadow:0 24px 70px rgba(0,0,0,.15)}
+.deliveryHelpTop{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.deliveryHelpTitle{font-family:"Cormorant Garamond",Georgia,serif;font-size:25px;font-weight:600}.deliveryHelpClose{width:34px;height:34px;border-radius:50%;background:#f4f4f4;font-size:18px}
+.deliveryHelpLine{padding:12px 0;border-top:1px solid rgba(0,0,0,.08);font-size:10px;line-height:1.55}.deliveryHelpLine strong{display:block;font-size:11px}
+.paymentMethodTabs{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:13px}
+.paymentMethod{position:relative;height:56px;border:1px solid rgba(0,0,0,.08);border-radius:17px;background:rgba(255,255,255,.62);font-size:11px;font-weight:650}
+.paymentMethod.isSelected::after{content:"";position:absolute;left:16px;right:16px;bottom:-1px;height:2px;background:#080808;border-radius:4px}
+.paymentMethod[data-method="nequi"].isSelected{color:#4d0bb7}
+.paymentGlass{padding:19px}
+.paymentEyebrow{color:#555;font-size:8px}.paymentAmount{margin-top:4px;font-size:24px;font-weight:760;letter-spacing:-.7px}
+.nequiLabel{margin-top:15px;font-size:8px}.nequiNumber{margin-top:5px;font-size:18px;font-weight:650;letter-spacing:.8px}
+.nequiActions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
+.paymentAction{height:45px;border:1px solid #111;border-radius:13px;font-size:9px;font-weight:650}.paymentAction.nequiOpen{border-color:#4d0bb7;background:#4d0bb7;color:#fff}
+.referenceLabel{display:block;font-size:8px}.referenceLabel input{margin-top:8px}
+.confirmPayment{width:100%;height:52px;margin-top:13px;border-radius:14px;background:#080808;color:#fff;font-size:10px;font-weight:700}
+.pendingNote{margin:9px 0 0;text-align:center;color:#777;font-size:7.5px;line-height:1.45}
+.stripePane{text-align:center}.stripePane[hidden],.nequiPane[hidden]{display:none}.stripeMark{width:48px;height:36px;margin:2px auto 13px;border:1px solid rgba(0,0,0,.1);border-radius:10px;display:grid;place-items:center;font-size:18px}.stripeTitle{font-size:15px;font-weight:750}.stripeCopy{max-width:310px;margin:8px auto 0;color:#737373;font-size:9px;line-height:1.55}.stripeButton{width:100%;height:52px;margin-top:18px;border-radius:14px;background:#080808;color:#fff;font-size:10px;font-weight:700}
+.paymentSummary{margin-top:16px;padding:16px 18px}
+@media(max-width:390px){.deliveryChoices,.nequiActions,.deliveryDetails{grid-template-columns:1fr}.deliveryDetails .wide{grid-column:auto}}
 </style>
 </head>
 
@@ -1044,6 +1096,14 @@ img{display:block;max-width:100%}
       aria-current="step"
     >
       Bolsa
+    </button>
+
+    <button
+      class="stepTab"
+      type="button"
+      data-step="payment"
+    >
+      Pago
     </button>
 
   </nav>
@@ -1133,31 +1193,92 @@ img{display:block;max-width:100%}
         aria-label="Pago"
         aria-hidden="true"
       >
-        <div class="paymentIntro">
-          <h2>Completa tu pago.</h2>
-          <p>
-            Confirma tu pedido y continúa al checkout seguro de Wix.
-            Allí finalizarás envío, facturación y pago.
-          </p>
-        </div>
-
-
         <div id="reviewList" class="reviewList"></div>
 
-        <div class="summaryCard glassCard">
+        <h2 class="paymentSectionTitle">Entrega</h2>
+        <section class="deliveryGlass" aria-label="Entrega">
+          <div class="promiseRow">
+            <div class="promiseBadge">P</div>
+            <div>
+              <div class="promiseName">Pronto</div>
+              <div class="promiseTime">Disponible en 24–48 h</div>
+            </div>
+            <button id="deliveryInfoButton" class="infoButton" type="button" aria-label="Ver tiempos de entrega">i</button>
+          </div>
+          <div class="deliveryDivider"></div>
+          <label class="referenceLabel" for="deliveryCity">Ciudad
+            <select id="deliveryCity" class="compactInput" style="margin-top:8px">
+              <option value="cartagena">Cartagena</option>
+              <option value="other">Otra ciudad</option>
+            </select>
+          </label>
+          <div class="deliveryDivider"></div>
+          <div class="deliveryChoiceLabel">Elige cómo recibirlo</div>
+          <div class="deliveryChoices">
+            <button class="deliveryChoice isSelected" type="button" data-delivery="pickup">
+              <svg viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2.2"/></svg>
+              Recoger en punto
+            </button>
+            <button class="deliveryChoice" type="button" data-delivery="moto">
+              <svg viewBox="0 0 24 24"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9 17h6l-2.5-6H8m5-3h3"/></svg>
+              Moto a tu dirección
+            </button>
+            <button class="deliveryChoice" type="button" data-delivery="national" hidden>
+              <svg viewBox="0 0 24 24"><path d="M3 7h11v10H3zM14 10h4l3 3v4h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+              Envío nacional · 4–7 días
+            </button>
+          </div>
+          <div class="deliveryDetails">
+            <label><input id="customerName" class="compactInput" autocomplete="name" placeholder="Nombre completo"></label>
+            <label><input id="customerPhone" class="compactInput" autocomplete="tel" inputmode="tel" placeholder="Teléfono"></label>
+            <label class="wide"><input id="deliveryDestinationCity" class="compactInput" autocomplete="address-level2" placeholder="Ciudad de entrega" hidden></label>
+            <label class="wide"><input id="deliveryAddress" class="compactInput" autocomplete="street-address" placeholder="Dirección para moto" disabled></label>
+          </div>
+          <div id="pickupAddress" class="pickupAddress"><strong>Punto de recogida · 10 COP</strong><br>Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar.</div>
+          <p class="deliveryNote">El costo se calcula según tu ubicación.</p>
+        </section>
+
+        <h2 class="paymentSectionTitle">Finaliza tu pago</h2>
+        <div class="paymentMethodTabs" role="tablist" aria-label="Método de pago">
+          <button class="paymentMethod isSelected" type="button" data-method="nequi" role="tab" aria-selected="true">Nequi</button>
+          <button class="paymentMethod" type="button" data-method="stripe" role="tab" aria-selected="false">Tarjeta / Link</button>
+        </div>
+
+        <section class="paymentGlass">
+          <div id="nequiPane" class="nequiPane">
+            <div class="paymentEyebrow">Envía exactamente</div>
+            <div id="nequiAmount" class="paymentAmount">$0 COP</div>
+            <div class="nequiLabel">Número Nequi</div>
+            <div id="nequiNumber" class="nequiNumber">••• ••• ••••</div>
+            <div class="nequiActions">
+              <button id="copyNequiButton" class="paymentAction" type="button">Copiar número</button>
+              <button id="openNequiButton" class="paymentAction nequiOpen" type="button">Abrir Nequi</button>
+            </div>
+            <div class="paymentDivider"></div>
+            <label class="referenceLabel" for="nequiReference">Referencia del pago (opcional)
+              <input id="nequiReference" class="compactInput" inputmode="numeric" placeholder="Ingresa número o referencia">
+            </label>
+            <button id="confirmNequiButton" class="confirmPayment" type="button">Confirmar que ya pagué</button>
+            <p class="pendingNote">Tu pedido quedará pendiente hasta que confirmemos el pago.</p>
+          </div>
+
+          <div id="stripePane" class="stripePane" hidden>
+            <div class="stripeMark">▣</div>
+            <div class="stripeTitle">Pago seguro con tarjeta o Link</div>
+            <p class="stripeCopy">Stripe procesará tu tarjeta de forma segura. CajaModa no guarda los datos de tu tarjeta.</p>
+            <button id="stripeCheckoutButton" class="stripeButton" type="button">Continuar con Stripe</button>
+          </div>
+        </section>
+
+        <div class="paymentSummary">
           <div class="summaryLine">
             <span>Subtotal</span>
             <span id="subtotalValue" class="summaryValue">$0</span>
           </div>
 
           <div class="summaryLine">
-            <span>Envío</span>
-            <span class="summaryValue">Se calcula al pagar</span>
-          </div>
-
-          <div class="summaryLine">
-            <span>Impuestos</span>
-            <span class="summaryValue">Se calculan al pagar</span>
+            <span>Entrega</span>
+            <span id="deliverySummary" class="summaryValue">Pronto · Por calcular</span>
           </div>
 
           <div class="summaryDivider"></div>
@@ -1169,17 +1290,6 @@ img{display:block;max-width:100%}
         </div>
 
         <div class="panelActions">
-          <button
-            id="checkoutButton"
-            class="primaryButton"
-            type="button"
-          >
-            <span>Continuar al pago seguro</span>
-            <svg viewBox="0 0 24 24">
-              <path d="m9 5 7 7-7 7"/>
-            </svg>
-          </button>
-
           <button
             id="backToContactButton"
             class="secondaryButton"
@@ -1202,6 +1312,19 @@ img{display:block;max-width:100%}
       </section>
     </div>
   </main>
+</div>
+
+<div id="deliveryHelp" class="deliveryHelp" role="dialog" aria-modal="true" aria-labelledby="deliveryHelpTitle">
+  <div class="deliveryHelpCard">
+    <div class="deliveryHelpTop">
+      <div id="deliveryHelpTitle" class="deliveryHelpTitle">Tiempos de entrega</div>
+      <button id="deliveryHelpClose" class="deliveryHelpClose" type="button" aria-label="Cerrar">×</button>
+    </div>
+    <div class="deliveryHelpLine"><strong>Pronto</strong>Local, disponible en 24–48 horas.</div>
+    <div class="deliveryHelpLine"><strong>Rápido</strong>Envío nacional, 4–7 días.</div>
+    <div class="deliveryHelpLine"><strong>Libérala</strong>Lanzamiento anticipado, 14–21 días.</div>
+    <div class="deliveryHelpLine">El tiempo disponible depende de cada producto.</div>
+  </div>
 </div>
 
 <nav class="bottomNav" aria-label="Navegación principal">
@@ -1264,6 +1387,33 @@ img{display:block;max-width:100%}
   const $ = id => document.getElementById(id);
   const STEPS = ["bag", "payment"];
   const STORE_API_URL = "https://cajamoda-storeload-api.onrender.com";
+  let selectedDelivery = "pickup";
+  let selectedPayment = "nequi";
+  let nequiPhone = "";
+  const PICKUP_FEE_COP = 10;
+
+  function checkoutDeliveryFee() {
+    return selectedDelivery === "pickup" ? PICKUP_FEE_COP : 0;
+  }
+
+  function checkoutTotal() {
+    return readCart().total + checkoutDeliveryFee();
+  }
+
+  function renderPaymentTotals() {
+    const subtotal = readCart().total;
+    const total = checkoutTotal();
+    if ($("subtotalValue")) $("subtotalValue").textContent = money(subtotal);
+    if ($("totalValue")) $("totalValue").textContent = money(total);
+    if ($("nequiAmount")) $("nequiAmount").textContent = `${money(total)} COP`;
+    if ($("deliverySummary")) {
+      $("deliverySummary").textContent = selectedDelivery === "pickup"
+        ? "Pronto · Recoger · $10"
+        : selectedDelivery === "national"
+          ? "Rápido · Nacional · Por calcular"
+          : "Pronto · Moto · Por calcular";
+    }
+  }
 
   let activeStep = "bag";
   let paymentTimer = null;
@@ -1749,8 +1899,15 @@ img{display:block;max-width:100%}
     $("toDeliveryButton").disabled =
       cart.items.length === 0;
 
-    $("checkoutButton").disabled =
-      cart.items.length === 0;
+    if ($("stripeCheckoutButton")) {
+      $("stripeCheckoutButton").disabled = cart.items.length === 0;
+    }
+
+    if ($("confirmNequiButton")) {
+      $("confirmNequiButton").disabled = cart.items.length === 0;
+    }
+
+    renderPaymentTotals();
 
     if (!cart.items.length) {
       $("cartList").innerHTML = `
@@ -2074,7 +2231,7 @@ img{display:block;max-width:100%}
     showToast("Producto eliminado.");
   }
 
-  const customerFields = ["email"];
+  const customerFields = ["email", "customerName", "customerPhone", "deliveryDestinationCity", "deliveryAddress"];
 
   function loadCustomer() {
     const saved = readJson(
@@ -2257,29 +2414,62 @@ img{display:block;max-width:100%}
     }
   }
 
-  async function requestPayment() {
-    if (!validateContact()) {
-      return;
+  function validatePaymentDetails() {
+    if (!validateContact()) return false;
+    const name = $("customerName")?.value.trim();
+    const phone = $("customerPhone")?.value.trim();
+    const address = $("deliveryAddress")?.value.trim();
+    if (!name) {
+      $("customerName")?.focus();
+      showToast("Ingresa tu nombre completo.");
+      return false;
     }
+    if (!phone) {
+      $("customerPhone")?.focus();
+      showToast("Ingresa tu número de teléfono.");
+      return false;
+    }
+    if (["moto", "national"].includes(selectedDelivery) && !address) {
+      $("deliveryAddress")?.focus();
+      showToast("Ingresa la dirección de entrega.");
+      return false;
+    }
+    if (selectedDelivery === "national" && !$("deliveryDestinationCity")?.value.trim()) {
+      $("deliveryDestinationCity")?.focus();
+      showToast("Ingresa la ciudad de entrega.");
+      return false;
+    }
+    saveCustomer();
+    return true;
+  }
 
-    const button = $("toDeliveryButton");
-
-    button.disabled = true;
-
-    button
-      .querySelector("span")
-      .textContent = "Preparando pago…";
-
-    const cart = readCart();
-    const customer = collectCustomer();
-
-    const payload = {
+  function checkoutPayload() {
+    return {
       requestId: createId(),
-      cart,
-      customer,
+      cart: readCart(),
+      customer: collectCustomer(),
+      delivery: {
+        method: selectedDelivery,
+        promise: "pronto",
+        city: selectedDelivery === "national"
+          ? $("deliveryDestinationCity")?.value.trim() || ""
+          : "Cartagena",
+        fee: checkoutDeliveryFee(),
+        address: $("deliveryAddress")?.value.trim() || ""
+      },
       currency: "COP",
       country: "CO"
     };
+  }
+
+  async function requestPayment() {
+    if (!validatePaymentDetails()) return;
+
+    const button = $("stripeCheckoutButton");
+    button.disabled = true;
+    button.textContent = "Preparando Stripe…";
+
+    const payload = checkoutPayload();
 
     saveJson(
       "cajamoda-pending-checkout",
@@ -2311,16 +2501,46 @@ img{display:block;max-width:100%}
 
   function resetPaymentButton() {
     clearTimeout(paymentTimer);
+    const button = $("stripeCheckoutButton");
+    if (!button) return;
+    button.disabled = readCart().items.length === 0;
+    button.textContent = "Continuar con Stripe";
+  }
 
-    const button = $("toDeliveryButton");
+  async function submitNequiPayment() {
+    if (!validatePaymentDetails()) return;
+    const button = $("confirmNequiButton");
+    button.disabled = true;
+    button.textContent = "Registrando pedido…";
+    try {
+      const response = await fetch(`${STORE_API_URL}/api/nequi/orders`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ ...checkoutPayload(), reference: $("nequiReference")?.value.trim() || "" })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result?.orderNumber) {
+        throw new Error(result?.error || "No pudimos registrar el pedido.");
+      }
+      saveJson("cajamoda-pending-nequi-order", result);
+      location.href = `/order-confirmation/?nequiOrder=${encodeURIComponent(result.orderNumber)}`;
+    } catch (error) {
+      console.error("[CajaModa] Nequi order error:", error);
+      button.disabled = false;
+      button.textContent = "Confirmar que ya pagué";
+      showToast(error?.message || "No pudimos registrar el pedido.");
+    }
+  }
 
-    button.disabled =
-      readCart().items.length === 0;
-
-    button
-      .querySelector("span")
-      .textContent =
-        "Continuar al pago seguro";
+  async function loadCheckoutConfig() {
+    try {
+      const response = await fetch(`${STORE_API_URL}/api/checkout/config`, { headers: { Accept: "application/json" } });
+      const result = await response.json();
+      nequiPhone = String(result?.nequi?.phone || "");
+      $("nequiNumber").textContent = result?.nequi?.masked || "Número pendiente";
+    } catch {
+      $("nequiNumber").textContent = "Número pendiente";
+    }
   }
 
   document
@@ -2331,21 +2551,89 @@ img{display:block;max-width:100%}
       };
     });
 
-  $("toDeliveryButton").onclick =
-    requestPayment;
+  $("toDeliveryButton").onclick = () => goToStep("payment");
 
   $("guestCheckoutButton").onclick = () => {
     $("email").value = "";
     saveCustomer();
-    requestPayment();
+    goToStep("payment");
   };
 
   $("backToContactButton").onclick = () => {
     goToStep("bag");
   };
 
-  $("checkoutButton").onclick =
-    requestPayment;
+  $("stripeCheckoutButton").onclick = requestPayment;
+  $("confirmNequiButton").onclick = submitNequiPayment;
+
+  document.querySelectorAll("[data-delivery]").forEach(button => {
+    button.onclick = () => {
+      if (button.dataset.delivery === "pickup" && $("deliveryCity")?.value !== "cartagena") {
+        showToast("La recogida en punto solo está disponible en Cartagena.");
+        return;
+      }
+      selectedDelivery = button.dataset.delivery;
+      document.querySelectorAll("[data-delivery]").forEach(candidate => candidate.classList.toggle("isSelected", candidate === button));
+      const address = $("deliveryAddress");
+      address.disabled = selectedDelivery === "pickup";
+      address.placeholder = selectedDelivery === "moto"
+        ? "Dirección para moto"
+        : selectedDelivery === "national"
+          ? "Dirección completa de entrega"
+          : "No se requiere dirección para recoger";
+      $("deliveryDestinationCity").hidden = selectedDelivery !== "national";
+      $("pickupAddress").hidden = selectedDelivery !== "pickup";
+      renderPaymentTotals();
+      syncPanelHeight();
+    };
+  });
+
+  $("deliveryCity").onchange = () => {
+    const pickupButton = document.querySelector('[data-delivery="pickup"]');
+    const motoButton = document.querySelector('[data-delivery="moto"]');
+    const nationalButton = document.querySelector('[data-delivery="national"]');
+    const isCartagena = $("deliveryCity").value === "cartagena";
+    pickupButton.disabled = !isCartagena;
+    pickupButton.setAttribute("aria-disabled", String(!isCartagena));
+    pickupButton.style.opacity = isCartagena ? "1" : ".38";
+    motoButton.hidden = !isCartagena;
+    nationalButton.hidden = isCartagena;
+    if (!isCartagena) {
+      nationalButton.click();
+    } else if (selectedDelivery === "national") {
+      pickupButton.click();
+    }
+    $("pickupAddress").hidden = !isCartagena || selectedDelivery !== "pickup";
+    renderPaymentTotals();
+    syncPanelHeight();
+  };
+
+  document.querySelectorAll("[data-method]").forEach(button => {
+    button.onclick = () => {
+      selectedPayment = button.dataset.method;
+      document.querySelectorAll("[data-method]").forEach(candidate => {
+        const selected = candidate === button;
+        candidate.classList.toggle("isSelected", selected);
+        candidate.setAttribute("aria-selected", String(selected));
+      });
+      $("nequiPane").hidden = selectedPayment !== "nequi";
+      $("stripePane").hidden = selectedPayment !== "stripe";
+      syncPanelHeight();
+    };
+  });
+
+  $("deliveryInfoButton").onclick = () => $("deliveryHelp").classList.add("isOpen");
+  $("deliveryHelpClose").onclick = () => $("deliveryHelp").classList.remove("isOpen");
+  $("deliveryHelp").onclick = event => { if (event.target === $("deliveryHelp")) $("deliveryHelp").classList.remove("isOpen"); };
+  $("copyNequiButton").onclick = async () => {
+    if (!nequiPhone) return showToast("El número Nequi aún no está configurado.");
+    await navigator.clipboard.writeText(nequiPhone);
+    showToast("Número Nequi copiado.");
+  };
+  $("openNequiButton").onclick = () => {
+    if (!nequiPhone) return showToast("El número Nequi aún no está configurado.");
+    location.href = "nequi://";
+  };
 
   window.addEventListener(
     "message",
@@ -2459,6 +2747,7 @@ img{display:block;max-width:100%}
 
   loadCustomer();
   renderCart();
+  loadCheckoutConfig();
 
   window.postMessage({
     source:"CAJAMODA_CHECKOUT",

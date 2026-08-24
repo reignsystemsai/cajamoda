@@ -4086,6 +4086,20 @@ function renderInventory(){
 
                 </div>
 
+                ${order.paymentMethod === "nequi" ? `
+                  <div style="margin:12px 0;padding:12px 14px;border:1px solid rgba(77,11,183,.18);border-radius:14px;background:rgba(255,255,255,.62)">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+                      <div>
+                        <strong style="color:#4d0bb7">Nequi</strong>
+                        <div style="margin-top:3px;font-size:11px;color:#6f6f6f">${escapeHtml(order.delivery || "Pago por confirmar")}</div>
+                      </div>
+                      ${order.canConfirmPayment ? `
+                        <button type="button" data-confirm-nequi="${escapeHtml(order.id)}" style="padding:10px 14px;border:0;border-radius:999px;background:#080808;color:#fff;font-weight:700;cursor:pointer">Confirmar pago</button>
+                      ` : `<span style="font-size:11px;font-weight:750">Pago confirmado</span>`}
+                    </div>
+                  </div>
+                ` : ""}
+
                 <div class="trackingBlock">
 
                   <div class="trackingSteps">
@@ -4261,6 +4275,23 @@ function renderInventory(){
 
         }
       );
+
+    qsa("[data-confirm-nequi]").forEach(button => {
+      button.onclick = async () => {
+        const orderId = button.dataset.confirmNequi;
+        button.disabled = true;
+        button.textContent = "Confirmando…";
+        try {
+          await apiRequest(`/api/orders/${encodeURIComponent(orderId)}/confirm-nequi`, { method: "POST", body: {} });
+          showToast("Pago Nequi confirmado.");
+          await loadRealOrders(true);
+        } catch (error) {
+          button.disabled = false;
+          button.textContent = "Confirmar pago";
+          showToast(error?.message || "No pudimos confirmar el pago.");
+        }
+      };
+    });
   }
 
   function saveTracking(

@@ -12,6 +12,7 @@ const checkoutId = (() => {
 })();
 
 const stripeSessionId = new URLSearchParams(location.search).get("stripeSessionId") || "";
+const nequiOrderNumber = new URLSearchParams(location.search).get("nequiOrder") || "";
 
 let confirmation = null;
 
@@ -21,6 +22,17 @@ function setStatus(message, error = false) {
 }
 
 async function loadConfirmation() {
+  if (nequiOrderNumber) {
+    $("confirmationTitle").textContent = "PEDIDO RECIBIDO";
+    $("orderNumber").textContent = `Pedido #${nequiOrderNumber}`;
+    $("paymentStatus").textContent = "Pago Nequi por confirmar";
+    $("deliveryMethod").textContent = "Entrega CajaModa";
+    $("deliveryMessage").textContent = "Confirmaremos el pago y te enviaremos la información de entrega.";
+    $("shareButton").hidden = true;
+    setStatus("Tu pedido está reservado mientras verificamos el pago.");
+    try { localStorage.removeItem("cajamoda-pending-nequi-order"); } catch {}
+    return;
+  }
   if (stripeSessionId) {
     const response = await fetch(
       `${API_BASE}/api/stripe/confirmation?sessionId=${encodeURIComponent(stripeSessionId)}`,

@@ -470,13 +470,27 @@ function getSize(
       variant
     );
 
-  return (
+  return normalizeSizeLabel(
     choices.Size ||
     choices.size ||
     choices.Talla ||
     choices.talla ||
     ""
   );
+}
+
+function normalizeSizeLabel(
+  value
+) {
+  const size = String(value || "").trim();
+  const key = size.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+
+  if (key === "small") return "S";
+  if (key === "medium") return "M";
+  if (key === "large") return "L";
+  if (key === "x large" || key === "extra large") return "XL";
+
+  return size.toUpperCase();
 }
 
 function getColor(
@@ -896,6 +910,7 @@ function normalizeLocalCart(
           "",
 
         size:
+          normalizeSizeLabel(
           item.size ||
           item
             ?.options
@@ -903,7 +918,7 @@ function normalizeLocalCart(
           item
             ?.options
             ?.size ||
-          "",
+          ""),
 
         color:
           item.color ||

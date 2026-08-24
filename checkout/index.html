@@ -2679,8 +2679,8 @@ img{display:block;max-width:100%}
     syncPanelHeight();
   };
 
-  ["customerName", "customerPhone", "deliveryAddress", "deliveryDestinationCity", "deliveryPostalCode"].forEach(id => {
-    $(id)?.addEventListener("input", scheduleDeliveryQuote);
+  ["deliveryAddress", "deliveryDestinationCity", "deliveryPostalCode"].forEach(id => {
+    $(id)?.addEventListener("change", scheduleDeliveryQuote);
   });
   $("deliveryDepartment")?.addEventListener("change", scheduleDeliveryQuote);
 

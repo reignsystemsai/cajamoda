@@ -61,6 +61,8 @@ const PICKUP_FEE_COP = 10;
 const MOTO_BASE_FEE_COP = 8000;
 const MOTO_INCLUDED_KM = 3;
 const MOTO_EXTRA_KM_COP = 1000;
+const MOTO_QUOTE_CACHE_TTL = 24 * 60 * 60 * 1000;
+const motoQuoteCache = new Map();
 const CARTAGENA_PICKUP_ADDRESS = "Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar, Colombia";
 const STOREFRONT_URL = String(
   process.env.STOREFRONT_URL || "https://www.cajamoda.com"
@@ -825,6 +827,9 @@ async function quoteMotoDelivery(delivery) {
   requireDeliveryEnvironment("moto");
   const destination = safeText(delivery?.address, 250);
   if (!destination) throw new Error("Ingresa la dirección para calcular la moto.");
+  const cacheKey = destination.toLocaleLowerCase("es-CO").replace(/\s+/g, " ");
+  const cached = motoQuoteCache.get(cacheKey);
+  if (cached && Date.now() - cached.createdAt < MOTO_QUOTE_CACHE_TTL) return cached.quote;
   const payload = await externalJson("https://routes.googleapis.com/directions/v2:computeRoutes", {
     method: "POST",
     headers: {
@@ -847,7 +852,10 @@ async function quoteMotoDelivery(delivery) {
   }
   const distanceKm = Math.ceil(distanceMeters / 1000);
   const fee = MOTO_BASE_FEE_COP + Math.max(0, distanceKm - MOTO_INCLUDED_KM) * MOTO_EXTRA_KM_COP;
-  return { method: "moto", fee, distanceKm, carrier: "Moto CajaModa", service: "Pronto", estimate: "24–48 horas" };
+  const quote = { method: "moto", fee, distanceKm, carrier: "Moto CajaModa", service: "Pronto", estimate: "24–48 horas" };
+  if (motoQuoteCache.size >= 2000) motoQuoteCache.delete(motoQuoteCache.keys().next().value);
+  motoQuoteCache.set(cacheKey, { createdAt: Date.now(), quote });
+  return quote;
 }
 
 function enviaDataArray(payload) {

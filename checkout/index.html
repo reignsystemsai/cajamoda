@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500;6..96,600&family=Cormorant+Garamond:wght@500;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://js.stripe.com/dahlia/stripe.js"></script>
+<script src="https://js.stripe.com/v3/"></script>
 
 <style>
 :root{
@@ -1006,6 +1006,7 @@ img{display:block;max-width:100%}
 .deliveryChoiceLabel{margin-bottom:10px;font-size:10px;font-weight:600}
 .deliveryChoices{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .deliveryChoice{min-height:46px;padding:0 11px;border:1px solid rgba(0,0,0,.18);border-radius:999px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:9px;font-weight:600}
+.deliveryChoice[hidden]{display:none}
 .deliveryChoice svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5}
 .deliveryChoice.isSelected{background:#080808;color:#fff;border-color:#080808}
 .deliveryChoice[data-delivery="national"]:not([hidden]){grid-column:1/-1}
@@ -1105,18 +1106,18 @@ img{display:block;max-width:100%}
       class="stepTab"
       type="button"
       data-step="payment"
-      data-method="nequi"
+      data-method="stripe"
     >
-      Nequi
+      Tarjeta
     </button>
 
     <button
       class="stepTab"
       type="button"
       data-step="payment"
-      data-method="stripe"
+      data-method="nequi"
     >
-      Tarjeta
+      Nequi
     </button>
 
   </nav>
@@ -1287,16 +1288,16 @@ img{display:block;max-width:100%}
               <label class="cardLabel" for="cardholderName">Nombre en la tarjeta
                 <input id="cardholderName" class="cardInput" autocomplete="cc-name" placeholder="Nombre completo">
               </label>
-              <label class="cardLabel">Número de tarjeta
-                <span id="cardNumber" class="stripeField"></span>
-              </label>
+              <div class="cardLabel">Número de tarjeta
+                <div id="cardNumber" class="stripeField"></div>
+              </div>
               <div class="cardPair">
-                <label class="cardLabel">MM / AA
-                  <span id="cardExpiry" class="stripeField"></span>
-                </label>
-                <label class="cardLabel">CVC
-                  <span id="cardCvc" class="stripeField"></span>
-                </label>
+                <div class="cardLabel">MM / AA
+                  <div id="cardExpiry" class="stripeField"></div>
+                </div>
+                <div class="cardLabel">CVC
+                  <div id="cardCvc" class="stripeField"></div>
+                </div>
               </div>
               <label class="billingToggle"><input id="billingSame" type="checkbox" checked><span>La dirección de facturación es igual a la de entrega</span></label>
               <div id="billingFields" class="billingFields" hidden>

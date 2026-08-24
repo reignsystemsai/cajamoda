@@ -27,7 +27,7 @@ async function loadConfirmation() {
     $("confirmationTitle").textContent = "SOLICITUD RECIBIDA";
     $("orderNumber").textContent = `Solicitud #${liberaloRequestNumber}`;
     $("paymentStatus").textContent = "Confirmando disponibilidad";
-    $("deliveryMethod").textContent = "Libéralo · 14–21 días";
+    $("deliveryMethod").textContent = "Libérala · 14–21 días";
     $("deliveryMessage").textContent = "Te enviaremos tu enlace de pago Nequi en un máximo de 60 minutos cuando confirmemos disponibilidad.";
     $("shareButton").hidden = true;
     setStatus("No envíes dinero todavía. No se ha realizado ningún cobro.");

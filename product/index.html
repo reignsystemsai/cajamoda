@@ -4585,15 +4585,21 @@ svg{
   };
 
   function renderFulfillmentMethod(){
-    const method=fulfillmentMethods[state.product?.deliveryMode]||fulfillmentMethods.fast;
+    const modes=Array.isArray(state.product?.deliveryModes)&&state.product.deliveryModes.length
+      ? state.product.deliveryModes
+      : [state.product?.deliveryMode||"fast"];
+    const methods=modes.map(mode=>fulfillmentMethods[mode]).filter(Boolean);
+    const activeKeys=methods.map(method=>method.key);
     qsa("[data-fulfillment-preview]").forEach(button=>{
-      const active=button.dataset.fulfillmentPreview===method.key;
+      const active=activeKeys.includes(button.dataset.fulfillmentPreview);
       button.classList.toggle("active",active);
       button.disabled=true;
       if(active){button.setAttribute("aria-current","true")}
       else{button.removeAttribute("aria-current")}
     });
-    $("fulfillmentExplanation").textContent=method.copy;
+    $("fulfillmentExplanation").textContent=modes.includes("pickup")&&modes.includes("fast")
+      ? "Disponible para Pickup Ahora o entrega Rápido en 24–48 horas."
+      : (methods[0]||fulfillmentMethods.fast).copy;
   }
 
   function openProductReviews(){

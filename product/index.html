@@ -5286,27 +5286,15 @@ price:
   }
 
   function renderQuantityState(){
-    const limit=selectedInventoryLimit();
-    const value=Math.max(0,Math.min(limit,Number(state.selectedQuantity||0)));
+    const value=Math.max(0,Math.min(selectedInventoryLimit(),Number(state.selectedQuantity||0)));
     state.selectedQuantity=value;
     $("quantityValue").textContent=String(value);
     $("quantityMinus").disabled=value<=0;
-    // Keep the control selectable at zero inventory so customers receive the
-    // sold-out message and the attempt can still be measured.
-    $("quantityPlus").disabled=limit>0&&value>=limit;
+    $("quantityPlus").disabled=value>=selectedInventoryLimit();
   }
 
   function changeSelectedQuantity(amount){
     if(!state.selectedSize){showToast("Selecciona una talla primero.");return}
-    if(amount>0&&selectedInventoryLimit()<=0){
-      track("SOLD_OUT_SELECTED",{
-        productId:state.product?.id,
-        size:state.selectedSize,
-        color:state.selectedColor
-      });
-      showToast("Temporalmente agotado.");
-      return;
-    }
     const next=Math.max(0,Math.min(selectedInventoryLimit(),Number(state.selectedQuantity||0)+amount));
     if(next===state.selectedQuantity){return}
     state.selectedQuantity=next;
@@ -5570,12 +5558,6 @@ price:
           return;
         }
 
-        if(selectedInventoryLimit()<=0){
-          track("SOLD_OUT_SELECTED",{productId:state.product?.id,size:state.selectedSize,color:state.selectedColor});
-          showToast("Temporalmente agotado.");
-          return;
-        }
-
         if(Number(state.selectedQuantity||0) < 1){
           showToast("Selecciona una cantidad.");
           return;
@@ -5608,18 +5590,8 @@ price:
       };
 
   $("buyNowDirectButton").onclick = () => {
-    track("PURCHASE_ATTEMPT",{
-      productId:state.product?.id,
-      size:state.selectedSize,
-      color:state.selectedColor
-    });
     if(!state.selectedSize){
       showToast("Selecciona una talla.");
-      return;
-    }
-    if(selectedInventoryLimit()<=0){
-      track("SOLD_OUT_SELECTED",{productId:state.product?.id,size:state.selectedSize,color:state.selectedColor});
-      showToast("Temporalmente agotado.");
       return;
     }
     if(productColorValues().length > 1 && !state.selectedColor){

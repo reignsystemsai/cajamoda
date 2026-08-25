@@ -1275,8 +1275,7 @@ img{display:block;max-width:100%}
               <label class="cardLabel" for="cardholderName">Nombre en la tarjeta
                 <input id="cardholderName" class="cardInput" autocomplete="cc-name" placeholder="Nombre completo">
               </label>
-              <label id="billingSameRow" class="billingToggle"><input id="billingSame" type="checkbox" disabled><span>La dirección de facturación es igual a la de entrega</span></label>
-              <p id="billingPickupNote" class="billingPickupNote" hidden>Para recoger en punto, ingresa la dirección de facturación vinculada a tu tarjeta.</p>
+              <label id="billingSameRow" class="billingToggle"><input id="billingSame" type="checkbox"><span>La dirección de facturación es igual a la de entrega</span></label>
               <div id="billingFields" class="billingFields">
                 <label class="cardLabel wide" for="billingAddress">Dirección
                   <input id="billingAddress" class="cardInput" autocomplete="billing street-address" placeholder="Calle y número">
@@ -2594,12 +2593,9 @@ img{display:block;max-width:100%}
 
   function syncBillingAddressMode() {
     const same = $("billingSame");
-    const pickup = selectedDelivery === "pickup";
-    same.disabled = pickup;
-    if (pickup) same.checked = false;
-    $("billingSameRow").hidden = pickup;
-    $("billingPickupNote").hidden = !pickup;
-    $("billingFields").hidden = !pickup && same.checked;
+    same.disabled = false;
+    $("billingSameRow").hidden = false;
+    $("billingFields").hidden = same.checked;
     updateStripePayAvailability();
     syncPanelHeight();
   }
@@ -2620,7 +2616,7 @@ img{display:block;max-width:100%}
         $("billingPostalCode")?.value.trim()
       );
     }
-    return true;
+    return Boolean($("deliveryAddress")?.value.trim());
   }
 
   function updateStripePayAvailability() {
@@ -2636,7 +2632,10 @@ img{display:block;max-width:100%}
 
   function billingAddress() {
     if ($("billingSame")?.checked) {
-      if (selectedDelivery === "pickup") throw new Error("Ingresa una dirección de facturación para el pago con tarjeta.");
+      if (!$("deliveryAddress")?.value.trim()) {
+        $("deliveryAddress")?.focus();
+        throw new Error("Ingresa tu dirección para usarla también como dirección de facturación.");
+      }
       return {
         line1: $("deliveryAddress")?.value.trim() || "",
         city: $("deliveryCity")?.value.trim() || "",
@@ -2869,12 +2868,12 @@ img{display:block;max-width:100%}
       syncBillingAddressMode();
       document.querySelectorAll("[data-delivery]").forEach(candidate => candidate.classList.toggle("isSelected", candidate === button));
       const address = $("deliveryAddress");
-      address.disabled = selectedDelivery === "pickup";
+      address.disabled = false;
       address.placeholder = selectedDelivery === "moto"
         ? "Dirección para moto"
         : selectedDelivery === "national"
           ? "Dirección completa de entrega"
-          : "No se requiere dirección para recoger";
+          : "Dirección del cliente";
       $("pickupAddress").hidden = selectedDelivery !== "pickup";
       scheduleDeliveryQuote();
       syncPanelHeight();

@@ -3,6 +3,17 @@ const API_BASE =
   "https://cajamoda-storeload-api.onrender.com";
 
 const $ = id => document.getElementById(id);
+const confirmationQuery = new URLSearchParams(location.search);
+
+function confirmationReference(queryName, storageKey) {
+  const queryValue = confirmationQuery.get(queryName) || "";
+  if (queryValue) {
+    try { sessionStorage.setItem(storageKey, queryValue); } catch {}
+    return queryValue;
+  }
+  try { return sessionStorage.getItem(storageKey) || ""; }
+  catch { return ""; }
+}
 
 const checkoutId = (() => {
   const query = new URLSearchParams(location.search).get("checkoutId");
@@ -11,9 +22,13 @@ const checkoutId = (() => {
   catch { return ""; }
 })();
 
-const stripeSessionId = new URLSearchParams(location.search).get("stripeSessionId") || "";
-const paymentIntentId = new URLSearchParams(location.search).get("paymentIntent") || "";
+const stripeSessionId = confirmationReference("stripeSessionId", "cajamoda-confirmation-stripe-session");
+const paymentIntentId = confirmationReference("paymentIntent", "cajamoda-confirmation-payment-intent");
 const nequiOrderNumber = new URLSearchParams(location.search).get("nequiOrder") || "";
+
+if (confirmationQuery.has("stripeSessionId") || confirmationQuery.has("paymentIntent")) {
+  history.replaceState(history.state, document.title, `${location.pathname}${location.hash}`);
+}
 
 let confirmation = null;
 

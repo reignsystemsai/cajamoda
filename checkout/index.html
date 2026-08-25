@@ -8,6 +8,8 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://js.stripe.com" crossorigin>
+<link rel="preconnect" href="https://cajamoda-storeload-api.onrender.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500;6..96,600&family=Cormorant+Garamond:wght@500;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://js.stripe.com/dahlia/stripe.js"></script>
 
@@ -2596,7 +2598,9 @@ img{display:block;max-width:100%}
       if (typeof stripeClient.initCheckoutElementsSdk !== "function") {
         throw new Error("No se pudo cargar la versión actual del formulario de Stripe.");
       }
-      if (selectedDelivery !== "pickup") await refreshDeliveryQuote({ required: true });
+      if (selectedDelivery !== "pickup" && !deliveryQuote) {
+        await refreshDeliveryQuote({ required: true });
+      }
       const payload = checkoutPayload();
       const response = await fetch(`${STORE_API_URL}/api/stripe/checkout`, {
         method: "POST",
@@ -2957,9 +2961,9 @@ img{display:block;max-width:100%}
     syncPanelHeight
   );
 
+  checkoutConfigPromise = loadCheckoutConfig();
   loadCustomer();
   renderCart();
-  checkoutConfigPromise = loadCheckoutConfig();
   loadDeliveryDepartments();
 
   window.postMessage({

@@ -5608,6 +5608,11 @@ price:
       };
 
   $("buyNowDirectButton").onclick = () => {
+    track("PURCHASE_ATTEMPT",{
+      productId:state.product?.id,
+      size:state.selectedSize,
+      color:state.selectedColor
+    });
     if(!state.selectedSize){
       showToast("Selecciona una talla.");
       return;

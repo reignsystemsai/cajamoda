@@ -1412,6 +1412,7 @@ img{display:block;max-width:100%}
   let checkoutActions = null;
   let paymentElement = null;
   let stripeSessionId = "";
+  let stripeSessionGeneration = 0;
   let deliveryQuote = { method: "pickup", fee: 10000 };
   let quoteTimer = null;
   const PICKUP_FEE_COP = 10000;
@@ -2566,9 +2567,32 @@ img{display:block;max-width:100%}
 
   function scheduleDeliveryQuote() {
     clearTimeout(quoteTimer);
+    if (selectedPayment === "stripe") resetStripePaymentSession();
     deliveryQuote = selectedDelivery === "pickup" ? { method: "pickup", fee: PICKUP_FEE_COP } : null;
     renderPaymentTotals();
-    quoteTimer = setTimeout(() => refreshDeliveryQuote(), 650);
+    quoteTimer = setTimeout(async () => {
+      const quote = await refreshDeliveryQuote();
+      if (quote && selectedPayment === "stripe") {
+        await rebuildStripePaymentForDelivery();
+      }
+    }, 650);
+  }
+
+  function resetStripePaymentSession() {
+    stripeSessionGeneration += 1;
+    try { paymentElement?.destroy?.(); } catch {}
+    $("paymentElement")?.replaceChildren();
+    checkoutElements = null;
+    checkoutActions = null;
+    paymentElement = null;
+    stripeSessionId = "";
+    $("stripePayButton").disabled = true;
+  }
+
+  async function rebuildStripePaymentForDelivery() {
+    resetStripePaymentSession();
+    await initializeStripePaymentElement();
+    syncPanelHeight();
   }
 
   function billingAddress() {
@@ -2602,6 +2626,7 @@ img{display:block;max-width:100%}
 
   async function initializeStripePaymentElement() {
     if (checkoutElements) return;
+    const generation = stripeSessionGeneration;
     const errorBox = $("stripeError");
     const status = $("stripeStatus");
     if (!stripePublishableKey || typeof window.Stripe !== "function") {
@@ -2624,6 +2649,7 @@ img{display:block;max-width:100%}
         body: JSON.stringify(payload)
       });
       const result = await response.json().catch(() => ({}));
+      if (generation !== stripeSessionGeneration) return;
       if (!response.ok || !result?.clientSecret || !result?.sessionId) {
         throw new Error(result?.error || "No pudimos preparar el pago.");
       }
@@ -2640,6 +2666,7 @@ img{display:block;max-width:100%}
         }
       });
       const loaded = await checkoutElements.loadActions();
+      if (generation !== stripeSessionGeneration) return;
       if (loaded?.type === "error") throw new Error(loaded.error?.message || "No pudimos cargar el pago seguro.");
       checkoutActions = loaded.actions;
       paymentElement = checkoutElements.createPaymentElement({

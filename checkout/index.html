@@ -984,6 +984,7 @@ img{display:block;max-width:100%}
   line-height:1;
   font-weight:600
 }
+.reviewList + .paymentSectionTitle{margin-top:22px}
 .deliveryGlass,.paymentGlass,.paymentSummary{
   border-radius:22px;
   background:linear-gradient(145deg,rgba(255,255,255,.88),rgba(255,255,255,.58));
@@ -1033,6 +1034,7 @@ img{display:block;max-width:100%}
 @media(max-width:390px){.deliveryChoices,.nequiActions,.deliveryDetails{grid-template-columns:1fr}.deliveryDetails .wide{grid-column:auto}.billingFields{grid-template-columns:1fr}.billingFields .wide{grid-column:auto}}
 .cityInput{padding-right:38px}
 .cityInput::-webkit-calendar-picker-indicator{margin-right:10px}
+.phoneInputGroup{display:grid;grid-template-columns:110px 1fr;gap:10px}.phoneInputGroup .compactInput{min-width:0}
 </style>
 </head>
 
@@ -1205,7 +1207,12 @@ img{display:block;max-width:100%}
             <label><input id="customerFirstName" name="firstName" class="compactInput" autocomplete="given-name" placeholder="Nombre"></label>
             <label><input id="customerLastName" name="lastName" class="compactInput" autocomplete="family-name" placeholder="Apellido"></label>
             <label class="wide"><input id="email" name="email" class="compactInput" type="email" autocomplete="email" placeholder="Correo electrónico"></label>
-            <label class="wide"><input id="customerPhone" name="phone" class="compactInput" autocomplete="tel" inputmode="tel" placeholder="Teléfono"></label>
+            <div class="wide phoneInputGroup">
+              <select id="phoneCountryCode" class="compactInput" aria-label="Código de país">
+                <option value="+57">🇨🇴 +57</option><option value="+1">🇺🇸 +1</option><option value="+51">🇵🇪 +51</option><option value="+58">🇻🇪 +58</option><option value="+593">🇪🇨 +593</option><option value="+55">🇧🇷 +55</option><option value="+54">🇦🇷 +54</option><option value="+56">🇨🇱 +56</option><option value="+591">🇧🇴 +591</option><option value="+595">🇵🇾 +595</option><option value="+598">🇺🇾 +598</option>
+              </select>
+              <input id="customerPhone" name="phone" class="compactInput" autocomplete="tel-national" inputmode="tel" placeholder="Número de teléfono">
+            </div>
             <label><select id="deliveryDepartment" class="compactInput" autocomplete="address-level1"><option value="">Departamento</option></select></label>
             <label><input id="deliveryCity" name="city" class="compactInput cityInput" autocomplete="address-level2" list="colombiaCities" aria-label="Ciudad de entrega" placeholder="Ciudad" value="Cartagena"></label>
             <datalist id="colombiaCities">
@@ -1301,7 +1308,7 @@ img{display:block;max-width:100%}
             </div>
             <button id="stripePayButton" class="stripePayButton" type="button" disabled>Pagar de forma segura</button>
             <div id="stripeError" class="stripeError" role="alert" aria-live="polite"></div>
-            <div class="stripeTrust"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>CajaModa no guarda los datos de tu tarjeta</div>
+            <div class="stripeTrust"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Pago seguro y cifrado</div>
           </div>
         </section>
 
@@ -1318,13 +1325,6 @@ img{display:block;max-width:100%}
           </button>
         </div>
 
-        <div class="trustLine">
-          <svg viewBox="0 0 24 24">
-            <rect x="5" y="10" width="14" height="10" rx="2"/>
-            <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
-          </svg>
-          <span>Pago seguro y cifrado</span>
-        </div>
       </section>
     </div>
   </main>
@@ -1412,6 +1412,7 @@ img{display:block;max-width:100%}
   let checkoutActions = null;
   let paymentElement = null;
   let stripeSessionId = "";
+  let stripeSessionGeneration = 0;
   let deliveryQuote = { method: "pickup", fee: 10000 };
   let quoteTimer = null;
   const PICKUP_FEE_COP = 10000;
@@ -2268,7 +2269,7 @@ img{display:block;max-width:100%}
     showToast("Producto eliminado.");
   }
 
-  const customerFields = ["email", "customerFirstName", "customerLastName", "customerPhone", "deliveryCity", "deliveryDepartment", "deliveryPostalCode", "deliveryAddress"];
+  const customerFields = ["email", "customerFirstName", "customerLastName", "phoneCountryCode", "customerPhone", "deliveryCity", "deliveryDepartment", "deliveryPostalCode", "deliveryAddress"];
 
   function loadCustomer() {
     const saved = readJson(
@@ -2281,6 +2282,17 @@ img{display:block;max-width:100%}
         $(field).value = saved[field];
       }
     });
+    const savedPhone = String(saved.customerPhone || "").replace(/\s/g, "");
+    if (savedPhone.startsWith("+") && $("phoneCountryCode") && $("customerPhone")) {
+      const matchingCode = Array.from($("phoneCountryCode").options)
+        .map(option => option.value)
+        .sort((a, b) => b.length - a.length)
+        .find(code => savedPhone.startsWith(code));
+      if (matchingCode) {
+        $("phoneCountryCode").value = matchingCode;
+        $("customerPhone").value = savedPhone.slice(matchingCode.length);
+      }
+    }
     if (!saved.customerFirstName && saved.customerName && $("customerFirstName")) {
       const parts = String(saved.customerName).trim().split(/\s+/);
       $("customerFirstName").value = parts.shift() || "";
@@ -2298,6 +2310,10 @@ img{display:block;max-width:100%}
         $(field)?.value?.trim() || "";
     });
     customer.customerName = [customer.customerFirstName, customer.customerLastName].filter(Boolean).join(" ");
+    const enteredPhone = String(customer.customerPhone || "").replace(/[\s()-]/g, "");
+    customer.customerPhone = enteredPhone.startsWith("+")
+      ? enteredPhone
+      : `${customer.phoneCountryCode || "+57"}${enteredPhone.replace(/\D/g, "")}`;
 
     return customer;
   }
@@ -2551,9 +2567,32 @@ img{display:block;max-width:100%}
 
   function scheduleDeliveryQuote() {
     clearTimeout(quoteTimer);
+    if (selectedPayment === "stripe") resetStripePaymentSession();
     deliveryQuote = selectedDelivery === "pickup" ? { method: "pickup", fee: PICKUP_FEE_COP } : null;
     renderPaymentTotals();
-    quoteTimer = setTimeout(() => refreshDeliveryQuote(), 650);
+    quoteTimer = setTimeout(async () => {
+      const quote = await refreshDeliveryQuote();
+      if (quote && selectedPayment === "stripe") {
+        await rebuildStripePaymentForDelivery();
+      }
+    }, 650);
+  }
+
+  function resetStripePaymentSession() {
+    stripeSessionGeneration += 1;
+    try { paymentElement?.destroy?.(); } catch {}
+    $("paymentElement")?.replaceChildren();
+    checkoutElements = null;
+    checkoutActions = null;
+    paymentElement = null;
+    stripeSessionId = "";
+    $("stripePayButton").disabled = true;
+  }
+
+  async function rebuildStripePaymentForDelivery() {
+    resetStripePaymentSession();
+    await initializeStripePaymentElement();
+    syncPanelHeight();
   }
 
   function billingAddress() {
@@ -2587,6 +2626,7 @@ img{display:block;max-width:100%}
 
   async function initializeStripePaymentElement() {
     if (checkoutElements) return;
+    const generation = stripeSessionGeneration;
     const errorBox = $("stripeError");
     const status = $("stripeStatus");
     if (!stripePublishableKey || typeof window.Stripe !== "function") {
@@ -2609,6 +2649,7 @@ img{display:block;max-width:100%}
         body: JSON.stringify(payload)
       });
       const result = await response.json().catch(() => ({}));
+      if (generation !== stripeSessionGeneration) return;
       if (!response.ok || !result?.clientSecret || !result?.sessionId) {
         throw new Error(result?.error || "No pudimos preparar el pago.");
       }
@@ -2625,6 +2666,7 @@ img{display:block;max-width:100%}
         }
       });
       const loaded = await checkoutElements.loadActions();
+      if (generation !== stripeSessionGeneration) return;
       if (loaded?.type === "error") throw new Error(loaded.error?.message || "No pudimos cargar el pago seguro.");
       checkoutActions = loaded.actions;
       paymentElement = checkoutElements.createPaymentElement({
@@ -2670,7 +2712,6 @@ img{display:block;max-width:100%}
       const customer = collectCustomer();
       const result = await checkoutActions.confirm({
         email: customer.email,
-        phoneNumber: customer.customerPhone,
         billingAddress: { name, address }
       });
       if (result?.type === "error") throw result.error;

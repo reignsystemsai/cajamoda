@@ -1247,7 +1247,7 @@ img{display:block;max-width:100%}
             <label><input id="deliveryPostalCode" class="compactInput" autocomplete="postal-code" inputmode="numeric" placeholder="Código postal (opcional)" hidden></label>
             <label class="wide"><input id="deliveryAddress" class="compactInput" autocomplete="street-address" placeholder="Dirección para moto" disabled></label>
           </div>
-          <div id="pickupAddress" class="pickupAddress"><strong>Punto de recogida · 10 COP</strong><br>Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar.</div>
+          <div id="pickupAddress" class="pickupAddress"><strong>Punto de recogida · 10.000 COP</strong><br>Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar.</div>
           <p class="deliveryNote">El costo se calcula según tu ubicación.</p>
         </section>
 
@@ -1301,30 +1301,26 @@ img{display:block;max-width:100%}
                 </label>
               </div>
             </div>
+            <div class="paymentSummary">
+              <div class="summaryLine">
+                <span>Subtotal</span>
+                <span id="subtotalValue" class="summaryValue">$0</span>
+              </div>
+              <div class="summaryLine">
+                <span>Entrega</span>
+                <span id="deliverySummary" class="summaryValue">Pronto · Por calcular</span>
+              </div>
+              <div class="summaryDivider"></div>
+              <div class="summaryTotal">
+                <span class="summaryTotalLabel">Total</span>
+                <span id="totalValue" class="summaryTotalValue">$0</span>
+              </div>
+            </div>
             <button id="stripePayButton" class="stripePayButton" type="button" disabled>Pagar de forma segura</button>
             <div id="stripeError" class="stripeError" role="alert" aria-live="polite"></div>
             <div class="stripeTrust"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>CajaModa no guarda los datos de tu tarjeta</div>
           </div>
         </section>
-
-        <div class="paymentSummary">
-          <div class="summaryLine">
-            <span>Subtotal</span>
-            <span id="subtotalValue" class="summaryValue">$0</span>
-          </div>
-
-          <div class="summaryLine">
-            <span>Entrega</span>
-            <span id="deliverySummary" class="summaryValue">Pronto · Por calcular</span>
-          </div>
-
-          <div class="summaryDivider"></div>
-
-          <div class="summaryTotal">
-            <span class="summaryTotalLabel">Total</span>
-            <span id="totalValue" class="summaryTotalValue">$0</span>
-          </div>
-        </div>
 
         <div class="panelActions">
           <button
@@ -1433,7 +1429,7 @@ img{display:block;max-width:100%}
   let checkoutActions = null;
   let paymentElement = null;
   let stripeSessionId = "";
-  let deliveryQuote = { method: "pickup", fee: 10 };
+  let deliveryQuote = { method: "pickup", fee: 10000 };
   let quoteTimer = null;
   const PICKUP_FEE_COP = 10000;
 

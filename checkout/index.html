@@ -1033,6 +1033,7 @@ img{display:block;max-width:100%}
 @media(max-width:390px){.deliveryChoices,.nequiActions,.deliveryDetails{grid-template-columns:1fr}.deliveryDetails .wide{grid-column:auto}.billingFields{grid-template-columns:1fr}.billingFields .wide{grid-column:auto}}
 .cityInput{padding-right:38px}
 .cityInput::-webkit-calendar-picker-indicator{margin-right:10px}
+.phoneInputGroup{display:grid;grid-template-columns:110px 1fr;gap:10px}.phoneInputGroup .compactInput{min-width:0}
 </style>
 </head>
 
@@ -1205,7 +1206,12 @@ img{display:block;max-width:100%}
             <label><input id="customerFirstName" name="firstName" class="compactInput" autocomplete="given-name" placeholder="Nombre"></label>
             <label><input id="customerLastName" name="lastName" class="compactInput" autocomplete="family-name" placeholder="Apellido"></label>
             <label class="wide"><input id="email" name="email" class="compactInput" type="email" autocomplete="email" placeholder="Correo electrónico"></label>
-            <label class="wide"><input id="customerPhone" name="phone" class="compactInput" autocomplete="tel" inputmode="tel" placeholder="Teléfono"></label>
+            <div class="wide phoneInputGroup">
+              <select id="phoneCountryCode" class="compactInput" aria-label="Código de país">
+                <option value="+57">🇨🇴 +57</option><option value="+1">🇺🇸 +1</option><option value="+51">🇵🇪 +51</option><option value="+58">🇻🇪 +58</option><option value="+593">🇪🇨 +593</option><option value="+55">🇧🇷 +55</option><option value="+54">🇦🇷 +54</option><option value="+56">🇨🇱 +56</option><option value="+591">🇧🇴 +591</option><option value="+595">🇵🇾 +595</option><option value="+598">🇺🇾 +598</option>
+              </select>
+              <input id="customerPhone" name="phone" class="compactInput" autocomplete="tel-national" inputmode="tel" placeholder="Número de teléfono">
+            </div>
             <label><select id="deliveryDepartment" class="compactInput" autocomplete="address-level1"><option value="">Departamento</option></select></label>
             <label><input id="deliveryCity" name="city" class="compactInput cityInput" autocomplete="address-level2" list="colombiaCities" aria-label="Ciudad de entrega" placeholder="Ciudad" value="Cartagena"></label>
             <datalist id="colombiaCities">
@@ -2268,7 +2274,7 @@ img{display:block;max-width:100%}
     showToast("Producto eliminado.");
   }
 
-  const customerFields = ["email", "customerFirstName", "customerLastName", "customerPhone", "deliveryCity", "deliveryDepartment", "deliveryPostalCode", "deliveryAddress"];
+  const customerFields = ["email", "customerFirstName", "customerLastName", "phoneCountryCode", "customerPhone", "deliveryCity", "deliveryDepartment", "deliveryPostalCode", "deliveryAddress"];
 
   function loadCustomer() {
     const saved = readJson(
@@ -2281,6 +2287,17 @@ img{display:block;max-width:100%}
         $(field).value = saved[field];
       }
     });
+    const savedPhone = String(saved.customerPhone || "").replace(/\s/g, "");
+    if (savedPhone.startsWith("+") && $("phoneCountryCode") && $("customerPhone")) {
+      const matchingCode = Array.from($("phoneCountryCode").options)
+        .map(option => option.value)
+        .sort((a, b) => b.length - a.length)
+        .find(code => savedPhone.startsWith(code));
+      if (matchingCode) {
+        $("phoneCountryCode").value = matchingCode;
+        $("customerPhone").value = savedPhone.slice(matchingCode.length);
+      }
+    }
     if (!saved.customerFirstName && saved.customerName && $("customerFirstName")) {
       const parts = String(saved.customerName).trim().split(/\s+/);
       $("customerFirstName").value = parts.shift() || "";
@@ -2298,6 +2315,10 @@ img{display:block;max-width:100%}
         $(field)?.value?.trim() || "";
     });
     customer.customerName = [customer.customerFirstName, customer.customerLastName].filter(Boolean).join(" ");
+    const enteredPhone = String(customer.customerPhone || "").replace(/[\s()-]/g, "");
+    customer.customerPhone = enteredPhone.startsWith("+")
+      ? enteredPhone
+      : `${customer.phoneCountryCode || "+57"}${enteredPhone.replace(/\D/g, "")}`;
 
     return customer;
   }

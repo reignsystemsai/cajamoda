@@ -2811,6 +2811,7 @@ img{display:block;max-width:100%}
     const isCartagena = normalizeChoice($("deliveryCity").value) === "cartagena";
     $("promiseName").textContent = isCartagena ? "Pronto – Cartagena" : "Rápido – Colombia";
     $("promiseTime").textContent = isCartagena ? "Disponible en 24–48 h" : "Entrega nacional · 4–7 días";
+    pickupButton.hidden = !isCartagena;
     pickupButton.disabled = !isCartagena;
     pickupButton.setAttribute("aria-disabled", String(!isCartagena));
     pickupButton.style.opacity = isCartagena ? "1" : ".38";

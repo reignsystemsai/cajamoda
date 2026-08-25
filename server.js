@@ -1256,9 +1256,13 @@ async function verifiedCheckoutLines(items) {
   }));
 }
 
-function nequiOrderNumber(requestId) {
-  const digest = crypto.createHash("sha256").update(requestId).digest("hex").slice(0, 10).toUpperCase();
-  return `N-${digest}`;
+function nequiExternalOrderId(requestId) {
+  const digest = crypto.createHash("sha256").update(requestId).digest("hex").slice(0, 32);
+  return `nequi:${digest}`;
+}
+
+function isNequiOrder(order) {
+  return String(order?.channelInfo?.externalOrderId || "").startsWith("nequi:");
 }
 
 async function handleCreateNequiOrder(request, response) {
@@ -1271,11 +1275,19 @@ async function handleCreateNequiOrder(request, response) {
   if (!requestId || !items.length) return sendError(response, 400, "El pedido no es válido.");
   if (!reference) return sendError(response, 400, "Ingresa el número del comprobante Nequi.");
 
-  const number = nequiOrderNumber(requestId);
-  const existingResult = await wix.orders.searchOrders({ filter: { number }, cursorPaging: { limit: 1 } });
+  const externalOrderId = nequiExternalOrderId(requestId);
+  const existingResult = await wix.orders.searchOrders({
+    filter: { "channelInfo.externalOrderId": externalOrderId },
+    cursorPaging: { limit: 1 }
+  });
   const existing = existingResult?.orders?.[0];
   if (existing) {
-    return sendJson(response, 200, { ok: true, orderId: existing._id || existing.id, orderNumber: number, paymentStatus: existing.paymentStatus });
+    return sendJson(response, 200, {
+      ok: true,
+      orderId: existing._id || existing.id,
+      orderNumber: existing.number,
+      paymentStatus: existing.paymentStatus
+    });
   }
 
   const lines = await verifiedCheckoutLines(items);
@@ -1287,7 +1299,7 @@ async function handleCreateNequiOrder(request, response) {
     : delivery.method === "national"
       ? `Rápido – Envío nacional 4–7 días – ${delivery.city}`
       : "Pronto – Recoger Cartagena";
-  const title = `${deliveryTitle}${reference ? ` · Ref ${reference}` : ""}`;
+  const title = `${deliveryTitle} · Ref ${reference}`;
   const address = {
     country: "CO",
     city: delivery.city,
@@ -1297,11 +1309,10 @@ async function handleCreateNequiOrder(request, response) {
   };
 
   const imported = await wix.orders.importOrder({
-    number,
     status: "APPROVED",
     paymentStatus: "PENDING_MERCHANT",
     fulfillmentStatus: "NOT_FULFILLED",
-    channelInfo: { type: "OTHER_PLATFORM" },
+    channelInfo: { type: "OTHER_PLATFORM", externalOrderId },
     currency: "COP",
     currencyConversionDetails: { originalCurrency: "COP", conversionRate: "1" },
     buyerInfo: { email: customer.email },
@@ -1338,14 +1349,19 @@ async function handleCreateNequiOrder(request, response) {
 
   await decrementStripeInventory(lines);
   const order = imported?.order || imported;
-  sendJson(response, 201, { ok: true, orderId: order?._id || order?.id, orderNumber: number, paymentStatus: "PENDING_MERCHANT" });
+  sendJson(response, 201, {
+    ok: true,
+    orderId: order?._id || order?.id,
+    orderNumber: order?.number,
+    paymentStatus: order?.paymentStatus || "PENDING_MERCHANT"
+  });
 }
 
 async function handleConfirmNequiOrder(request, response, orderId) {
   if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
   if (!wix) return sendError(response, 503, "Wix no está configurado.");
   const order = await wix.orders.getOrder(orderId);
-  if (!String(order?.number || "").startsWith("N-")) return sendError(response, 400, "Este no es un pedido Nequi.");
+  if (!isNequiOrder(order)) return sendError(response, 400, "Este no es un pedido Nequi.");
   if (String(order.paymentStatus).toUpperCase() === "PAID") {
     return sendJson(response, 200, { ok: true, order: normalizeWixOrder(order) });
   }
@@ -3318,12 +3334,12 @@ function normalizeWixOrder(
       ),
 
     paymentMethod:
-      String(order?.number || "").startsWith("N-")
+      isNequiOrder(order)
         ? "nequi"
         : "card",
 
     canConfirmPayment:
-      String(order?.number || "").startsWith("N-") &&
+      isNequiOrder(order) &&
       !["PAID", "PARTIALLY_PAID"].includes(String(order?.paymentStatus || "").toUpperCase()),
 
     delivery:

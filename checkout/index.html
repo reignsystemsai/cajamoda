@@ -1275,8 +1275,8 @@ img{display:block;max-width:100%}
               <label class="cardLabel" for="cardholderName">Nombre en la tarjeta
                 <input id="cardholderName" class="cardInput" autocomplete="cc-name" placeholder="Nombre completo">
               </label>
-              <label class="billingToggle"><input id="billingSame" type="checkbox" checked><span>La dirección de facturación es igual a la de entrega</span></label>
-              <div id="billingFields" class="billingFields" hidden>
+              <label class="billingToggle"><input id="billingSame" type="checkbox" disabled><span>La dirección de facturación es igual a la de entrega</span></label>
+              <div id="billingFields" class="billingFields">
                 <label class="cardLabel wide" for="billingAddress">Dirección
                   <input id="billingAddress" class="cardInput" autocomplete="billing street-address" placeholder="Calle y número">
                 </label>
@@ -1413,6 +1413,7 @@ img{display:block;max-width:100%}
   let paymentElement = null;
   let stripeSessionId = "";
   let stripeSessionGeneration = 0;
+  let stripeCanConfirm = false;
   let deliveryQuote = { method: "pickup", fee: 10000 };
   let quoteTimer = null;
   const PICKUP_FEE_COP = 10000;
@@ -2580,6 +2581,7 @@ img{display:block;max-width:100%}
 
   function resetStripePaymentSession() {
     stripeSessionGeneration += 1;
+    stripeCanConfirm = false;
     try { paymentElement?.destroy?.(); } catch {}
     $("paymentElement")?.replaceChildren();
     checkoutElements = null;
@@ -2587,6 +2589,40 @@ img{display:block;max-width:100%}
     paymentElement = null;
     stripeSessionId = "";
     $("stripePayButton").disabled = true;
+  }
+
+  function syncBillingAddressMode() {
+    const same = $("billingSame");
+    const pickup = selectedDelivery === "pickup";
+    same.disabled = pickup;
+    if (pickup) same.checked = false;
+    $("billingFields").hidden = !pickup && same.checked;
+    updateStripePayAvailability();
+    syncPanelHeight();
+  }
+
+  function cardCheckoutDetailsReady() {
+    if (!$("customerFirstName")?.value.trim() ||
+        !$("customerLastName")?.value.trim() ||
+        !$("customerPhone")?.value.trim() ||
+        !$("deliveryCity")?.value.trim() ||
+        !$("cardholderName")?.value.trim()) return false;
+    if (["moto", "national"].includes(selectedDelivery) && !$("deliveryAddress")?.value.trim()) return false;
+    if (selectedDelivery === "national" && !$("deliveryDepartment")?.value) return false;
+    if (!$("billingSame")?.checked) {
+      return Boolean(
+        $("billingAddress")?.value.trim() &&
+        $("billingCity")?.value.trim() &&
+        $("billingDepartment")?.value &&
+        $("billingPostalCode")?.value.trim()
+      );
+    }
+    return true;
+  }
+
+  function updateStripePayAvailability() {
+    const ready = Boolean(checkoutElements && checkoutActions && paymentElement && stripeCanConfirm && cardCheckoutDetailsReady());
+    $("stripePayButton").disabled = !ready;
   }
 
   async function rebuildStripePaymentForDelivery() {
@@ -2674,16 +2710,20 @@ img{display:block;max-width:100%}
         fields: { billingDetails: "never" }
       });
       paymentElement.mount("#paymentElement");
-      $("stripePayButton").disabled = false;
+      stripeCanConfirm = false;
+      updateStripePayAvailability();
       checkoutElements.on("change", session => {
         const stripeTotal = session?.total?.total?.amount;
         if (stripeTotal) $("stripePayButton").textContent = `Pagar ${stripeTotal}`;
-        if (session.canConfirm) errorBox.textContent = "";
+        stripeCanConfirm = Boolean(session.canConfirm);
+        if (stripeCanConfirm) errorBox.textContent = "";
+        updateStripePayAvailability();
         syncPanelHeight();
       });
       status.hidden = true;
       syncPanelHeight();
     } catch (error) {
+      stripeCanConfirm = false;
       checkoutElements = null;
       checkoutActions = null;
       paymentElement = null;
@@ -2709,9 +2749,7 @@ img{display:block;max-width:100%}
         throw new Error("Ingresa el nombre que aparece en la tarjeta.");
       }
       const address = billingAddress();
-      const customer = collectCustomer();
       const result = await checkoutActions.confirm({
-        email: customer.email,
         billingAddress: { name, address }
       });
       if (result?.type === "error") throw result.error;
@@ -2792,10 +2830,7 @@ img{display:block;max-width:100%}
         }
         goToStep(tab.dataset.step);
         if (selectedPayment === "stripe" && tab.dataset.method === "stripe") {
-          if (selectedDelivery === "pickup" && $("billingSame")?.checked) {
-            $("billingSame").checked = false;
-            $("billingFields").hidden = false;
-          }
+          syncBillingAddressMode();
           await initializeStripePaymentElement();
           syncPanelHeight();
         }
@@ -2817,8 +2852,7 @@ img{display:block;max-width:100%}
   $("confirmNequiButton").onclick = submitNequiPayment;
   $("stripePayButton").onclick = submitStripePayment;
   $("billingSame")?.addEventListener("change", () => {
-    $("billingFields").hidden = $("billingSame").checked;
-    syncPanelHeight();
+    syncBillingAddressMode();
   });
 
   document.querySelectorAll("[data-delivery]").forEach(button => {
@@ -2828,10 +2862,7 @@ img{display:block;max-width:100%}
         return;
       }
       selectedDelivery = button.dataset.delivery;
-      if (selectedDelivery === "pickup" && $("billingSame")?.checked) {
-        $("billingSame").checked = false;
-        $("billingFields").hidden = false;
-      }
+      syncBillingAddressMode();
       document.querySelectorAll("[data-delivery]").forEach(candidate => candidate.classList.toggle("isSelected", candidate === button));
       const address = $("deliveryAddress");
       address.disabled = selectedDelivery === "pickup";
@@ -2873,6 +2904,14 @@ img{display:block;max-width:100%}
     $(id)?.addEventListener("change", scheduleDeliveryQuote);
   });
   $("deliveryDepartment")?.addEventListener("change", scheduleDeliveryQuote);
+
+  [
+    "customerFirstName", "customerLastName", "customerPhone", "deliveryAddress", "deliveryCity",
+    "deliveryDepartment", "cardholderName", "billingAddress", "billingCity", "billingDepartment", "billingPostalCode"
+  ].forEach(id => {
+    $(id)?.addEventListener("input", updateStripePayAvailability);
+    $(id)?.addEventListener("change", updateStripePayAvailability);
+  });
 
   $("deliveryInfoButton").onclick = () => $("deliveryHelp").classList.add("isOpen");
   $("deliveryHelpClose").onclick = () => $("deliveryHelp").classList.remove("isOpen");
@@ -2997,6 +3036,7 @@ img{display:block;max-width:100%}
 
   loadCustomer();
   renderCart();
+  syncBillingAddressMode();
   loadCheckoutConfig();
   loadDeliveryDepartments();
 

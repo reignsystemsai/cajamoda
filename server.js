@@ -991,15 +991,26 @@ async function handleStripeWebhook(request, response) {
   const rawBody = await readRawBody(request);
   const signature = request.headers["stripe-signature"];
   const event = stripe.webhooks.constructEvent(rawBody, signature, STRIPE_WEBHOOK_SECRET);
-  if (event.type === "checkout.session.completed") {
-    await syncCompletedStripeSession(event.data.object);
-    console.log(`[Stripe] Payment synchronized with Wix: ${event.data.object.id}`);
-  }
-  if (event.type === "payment_intent.succeeded") {
-    await syncSucceededStripeIntent(event.data.object);
-    console.log(`[Stripe] Card payment synchronized with Wix: ${event.data.object.id}`);
-  }
+
+  // Stripe requires a prompt 2xx response. Wix order creation and inventory
+  // updates can take longer than Stripe's webhook timeout, so acknowledge the
+  // verified event before starting that existing, idempotent synchronization.
   sendJson(response, 200, { received: true });
+
+  setImmediate(() => {
+    void (async () => {
+      if (event.type === "checkout.session.completed") {
+        await syncCompletedStripeSession(event.data.object);
+        console.log(`[Stripe] Payment synchronized with Wix: ${event.data.object.id}`);
+      }
+      if (event.type === "payment_intent.succeeded") {
+        await syncSucceededStripeIntent(event.data.object);
+        console.log(`[Stripe] Card payment synchronized with Wix: ${event.data.object.id}`);
+      }
+    })().catch(error => {
+      console.error(`[Stripe] Wix synchronization failed for ${event.id}:`, error);
+    });
+  });
 }
 
 /* ============================================================

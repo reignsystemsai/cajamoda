@@ -1273,7 +1273,7 @@ async function handleCreateNequiOrder(request, response) {
   const reference = safeText(body?.reference, 100);
   const items = Array.isArray(body?.cart?.items) ? body.cart.items.slice(0, 50) : [];
   if (!requestId || !items.length) return sendError(response, 400, "El pedido no es válido.");
-  if (!reference) return sendError(response, 400, "Ingresa el número del comprobante Nequi.");
+  if (!reference) return sendError(response, 400, "Ingresa el número de referencia Nequi.");
 
   const externalOrderId = nequiExternalOrderId(requestId);
   const existingResult = await wix.orders.searchOrders({

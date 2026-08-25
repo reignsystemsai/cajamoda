@@ -654,7 +654,7 @@ async function getStripePurchasedLines(session) {
 
 async function findStripeWixOrder(sessionId) {
   const result = await wix.orders.searchOrders({
-    filter: { number: `S-${sessionId.slice(-12).toUpperCase()}` },
+    filter: { "channelInfo.externalOrderId": sessionId },
     cursorPaging: { limit: 10 }
   });
   return (result?.orders || [])[0] || null;
@@ -686,7 +686,7 @@ async function importStripeOrderIntoWix(session, lines) {
     status: "APPROVED",
     paymentStatus: "PAID",
     fulfillmentStatus: "NOT_FULFILLED",
-    channelInfo: { type: "OTHER_PLATFORM" },
+    channelInfo: { type: "OTHER_PLATFORM", externalOrderId: session.id },
     currency: "COP",
     currencyConversionDetails: { originalCurrency: "COP", conversionRate: "1" },
     buyerInfo: { email: safeText(customer?.email, 250) },
@@ -862,7 +862,7 @@ async function handleCreateStripePaymentIntent(request, response) {
 
 async function findStripeIntentWixOrder(intentId) {
   const result = await wix.orders.searchOrders({
-    filter: { number: `S-${intentId.slice(-12).toUpperCase()}` },
+    filter: { "channelInfo.externalOrderId": intentId },
     cursorPaging: { limit: 10 }
   });
   return (result?.orders || [])[0] || null;
@@ -895,7 +895,7 @@ async function importStripeIntentIntoWix(intent, lines) {
     status: "APPROVED",
     paymentStatus: "PAID",
     fulfillmentStatus: "NOT_FULFILLED",
-    channelInfo: { type: "OTHER_PLATFORM" },
+    channelInfo: { type: "OTHER_PLATFORM", externalOrderId: intent.id },
     currency: "COP",
     currencyConversionDetails: { originalCurrency: "COP", conversionRate: "1" },
     buyerInfo: { email: safeText(billing.email || intent.receipt_email || intent.metadata.customerEmail, 250) },

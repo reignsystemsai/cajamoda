@@ -2796,7 +2796,7 @@ img{display:block;max-width:100%}
     };
   });
 
-  $("deliveryCity").onchange = () => {
+  function updateDeliveryForCity() {
     const pickupButton = document.querySelector('[data-delivery="pickup"]');
     const motoButton = document.querySelector('[data-delivery="moto"]');
     const nationalButton = document.querySelector('[data-delivery="national"]');
@@ -2817,7 +2817,8 @@ img{display:block;max-width:100%}
     $("pickupAddress").hidden = !isCartagena || selectedDelivery !== "pickup";
     scheduleDeliveryQuote();
     syncPanelHeight();
-  };
+  }
+  $("deliveryCity").addEventListener("change", updateDeliveryForCity);
 
   ["deliveryAddress", "deliveryCity", "deliveryPostalCode"].forEach(id => {
     $(id)?.addEventListener("change", scheduleDeliveryQuote);

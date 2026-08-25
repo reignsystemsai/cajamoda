@@ -1272,9 +1272,14 @@ img{display:block;max-width:100%}
             </div>
             <div class="billingGlass">
               <div class="billingTitle">Información de facturación</div>
-              <label class="cardLabel" for="cardholderName">Nombre en la tarjeta
-                <input id="cardholderName" class="cardInput" autocomplete="cc-name" placeholder="Nombre completo">
-              </label>
+              <div class="cardPair">
+                <label class="cardLabel" for="billingFirstName">Nombre
+                  <input id="billingFirstName" class="cardInput" autocomplete="cc-given-name" placeholder="Nombre">
+                </label>
+                <label class="cardLabel" for="billingLastName">Apellido
+                  <input id="billingLastName" class="cardInput" autocomplete="cc-family-name" placeholder="Apellido">
+                </label>
+              </div>
               <label id="billingSameRow" class="billingToggle"><input id="billingSame" type="checkbox"><span>La dirección de facturación es igual a la de entrega</span></label>
               <div id="billingFields" class="billingFields">
                 <label class="cardLabel wide" for="billingAddress">Dirección
@@ -2605,7 +2610,8 @@ img{display:block;max-width:100%}
         !$("customerLastName")?.value.trim() ||
         !$("customerPhone")?.value.trim() ||
         !$("deliveryCity")?.value.trim() ||
-        !$("cardholderName")?.value.trim()) return false;
+        !$("billingFirstName")?.value.trim() ||
+        !$("billingLastName")?.value.trim()) return false;
     if (["moto", "national"].includes(selectedDelivery) && !$("deliveryAddress")?.value.trim()) return false;
     if (selectedDelivery === "national" && !$("deliveryDepartment")?.value) return false;
     if (!$("billingSame")?.checked) {
@@ -2746,11 +2752,13 @@ img{display:block;max-width:100%}
     try {
       if (!checkoutElements || !checkoutActions || !paymentElement) throw new Error("El formulario de Stripe todavía está cargando.");
       if (!validatePaymentDetails()) throw new Error("Completa tus datos de contacto y entrega.");
-      const name = $("cardholderName")?.value.trim();
-      if (!name) {
-        $("cardholderName")?.focus();
-        throw new Error("Ingresa el nombre que aparece en la tarjeta.");
+      const firstName = $("billingFirstName")?.value.trim();
+      const lastName = $("billingLastName")?.value.trim();
+      if (!firstName || !lastName) {
+        $(!firstName ? "billingFirstName" : "billingLastName")?.focus();
+        throw new Error("Ingresa el nombre y el apellido que aparecen en la tarjeta.");
       }
+      const name = `${firstName} ${lastName}`;
       const address = billingAddress();
       const result = await checkoutActions.confirm({
         billingAddress: { name, address }
@@ -2910,7 +2918,7 @@ img{display:block;max-width:100%}
 
   [
     "customerFirstName", "customerLastName", "customerPhone", "deliveryAddress", "deliveryCity",
-    "deliveryDepartment", "cardholderName", "billingAddress", "billingCity", "billingDepartment", "billingPostalCode"
+    "deliveryDepartment", "billingFirstName", "billingLastName", "billingAddress", "billingCity", "billingDepartment", "billingPostalCode"
   ].forEach(id => {
     $(id)?.addEventListener("input", updateStripePayAvailability);
     $(id)?.addEventListener("change", updateStripePayAvailability);

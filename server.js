@@ -1266,8 +1266,10 @@ async function handleCreateNequiOrder(request, response) {
   if (!NEQUI_PHONE) return sendError(response, 503, "El número Nequi todavía no está configurado.");
   const body = await readBody(request);
   const requestId = safeText(body?.requestId, 100);
+  const reference = safeText(body?.reference, 100);
   const items = Array.isArray(body?.cart?.items) ? body.cart.items.slice(0, 50) : [];
   if (!requestId || !items.length) return sendError(response, 400, "El pedido no es válido.");
+  if (!reference) return sendError(response, 400, "Ingresa el número del comprobante Nequi.");
 
   const number = nequiOrderNumber(requestId);
   const existingResult = await wix.orders.searchOrders({ filter: { number }, cursorPaging: { limit: 1 } });
@@ -1280,7 +1282,6 @@ async function handleCreateNequiOrder(request, response) {
   const subtotal = lines.reduce((sum, line) => sum + line.amount * line.quantity, 0);
   const customer = checkoutCustomer(body);
   const delivery = await checkoutDelivery(body);
-  const reference = safeText(body?.reference, 100);
   const deliveryTitle = delivery.method === "moto"
     ? "Pronto – Moto Cartagena"
     : delivery.method === "national"

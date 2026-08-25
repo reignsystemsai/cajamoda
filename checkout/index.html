@@ -1262,7 +1262,7 @@ img{display:block;max-width:100%}
 
           <div id="stripePane" class="stripePane" hidden>
             <div class="stripeTop">
-              <div class="stripeTitle">Tarjeta o Link</div>
+              <div class="stripeTitle">Tarjeta</div>
               <div class="stripeSecure"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Pago seguro</div>
             </div>
             <p class="stripeCopy">Paga sin salir de CajaModa. Tus datos se cifran y se envían directamente a Stripe.</p>
@@ -1272,11 +1272,15 @@ img{display:block;max-width:100%}
             </div>
             <div class="billingGlass">
               <div class="billingTitle">Información de facturación</div>
-              <label class="cardLabel" for="cardholderName">Nombre en la tarjeta
-                <input id="cardholderName" class="cardInput" autocomplete="cc-name" placeholder="Nombre completo">
-              </label>
-              <label id="billingSameRow" class="billingToggle"><input id="billingSame" type="checkbox" disabled><span>La dirección de facturación es igual a la de entrega</span></label>
-              <p id="billingPickupNote" class="billingPickupNote" hidden>Para recoger en punto, ingresa la dirección de facturación vinculada a tu tarjeta.</p>
+              <div class="cardPair">
+                <label class="cardLabel" for="billingFirstName">Nombre
+                  <input id="billingFirstName" class="cardInput" autocomplete="cc-given-name" placeholder="Nombre">
+                </label>
+                <label class="cardLabel" for="billingLastName">Apellido
+                  <input id="billingLastName" class="cardInput" autocomplete="cc-family-name" placeholder="Apellido">
+                </label>
+              </div>
+              <label id="billingSameRow" class="billingToggle"><input id="billingSame" type="checkbox"><span>La dirección de facturación es igual a la de entrega</span></label>
               <div id="billingFields" class="billingFields">
                 <label class="cardLabel wide" for="billingAddress">Dirección
                   <input id="billingAddress" class="cardInput" autocomplete="billing street-address" placeholder="Calle y número">
@@ -2594,12 +2598,9 @@ img{display:block;max-width:100%}
 
   function syncBillingAddressMode() {
     const same = $("billingSame");
-    const pickup = selectedDelivery === "pickup";
-    same.disabled = pickup;
-    if (pickup) same.checked = false;
-    $("billingSameRow").hidden = pickup;
-    $("billingPickupNote").hidden = !pickup;
-    $("billingFields").hidden = !pickup && same.checked;
+    same.disabled = false;
+    $("billingSameRow").hidden = false;
+    $("billingFields").hidden = same.checked;
     updateStripePayAvailability();
     syncPanelHeight();
   }
@@ -2609,7 +2610,8 @@ img{display:block;max-width:100%}
         !$("customerLastName")?.value.trim() ||
         !$("customerPhone")?.value.trim() ||
         !$("deliveryCity")?.value.trim() ||
-        !$("cardholderName")?.value.trim()) return false;
+        !$("billingFirstName")?.value.trim() ||
+        !$("billingLastName")?.value.trim()) return false;
     if (["moto", "national"].includes(selectedDelivery) && !$("deliveryAddress")?.value.trim()) return false;
     if (selectedDelivery === "national" && !$("deliveryDepartment")?.value) return false;
     if (!$("billingSame")?.checked) {
@@ -2620,7 +2622,7 @@ img{display:block;max-width:100%}
         $("billingPostalCode")?.value.trim()
       );
     }
-    return true;
+    return Boolean($("deliveryAddress")?.value.trim());
   }
 
   function updateStripePayAvailability() {
@@ -2636,7 +2638,10 @@ img{display:block;max-width:100%}
 
   function billingAddress() {
     if ($("billingSame")?.checked) {
-      if (selectedDelivery === "pickup") throw new Error("Ingresa una dirección de facturación para el pago con tarjeta.");
+      if (!$("deliveryAddress")?.value.trim()) {
+        $("deliveryAddress")?.focus();
+        throw new Error("Ingresa tu dirección para usarla también como dirección de facturación.");
+      }
       return {
         line1: $("deliveryAddress")?.value.trim() || "",
         city: $("deliveryCity")?.value.trim() || "",
@@ -2710,7 +2715,8 @@ img{display:block;max-width:100%}
       checkoutActions = loaded.actions;
       paymentElement = checkoutElements.createPaymentElement({
         layout: "accordion",
-        fields: { billingDetails: "never" }
+        fields: { billingDetails: "never" },
+        wallets: { link: "never" }
       });
       paymentElement.mount("#paymentElement");
       stripeCanConfirm = false;
@@ -2746,11 +2752,13 @@ img{display:block;max-width:100%}
     try {
       if (!checkoutElements || !checkoutActions || !paymentElement) throw new Error("El formulario de Stripe todavía está cargando.");
       if (!validatePaymentDetails()) throw new Error("Completa tus datos de contacto y entrega.");
-      const name = $("cardholderName")?.value.trim();
-      if (!name) {
-        $("cardholderName")?.focus();
-        throw new Error("Ingresa el nombre que aparece en la tarjeta.");
+      const firstName = $("billingFirstName")?.value.trim();
+      const lastName = $("billingLastName")?.value.trim();
+      if (!firstName || !lastName) {
+        $(!firstName ? "billingFirstName" : "billingLastName")?.focus();
+        throw new Error("Ingresa el nombre y el apellido que aparecen en la tarjeta.");
       }
+      const name = `${firstName} ${lastName}`;
       const address = billingAddress();
       const result = await checkoutActions.confirm({
         billingAddress: { name, address }
@@ -2868,12 +2876,12 @@ img{display:block;max-width:100%}
       syncBillingAddressMode();
       document.querySelectorAll("[data-delivery]").forEach(candidate => candidate.classList.toggle("isSelected", candidate === button));
       const address = $("deliveryAddress");
-      address.disabled = selectedDelivery === "pickup";
+      address.disabled = false;
       address.placeholder = selectedDelivery === "moto"
         ? "Dirección para moto"
         : selectedDelivery === "national"
           ? "Dirección completa de entrega"
-          : "No se requiere dirección para recoger";
+          : "Dirección del cliente";
       $("pickupAddress").hidden = selectedDelivery !== "pickup";
       scheduleDeliveryQuote();
       syncPanelHeight();
@@ -2910,7 +2918,7 @@ img{display:block;max-width:100%}
 
   [
     "customerFirstName", "customerLastName", "customerPhone", "deliveryAddress", "deliveryCity",
-    "deliveryDepartment", "cardholderName", "billingAddress", "billingCity", "billingDepartment", "billingPostalCode"
+    "deliveryDepartment", "billingFirstName", "billingLastName", "billingAddress", "billingCity", "billingDepartment", "billingPostalCode"
   ].forEach(id => {
     $(id)?.addEventListener("input", updateStripePayAvailability);
     $(id)?.addEventListener("change", updateStripePayAvailability);

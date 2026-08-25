@@ -1029,7 +1029,7 @@ img{display:block;max-width:100%}
 .confirmPayment{width:100%;height:52px;margin-top:13px;border-radius:14px;background:#080808;color:#fff;font-size:10px;font-weight:700}
 .pendingNote{margin:9px 0 0;text-align:center;color:#777;font-size:7.5px;line-height:1.45}
 .stripePane{text-align:left}.stripePane[hidden],.nequiPane[hidden]{display:none}.stripeTop{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:5px}.stripeTitle{font-family:"Cormorant Garamond",Georgia,serif;font-size:24px;font-weight:600}.stripeSecure{display:flex;align-items:center;gap:5px;color:#666;font-size:7.5px;white-space:nowrap}.stripeSecure svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.7}.stripeCopy{margin:0 0 16px;color:#737373;font-size:8.5px;line-height:1.5}.customCardShell{padding:16px;border:1px solid rgba(0,0,0,.08);border-radius:18px;background:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 12px 30px rgba(0,0,0,.035)}.billingGlass{margin-top:14px;padding:16px;border:1px solid rgba(255,255,255,.94);border-radius:18px;background:linear-gradient(145deg,rgba(255,255,255,.72),rgba(255,255,255,.44));box-shadow:inset 0 1px 0 rgba(255,255,255,.96),0 12px 30px rgba(0,0,0,.05);backdrop-filter:blur(28px) saturate(150%);-webkit-backdrop-filter:blur(28px) saturate(150%)}.billingTitle{font-size:10px;font-weight:700}.linkArea[hidden],.billingFields[hidden]{display:none}.linkHeading{margin-bottom:8px;text-align:center;font-size:9px;font-weight:700}.expressCheckout{min-height:48px}.cardDivider{display:flex;align-items:center;gap:12px;margin:16px 0;color:#777;font-size:8px}.cardDivider::before,.cardDivider::after{content:"";height:1px;flex:1;background:rgba(0,0,0,.12)}.cardLabel{display:block;margin-top:12px;font-size:8px;font-weight:600}.cardInput,.stripeField{width:100%;height:48px;margin-top:7px;border:1px solid rgba(0,0,0,.14);border-radius:13px;background:rgba(255,255,255,.72);padding:0 13px;color:#080808;font:500 10px/1 Inter,Arial,sans-serif;transition:border-color .16s,box-shadow .16s}.stripeField{display:flex;align-items:center;cursor:text}.stripeField .StripeElement,.stripeField iframe{width:100%!important;min-width:0}.stripeField.isFocused{border-color:#080808;box-shadow:0 0 0 1px #080808}.stripeField.hasError,.cardInput.hasError{border-color:#a31919}.cardPair{display:grid;grid-template-columns:1fr 1fr;gap:10px}.billingToggle{display:flex;align-items:flex-start;gap:9px;margin:16px 1px 3px;font-size:8px;line-height:1.4}.billingToggle input{width:18px;height:18px;flex:0 0 auto;accent-color:#080808}.billingFields{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}.billingFields .wide{grid-column:1/-1}.stripePayButton{width:100%;height:52px;margin-top:16px;border-radius:14px;background:#080808;color:#fff;font-size:10px;font-weight:700;transition:opacity .18s}.stripePayButton:disabled{opacity:.38}.stripeError{min-height:16px;margin-top:8px;color:#a31919;text-align:center;font-size:8px;line-height:1.4}.stripeTrust{display:flex;justify-content:center;align-items:center;gap:5px;margin-top:2px;color:#777;font-size:7.5px}.stripeTrust svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:1.7}
-.stripeStatus{padding:12px 0;color:#737373;text-align:center;font-size:8.5px}.stripeStatus[hidden]{display:none}
+.stripeStatus{padding:12px 0;color:#737373;text-align:center;font-size:8.5px}.stripeStatus[hidden]{display:none}.billingPickupNote{margin:10px 1px 0;color:#666;font-size:8px;line-height:1.45}.billingPickupNote[hidden]{display:none}
 .paymentSummary{margin-top:16px;padding:16px 18px}
 @media(max-width:390px){.deliveryChoices,.nequiActions,.deliveryDetails{grid-template-columns:1fr}.deliveryDetails .wide{grid-column:auto}.billingFields{grid-template-columns:1fr}.billingFields .wide{grid-column:auto}}
 .cityInput{padding-right:38px}
@@ -1275,7 +1275,8 @@ img{display:block;max-width:100%}
               <label class="cardLabel" for="cardholderName">Nombre en la tarjeta
                 <input id="cardholderName" class="cardInput" autocomplete="cc-name" placeholder="Nombre completo">
               </label>
-              <label class="billingToggle"><input id="billingSame" type="checkbox" disabled><span>La dirección de facturación es igual a la de entrega</span></label>
+              <label id="billingSameRow" class="billingToggle"><input id="billingSame" type="checkbox" disabled><span>La dirección de facturación es igual a la de entrega</span></label>
+              <p id="billingPickupNote" class="billingPickupNote" hidden>Para recoger en punto, ingresa la dirección de facturación vinculada a tu tarjeta.</p>
               <div id="billingFields" class="billingFields">
                 <label class="cardLabel wide" for="billingAddress">Dirección
                   <input id="billingAddress" class="cardInput" autocomplete="billing street-address" placeholder="Calle y número">
@@ -2596,6 +2597,8 @@ img{display:block;max-width:100%}
     const pickup = selectedDelivery === "pickup";
     same.disabled = pickup;
     if (pickup) same.checked = false;
+    $("billingSameRow").hidden = pickup;
+    $("billingPickupNote").hidden = !pickup;
     $("billingFields").hidden = !pickup && same.checked;
     updateStripePayAvailability();
     syncPanelHeight();
@@ -2621,7 +2624,7 @@ img{display:block;max-width:100%}
   }
 
   function updateStripePayAvailability() {
-    const ready = Boolean(checkoutElements && checkoutActions && paymentElement && stripeCanConfirm && cardCheckoutDetailsReady());
+    const ready = Boolean(checkoutElements && checkoutActions && paymentElement && stripeCanConfirm);
     $("stripePayButton").disabled = !ready;
   }
 
@@ -3000,6 +3003,10 @@ img{display:block;max-width:100%}
       window.CajaModaBagPreview.open();
     }
   };
+
+  if (typeof ResizeObserver === "function") {
+    new ResizeObserver(syncPanelHeight).observe($("stepTrack"));
+  }
 
   window.addEventListener(
     "resize",

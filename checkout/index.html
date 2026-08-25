@@ -1235,7 +1235,7 @@ img{display:block;max-width:100%}
 
         <h2 class="paymentSectionTitle">Finaliza tu pago</h2>
         <section id="paymentGlass" class="paymentGlass">
-          <div id="nequiPane" class="nequiPane">
+          <div id="nequiPane" class="nequiPane" hidden>
             <div class="paymentEyebrow">Envía exactamente</div>
             <div id="nequiAmount" class="paymentAmount">$0 COP</div>
             <div class="nequiLabel">Número Nequi</div>
@@ -1252,7 +1252,7 @@ img{display:block;max-width:100%}
             <p class="pendingNote">Tu pedido quedará pendiente hasta que confirmemos el pago.</p>
           </div>
 
-          <div id="stripePane" class="stripePane" hidden>
+          <div id="stripePane" class="stripePane">
             <div class="stripeTop">
               <div class="stripeTitle">Tarjeta o Link</div>
               <div class="stripeSecure"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Pago seguro</div>
@@ -1403,7 +1403,7 @@ img{display:block;max-width:100%}
   const STEPS = ["bag", "payment"];
   const STORE_API_URL = "https://cajamoda-storeload-api.onrender.com";
   let selectedDelivery = "national";
-  let selectedPayment = "nequi";
+  let selectedPayment = "stripe";
   let nequiPhone = "";
   let stripePublishableKey = "";
   let stripeClient = null;
@@ -1411,6 +1411,7 @@ img{display:block;max-width:100%}
   let checkoutActions = null;
   let paymentElement = null;
   let stripeSessionId = "";
+  let checkoutConfigPromise = null;
   let deliveryQuote = null;
   let quoteTimer = null;
   const PICKUP_FEE_COP = 10000;
@@ -2582,6 +2583,7 @@ img{display:block;max-width:100%}
     if (checkoutElements) return;
     const errorBox = $("stripeError");
     const status = $("stripeStatus");
+    await (checkoutConfigPromise ||= loadCheckoutConfig());
     if (!stripePublishableKey || typeof window.Stripe !== "function") {
       errorBox.textContent = "El pago con tarjeta todavía no está configurado.";
       return;
@@ -2753,7 +2755,15 @@ img{display:block;max-width:100%}
       };
     });
 
-  $("toDeliveryButton").onclick = () => goToStep("payment");
+  $("toDeliveryButton").onclick = async () => {
+    selectedPayment = "stripe";
+    $("nequiPane").hidden = true;
+    $("stripePane").hidden = false;
+    $("paymentGlass").classList.add("isStripe");
+    goToStep("payment");
+    await initializeStripePaymentElement();
+    syncPanelHeight();
+  };
 
   $("guestCheckoutButton")?.addEventListener("click", () => {
     $("email").value = "";
@@ -2949,7 +2959,7 @@ img{display:block;max-width:100%}
 
   loadCustomer();
   renderCart();
-  loadCheckoutConfig();
+  checkoutConfigPromise = loadCheckoutConfig();
   loadDeliveryDepartments();
 
   window.postMessage({

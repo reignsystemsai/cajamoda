@@ -682,7 +682,6 @@ async function importStripeOrderIntoWix(session, lines) {
   const total = Number(session?.amount_total || 0) / 100;
 
   const imported = await wix.orders.importOrder({
-    number: `S-${session.id.slice(-12).toUpperCase()}`,
     status: "APPROVED",
     paymentStatus: "PAID",
     fulfillmentStatus: "NOT_FULFILLED",
@@ -891,7 +890,6 @@ async function importStripeIntentIntoWix(intent, lines) {
   const subtotal = lines.reduce((sum, line) => sum + line.amount * line.quantity, 0);
   const total = Number(intent.amount_received || intent.amount || 0) / 100;
   const imported = await wix.orders.importOrder({
-    number: `S-${intent.id.slice(-12).toUpperCase()}`,
     status: "APPROVED",
     paymentStatus: "PAID",
     fulfillmentStatus: "NOT_FULFILLED",

@@ -1195,8 +1195,8 @@ img{display:block;max-width:100%}
           <div class="promiseRow">
             <div class="promiseBadge">P</div>
             <div>
-              <div id="promiseName" class="promiseName">Rápido – Colombia</div>
-              <div id="promiseTime" class="promiseTime">Entrega nacional · 4–7 días</div>
+              <div id="promiseName" class="promiseName">Pronto – Cartagena</div>
+              <div id="promiseTime" class="promiseTime">Disponible en 24–48 h</div>
             </div>
             <button id="deliveryInfoButton" class="infoButton" type="button" aria-label="Ver tiempos de entrega">i</button>
           </div>
@@ -1205,8 +1205,9 @@ img{display:block;max-width:100%}
             <label><input id="customerFirstName" name="firstName" class="compactInput" autocomplete="given-name" placeholder="Nombre"></label>
             <label><input id="customerLastName" name="lastName" class="compactInput" autocomplete="family-name" placeholder="Apellido"></label>
             <label class="wide"><input id="email" name="email" class="compactInput" type="email" autocomplete="email" placeholder="Correo electrónico"></label>
+            <label class="wide"><input id="customerPhone" name="phone" class="compactInput" autocomplete="tel" inputmode="tel" placeholder="Teléfono"></label>
             <label><select id="deliveryDepartment" class="compactInput" autocomplete="address-level1"><option value="">Departamento</option></select></label>
-            <label><input id="deliveryCity" name="city" class="compactInput cityInput" autocomplete="address-level2" list="colombiaCities" aria-label="Ciudad de entrega" placeholder="Ciudad"></label>
+            <label><input id="deliveryCity" name="city" class="compactInput cityInput" autocomplete="address-level2" list="colombiaCities" aria-label="Ciudad de entrega" placeholder="Ciudad" value="Cartagena"></label>
             <datalist id="colombiaCities">
               <option value="Cartagena"><option value="Bogotá"><option value="Medellín"><option value="Cali"><option value="Barranquilla"><option value="Santa Marta"><option value="Bucaramanga"><option value="Pereira"><option value="Manizales"><option value="Armenia"><option value="Cúcuta"><option value="Ibagué"><option value="Villavicencio"><option value="Montería"><option value="Sincelejo"><option value="Valledupar"><option value="Riohacha"><option value="Tunja"><option value="Popayán"><option value="Pasto"><option value="Neiva"><option value="Florencia"><option value="Quibdó"><option value="Yopal"><option value="Arauca"><option value="Leticia"><option value="San Andrés"><option value="Buenaventura"><option value="Palmira"><option value="Soacha"><option value="Envigado"><option value="Bello"><option value="Rionegro"><option value="Itagüí"><option value="Girardot"><option value="Zipaquirá"><option value="Sogamoso"><option value="Duitama"><option value="Magangué"><option value="Turbo"><option value="Apartadó"><option value="Tuluá"><option value="Buga"><option value="Cartago"><option value="Ipiales"><option value="Ocaña"><option value="Barrancabermeja"><option value="Maicao"><option value="Ciénaga"><option value="Lorica">
             </datalist>
@@ -1216,20 +1217,20 @@ img{display:block;max-width:100%}
           <div class="deliveryDivider"></div>
           <div class="deliveryChoiceLabel">Elige cómo recibirlo</div>
           <div class="deliveryChoices">
-            <button class="deliveryChoice" type="button" data-delivery="pickup" hidden>
+            <button class="deliveryChoice isSelected" type="button" data-delivery="pickup">
               <svg viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2.2"/></svg>
               Recoger en punto
             </button>
-            <button class="deliveryChoice" type="button" data-delivery="moto" hidden>
+            <button class="deliveryChoice" type="button" data-delivery="moto">
               <svg viewBox="0 0 24 24"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9 17h6l-2.5-6H8m5-3h3"/></svg>
               Moto a tu dirección
             </button>
-            <button class="deliveryChoice isSelected" type="button" data-delivery="national">
+            <button class="deliveryChoice" type="button" data-delivery="national" hidden>
               <svg viewBox="0 0 24 24"><path d="M3 7h11v10H3zM14 10h4l3 3v4h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>
               Envío nacional · 4–7 días
             </button>
           </div>
-          <div id="pickupAddress" class="pickupAddress" hidden><strong>Punto de recogida · 10.000 COP</strong><br>Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar.</div>
+          <div id="pickupAddress" class="pickupAddress"><strong>Punto de recogida · 10.000 COP</strong><br>Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar.</div>
           <p class="deliveryNote">El costo se calcula según tu ubicación.</p>
         </section>
 
@@ -1402,7 +1403,7 @@ img{display:block;max-width:100%}
   const $ = id => document.getElementById(id);
   const STEPS = ["bag", "payment"];
   const STORE_API_URL = "https://cajamoda-storeload-api.onrender.com";
-  let selectedDelivery = "national";
+  let selectedDelivery = "pickup";
   let selectedPayment = "nequi";
   let nequiPhone = "";
   let stripePublishableKey = "";
@@ -1411,7 +1412,7 @@ img{display:block;max-width:100%}
   let checkoutActions = null;
   let paymentElement = null;
   let stripeSessionId = "";
-  let deliveryQuote = null;
+  let deliveryQuote = { method: "pickup", fee: 10000 };
   let quoteTimer = null;
   const PICKUP_FEE_COP = 10000;
 
@@ -2267,7 +2268,7 @@ img{display:block;max-width:100%}
     showToast("Producto eliminado.");
   }
 
-  const customerFields = ["email", "customerFirstName", "customerLastName", "deliveryCity", "deliveryDepartment", "deliveryPostalCode", "deliveryAddress"];
+  const customerFields = ["email", "customerFirstName", "customerLastName", "customerPhone", "deliveryCity", "deliveryDepartment", "deliveryPostalCode", "deliveryAddress"];
 
   function loadCustomer() {
     const saved = readJson(
@@ -2459,6 +2460,7 @@ img{display:block;max-width:100%}
     if (!validateContact()) return false;
     const firstName = $("customerFirstName")?.value.trim();
     const lastName = $("customerLastName")?.value.trim();
+    const phone = $("customerPhone")?.value.trim();
     const address = $("deliveryAddress")?.value.trim();
     if (!firstName) {
       $("customerFirstName")?.focus();
@@ -2468,6 +2470,11 @@ img{display:block;max-width:100%}
     if (!lastName) {
       $("customerLastName")?.focus();
       showToast("Ingresa tu apellido.");
+      return false;
+    }
+    if (!phone) {
+      $("customerPhone")?.focus();
+      showToast("Ingresa tu número de teléfono.");
       return false;
     }
     if (["moto", "national"].includes(selectedDelivery) && !address) {
@@ -2663,6 +2670,7 @@ img{display:block;max-width:100%}
       const customer = collectCustomer();
       const result = await checkoutActions.confirm({
         email: customer.email,
+        phoneNumber: customer.customerPhone,
         billingAddress: { name, address }
       });
       if (result?.type === "error") throw result.error;

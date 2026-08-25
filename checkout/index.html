@@ -2709,9 +2709,7 @@ img{display:block;max-width:100%}
         throw new Error("Ingresa el nombre que aparece en la tarjeta.");
       }
       const address = billingAddress();
-      const customer = collectCustomer();
       const result = await checkoutActions.confirm({
-        email: customer.email,
         billingAddress: { name, address }
       });
       if (result?.type === "error") throw result.error;

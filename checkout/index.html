@@ -1031,6 +1031,8 @@ img{display:block;max-width:100%}
 .stripeStatus{padding:12px 0;color:#737373;text-align:center;font-size:8.5px}.stripeStatus[hidden]{display:none}
 .paymentSummary{margin-top:16px;padding:16px 18px}
 @media(max-width:390px){.deliveryChoices,.nequiActions,.deliveryDetails{grid-template-columns:1fr}.deliveryDetails .wide{grid-column:auto}.billingFields{grid-template-columns:1fr}.billingFields .wide{grid-column:auto}}
+.cityInput{padding-right:38px}
+.cityInput::-webkit-calendar-picker-indicator{margin-right:10px}
 </style>
 </head>
 
@@ -1158,24 +1160,6 @@ img{display:block;max-width:100%}
           </div>
         </div>
 
-        <div class="emailCapture glassCard">
-          <div class="emailCaptureTitle">Recibe tu confirmación y 10% de bienvenida</div>
-          <form id="checkoutForm" novalidate>
-            <div class="fieldGrid">
-              <label class="glassField" for="email">
-                <svg viewBox="0 0 24 24">
-                  <rect x="3" y="5" width="18" height="14" rx="2"/>
-                  <path d="m3 7 9 6 9-6"/>
-                </svg>
-                <input id="email" name="email" type="email" autocomplete="email" placeholder="Correo electrónico (opcional)">
-              </label>
-            </div>
-          </form>
-          <button id="guestCheckoutButton" class="guestCheckoutButton" type="button">
-            Continuar como invitado
-          </button>
-        </div>
-
         <div class="panelActions">
           <button
             id="toDeliveryButton"
@@ -1206,23 +1190,30 @@ img{display:block;max-width:100%}
       >
         <div id="reviewList" class="reviewList"></div>
 
-        <h2 class="paymentSectionTitle">Entrega</h2>
+        <h2 class="paymentSectionTitle">Información de entrega</h2>
         <section class="deliveryGlass" aria-label="Entrega">
           <div class="promiseRow">
             <div class="promiseBadge">P</div>
-            <div>
-              <div class="promiseName">Pronto</div>
-              <div class="promiseTime">Disponible en 24–48 h</div>
+            <div aria-live="polite">
+              <div id="promiseName" class="promiseName">Pronto – Cartagena</div>
+              <div id="promiseTime" class="promiseTime">Disponible en 24–48 h</div>
             </div>
             <button id="deliveryInfoButton" class="infoButton" type="button" aria-label="Ver tiempos de entrega">i</button>
           </div>
           <div class="deliveryDivider"></div>
-          <label class="referenceLabel" for="deliveryCity">Ciudad
-            <select id="deliveryCity" class="compactInput" style="margin-top:8px">
-              <option value="cartagena">Cartagena</option>
-              <option value="other">Otra ciudad</option>
-            </select>
-          </label>
+          <div class="deliveryDetails shippingFields">
+            <label><input id="customerFirstName" name="firstName" class="compactInput" autocomplete="given-name" placeholder="Nombre"></label>
+            <label><input id="customerLastName" name="lastName" class="compactInput" autocomplete="family-name" placeholder="Apellido"></label>
+            <label class="wide"><input id="email" name="email" class="compactInput" type="email" autocomplete="email" placeholder="Correo electrónico"></label>
+            <label class="wide"><input id="customerPhone" name="phone" class="compactInput" autocomplete="tel" inputmode="tel" placeholder="Teléfono"></label>
+            <label><select id="deliveryDepartment" class="compactInput" autocomplete="address-level1"><option value="">Departamento</option></select></label>
+            <label><input id="deliveryCity" name="city" class="compactInput cityInput" autocomplete="address-level2" list="colombiaCities" aria-label="Ciudad de entrega" placeholder="Ciudad" value="Cartagena"></label>
+            <datalist id="colombiaCities">
+              <option value="Cartagena"><option value="Bogotá"><option value="Medellín"><option value="Cali"><option value="Barranquilla"><option value="Santa Marta"><option value="Bucaramanga"><option value="Pereira"><option value="Manizales"><option value="Armenia"><option value="Cúcuta"><option value="Ibagué"><option value="Villavicencio"><option value="Montería"><option value="Sincelejo"><option value="Valledupar"><option value="Riohacha"><option value="Tunja"><option value="Popayán"><option value="Pasto"><option value="Neiva"><option value="Florencia"><option value="Quibdó"><option value="Yopal"><option value="Arauca"><option value="Leticia"><option value="San Andrés"><option value="Buenaventura"><option value="Palmira"><option value="Soacha"><option value="Envigado"><option value="Bello"><option value="Rionegro"><option value="Itagüí"><option value="Girardot"><option value="Zipaquirá"><option value="Sogamoso"><option value="Duitama"><option value="Magangué"><option value="Turbo"><option value="Apartadó"><option value="Tuluá"><option value="Buga"><option value="Cartago"><option value="Ipiales"><option value="Ocaña"><option value="Barrancabermeja"><option value="Maicao"><option value="Ciénaga"><option value="Lorica">
+            </datalist>
+            <label class="wide"><input id="deliveryAddress" class="compactInput" autocomplete="street-address" placeholder="Dirección"></label>
+            <label class="wide"><input id="deliveryPostalCode" class="compactInput" autocomplete="postal-code" inputmode="numeric" placeholder="Código postal (opcional)"></label>
+          </div>
           <div class="deliveryDivider"></div>
           <div class="deliveryChoiceLabel">Elige cómo recibirlo</div>
           <div class="deliveryChoices">
@@ -1238,14 +1229,6 @@ img{display:block;max-width:100%}
               <svg viewBox="0 0 24 24"><path d="M3 7h11v10H3zM14 10h4l3 3v4h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>
               Envío nacional · 4–7 días
             </button>
-          </div>
-          <div class="deliveryDetails">
-            <label><input id="customerName" class="compactInput" autocomplete="name" placeholder="Nombre completo"></label>
-            <label><input id="customerPhone" class="compactInput" autocomplete="tel" inputmode="tel" placeholder="Teléfono"></label>
-            <label class="wide"><input id="deliveryDestinationCity" class="compactInput" autocomplete="address-level2" placeholder="Ciudad de entrega" hidden></label>
-            <label><select id="deliveryDepartment" class="compactInput" autocomplete="address-level1" hidden><option value="">Departamento</option></select></label>
-            <label><input id="deliveryPostalCode" class="compactInput" autocomplete="postal-code" inputmode="numeric" placeholder="Código postal (opcional)" hidden></label>
-            <label class="wide"><input id="deliveryAddress" class="compactInput" autocomplete="street-address" placeholder="Dirección para moto" disabled></label>
           </div>
           <div id="pickupAddress" class="pickupAddress"><strong>Punto de recogida · 10.000 COP</strong><br>Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar.</div>
           <p class="deliveryNote">El costo se calcula según tu ubicación.</p>
@@ -1353,7 +1336,7 @@ img{display:block;max-width:100%}
       <div id="deliveryHelpTitle" class="deliveryHelpTitle">Tiempos de entrega</div>
       <button id="deliveryHelpClose" class="deliveryHelpClose" type="button" aria-label="Cerrar">×</button>
     </div>
-    <div class="deliveryHelpLine"><strong>Pronto</strong>Local, disponible en 24–48 horas.</div>
+    <div class="deliveryHelpLine"><strong>Pronto – Cartagena</strong>Disponible en 24–48 h.</div>
     <div class="deliveryHelpLine"><strong>Rápido</strong>Envío nacional, 4–7 días.</div>
     <div class="deliveryHelpLine"><strong>Libérala</strong>Lanzamiento anticipado, 14–21 días.</div>
     <div class="deliveryHelpLine">El tiempo disponible depende de cada producto.</div>
@@ -2285,7 +2268,7 @@ img{display:block;max-width:100%}
     showToast("Producto eliminado.");
   }
 
-  const customerFields = ["email", "customerName", "customerPhone", "deliveryDestinationCity", "deliveryDepartment", "deliveryPostalCode", "deliveryAddress"];
+  const customerFields = ["email", "customerFirstName", "customerLastName", "customerPhone", "deliveryCity", "deliveryDepartment", "deliveryPostalCode", "deliveryAddress"];
 
   function loadCustomer() {
     const saved = readJson(
@@ -2298,6 +2281,11 @@ img{display:block;max-width:100%}
         $(field).value = saved[field];
       }
     });
+    if (!saved.customerFirstName && saved.customerName && $("customerFirstName")) {
+      const parts = String(saved.customerName).trim().split(/\s+/);
+      $("customerFirstName").value = parts.shift() || "";
+      $("customerLastName").value = parts.join(" ");
+    }
 
     updateReviewCustomer();
   }
@@ -2309,6 +2297,7 @@ img{display:block;max-width:100%}
       customer[field] =
         $(field)?.value?.trim() || "";
     });
+    customer.customerName = [customer.customerFirstName, customer.customerLastName].filter(Boolean).join(" ");
 
     return customer;
   }
@@ -2469,12 +2458,18 @@ img{display:block;max-width:100%}
 
   function validatePaymentDetails() {
     if (!validateContact()) return false;
-    const name = $("customerName")?.value.trim();
+    const firstName = $("customerFirstName")?.value.trim();
+    const lastName = $("customerLastName")?.value.trim();
     const phone = $("customerPhone")?.value.trim();
     const address = $("deliveryAddress")?.value.trim();
-    if (!name) {
-      $("customerName")?.focus();
-      showToast("Ingresa tu nombre completo.");
+    if (!firstName) {
+      $("customerFirstName")?.focus();
+      showToast("Ingresa tu nombre.");
+      return false;
+    }
+    if (!lastName) {
+      $("customerLastName")?.focus();
+      showToast("Ingresa tu apellido.");
       return false;
     }
     if (!phone) {
@@ -2487,8 +2482,8 @@ img{display:block;max-width:100%}
       showToast("Ingresa la dirección de entrega.");
       return false;
     }
-    if (selectedDelivery === "national" && !$("deliveryDestinationCity")?.value.trim()) {
-      $("deliveryDestinationCity")?.focus();
+    if (!$("deliveryCity")?.value.trim()) {
+      $("deliveryCity")?.focus();
       showToast("Ingresa la ciudad de entrega.");
       return false;
     }
@@ -2509,9 +2504,7 @@ img{display:block;max-width:100%}
       delivery: {
         method: selectedDelivery,
         promise: "pronto",
-        city: selectedDelivery === "national"
-          ? $("deliveryDestinationCity")?.value.trim() || ""
-          : "Cartagena",
+        city: $("deliveryCity")?.value.trim() || "",
         state: selectedDelivery === "national" ? $("deliveryDepartment")?.value || "" : "BL",
         postalCode: selectedDelivery === "national" ? $("deliveryPostalCode")?.value.trim() || "" : "130001",
         fee: checkoutDeliveryFee(),
@@ -2529,7 +2522,7 @@ img{display:block;max-width:100%}
       return deliveryQuote;
     }
     const address = $("deliveryAddress")?.value.trim();
-    const nationalReady = selectedDelivery !== "national" || ($("deliveryDestinationCity")?.value.trim() && $("deliveryDepartment")?.value);
+    const nationalReady = selectedDelivery !== "national" || ($("deliveryCity")?.value.trim() && $("deliveryDepartment")?.value);
     if (!address || !nationalReady) {
       deliveryQuote = null;
       renderPaymentTotals();
@@ -2568,7 +2561,7 @@ img{display:block;max-width:100%}
       if (selectedDelivery === "pickup") throw new Error("Ingresa una dirección de facturación para el pago con tarjeta.");
       return {
         line1: $("deliveryAddress")?.value.trim() || "",
-        city: selectedDelivery === "national" ? $("deliveryDestinationCity")?.value.trim() || "" : "Cartagena",
+        city: $("deliveryCity")?.value.trim() || "",
         state: selectedDelivery === "national" ? $("deliveryDepartment")?.value || "" : "BL",
         postal_code: selectedDelivery === "national" ? $("deliveryPostalCode")?.value.trim() || "" : "130001",
         country: "CO"
@@ -2770,11 +2763,11 @@ img{display:block;max-width:100%}
 
   $("toDeliveryButton").onclick = () => goToStep("payment");
 
-  $("guestCheckoutButton").onclick = () => {
+  $("guestCheckoutButton")?.addEventListener("click", () => {
     $("email").value = "";
     saveCustomer();
     goToStep("payment");
-  };
+  });
 
   $("backToContactButton").onclick = () => {
     goToStep("bag");
@@ -2789,7 +2782,7 @@ img{display:block;max-width:100%}
 
   document.querySelectorAll("[data-delivery]").forEach(button => {
     button.onclick = () => {
-      if (button.dataset.delivery === "pickup" && $("deliveryCity")?.value !== "cartagena") {
+      if (button.dataset.delivery === "pickup" && normalizeChoice($("deliveryCity")?.value) !== "cartagena") {
         showToast("La recogida en punto solo está disponible en Cartagena.");
         return;
       }
@@ -2806,9 +2799,6 @@ img{display:block;max-width:100%}
         : selectedDelivery === "national"
           ? "Dirección completa de entrega"
           : "No se requiere dirección para recoger";
-      $("deliveryDestinationCity").hidden = selectedDelivery !== "national";
-      $("deliveryDepartment").hidden = selectedDelivery !== "national";
-      $("deliveryPostalCode").hidden = selectedDelivery !== "national";
       $("pickupAddress").hidden = selectedDelivery !== "pickup";
       scheduleDeliveryQuote();
       syncPanelHeight();
@@ -2819,7 +2809,10 @@ img{display:block;max-width:100%}
     const pickupButton = document.querySelector('[data-delivery="pickup"]');
     const motoButton = document.querySelector('[data-delivery="moto"]');
     const nationalButton = document.querySelector('[data-delivery="national"]');
-    const isCartagena = $("deliveryCity").value === "cartagena";
+    const isCartagena = normalizeChoice($("deliveryCity").value) === "cartagena";
+    $("promiseName").textContent = isCartagena ? "Pronto – Cartagena" : "Rápido – Colombia";
+    $("promiseTime").textContent = isCartagena ? "Disponible en 24–48 h" : "Entrega nacional · 4–7 días";
+    pickupButton.hidden = !isCartagena;
     pickupButton.disabled = !isCartagena;
     pickupButton.setAttribute("aria-disabled", String(!isCartagena));
     pickupButton.style.opacity = isCartagena ? "1" : ".38";
@@ -2835,7 +2828,7 @@ img{display:block;max-width:100%}
     syncPanelHeight();
   };
 
-  ["deliveryAddress", "deliveryDestinationCity", "deliveryPostalCode"].forEach(id => {
+  ["deliveryAddress", "deliveryCity", "deliveryPostalCode"].forEach(id => {
     $(id)?.addEventListener("change", scheduleDeliveryQuote);
   });
   $("deliveryDepartment")?.addEventListener("change", scheduleDeliveryQuote);

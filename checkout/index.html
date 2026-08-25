@@ -2685,7 +2685,6 @@ img{display:block;max-width:100%}
       const customer = collectCustomer();
       const result = await checkoutActions.confirm({
         email: customer.email,
-        phoneNumber: customer.customerPhone,
         billingAddress: { name, address }
       });
       if (result?.type === "error") throw result.error;

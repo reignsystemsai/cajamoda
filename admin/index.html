@@ -15,14 +15,14 @@
   content="#ffffff"
 >
 
-<title>Store Loader</title>
+<title>CajaModa Store Loader</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
 <link
-  href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+  href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Italiana&display=swap"
   rel="stylesheet"
 >
 
@@ -50,6 +50,39 @@
       0px
     );
 }
+
+/* CajaModa Store Loader Commerce Network */
+:root{--glass:rgba(255,255,255,.72);--ivory:#f7f4ee;--green:#2f7d32;--amber:#b66a00;--red:#b3261e}
+body{background:radial-gradient(circle at 85% 8%,#fff 0,var(--ivory) 48%,#f1ede5 100%);font-family:"DM Sans",Inter,sans-serif}
+.loaderApp{background:transparent}
+.loaderHeader,.sectionBlock,.metricCard,.earningSummary,.settingsCard,.orderCard,.productCard{background:var(--glass)!important;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(15,15,15,.10)!important;box-shadow:0 16px 44px rgba(28,20,10,.06)!important}
+.loaderBrand,.pageTitle,.sectionTitle,.earningSummaryValue{font-family:"Italiana",Georgia,serif!important;font-weight:400!important;letter-spacing:-.02em}
+.loaderBrand{font-size:27px!important;letter-spacing:.08em}.loaderLabel{letter-spacing:.22em!important}
+.pageTitle{font-size:clamp(42px,5vw,72px)!important;line-height:1!important}.pageIntro{font-size:14px!important;color:#5f5a52!important}
+.tabButton{border-radius:12px!important}.tabButton.active{background:#090909!important;color:#fff!important;box-shadow:0 10px 24px rgba(0,0,0,.12)}
+.primaryButton{background:#090909!important;border-radius:12px!important}.secondaryButton,input,select,textarea{border-radius:12px!important}
+.metricValue{font-family:"Italiana",Georgia,serif!important;font-size:42px!important;font-weight:400!important}
+.storeSelector{pointer-events:none;border:1px solid rgba(0,0,0,.10)!important;background:rgba(255,255,255,.7)!important}
+.ownerIdentity{display:flex;align-items:center;gap:10px;font-size:12px}.ownerDot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+.pilotNotice{margin:0 0 22px;padding:14px 18px;border:1px solid rgba(0,0,0,.08);border-radius:14px;background:rgba(255,255,255,.58);font-size:12px;color:#5f5a52}
+.loginGate{background:#fff!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+.loginCard{max-width:390px!important;padding:28px!important;border:0!important;border-radius:0!important;background:#fff!important;box-shadow:none!important;text-align:center}
+.loginBrand{display:flex;flex-direction:column;align-items:center;width:190px;margin:0 auto;color:#080808;animation:loginLogoIn .7s ease both;user-select:none}
+.loginMonogram{position:relative;width:100px;height:72px;font-family:"Italiana",Didot,serif}
+.loginC{position:absolute;left:7px;top:-12px;font-size:88px;line-height:1;letter-spacing:-8px;transform:scaleX(.89)}
+.loginM{position:absolute;left:48px;top:14px;font-size:58px;line-height:1;letter-spacing:-5px;transform:scaleX(.9)}
+.loginWordmark{padding-left:6px;font-family:"Italiana",Didot,serif;font-size:15px;line-height:1;letter-spacing:5.4px}
+.loginCountryRow{width:160px;margin-top:10px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:9px}
+.loginCountryLine{height:1px;background:rgba(0,0,0,.42)}
+.loginCountry{padding-left:3px;font-size:7px;font-weight:700;letter-spacing:3.1px}
+.loginForm{opacity:0;transform:translateY(12px);animation:loginFormIn .55s ease 1.05s forwards}
+.loginLabel,.loginTitle,.loginText{display:none!important}
+.loginField{margin-top:38px!important;text-align:left}.loginField label{font-size:11px!important;color:#454545!important}.loginField input{height:54px!important;border-radius:14px!important;font-size:14px!important;text-align:center}
+.loginButton{height:54px!important;margin-top:12px!important;border-radius:14px!important;font-size:14px!important}.loginError{font-size:12px!important;margin-top:12px!important}
+@keyframes loginLogoIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+@keyframes loginFormIn{to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.loginBrand,.loginForm{animation:none!important;opacity:1!important;transform:none!important}}
+@media(min-width:900px){.loaderHeader{border-radius:0!important}.loaderMain{max-width:1480px!important}}
 
 *{
   box-sizing:border-box;
@@ -1725,7 +1758,9 @@ img{
   <div class="loginCard">
 
     <div class="loginBrand">
-      Store Loader
+      <div class="loginMonogram"><span class="loginC">C</span><span class="loginM">M</span></div>
+      <div class="loginWordmark">CAJAMODA</div>
+      <div class="loginCountryRow"><span class="loginCountryLine"></span><span class="loginCountry">COLOMBIA</span><span class="loginCountryLine"></span></div>
     </div>
 
     <div class="loginLabel">
@@ -1737,8 +1772,10 @@ img{
     </div>
 
     <div class="loginText">
-      Ingresa tu contraseña para administrar Carolize Boutique.
+      Ingresa tu contraseña para abrir el espacio de Karolay Blanco.
     </div>
+
+    <div class="loginForm">
 
     <div class="loginField">
 
@@ -1768,6 +1805,8 @@ img{
       class="loginError"
     ></div>
 
+    </div>
+
   </div>
 
 </div>
@@ -1781,7 +1820,7 @@ img{
     <div>
 
       <div class="loaderBrand">
-        Store Loader
+        CAJAMODA
       </div>
 
       <div class="loaderLabel">
@@ -1795,8 +1834,8 @@ img{
       class="storeSelector"
     >
 
-      <option value="carolize">
-        Carolize Boutique
+      <option value="store-001">
+        Karolay Blanco · Propietaria
       </option>
 
     </select>
@@ -1837,14 +1876,14 @@ img{
       class="tabButton"
       data-tab="earnings"
     >
-      Ganancias
+      Comisiones
     </button>
 
     <button
       class="tabButton"
       data-tab="store"
     >
-      Tienda
+      Promoción
     </button>
 
   </nav>
@@ -1863,12 +1902,16 @@ img{
 >
 
   <h1 class="pageTitle">
-    Tu tienda.
+    Buenos días, Karolay.
   </h1>
 
   <p class="pageIntro">
-    Carga productos, sigue pedidos y conoce cuánto puedes ganar con cada venta.
+    Tu espacio para cargar, promover y hacer crecer la tienda.
   </p>
+
+  <div class="pilotNotice">
+    Productos → inventario → pedidos → comisiones. CajaModa procesa los pagos; aquí ves los resultados y administras la operación diaria.
+  </div>
 
   <div class="metricGrid">
 
@@ -1913,7 +1956,7 @@ img{
     <div class="metricCard">
 
       <div class="metricLabel">
-        Ganado
+        Comisión
       </div>
 
       <div
@@ -1924,7 +1967,7 @@ img{
       </div>
 
       <div class="metricSub">
-        ganancias confirmadas
+        comisión confirmada
       </div>
 
     </div>
@@ -1932,18 +1975,18 @@ img{
     <div class="metricCard">
 
       <div class="metricLabel">
-        Potencial
+        Tasa
       </div>
 
       <div
-        id="dashboardPotential"
+      id="dashboardPotential"
         class="metricValue"
       >
-        $0
+        0%
       </div>
 
       <div class="metricSub">
-        si vendes una unidad de cada producto activo
+        aplicada a ventas pagadas
       </div>
 
     </div>
@@ -2374,17 +2417,17 @@ img{
 >
 
   <h1 class="pageTitle">
-    Ganancias.
+    Comisiones.
   </h1>
 
   <p class="pageIntro">
-    Consulta tus ganancias confirmadas y el potencial de los productos de tu tienda.
+    Consulta cuánto has generado con las ventas pagadas de tu tienda.
   </p>
 
   <div class="earningSummary">
 
     <div class="earningSummaryLabel">
-      Ganancias confirmadas
+      Comisión confirmada
     </div>
 
     <div
@@ -2395,7 +2438,7 @@ img{
     </div>
 
     <div class="earningSummarySub">
-      Calculadas automáticamente por la plataforma.
+      Calculada automáticamente sobre pedidos pagados. CajaModa procesa y concilia los pagos.
     </div>
 
   </div>
@@ -2405,7 +2448,7 @@ img{
     <div class="sectionHeader">
 
       <div class="sectionTitle">
-        Potencial por producto
+        Comisión por producto
       </div>
 
     </div>
@@ -2428,35 +2471,38 @@ img{
 >
 
   <h1 class="pageTitle">
-    Tu tienda.
+    Promoción.
   </h1>
 
   <p class="pageIntro">
-    Administra la identidad básica de tu tienda.
+    Comparte productos disponibles y convierte el interés en ventas.
   </p>
 
   <div class="settingsCard">
 
     <div class="settingsTitle">
-      Identidad
+      Promoción ligera
     </div>
 
     <div class="settingsText">
-      Esta información identifica tu tienda dentro de Store Loader.
+      Selecciona productos disponibles para compartirlos. Los precios y descuentos centrales permanecen protegidos.
     </div>
 
     <div class="formGrid">
 
       <div class="field">
 
+        <div class="pilotNotice">WhatsApp · Instagram · TikTok<br>Usa únicamente productos publicados y con inventario disponible.</div>
+
         <label for="storeName">
-          Nombre de la tienda
+          Nombre visible
         </label>
 
         <input
           id="storeName"
           type="text"
-          value="Carolize Boutique"
+          value="Karolay Blanco"
+          readonly
         >
 
       </div>
@@ -2466,7 +2512,7 @@ img{
         class="primaryButton fullButton"
         type="button"
       >
-        Guardar tienda
+        Preparar promoción
       </button>
 
       <button
@@ -2723,6 +2769,9 @@ img{
   let authToken =
     readToken();
 
+  let ownerProfile = null;
+  let ownerSummary = null;
+
   async function apiRequest(
     path,
     options={}
@@ -2922,6 +2971,8 @@ img{
       authToken =
         result.token;
 
+      ownerProfile = result.profile || null;
+
       saveToken(
         authToken
       );
@@ -2935,6 +2986,8 @@ showToast(
 await loadRealOrders(
   true
 );
+
+await loadOwnerWorkspace();
 
     }catch(
       error
@@ -2997,10 +3050,10 @@ await loadRealOrders(
   const defaultStore = {
 
     id:
-      "carolize",
+      "store-001",
 
     name:
-      "Carolize Boutique",
+      "Karolay Blanco",
 
     /*
       Temporary internal prototype value.
@@ -3052,6 +3105,23 @@ await loadRealOrders(
       []
     );
 let inventory = [];
+
+async function loadOwnerWorkspace(){
+  if(!authToken){return;}
+  const [profileResult, summaryResult] = await Promise.all([
+    apiRequest("/api/store-owner/profile"),
+    apiRequest("/api/store-owner/summary")
+  ]);
+  ownerProfile = profileResult.profile;
+  ownerSummary = summaryResult.summary;
+  store = {
+    ...store,
+    id: ownerProfile.storeId,
+    name: ownerProfile.ownerName,
+    platformEarningPercent: Number(ownerProfile.commissionPercent || 0)
+  };
+  renderAll();
+}
 
 async function loadRealInventory(
   silent = false
@@ -3940,6 +4010,10 @@ if(
   /* ============================================================
      INVENTORY
      ============================================================ */
+let inventoryQuery = "";
+let inventoryStatus = "all";
+const selectedInventory = new Set();
+
 function renderInventory(){
 
   if(
@@ -3966,118 +4040,56 @@ function renderInventory(){
     return;
   }
 
-  const grouped =
-    new Map();
-
-  inventory.forEach(
-    item => {
-
-      const productId =
-        item.productId ||
-        item.id;
-
-      const localProduct =
-        products.find(
-          product =>
-            product.wixProductId ===
-              item.productId ||
-            product.id ===
-              item.productId
-        );
-
-      const current =
-        grouped.get(
-          productId
-        ) || {
-
-          name:
-            item.productName ||
-            localProduct?.name ||
-            "Producto Wix",
-
-          quantity:
-            0,
-
-          trackQuantity:
-            false,
-
-          inStock:
-            false
-        };
-
-      if(
-        item.trackQuantity
-      ){
-
-        current.quantity +=
-          Number(
-            item.quantity ||
-            0
-          );
-
-        current.trackQuantity =
-          true;
-      }
-
-      if(
-        item.inStock ||
-        item.availabilityStatus ===
-          "IN_STOCK" ||
-        Number(
-          item.quantity ||
-          0
-        ) > 0
-      ){
-
-        current.inStock =
-          true;
-      }
-
-      grouped.set(
-        productId,
-        current
-      );
-    }
-  );
-
-  const rows =
-    [
-      ...grouped.values()
-    ];
+  const rows = inventory.filter(item => {
+    const quantity = Number(item.quantity || 0);
+    const statusMatches = inventoryStatus === "all" ||
+      (inventoryStatus === "in" && quantity > 0) ||
+      (inventoryStatus === "low" && quantity > 0 && quantity <= 5) ||
+      (inventoryStatus === "out" && quantity <= 0);
+    const query = inventoryQuery.toLowerCase();
+    const text = `${item.productName || ""} ${item.variantName || ""} ${item.sku || ""}`.toLowerCase();
+    return statusMatches && (!query || text.includes(query));
+  });
 
   $("inventoryList")
     .innerHTML =
-      rows
+      `<div style="display:grid;grid-template-columns:minmax(220px,1fr) 180px auto;gap:10px;margin-bottom:16px">
+        <input id="inventorySearch" value="${escapeHtml(inventoryQuery)}" placeholder="Buscar producto o SKU">
+        <select id="inventoryStatusFilter">
+          <option value="all" ${inventoryStatus === "all" ? "selected" : ""}>Todos</option>
+          <option value="in" ${inventoryStatus === "in" ? "selected" : ""}>Disponible</option>
+          <option value="low" ${inventoryStatus === "low" ? "selected" : ""}>Bajo inventario</option>
+          <option value="out" ${inventoryStatus === "out" ? "selected" : ""}>Agotado</option>
+        </select>
+        <button id="saveInventory" class="primaryButton" type="button">Actualizar inventario</button>
+      </div>
+      <div class="inventoryRow" style="font-weight:700">
+        <div class="inventoryName"><input id="selectAllInventory" type="checkbox"> Producto / SKU</div>
+        <div class="inventoryQty">Cantidad</div>
+        <div class="inventoryState">Estado</div>
+      </div>` + rows
         .map(
           item => `
 
             <div class="inventoryRow">
 
               <div class="inventoryName">
-                ${escapeHtml(item.name)}
+                <input type="checkbox" data-inventory-select="${escapeHtml(item.id)}" ${selectedInventory.has(item.id) ? "checked" : ""}>
+                <strong>${escapeHtml(item.productName || "Producto Wix")}</strong>
+                <span style="display:block;margin-left:24px;color:#777;font-size:10px">${escapeHtml(item.variantName || item.sku || "Sin SKU")}</span>
               </div>
 
               <div class="inventoryQty">
-                ${
-                  item.trackQuantity
-                    ? item.quantity
-                    : "—"
-                }
+                <input data-inventory-quantity="${escapeHtml(item.id)}" type="number" min="0" step="1" value="${Number(item.quantity || 0)}" style="width:92px;height:38px;padding:0 10px;border:1px solid rgba(0,0,0,.14)">
               </div>
 
               <div class="inventoryState">
                 ${
-                  item.trackQuantity
-                    ? (
-                        item.quantity > 0
-                          ? "Disponible"
-                          : "Agotado"
-                      )
-                    : (
-                        item.inStock
-                          ? "Disponible"
-                          : "Agotado"
-                      )
+                  Number(item.quantity || 0) <= 0
+                    ? "Agotado"
+                    : Number(item.quantity || 0) <= 5
+                      ? "Bajo inventario"
+                      : "Disponible"
                 }
               </div>
 
@@ -4086,6 +4098,32 @@ function renderInventory(){
           `
         )
         .join("");
+
+  $("inventorySearch").oninput = event => { inventoryQuery = event.target.value; renderInventory(); };
+  $("inventoryStatusFilter").onchange = event => { inventoryStatus = event.target.value; renderInventory(); };
+  qsa("[data-inventory-select]").forEach(box => {
+    box.onchange = () => box.checked ? selectedInventory.add(box.dataset.inventorySelect) : selectedInventory.delete(box.dataset.inventorySelect);
+  });
+  $("selectAllInventory").onchange = event => {
+    rows.forEach(item => event.target.checked ? selectedInventory.add(item.id) : selectedInventory.delete(item.id));
+    renderInventory();
+  };
+  $("saveInventory").onclick = async () => {
+    const changes = [...selectedInventory].map(id => ({
+      id,
+      quantity: Number(document.querySelector(`[data-inventory-quantity="${CSS.escape(id)}"]`)?.value)
+    }));
+    if(!changes.length){showToast("Selecciona las variantes que deseas actualizar.");return;}
+    $("saveInventory").disabled = true;
+    try{
+      const result = await apiRequest("/api/inventory", {method:"PATCH", body:{changes}});
+      inventory = Array.isArray(result.inventory) ? result.inventory : inventory;
+      selectedInventory.clear();
+      renderInventory();
+      renderDashboard();
+      showToast(`${result.updated} variante${result.updated === 1 ? "" : "s"} actualizada${result.updated === 1 ? "" : "s"} en Wix.`);
+    }catch(error){showToast(error?.message || "No pudimos actualizar el inventario.");renderInventory();}
+  };
 }
 
   /* ============================================================
@@ -4266,10 +4304,10 @@ function renderInventory(){
                         <strong>Tarjeta autorizada</strong>
                         <div style="margin-top:3px;font-size:11px;color:#6f6f6f">El pago está retenido. Captura para confirmar el pedido.</div>
                       </div>
-                      <div style="display:flex;gap:8px">
+                      ${order.canCapturePayment || order.canCancelPayment ? `<div style="display:flex;gap:8px">
                         <button type="button" data-cancel-stripe="${escapeHtml(order.id)}" style="padding:10px 14px;border:1px solid #080808;border-radius:999px;background:#fff;color:#080808;font-weight:700;cursor:pointer">Cancelar</button>
                         <button type="button" data-capture-stripe="${escapeHtml(order.id)}" style="padding:10px 14px;border:0;border-radius:999px;background:#080808;color:#fff;font-weight:700;cursor:pointer">Capturar pago</button>
-                      </div>
+                      </div>` : `<span style="font-size:11px;font-weight:750">Administración de CajaModa revisará esta autorización</span>`}
                     </div>
                   </div>
                 ` : ""}
@@ -4602,8 +4640,9 @@ function renderInventory(){
 
   function renderEarnings(){
 
-    const earned =
-      confirmedEarnings();
+    const earned = ownerSummary
+      ? Number(ownerSummary.commissionEarned || 0)
+      : confirmedEarnings();
 
     $("totalEarned")
       .textContent =
@@ -4619,9 +4658,7 @@ function renderInventory(){
 
     $("dashboardPotential")
       .textContent =
-        money(
-          totalPotential()
-        );
+        `${Number(store.platformEarningPercent || 0)}%`;
 
     if(
       !products.length
@@ -4752,6 +4789,11 @@ function renderInventory(){
         String(
           orders.length
         );
+
+    if(ownerSummary){
+      $("dashboardEarned").textContent = money(ownerSummary.commissionEarned);
+      $("dashboardPotential").textContent = `${Number(ownerSummary.commissionPercent || 0)}%`;
+    }
   }
 
   /* ============================================================
@@ -4790,6 +4832,8 @@ if(
   loadRealOrders(
     true
   );
+
+  loadOwnerWorkspace().catch(error => showToast(error?.message || "No pudimos cargar el espacio."));
 
 }else{
 

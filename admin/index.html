@@ -904,7 +904,8 @@ img{
 .productQuickView{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(18,16,13,.28);backdrop-filter:blur(8px)}
 .productQuickView.open{display:flex}.productQuickCard{width:min(680px,94vw);max-height:88vh;overflow:auto;padding:24px;border:1px solid rgba(255,255,255,.75);border-radius:24px;background:rgba(255,255,255,.84);box-shadow:0 30px 90px rgba(35,27,18,.24);backdrop-filter:blur(26px)}
 .productQuickHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.productQuickHeader h2{font-size:24px;margin:0}.productQuickClose{border:0;background:transparent;font-size:26px;cursor:pointer}.productQuickGrid{display:grid;grid-template-columns:180px 1fr;gap:20px;margin-top:18px}.productQuickImage{width:100%;aspect-ratio:.8;border-radius:16px;background:#eee;object-fit:cover}.productQuickDetails{display:grid;grid-template-columns:1fr 1fr;gap:12px}.productQuickField{padding:12px;border:1px solid rgba(0,0,0,.08);border-radius:12px;background:rgba(255,255,255,.72)}.productQuickField span{display:block;color:#777;font-size:9px}.productQuickField strong{font-size:12px}
-@media(max-width:760px){.pageHeadingRow{align-items:stretch;flex-direction:column}.pageHeadingRow .primaryButton{width:100%}.productFormCard{padding:14px;border-radius:15px}.twoColumn,.threeColumn{grid-template-columns:1fr}.photoUploadGrid{grid-template-columns:repeat(3,1fr)}.variantBuilder{overflow-x:auto}.variantRow{min-width:560px}.colorQuickChoices{display:grid;grid-template-columns:repeat(2,1fr)}.colorQuickChoices button{justify-content:flex-start}.productQuickGrid{grid-template-columns:1fr}.productQuickImage{max-height:260px;object-fit:contain}.productQuickDetails{grid-template-columns:1fr}.compactAssistButton{width:100%}}
+.quickEditForm{display:grid;gap:12px}.quickEditForm label{display:grid;gap:6px;font-size:11px;font-weight:700}.quickEditForm input,.quickEditForm textarea,.quickEditForm select{width:100%;padding:11px 12px;border:1px solid rgba(0,0,0,.14);border-radius:11px;background:rgba(255,255,255,.8);font:inherit}.quickEditForm textarea{min-height:92px;resize:vertical}.quickEditColumns{display:grid;grid-template-columns:1fr 1fr;gap:12px}.quickVariantList{display:grid;gap:8px}.quickVariantRow{display:grid;grid-template-columns:minmax(0,1fr) 105px;align-items:center;gap:10px;padding:9px 10px;border:1px solid rgba(0,0,0,.08);border-radius:11px;background:rgba(255,255,255,.66)}.quickVariantRow small{display:block;color:#777}.quickEditActions{display:flex;justify-content:flex-end;gap:10px;margin-top:4px}.quickEditActions button{min-width:140px}
+@media(max-width:760px){.pageHeadingRow{align-items:stretch;flex-direction:column}.pageHeadingRow .primaryButton{width:100%}.productFormCard{padding:14px;border-radius:15px}.twoColumn,.threeColumn{grid-template-columns:1fr}.photoUploadGrid{grid-template-columns:repeat(3,1fr)}.variantBuilder{overflow-x:auto}.variantRow{min-width:560px}.colorQuickChoices{display:grid;grid-template-columns:repeat(2,1fr)}.colorQuickChoices button{justify-content:flex-start}.productQuickGrid{grid-template-columns:1fr}.productQuickImage{max-height:220px;object-fit:contain}.productQuickDetails,.quickEditColumns{grid-template-columns:1fr}.quickEditActions{display:grid}.quickEditActions button{width:100%}.compactAssistButton{width:100%}}
 
 .field{
 
@@ -2166,8 +2167,8 @@ img{
 >
 
   <div class="pageHeadingRow">
-    <div><h1 class="pageTitle">Nuevo producto</h1><p class="pageIntro">Completa cada sección y publica todo en Wix.</p></div>
-    <button id="publishProductTop" class="primaryButton" type="button">Publicar en Wix</button>
+    <div><h1 class="pageTitle">Nuevo producto</h1><p class="pageIntro">Completa cada sección y publica todo en tu tienda.</p></div>
+    <button id="publishProductTop" class="primaryButton" type="button">Publicar producto</button>
   </div>
 
   <div class="formGrid">
@@ -2228,7 +2229,7 @@ img{
     </section>
 
     <section class="productFormCard"><h2>Inventario y preventa</h2>
-      <label class="switchRow"><span><strong>Controlar inventario</strong><small>Wix actualizará la disponibilidad según la cantidad.</small></span><input id="trackInventory" type="checkbox" checked></label>
+      <label class="switchRow"><span><strong>Controlar inventario</strong><small>La disponibilidad se actualizará según la cantidad.</small></span><input id="trackInventory" type="checkbox" checked></label>
       <div class="twoColumn"><div class="field"><label for="productQuantity">Cantidad inicial</label><input id="productQuantity" type="number" min="0" step="1" placeholder="0"></div><div class="field"><label for="productStockStatus">Estado</label><select id="productStockStatus"><option value="IN_STOCK">En stock</option><option value="OUT_OF_STOCK">Agotado</option></select></div></div>
       <div class="field"><label for="productStyleCode">SKU base (automático)</label><input id="productStyleCode" type="text" maxlength="30" placeholder="Se genera del nombre" readonly></div>
       <label class="switchRow"><span><strong>Vender como preventa al agotarse</strong><small>Permite pedidos cuando la cantidad llegue a cero.</small></span><input id="allowPreorder" type="checkbox"></label>
@@ -2441,7 +2442,7 @@ img{
   class="toast"
 ></div>
 
-<div id="productQuickView" class="productQuickView" aria-hidden="true"><div class="productQuickCard" role="dialog" aria-modal="true" aria-labelledby="productQuickTitle"><div class="productQuickHeader"><div><h2 id="productQuickTitle">Producto</h2><p class="formSectionHelp">Vista rápida conectada al producto publicado en Wix.</p></div><button id="productQuickClose" class="productQuickClose" type="button" aria-label="Cerrar">×</button></div><div id="productQuickBody"></div></div></div>
+<div id="productQuickView" class="productQuickView" aria-hidden="true"><div class="productQuickCard" role="dialog" aria-modal="true" aria-labelledby="productQuickTitle"><div class="productQuickHeader"><div><h2 id="productQuickTitle">Producto</h2><p class="formSectionHelp">Vista rápida conectada al producto publicado.</p></div><button id="productQuickClose" class="productQuickClose" type="button" aria-label="Cerrar">×</button></div><div id="productQuickBody"></div></div></div>
 
 <script>
 
@@ -3039,7 +3040,7 @@ async function loadRealInventory(
         id: key,
         wixProductId: key,
         source: "wix",
-        name: item.productName || "Producto Wix",
+        name: item.productName || "Producto",
         price: Number(item.price || 0),
         quantity: 0,
         sizes: [],
@@ -3896,7 +3897,7 @@ if(
       );
 
       showToast(
-        "Producto publicado en Wix."
+        "Producto publicado."
       );
 
     }catch(
@@ -3964,13 +3965,60 @@ if(
 
   let productQuery = "";
 
-  function openProductQuickView(product){
+  async function openProductQuickView(product){
     const modal = $("productQuickView");
     $("productQuickTitle").textContent = product.name || "Producto";
     const image = product.photos?.[0] || product.wixMediaUrls?.[0] || "";
-    $("productQuickBody").innerHTML = `<div class="productQuickGrid">${image ? `<img class="productQuickImage" src="${escapeHtml(image)}" alt="">` : `<div class="productQuickImage"></div>`}<div class="productQuickDetails"><div class="productQuickField"><span>Precio</span><strong>${money(product.price)}</strong></div><div class="productQuickField"><span>Inventario</span><strong>${Number(product.quantity || 0)} unidades</strong></div><div class="productQuickField"><span>Tallas</span><strong>${escapeHtml(product.sizes?.join(", ") || "Sin variantes")}</strong></div><div class="productQuickField"><span>Estado</span><strong>${Number(product.quantity || 0) > 0 ? "En stock" : "Agotado"}</strong></div><div class="productQuickField" style="grid-column:1/-1"><span>Descripción</span><strong>${escapeHtml(product.description || "Sin descripción")}</strong></div></div></div>`;
+    $("productQuickBody").innerHTML = `<div class="emptyStateText">Cargando producto…</div>`;
     modal.classList.add("open");
     modal.setAttribute("aria-hidden", "false");
+    try{
+      const detailResult = await apiRequest(`/api/products/${encodeURIComponent(product.id)}`);
+      const detail = detailResult?.product || product;
+      const productVariants = inventory.filter(item => String(item.productId) === String(product.id));
+      const resolvedImage = detail.image || image;
+      $("productQuickTitle").textContent = detail.name || product.name || "Producto";
+      $("productQuickBody").innerHTML = `<div class="productQuickGrid">
+        ${resolvedImage ? `<img class="productQuickImage" src="${escapeHtml(resolvedImage)}" alt="">` : `<div class="productQuickImage"></div>`}
+        <form id="quickEditForm" class="quickEditForm">
+          <label>Nombre<input id="quickProductName" maxlength="80" value="${escapeHtml(detail.name || product.name || "")}"></label>
+          <div class="quickEditColumns">
+            <label>Precio COP<input id="quickProductPrice" inputmode="numeric" type="number" min="1" step="1" value="${Math.round(Number(product.price || 0))}"></label>
+            <label>Estado<select id="quickProductStatus"><option value="in" ${Number(product.quantity || 0) > 0 ? "selected" : ""}>En stock</option><option value="out" ${Number(product.quantity || 0) <= 0 ? "selected" : ""}>Agotado</option></select></label>
+          </div>
+          <label>Descripción<textarea id="quickProductDescription" maxlength="16000">${escapeHtml(detail.description || "")}</textarea></label>
+          <div><strong>Variantes y tallas</strong><div class="quickVariantList">${productVariants.length ? productVariants.map(item => `<label class="quickVariantRow"><span>${escapeHtml(item.variantName || item.sku || "Variante")}<small>${escapeHtml(item.sku || "Sin SKU")}</small></span><input data-quick-inventory-id="${escapeHtml(item.id)}" type="number" min="0" step="1" value="${Math.max(0, Math.trunc(Number(item.quantity || 0)))}" aria-label="Cantidad ${escapeHtml(item.variantName || item.sku || "variante")}"></label>`).join("") : `<div class="emptyStateText">Este producto no tiene variantes editables.</div>`}</div></div>
+          <label class="switchRow"><span><strong>Visible en la tienda</strong></span><input id="quickProductVisible" type="checkbox" ${detail.visible !== false ? "checked" : ""}></label>
+          <div class="quickEditActions"><button id="quickEditCancel" class="secondaryButton" type="button">Cancelar</button><button id="quickEditSave" class="primaryButton" type="submit">Guardar cambios</button></div>
+        </form>
+      </div>`;
+      $("quickEditCancel").onclick = closeProductQuickView;
+      $("quickProductStatus").onchange = () => {
+        if($("quickProductStatus").value === "out") qsa("[data-quick-inventory-id]").forEach(input => input.value = "0");
+      };
+      $("quickEditForm").onsubmit = async event => {
+        event.preventDefault();
+        const button = $("quickEditSave");
+        const changes = qsa("[data-quick-inventory-id]").map(input => ({id: input.dataset.quickInventoryId, quantity: Number(input.value)}));
+        if(changes.some(change => !Number.isInteger(change.quantity) || change.quantity < 0)) return showToast("Revisa la cantidad de cada variante.");
+        button.disabled = true;
+        button.textContent = "Guardando…";
+        try{
+          await apiRequest(`/api/products/${encodeURIComponent(product.id)}`, {method:"PATCH", body:{name:$("quickProductName").value.trim(), description:$("quickProductDescription").value.trim(), price:Number($("quickProductPrice").value), visible:$("quickProductVisible").checked}});
+          if(changes.length) await apiRequest("/api/inventory", {method:"PATCH", body:{changes}});
+          await loadRealInventory(true);
+          closeProductQuickView();
+          renderProducts();
+          showToast("Producto actualizado.");
+        }catch(error){
+          showToast(error?.message || "No pudimos actualizar el producto.");
+          button.disabled = false;
+          button.textContent = "Guardar cambios";
+        }
+      };
+    }catch(error){
+      $("productQuickBody").innerHTML = `<div class="emptyStateText">${escapeHtml(error?.message || "No pudimos cargar el producto.")}</div>`;
+    }
   }
   function closeProductQuickView(){ $("productQuickView").classList.remove("open"); $("productQuickView").setAttribute("aria-hidden", "true"); }
   $("productQuickClose").onclick = closeProductQuickView;
@@ -4041,7 +4089,7 @@ if(
                           ${
                             product.source ===
                             "wix"
-                              ?"WIX"
+                              ?"CATÁLOGO"
                               :"STORE"
                           }
                         </div>
@@ -4114,7 +4162,7 @@ function renderInventory(){
           </div>
 
           <div class="emptyStateText">
-            El inventario de Wix aparecerá aquí.
+            El inventario aparecerá aquí.
           </div>
 
         </div>
@@ -4172,7 +4220,7 @@ function renderInventory(){
                 <span class="inventoryProductCell">
                   ${item.image ? `<img class="inventoryThumb" src="${escapeHtml(item.image)}" alt="">` : `<span class="inventoryThumb"></span>`}
                   <span>
-                    <strong>${escapeHtml(item.productName || "Producto Wix")}</strong>
+                    <strong>${escapeHtml(item.productName || "Producto")}</strong>
                     <span style="display:block;color:#777;font-size:10px">${escapeHtml(item.variantName || item.sku || "Sin SKU")}</span>
                   </span>
                 </span>
@@ -4220,7 +4268,7 @@ function renderInventory(){
       selectedInventory.clear();
       renderInventory();
       renderDashboard();
-      showToast(`${result.updated} variante${result.updated === 1 ? "" : "s"} actualizada${result.updated === 1 ? "" : "s"} en Wix.`);
+      showToast(`${result.updated} variante${result.updated === 1 ? "" : "s"} actualizada${result.updated === 1 ? "" : "s"}.`);
     }catch(error){showToast(error?.message || "No pudimos actualizar el inventario.");renderInventory();}
   };
 }
@@ -4652,7 +4700,7 @@ function renderInventory(){
         method: "POST",
         body: { status, carrier, trackingNumber }
       });
-      showToast("Rastreo guardado en Wix.");
+      showToast("Rastreo guardado.");
       await loadRealOrders(true);
     } catch (error) {
       showToast(error?.message || "No pudimos guardar el rastreo.");

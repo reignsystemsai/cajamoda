@@ -532,9 +532,9 @@ async function stripeLineItemFromCartItem(item) {
   const fulfillmentSku = safeText(variant?.sku || product?.sku, 100).toUpperCase();
   const fulfillmentSegments = fulfillmentSku.split("-").filter(Boolean);
   const fulfillmentCode = [...fulfillmentSegments].reverse().find(segment =>
-    ["P", "PR", "RP", "R", "L", "PRL"].includes(segment)
+    ["P", "PR", "RP", "R", "L", "PL", "LP", "RL", "LR", "PRL"].includes(segment)
   ) || fulfillmentSegments[0];
-  const normalizedFulfillmentCode = ["P", "PR", "RP", "R", "L", "PRL"].includes(fulfillmentCode)
+  const normalizedFulfillmentCode = ["P", "PR", "RP", "R", "L", "PL", "LP", "RL", "LR", "PRL"].includes(fulfillmentCode)
     ? fulfillmentCode
     : "R";
 
@@ -555,7 +555,7 @@ async function stripeLineItemFromCartItem(item) {
 }
 
 function stripeCaptureMethod(lines) {
-  return lines.some(line => ["L", "PRL"].includes(safeText(line?.fulfillmentCode, 10).toUpperCase()))
+  return lines.some(line => safeText(line?.fulfillmentCode, 10).toUpperCase().includes("L"))
     ? "manual"
     : "automatic";
 }
@@ -2214,11 +2214,10 @@ function buildVariants(
   variantOverrides = []
 ) {
 
-  const combinations =
-    buildCombinations(
-      sizes,
-      colors
-    );
+  const suppliedOverrides = Array.isArray(variantOverrides) ? variantOverrides : [];
+  const combinations = suppliedOverrides.length
+    ? suppliedOverrides.map(item => ({size:safeText(item?.size, 20), color:safeText(item?.color, 50)}))
+    : buildCombinations(sizes, colors);
 
   const totalQuantity =
     Math.max(
@@ -2250,7 +2249,7 @@ function buildVariants(
     .toUpperCase();
 
   const overrideMap = new Map(
-    (Array.isArray(variantOverrides) ? variantOverrides : []).map(item => [
+    suppliedOverrides.map(item => [
       `${safeText(item?.size, 20)}::${safeText(item?.color, 50)}`,
       item
     ])
@@ -2272,11 +2271,12 @@ function buildVariants(
         remainder -= 1;
       }
 
+      const variantFulfillment = safeText(override?.fulfillmentCode || fulfillmentCode, 10).toUpperCase();
       const generatedSku = [
           styleCode,
           combination.color ? skuSegment(combination.color).slice(0, 3) : "",
           combination.size ? skuSegment(combination.size) : "",
-          fulfillmentCode
+          variantFulfillment
         ].filter(Boolean).join("-");
       const customSku = safeText(override?.sku, 100).replace(/[^A-Za-z0-9-]/g, "").toUpperCase();
 
@@ -2675,13 +2675,8 @@ async function createWixProduct(
       16000
     );
 
-  const price =
-    Number(
-      input.price ||
-      0
-    );
-
   const cost = Math.max(0, Number(input.cost || 0));
+  const price = cost > 0 ? Math.round((cost * 2) + 12500) : 0;
   const trackInventory = input.trackInventory !== false;
   const stockStatus = input.stockStatus === "OUT_OF_STOCK" ? "OUT_OF_STOCK" : "IN_STOCK";
   const allowPreorder = Boolean(input.allowPreorder);
@@ -2728,16 +2723,26 @@ async function createWixProduct(
     );
 
   const fulfillmentCode = safeText(input.fulfillmentCode, 10).toUpperCase();
-  const styleCode = safeText(input.styleCode, 30)
+  let styleCode = safeText(input.styleCode, 30)
     .replace(/[^A-Za-z0-9]/g, "")
     .toUpperCase();
 
-  if (!["P", "R", "PR", "L", "PRL"].includes(fulfillmentCode)) {
+  if (!["P", "R", "PR", "L", "PL", "RL", "PRL"].includes(fulfillmentCode)) {
     throw new Error("Selecciona un tipo de entrega válido.");
   }
 
   if (!styleCode) {
     throw new Error("Agrega un código de estilo para generar los SKUs.");
+  }
+
+  // A newly created product always receives an unused SKU family. Inventory
+  // updates use the update endpoint and therefore preserve existing SKUs.
+  const usedSkus = new Set((await getWixInventory()).map(item => safeText(item?.sku, 100).toUpperCase()));
+  const baseStyleCode = styleCode;
+  let suffix = 1;
+  while ([...usedSkus].some(sku => sku === styleCode || sku.startsWith(`${styleCode}-`))) {
+    suffix += 1;
+    styleCode = `${baseStyleCode}${suffix}`;
   }
 
   if (
@@ -3190,9 +3195,10 @@ async function handleAssistProduct(request, response) {
     return;
   }
   const currentName = safeText(body?.currentName, 80);
+  const excluded = cleanList(body?.exclude, 5).join(" | ");
   const instruction = kind === "name"
-    ? "Crea un nombre comercial original en español para esta prenda. Devuelve solo el nombre, de 2 a 4 palabras, sin comillas y evita nombres genéricos."
-    : `Escribe una descripción de producto original en español de 2 oraciones para una tienda de moda. Describe solo lo visible, tono elegante y claro, sin inventar materiales. Nombre actual: ${currentName || "sin nombre"}. Devuelve solo la descripción.`;
+    ? `Crea un nombre comercial original en español para esta prenda. Devuelve solo el nombre, de 2 a 4 palabras, sin comillas y evita nombres genéricos. No repitas: ${excluded || "ninguno"}.`
+    : `Escribe una descripción de producto original en español de 2 oraciones para una tienda de moda. Describe solo lo visible, tono elegante y claro, sin inventar materiales. Nombre actual: ${currentName || "sin nombre"}. No repitas: ${excluded || "ninguna"}. Devuelve solo la descripción.`;
   const openaiResponse = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {"Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json"},
@@ -3262,7 +3268,8 @@ async function handleUpdateProduct(request, response, productId) {
   const body = await readBody(request);
   const name = safeText(body?.name, 80);
   const description = safeText(body?.description, 16000);
-  const price = Number(body?.price);
+  const cost = Math.max(0, Number(body?.cost || 0));
+  const price = cost > 0 ? Math.round((cost * 2) + 12500) : Number(body?.price);
   if (!name) return sendError(response, 400, "Agrega el nombre del producto.");
   if (!Number.isFinite(price) || price <= 0) return sendError(response, 400, "Agrega un precio válido.");
 
@@ -3315,6 +3322,7 @@ async function handleGetProduct(request, response, productId) {
       description: safeText(String(product.plainDescription || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " "), 16000),
       visible: product.visible !== false,
       image: getProductImageUrl(product)
+      ,cost: Number(product?.variantsInfo?.variants?.[0]?.revenueDetails?.cost?.amount || 0)
     }
   });
 }

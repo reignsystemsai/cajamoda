@@ -1587,10 +1587,124 @@ img{
 
   .loaderApp{
 
+    max-width:1440px;
+
+    min-height:calc(100dvh - 40px);
+
+    margin:20px auto;
+
+    padding-bottom:40px;
+
+    border-radius:24px;
+
+    overflow:hidden;
+
     box-shadow:
       0 0 70px
       rgba(0,0,0,.06);
   }
+
+  .loaderHeader{
+    padding:22px 32px 16px;
+  }
+
+  .loaderBrand{font-size:22px}
+  .loaderLabel{font-size:10px}
+  .storeSelector{min-width:220px;height:44px;font-size:13px;padding:0 16px}
+  .loaderTabs{gap:34px;margin-top:18px}
+  .tabButton{font-size:12px;padding:10px 0 12px}
+
+  .loaderMain{
+    padding:34px 32px 0;
+  }
+
+  .pageTitle{font-size:38px}
+  .pageIntro{max-width:760px;font-size:14px;margin-top:10px}
+  .sectionBlock{margin-top:28px}
+  .sectionTitle{font-size:17px}
+  .sectionAction{font-size:12px}
+
+  .metricGrid{
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:16px;
+    margin-top:26px;
+  }
+
+  .metricCard{min-height:132px;padding:22px;border-radius:20px}
+  .metricLabel{font-size:11px}
+  .metricValue{font-size:34px;margin-top:18px}
+  .metricSub{font-size:11px}
+
+  .primaryButton{min-height:50px;font-size:14px;border-radius:14px}
+  .secondaryButton{min-height:46px;font-size:13px;border-radius:13px}
+
+  .productList{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:14px;
+  }
+
+  .productRow{grid-template-columns:88px 1fr auto;gap:16px;padding:14px;border-radius:18px}
+  .productThumb{width:88px;height:104px;border-radius:13px}
+  .productName{font-size:14px}
+  .productMeta{font-size:11px}
+  .productEarning{font-size:12px}
+  .productStatus{min-width:90px;height:32px;font-size:10px}
+
+  .formGrid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:18px;
+    margin-top:26px;
+  }
+
+  .formGrid > .field:first-child,
+  .formGrid > .field:nth-child(3),
+  .formGrid > .field:nth-child(7),
+  .formGrid > .field:nth-child(8),
+  .formGrid > .earningPreview,
+  .formGrid > .fullButton{
+    grid-column:1 / -1;
+  }
+
+  .field{gap:8px}
+  .field label{font-size:12px}
+  .field input,.field select,.field textarea{font-size:14px;border-radius:14px}
+  .field input,.field select{height:52px;padding:0 16px}
+  .field textarea{min-height:130px;padding:16px}
+  .twoColumn{gap:18px}
+  .checkOption label{font-size:12px}
+
+  .inventoryRow{padding:16px 18px}
+  .inventoryName,.inventoryQty,.inventoryState{font-size:13px}
+
+  .orderList{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:16px;
+    align-items:start;
+  }
+
+  .orderCard{padding:20px;border-radius:18px}
+  .orderNumber{font-size:14px}
+  .orderDate{font-size:11px}
+  .orderCustomer{font-size:13px}
+  .orderProducts{font-size:11px}
+  .orderMoney{font-size:12px}
+  .orderMoney strong{font-size:14px}
+  .trackingStep{font-size:9px}
+  .trackingInputs input,.trackingInputs select{height:42px;font-size:11px}
+
+  .earningSummaryLabel,.earningSummarySub{font-size:11px}
+  .earningSummaryValue{font-size:42px}
+  .earningRowLabel{font-size:13px}
+  .earningRowMeta{font-size:10px}
+  .earningRowValue{font-size:14px}
+  .settingsTitle{font-size:14px}
+  .settingsText{font-size:11px}
+  .emptyStateTitle{font-size:15px}
+  .emptyStateText{font-size:12px}
+  .toast{font-size:12px;padding:12px 18px}
 }
 
 </style>

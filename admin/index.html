@@ -2049,7 +2049,7 @@ img{
 @media (min-width:900px){
   .sidebarAccountControls{position:absolute;left:28px;right:28px;bottom:20px;display:grid;gap:8px}
   .sidebarAccountControls #storeSelector,.sidebarAccountControls #logoutButton{position:static!important;inset:auto!important;width:100%!important;height:36px!important;margin:0!important;font-size:10px!important}
-  .sidebarAccountControls #storeSelector{padding:0 12px 0 36px!important;background-position:14px 50%!important}
+  .sidebarAccountControls #storeSelector{padding:0 12px 0 38px!important;background:radial-gradient(circle at 16px 50%,#4e9b55 0 5px,transparent 6px),rgba(255,255,255,.66)!important}
 
   #panel-add .productWorkspace{grid-template-columns:minmax(320px,.72fr) minmax(720px,1.58fr)!important;gap:8px!important}
   #panel-add .productInformationCard,#panel-add .productMediaCard{height:238px!important}
@@ -2195,10 +2195,10 @@ img{
 
   #panel-add .productMediaCard{grid-template-columns:1fr!important;grid-template-rows:auto 38px minmax(0,1fr)!important;padding:14px 20px!important;gap:10px!important}
   #panel-add .mediaHeading{grid-column:1!important;grid-row:1!important}
-  #panel-add .verticalUploadControl{grid-column:1!important;grid-row:2!important;width:100%!important;height:38px!important;min-height:38px!important;writing-mode:horizontal-tb!important;transform:none!important;border-radius:10px!important}
+  #panel-add .verticalUploadControl{grid-column:1/-1!important;grid-row:2!important;justify-self:center!important;width:100%!important;max-width:900px!important;height:38px!important;min-height:38px!important;writing-mode:horizontal-tb!important;transform:none!important;border-radius:10px!important}
   #panel-add .verticalUploadControl strong{font-size:12px!important}
   #panel-add .verticalUploadControl span{display:none!important}
-  #panel-add .portraitMediaGrid{grid-column:1!important;grid-row:3!important;width:100%!important;min-width:0!important;justify-self:stretch!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;grid-template-rows:250px!important;height:250px!important;gap:10px!important}
+  #panel-add .portraitMediaGrid{grid-column:1/-1!important;grid-row:3!important;width:100%!important;max-width:900px!important;min-width:0!important;justify-self:center!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;grid-template-rows:250px!important;height:250px!important;gap:10px!important}
   #panel-add .portraitMediaGrid .photoBox,#panel-add .portraitMediaGrid .photoBox:first-child{width:100%!important;min-width:0!important;height:250px!important;min-height:250px!important;max-height:250px!important;aspect-ratio:auto!important;border-radius:10px!important}
 
   #panel-add .variantFormCard{grid-template-columns:minmax(0,1fr) 300px!important;min-height:286px!important;padding:14px 18px!important;gap:18px!important}

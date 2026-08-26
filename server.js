@@ -512,8 +512,15 @@ async function stripeLineItemFromCartItem(item) {
     throw new Error(`No pudimos verificar el precio de ${safeText(product?.name, 80)}.`);
   }
 
+  const fulfillmentSku = safeText(variant?.sku || product?.sku, 100).toUpperCase();
+  const fulfillmentCode = fulfillmentSku.split("-", 1)[0];
+  const normalizedFulfillmentCode = ["P", "PR", "RP", "R", "L"].includes(fulfillmentCode)
+    ? fulfillmentCode
+    : "R";
+
   return {
     quantity,
+    fulfillmentCode: normalizedFulfillmentCode,
     price_data: {
       currency: "cop",
       // Stripe treats COP as a two-decimal currency in API requests.
@@ -521,10 +528,16 @@ async function stripeLineItemFromCartItem(item) {
       product_data: {
         name: safeText(product?.name, 80) || "Producto CajaModa",
         description: stripeChoiceText(item) || undefined,
-        metadata: { productId, variantId }
+        metadata: { productId, variantId, fulfillmentCode: normalizedFulfillmentCode }
       }
     }
   };
+}
+
+function stripeCaptureMethod(lines) {
+  return lines.some(line => safeText(line?.fulfillmentCode, 10).toUpperCase() === "L")
+    ? "manual"
+    : "automatic";
 }
 
 async function handleCreateStripeCheckout(request, response) {
@@ -555,15 +568,17 @@ async function handleCreateStripeCheckout(request, response) {
     variantId: safeText(line?.price_data?.product_data?.metadata?.variantId, 80),
     quantity: Math.max(1, Math.floor(Number(line?.quantity || 1))),
     amount: Number(line?.price_data?.unit_amount || 0) / 100,
-    name: safeText(line?.price_data?.product_data?.name, 300) || "Producto CajaModa"
+    name: safeText(line?.price_data?.product_data?.name, 300) || "Producto CajaModa",
+    fulfillmentCode: safeText(line?.fulfillmentCode, 10).toUpperCase()
   }));
+  const captureMethod = stripeCaptureMethod(intentLines);
   const intentMetadata = stripeIntentMetadata(intentLines, body, delivery);
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     ui_mode: "elements",
     payment_method_types: ["card"],
     payment_intent_data: {
-      capture_method: "manual",
+      capture_method: captureMethod,
       receipt_email: customerEmail || undefined,
       metadata: {
         ...intentMetadata,
@@ -818,7 +833,8 @@ function stripeIntentMetadata(lines, body, delivery) {
       v: line.variantId,
       q: line.quantity,
       a: line.amount,
-      n: safeText(line.name, 180)
+      n: safeText(line.name, 180),
+      f: safeText(line.fulfillmentCode, 10).toUpperCase()
     })).toString("base64url");
   });
   return metadata;
@@ -834,7 +850,8 @@ function stripeIntentLines(intent) {
       variantId: safeText(item.v, 80),
       quantity: Math.max(1, Math.floor(Number(item.q || 1))),
       amount: Number(item.a || 0),
-      name: safeText(item.n, 300) || "Producto CajaModa"
+      name: safeText(item.n, 300) || "Producto CajaModa",
+      fulfillmentCode: safeText(item.f, 10).toUpperCase()
     };
   }).filter(line => line.productId && line.variantId && Number.isFinite(line.amount) && line.amount >= 1);
 }
@@ -850,8 +867,10 @@ async function handleCreateStripePaymentIntent(request, response) {
     variantId: safeText(line?.price_data?.product_data?.metadata?.variantId, 80),
     quantity: Math.max(1, Math.floor(Number(line.quantity || 1))),
     amount: Number(line?.price_data?.unit_amount || 0) / 100,
-    name: safeText(line?.price_data?.product_data?.name, 300) || "Producto CajaModa"
+    name: safeText(line?.price_data?.product_data?.name, 300) || "Producto CajaModa",
+    fulfillmentCode: safeText(line?.fulfillmentCode, 10).toUpperCase()
   }));
+  const captureMethod = stripeCaptureMethod(lines);
   const delivery = await checkoutDelivery(body);
   const subtotalCents = lines.reduce((sum, line) => sum + Math.round(line.amount * 100) * line.quantity, 0);
   const totalCents = subtotalCents + Math.round(Math.max(0, Number(delivery.fee || 0)) * 100);
@@ -861,7 +880,7 @@ async function handleCreateStripePaymentIntent(request, response) {
   const intent = await stripe.paymentIntents.create({
     amount: totalCents,
     currency: "cop",
-    capture_method: "manual",
+    capture_method: captureMethod,
     payment_method_types: ["card", "link"],
     receipt_email: customerEmail || undefined,
     description: `CajaModa · ${lines.length} producto${lines.length === 1 ? "" : "s"}`,

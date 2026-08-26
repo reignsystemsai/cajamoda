@@ -1013,7 +1013,7 @@ img{
 
 .variantBuilder{margin-top:14px;padding:14px;border:1px solid rgba(0,0,0,.09);border-radius:14px;background:rgba(255,255,255,.58)}
 .variantBuilderHeader{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:10px}.variantBuilderTitle{font-size:13px;font-weight:750}.variantBuilderHelp{color:#777;font-size:10px}
-.variantTable{display:flex;flex-direction:column;gap:7px}.variantRow{display:grid;grid-template-columns:minmax(120px,1fr) minmax(180px,1.25fr) 90px;gap:8px;align-items:center}.variantRowHead{color:#716b62;font-size:9px;font-weight:700}.variantLabel{font-size:11px;font-weight:650}.variantSku,.variantQuantity{width:100%;height:38px;padding:0 10px;border:1px solid rgba(0,0,0,.12);border-radius:10px;background:rgba(255,255,255,.82);font-size:11px}.variantEmpty{padding:12px;color:#777;font-size:10px;text-align:center}
+.variantFormCard{grid-column:1/-1}.variantTable{display:flex;flex-direction:column;gap:7px}.variantRow{display:grid;grid-template-columns:52px 70px minmax(130px,1fr) 90px minmax(260px,1.5fr) minmax(150px,1fr);gap:8px;align-items:center}.variantRowHead{color:#716b62;font-size:9px;font-weight:700}.variantLabel{font-size:11px;font-weight:650}.variantSku,.variantQuantity,.variantColor{width:100%;height:38px;padding:0 10px;border:1px solid rgba(0,0,0,.12);border-radius:10px;background:rgba(255,255,255,.82);font-size:11px}.variantSku{background:rgba(245,244,240,.9)}.deliveryChoices{display:flex;gap:5px;flex-wrap:wrap}.deliveryChoice{height:34px;padding:0 12px;border:1px solid rgba(0,0,0,.12);border-radius:999px;background:rgba(255,255,255,.75);font-size:10px}.deliveryChoice.selected{background:#4f8b43;color:#fff;border-color:#4f8b43}.variantUse{width:18px;height:18px}.variantEmpty{padding:12px;color:#777;font-size:10px;text-align:center}
 
 .photoBox{
 
@@ -2204,23 +2204,9 @@ img{
 
     <div class="twoColumn">
 
-      <div class="field">
-
-        <label for="productPrice">
-          Precio de venta
-        </label>
-
-        <input
-          id="productPrice"
-          type="number"
-          min="0"
-          step="1"
-          placeholder="0"
-        >
-
-      </div>
-
       <div class="field"><label for="productCost">Costo del producto</label><input id="productCost" type="number" min="0" step="1" placeholder="0"></div>
+
+      <div class="field"><label for="productPrice">Precio de venta</label><input id="productPrice" type="number" min="0" step="1" placeholder="0" readonly></div>
 
     </div></section>
 
@@ -2236,8 +2222,8 @@ img{
       <label class="switchRow"><span><strong>Vender como preventa al agotarse</strong><small>Permite pedidos cuando la cantidad llegue a cero.</small></span><input id="allowPreorder" type="checkbox"></label>
     </section>
 
-    <section class="productFormCard"><h2>Variantes</h2><p class="formSectionHelp">Selecciona tallas y escribe los colores. Los SKU se generan automáticamente.</p>
-      <div class="field"><label for="productFulfillment">Promesa PRL</label><select id="productFulfillment"><option value="P">P · Pronto</option><option value="R">R · Rápido</option><option value="PR">PR · Pronto + Rápido</option><option value="L">L · Libéralo</option><option value="PRL">PRL · Pronto + Rápido + Libéralo</option></select></div>
+    <section class="productFormCard variantFormCard"><h2>Variantes e inventario</h2><p class="formSectionHelp">Elige las tallas. El color es opcional y cada talla puede tener uno o varios métodos de entrega.</p>
+      <input id="productFulfillment" type="hidden" value="P">
 
     <div class="field">
 
@@ -2246,21 +2232,6 @@ img{
       </label>
 
       <div class="checkGrid">
-
-        <div class="checkOption">
-
-          <input
-            id="sizeXS"
-            type="checkbox"
-            value="XS"
-            data-size
-          >
-
-          <label for="sizeXS">
-            XS
-          </label>
-
-        </div>
 
         <div class="checkOption">
 
@@ -2333,6 +2304,7 @@ img{
       </label>
 
       <div class="colorQuickChoices" aria-label="Colores rápidos">
+        <button type="button" data-color-choice="" class="selected"><i style="background:#111"></i>Sin color</button>
         <button type="button" data-color-choice="Negro"><i style="background:#111"></i>Negro</button>
         <button type="button" data-color-choice="Blanco"><i style="background:#fff"></i>Blanco</button>
         <button type="button" data-color-choice="Café"><i style="background:#76513b"></i>Café</button>
@@ -2354,7 +2326,7 @@ img{
       <div class="variantBuilderHeader">
         <div>
           <div class="variantBuilderTitle">Variantes y SKU</div>
-          <div class="variantBuilderHelp">Revisa cada combinación. Puedes ajustar el SKU y la cantidad antes de publicar.</div>
+          <div class="variantBuilderHelp">Cada SKU se crea una sola vez. Cambiar la cantidad no crea otro SKU.</div>
         </div>
       </div>
       <div id="variantPreview" class="variantTable"></div>
@@ -3442,6 +3414,16 @@ if(
 
   const variantDrafts = new Map();
   const editedVariantQuantities = new Set();
+  const productSuggestionHistory = {name:[], description:[]};
+
+  function calculateSalePrice(cost){
+    const safeCost = Math.max(0, Number(cost || 0));
+    return safeCost > 0 ? Math.round((safeCost * 2) + 2500 + 10000) : 0;
+  }
+
+  function updateCalculatedPrice(){
+    $("productPrice").value = calculateSalePrice($("productCost").value) || "";
+  }
 
   function skuText(value){
     return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
@@ -3467,11 +3449,8 @@ if(
     return known[normalized] || normalized.slice(0, 3);
   }
 
-  function variantCombinations(sizes, colors){
-    if(sizes.length && colors.length) return sizes.flatMap(size => colors.map(color => ({size, color})));
-    if(sizes.length) return sizes.map(size => ({size, color:""}));
-    if(colors.length) return colors.map(color => ({size:"", color}));
-    return [{size:"", color:""}];
+  function fulfillmentCode(methods){
+    return ["P","R","L"].filter(code => methods.includes(code)).join("") || "P";
   }
 
   function renderVariantPreview(){
@@ -3484,28 +3463,39 @@ if(
     }
     const sizes = collectSizes();
     const colors = collectColors();
-    const combinations = variantCombinations(sizes, colors);
+    const combinations = (sizes.length ? sizes : [""]).map(size => ({size, color:""}));
     const total = Math.max(0, Number($("productQuantity").value || 0));
     const baseQuantity = combinations.length ? Math.floor(total / combinations.length) : total;
     let remainder = combinations.length ? total % combinations.length : 0;
-    const fulfillment = $("productFulfillment").value;
+    const colorOptions = ["", ...colors].filter((value,index,array) => array.indexOf(value) === index);
 
     $("variantPreview").innerHTML = `
-      <div class="variantRow variantRowHead"><span>Variante</span><span>SKU editable</span><span>Cantidad</span></div>
+      <div class="variantRow variantRowHead"><span>Usar</span><span>Talla</span><span>Color</span><span>Cantidad</span><span>Métodos de entrega</span><span>SKU</span></div>
       ${combinations.map(combination => {
-        const key = `${combination.size}::${combination.color}`;
-        const generatedSku = [styleCode, combination.color ? automaticColorCode(combination.color) : "", combination.size ? skuText(combination.size) : "", fulfillment].filter(Boolean).join("-");
+        const key = combination.size || "unique";
         const existing = variantDrafts.get(key) || {};
+        const color = existing.color ?? colorOptions[0] ?? "";
+        const methods = Array.isArray(existing.methods) && existing.methods.length ? existing.methods : ["P"];
+        const generatedSku = [styleCode, color ? automaticColorCode(color) : "", combination.size ? skuText(combination.size) : "", fulfillmentCode(methods)].filter(Boolean).join("-");
         const defaultQuantity = baseQuantity + (remainder-- > 0 ? 1 : 0);
         const quantity = editedVariantQuantities.has(key) ? existing.quantity : defaultQuantity;
-        variantDrafts.set(key, {size:combination.size, color:combination.color, sku:existing.skuEdited ? existing.sku : generatedSku, skuEdited:Boolean(existing.skuEdited), quantity});
-        const label = [combination.color, combination.size].filter(Boolean).join(" / ") || "Única";
-        return `<div class="variantRow" data-variant-row="${escapeHtml(key)}"><span class="variantLabel">${escapeHtml(label)}</span><input class="variantSku" data-variant-sku="${escapeHtml(key)}" value="${escapeHtml(variantDrafts.get(key).sku)}" maxlength="100"><input class="variantQuantity" data-variant-quantity="${escapeHtml(key)}" type="number" min="0" step="1" value="${quantity}"></div>`;
+        const finalSku = existing.persistedSku ? existing.sku : generatedSku;
+        variantDrafts.set(key, {size:combination.size, color, methods, sku:finalSku, persistedSku:Boolean(existing.persistedSku), quantity, enabled:existing.enabled !== false});
+        const options = colorOptions.map(value => `<option value="${escapeHtml(value)}" ${value === color ? "selected" : ""}>${escapeHtml(value || "Sin color")}</option>`).join("");
+        const delivery = [["P","Pronto"],["R","Rápido"],["L","Libéralo"]].map(([code,label]) => `<button class="deliveryChoice ${methods.includes(code) ? "selected" : ""}" type="button" data-delivery="${code}" data-variant-key="${escapeHtml(key)}">${escapeHtml(label)}</button>`).join("");
+        return `<div class="variantRow" data-variant-row="${escapeHtml(key)}"><input class="variantUse" data-variant-use="${escapeHtml(key)}" type="checkbox" ${existing.enabled === false ? "" : "checked"}><span class="variantLabel">${escapeHtml(combination.size || "Única")}</span><select class="variantColor" data-variant-color="${escapeHtml(key)}">${options}</select><input class="variantQuantity" data-variant-quantity="${escapeHtml(key)}" type="number" min="0" step="1" value="${quantity}"><div class="deliveryChoices">${delivery}</div><input class="variantSku" data-variant-sku="${escapeHtml(key)}" value="${escapeHtml(finalSku)}" readonly></div>`;
       }).join("")}`;
 
-    qsa("[data-variant-sku]").forEach(input => input.oninput = () => {
-      const draft = variantDrafts.get(input.dataset.variantSku);
-      if(draft){ draft.sku = input.value.replace(/[^A-Za-z0-9-]/g, "").toUpperCase(); draft.skuEdited = true; }
+    qsa("[data-variant-use]").forEach(input => input.onchange = () => { const draft = variantDrafts.get(input.dataset.variantUse); if(draft) draft.enabled = input.checked; });
+    qsa("[data-variant-color]").forEach(input => input.onchange = () => { const draft = variantDrafts.get(input.dataset.variantColor); if(draft){ draft.color = input.value; draft.sku = ""; renderVariantPreview(); } });
+    qsa("[data-delivery]").forEach(button => button.onclick = () => {
+      const draft = variantDrafts.get(button.dataset.variantKey);
+      if(!draft) return;
+      const next = new Set(draft.methods || []);
+      if(next.has(button.dataset.delivery) && next.size > 1) next.delete(button.dataset.delivery); else next.add(button.dataset.delivery);
+      draft.methods = ["P","R","L"].filter(code => next.has(code));
+      draft.sku = "";
+      renderVariantPreview();
     });
     qsa("[data-variant-quantity]").forEach(input => input.oninput = () => {
       const key = input.dataset.variantQuantity;
@@ -3518,8 +3508,9 @@ if(
     return qsa("[data-variant-row]").map(row => {
       const key = row.dataset.variantRow;
       const draft = variantDrafts.get(key);
-      return {size:draft?.size || "", color:draft?.color || "", sku:row.querySelector("[data-variant-sku]").value.trim().toUpperCase(), quantity:Number(row.querySelector("[data-variant-quantity]").value || 0)};
-    });
+      if(!draft?.enabled) return null;
+      return {size:draft.size || "", color:draft.color || "", fulfillmentCode:fulfillmentCode(draft.methods || []), sku:row.querySelector("[data-variant-sku]").value.trim().toUpperCase(), quantity:Number(row.querySelector("[data-variant-quantity]").value || 0)};
+    }).filter(Boolean);
   }
 
   async function assistProductField(kind){
@@ -3530,13 +3521,14 @@ if(
     button.disabled = true;
     button.textContent = "Creando...";
     try{
-      const result = await apiRequest("/api/products/assist", {method:"POST", body:{kind, photo, currentName:$("productName").value.trim()}});
+      const result = await apiRequest("/api/products/assist", {method:"POST", body:{kind, photo, currentName:$("productName").value.trim(), exclude:productSuggestionHistory[kind].slice(-5)}});
       if(kind === "name"){
         $("productName").value = result.value || "";
         renderVariantPreview();
       }else{
         $("productDescription").value = result.value || "";
       }
+      if(result.value){ productSuggestionHistory[kind].push(result.value); productSuggestionHistory[kind] = productSuggestionHistory[kind].slice(-5); }
     }catch(error){ showToast(error?.message || "No pudimos crear el texto."); }
     finally{ button.disabled = false; button.textContent = originalText; }
   }
@@ -3562,6 +3554,8 @@ if(
         "";
 
     $("productCost").value = "";
+    productSuggestionHistory.name = [];
+    productSuggestionHistory.description = [];
 
     $("productQuantity")
       .value =
@@ -3650,21 +3644,8 @@ if(
         .value
         .trim();
 
-    const price =
-      Number(
-        $("productPrice")
-          .value ||
-        0
-      );
-
-    const quantity =
-      Number(
-        $("productQuantity")
-          .value ||
-        0
-      );
-
     const cost = Math.max(0, Number($("productCost").value || 0));
+    const price = calculateSalePrice(cost);
     const trackInventory = $("trackInventory").checked;
     const stockStatus = $("productStockStatus").value;
     const allowPreorder = $("allowPreorder").checked;
@@ -3678,7 +3659,6 @@ if(
       $("productCategory")
         .value;
 
-    const fulfillmentCode = $("productFulfillment").value;
     const styleCode = $("productStyleCode").value.trim().replace(/[^A-Za-z0-9]/g, "").toUpperCase();
 
     const sizes =
@@ -3692,6 +3672,8 @@ if(
         .filter(Boolean);
 
     const variantOverrides = collectVariantOverrides();
+    const quantity = variantOverrides.reduce((total, variant) => total + Number(variant.quantity || 0), 0);
+    const fulfillmentCode = variantOverrides[0]?.fulfillmentCode || "P";
 
     if(
       !name
@@ -3773,12 +3755,13 @@ if(
         const currentId = editingProductId;
         await apiRequest(`/api/products/${encodeURIComponent(currentId)}`, {
           method:"PATCH",
-          body:{name, description, price, visible:true}
+          body:{name, description, cost, price, visible:true}
         });
-        if(stockStatus === "OUT_OF_STOCK"){
-          const changes = inventory.filter(item => String(item.productId) === currentId).map(item => ({id:item.id, quantity:0}));
-          if(changes.length) await apiRequest("/api/inventory", {method:"PATCH", body:{changes}});
-        }
+        const quantityBySku = new Map(variantOverrides.map(variant => [variant.sku, stockStatus === "OUT_OF_STOCK" ? 0 : variant.quantity]));
+        const changes = inventory
+          .filter(item => String(item.productId) === currentId && quantityBySku.has(String(item.sku || "").toUpperCase()))
+          .map(item => ({id:item.id, quantity:quantityBySku.get(String(item.sku || "").toUpperCase())}));
+        if(changes.length) await apiRequest("/api/inventory", {method:"PATCH", body:{changes}});
         await loadRealInventory(true);
         resetProductForm();
         showPanel("products");
@@ -3966,6 +3949,7 @@ if(
   };
 
   $("productName").addEventListener("input", renderVariantPreview);
+  $("productCost").addEventListener("input", updateCalculatedPrice);
   $("productColors").addEventListener("input", renderVariantPreview);
   qsa("[data-color-choice]").forEach(button => button.onclick = () => {
     const current = collectColors();
@@ -3998,9 +3982,23 @@ if(
     const detail = detailResult?.product || product;
     $("productName").value = detail.name || product.name || "";
     $("productDescription").value = detail.description || product.description || "";
-    $("productPrice").value = Math.round(Number(product.price || 0));
+    const existingPrice = Math.round(Number(product.price || 0));
+    const existingCost = Math.max(0, Number(detail.cost || 0));
+    $("productCost").value = existingCost || Math.max(0, Math.round((existingPrice - 12500) / 2));
+    updateCalculatedPrice();
     $("productQuantity").value = Math.max(0, Math.trunc(Number(product.quantity || 0)));
     $("productStockStatus").value = Number(product.quantity || 0) > 0 ? "IN_STOCK" : "OUT_OF_STOCK";
+    const existingVariants = inventory.filter(item => String(item.productId) === editingProductId);
+    existingVariants.forEach(item => {
+      const label = String(item.variantName || "").toUpperCase();
+      const size = ["XL","L","M","S"].find(value => new RegExp(`(^|[^A-Z])${value}([^A-Z]|$)`).test(label)) || "";
+      const input = qsa("[data-size]").find(candidate => candidate.value === size);
+      if(input) input.checked = true;
+      const sku = String(item.sku || "").toUpperCase();
+      const code = sku.split("-").pop() || "P";
+      variantDrafts.set(size || "unique", {size, color:"", methods:["P","R","L"].filter(method => code.includes(method)), sku, persistedSku:true, quantity:Math.max(0, Number(item.quantity || 0)), enabled:true});
+      editedVariantQuantities.add(size || "unique");
+    });
     uploadedPhotos = [detail.image || product.photos?.[0] || "", "", "", "", ""];
     renderPhotoInputs();
     renderVariantPreview();

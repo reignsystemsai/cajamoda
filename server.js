@@ -571,7 +571,10 @@ async function handleCreateStripeCheckout(request, response) {
     sendError(response, 400, "Tu bolsa está vacía.");
     return;
   }
-  const lineItems = await Promise.all(items.map(stripeLineItemFromCartItem));
+  const catalogLines = await Promise.all(items.map(stripeLineItemFromCartItem));
+  // Keep CajaModa fulfillment data server-side. Stripe only accepts documented
+  // line item properties, so never forward fulfillmentCode at this level.
+  const lineItems = catalogLines.map(({ fulfillmentCode, ...line }) => line);
   const customerEmail = safeText(body?.customer?.email, 250);
   const requestedDelivery = safeText(body?.delivery?.method, 20).toLowerCase();
   const deliveryMethod = ["moto", "national"].includes(requestedDelivery)
@@ -583,7 +586,7 @@ async function handleCreateStripeCheckout(request, response) {
     : deliveryMethod === "moto"
       ? `Moto Cartagena · ${delivery.quote.distanceKm} km`
       : `${delivery.quote.carrier || "Envia"} · ${delivery.quote.service || "Envío nacional"}`;
-  const intentLines = lineItems.map(line => ({
+  const intentLines = catalogLines.map(line => ({
     productId: safeText(line?.price_data?.product_data?.metadata?.productId, 80),
     variantId: safeText(line?.price_data?.product_data?.metadata?.variantId, 80),
     quantity: Math.max(1, Math.floor(Number(line?.quantity || 1))),
@@ -3252,6 +3255,70 @@ async function handleCreateProduct(
   );
 }
 
+async function handleUpdateProduct(request, response, productId) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
+  if (!wix) return sendError(response, 503, "La tienda todavía no está conectada.");
+
+  const body = await readBody(request);
+  const name = safeText(body?.name, 80);
+  const description = safeText(body?.description, 16000);
+  const price = Number(body?.price);
+  if (!name) return sendError(response, 400, "Agrega el nombre del producto.");
+  if (!Number.isFinite(price) || price <= 0) return sendError(response, 400, "Agrega un precio válido.");
+
+  const currentResult = await wix.productsV3.getProduct(productId, {
+    fields: ["PLAIN_DESCRIPTION", "MERCHANT_DATA", "CURRENCY"]
+  });
+  const current = currentResult?.product || currentResult;
+  if (!current?._id && !current?.id) return sendError(response, 404, "No encontramos el producto.");
+
+  const variants = Array.isArray(current?.variantsInfo?.variants)
+    ? current.variantsInfo.variants.map(variant => ({
+        ...variant,
+        price: {
+          ...(variant.price || {}),
+          actualPrice: { amount: String(Math.round(price)) }
+        }
+      }))
+    : [];
+
+  const update = {
+    revision: current.revision,
+    name,
+    plainDescription: description ? `<p>${escapeHtml(description)}</p>` : "<p></p>",
+    visible: body?.visible !== false
+  };
+  if (variants.length) {
+    update.options = current.options || [];
+    update.variantsInfo = { variants };
+  }
+
+  const updated = await wix.productsV3.updateProduct(productId, update, {
+    fields: ["PLAIN_DESCRIPTION", "MERCHANT_DATA", "CURRENCY"]
+  });
+  sendJson(response, 200, { ok: true, product: updated?.product || updated });
+}
+
+async function handleGetProduct(request, response, productId) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
+  if (!wix) return sendError(response, 503, "La tienda todavía no está conectada.");
+  const result = await wix.productsV3.getProduct(productId, {
+    fields: ["PLAIN_DESCRIPTION", "MERCHANT_DATA", "CURRENCY", "MEDIA_ITEMS_INFO", "THUMBNAIL"]
+  });
+  const product = result?.product || result;
+  if (!product?._id && !product?.id) return sendError(response, 404, "No encontramos el producto.");
+  sendJson(response, 200, {
+    ok: true,
+    product: {
+      id: product._id || product.id,
+      name: safeText(product.name, 80),
+      description: safeText(String(product.plainDescription || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " "), 16000),
+      visible: product.visible !== false,
+      image: getProductImageUrl(product)
+    }
+  });
+}
+
 /* ============================================================
    REAL WIX ORDERS
    ============================================================ */
@@ -4241,9 +4308,6 @@ function normalizeInventoryItem(
 
 function getProductImageUrl(product) {
   const candidates = [
-    product?.thumbnail?.url,
-    product?.thumbnail?._id,
-    product?.thumbnail?.id,
     product?.media?.main?.image?.url,
     product?.media?.main?.image?._id,
     product?.media?.main?.image?.id,
@@ -4270,7 +4334,10 @@ function getProductImageUrl(product) {
     product?.media?.items?.[0]?.thumbnail?.url,
     product?.media?.items?.[0]?.url,
     product?.mediaItems?.[0]?.image?.url,
-    product?.mediaItems?.[0]?.url
+    product?.mediaItems?.[0]?.url,
+    product?.thumbnail?.url,
+    product?.thumbnail?._id,
+    product?.thumbnail?.id
   ];
   const value = safeText(candidates.find(Boolean), 1500);
   if (!value) return "";
@@ -4665,6 +4732,16 @@ const server =
 
         if (request.method === "GET" && url.pathname === "/api/store-owner/summary") {
           await handleStoreOwnerSummary(request, response);
+          return;
+        }
+
+        const productUpdateMatch = url.pathname.match(/^\/api\/products\/([^/]+)$/);
+        if (request.method === "GET" && productUpdateMatch) {
+          await handleGetProduct(request, response, decodeURIComponent(productUpdateMatch[1]));
+          return;
+        }
+        if (request.method === "PATCH" && productUpdateMatch) {
+          await handleUpdateProduct(request, response, decodeURIComponent(productUpdateMatch[1]));
           return;
         }
 

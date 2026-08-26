@@ -1022,7 +1022,7 @@ img{display:block;max-width:100%}
 .paymentGlass{padding:19px}
 .paymentGlass.isStripe{padding:0;background:transparent;border:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
 .paymentEyebrow{color:#555;font-size:8px}.paymentAmount{margin-top:4px;font-size:24px;font-weight:760;letter-spacing:-.7px}
-.nequiSteps{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid rgba(0,0,0,.1)}.nequiStepsTitle{font-size:11px;font-weight:700}.nequiSteps ol{margin:9px 0 0;padding-left:19px}.nequiSteps li{margin-top:5px;color:#444;font-size:8.5px;line-height:1.45}.nequiAmountRow{display:flex;align-items:end;justify-content:space-between;gap:12px}.copyAmountButton{flex:0 0 auto;margin-bottom:2px;padding:9px 12px;border:1px solid rgba(0,0,0,.35);border-radius:10px;background:#fff;font-size:8px;font-weight:700}.nequiLabel{margin-top:15px;font-size:8px}.nequiNumber{margin-top:5px;font-size:18px;font-weight:650;letter-spacing:.8px}
+.nequiSteps{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid rgba(0,0,0,.1)}.nequiStepsTitle{font-size:11px;font-weight:700}.nequiSteps ol{margin:9px 0 0;padding-left:19px}.nequiSteps li{margin-top:5px;color:#444;font-size:8.5px;line-height:1.45}.nequiPriceBreakdown{margin-bottom:12px;padding:11px 13px;border:1px solid rgba(0,0,0,.1);border-radius:14px;background:rgba(255,255,255,.55)}.nequiPriceLine{display:flex;justify-content:space-between;gap:14px;padding:5px 0;color:#555;font-size:8.5px}.nequiPriceLine span:last-child{color:#111;font-weight:650}.nequiFinalLine{margin-top:6px;padding-top:10px;border-top:1px solid rgba(0,0,0,.1);align-items:end}.nequiFinalLabel{color:#111;font-size:10px;font-weight:700}.nequiFinalNote{display:block;margin-top:3px;color:#666;font-size:7.5px;font-weight:500}.nequiAmountRow{display:flex;align-items:end;justify-content:space-between;gap:12px}.copyAmountButton{flex:0 0 auto;margin-bottom:2px;padding:9px 12px;border:1px solid rgba(0,0,0,.35);border-radius:10px;background:#fff;font-size:8px;font-weight:700}.nequiLabel{margin-top:15px;font-size:8px}.nequiNumber{margin-top:5px;font-size:18px;font-weight:650;letter-spacing:.8px}
 .nequiActions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
 .paymentAction{height:45px;border:1px solid #111;border-radius:13px;font-size:9px;font-weight:650}.paymentAction.nequiOpen{border-color:#4d0bb7;background:#4d0bb7;color:#fff}
 .referenceLabel{display:block;font-size:8px}.referenceLabel input{margin-top:8px}
@@ -1252,11 +1252,15 @@ img{display:block;max-width:100%}
                 <li>Regresa e ingresa el número de referencia.</li>
               </ol>
             </div>
-            <div class="paymentEyebrow">Envía exactamente</div>
-            <div class="nequiAmountRow">
-              <div id="nequiAmount" class="paymentAmount">$0 COP</div>
-              <button id="copyNequiAmountButton" class="copyAmountButton" type="button">Copiar monto</button>
+            <div class="nequiPriceBreakdown" aria-label="Desglose del precio final">
+              <div class="nequiPriceLine"><span>Precio de los artículos</span><span id="nequiSubtotal">$0</span></div>
+              <div class="nequiPriceLine"><span id="nequiDeliveryLabel">Recogida en punto</span><span id="nequiDeliveryFee">$0</span></div>
+              <div class="nequiPriceLine nequiFinalLine">
+                <div><span class="nequiFinalLabel">Precio final</span><small id="nequiFinalNote" class="nequiFinalNote">Incluye recogida en punto</small></div>
+                <span id="nequiAmount" class="paymentAmount">$0 COP</span>
+              </div>
             </div>
+            <button id="copyNequiAmountButton" class="copyAmountButton" type="button">Copiar monto final</button>
             <div class="nequiLabel">Número Nequi</div>
             <div id="nequiNumber" class="nequiNumber">••• ••• ••••</div>
             <div class="nequiActions">
@@ -1444,10 +1448,16 @@ img{display:block;max-width:100%}
 
   function renderPaymentTotals() {
     const subtotal = readCart().total;
+    const deliveryFee = checkoutDeliveryFee();
     const total = checkoutTotal();
     if ($("subtotalValue")) $("subtotalValue").textContent = money(subtotal);
     if ($("totalValue")) $("totalValue").textContent = money(total);
     if ($("nequiAmount")) $("nequiAmount").textContent = `${money(total)} COP`;
+    if ($("nequiSubtotal")) $("nequiSubtotal").textContent = money(subtotal);
+    if ($("nequiDeliveryFee")) $("nequiDeliveryFee").textContent = deliveryQuote?.method === selectedDelivery ? money(deliveryFee) : "Por calcular";
+    const nequiDeliveryLabel = selectedDelivery === "pickup" ? "Recogida en punto" : selectedDelivery === "moto" ? "Entrega por moto" : "Envío nacional";
+    if ($("nequiDeliveryLabel")) $("nequiDeliveryLabel").textContent = nequiDeliveryLabel;
+    if ($("nequiFinalNote")) $("nequiFinalNote").textContent = `Incluye ${nequiDeliveryLabel.toLocaleLowerCase("es-CO")}`;
     if ($("stripePayButton")) $("stripePayButton").textContent = `Pagar ${money(total)} COP`;
     if ($("deliverySummary")) {
       $("deliverySummary").textContent = deliveryQuote?.method === selectedDelivery

@@ -648,7 +648,9 @@ function normalizeProduct(
   ).trim().toUpperCase();
 
   const fulfillmentCode = fulfillmentSku.split("-", 1)[0];
-  const deliveryModes = fulfillmentCode === "PR" || fulfillmentCode === "RP"
+  const deliveryModes = fulfillmentCode === "PRL"
+    ? ["pickup", "fast", "ship"]
+    : fulfillmentCode === "PR" || fulfillmentCode === "RP"
     ? ["pickup", "fast"]
     : fulfillmentCode === "P"
       ? ["pickup"]

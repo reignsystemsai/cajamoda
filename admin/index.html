@@ -2037,6 +2037,32 @@ img{
 
     </div>
 
+    <div class="twoColumn">
+
+      <div class="field">
+
+        <label for="productFulfillment">Entrega</label>
+
+        <select id="productFulfillment">
+          <option value="P">P · Pronto</option>
+          <option value="R">R · Rápido</option>
+          <option value="PR">PR · Pronto + Rápido</option>
+          <option value="L">L · Liberala</option>
+          <option value="PRL">PRL · Pronto + Rápido + Liberala</option>
+        </select>
+
+      </div>
+
+      <div class="field">
+
+        <label for="productStyleCode">Código de estilo</label>
+
+        <input id="productStyleCode" type="text" maxlength="30" placeholder="Ej. NL001">
+
+      </div>
+
+    </div>
+
     <div class="field">
 
       <label>
@@ -3375,6 +3401,9 @@ if(
       .value =
         "late";
 
+    $("productFulfillment").value = "P";
+    $("productStyleCode").value = "";
+
     $("productColors")
       .value =
         "";
@@ -3461,6 +3490,9 @@ if(
       $("productCategory")
         .value;
 
+    const fulfillmentCode = $("productFulfillment").value;
+    const styleCode = $("productStyleCode").value.trim().replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+
     const sizes =
       collectSizes();
 
@@ -3503,6 +3535,12 @@ if(
         "Agrega un inventario válido."
       );
 
+      return;
+    }
+
+    if(!styleCode){
+      $("productStyleCode").focus();
+      showToast("Agrega un código de estilo.");
       return;
     }
 
@@ -3555,6 +3593,10 @@ if(
               quantity,
 
               category,
+
+              fulfillmentCode,
+
+              styleCode,
 
               sizes,
 

@@ -514,7 +514,7 @@ async function stripeLineItemFromCartItem(item) {
 
   const fulfillmentSku = safeText(variant?.sku || product?.sku, 100).toUpperCase();
   const fulfillmentCode = fulfillmentSku.split("-", 1)[0];
-  const normalizedFulfillmentCode = ["P", "PR", "RP", "R", "L"].includes(fulfillmentCode)
+  const normalizedFulfillmentCode = ["P", "PR", "RP", "R", "L", "PRL"].includes(fulfillmentCode)
     ? fulfillmentCode
     : "R";
 
@@ -535,7 +535,7 @@ async function stripeLineItemFromCartItem(item) {
 }
 
 function stripeCaptureMethod(lines) {
-  return lines.some(line => safeText(line?.fulfillmentCode, 10).toUpperCase() === "L")
+  return lines.some(line => ["L", "PRL"].includes(safeText(line?.fulfillmentCode, 10).toUpperCase()))
     ? "manual"
     : "automatic";
 }
@@ -2161,7 +2161,9 @@ function buildVariants(
   sizes,
   colors,
   price,
-  quantity
+  quantity,
+  fulfillmentCode,
+  styleCode
 ) {
 
   const combinations =
@@ -2193,7 +2195,13 @@ function buildVariants(
         combinations.length
       : 0;
 
-  return combinations.map(
+  const skuSegment = value => safeText(value, 50)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z0-9]/g, "")
+    .toUpperCase();
+
+  const variants = combinations.map(
     combination => {
 
       const variantQuantity =
@@ -2211,6 +2219,13 @@ function buildVariants(
       }
 
       return {
+
+        sku: [
+          fulfillmentCode,
+          styleCode,
+          combination.color ? skuSegment(combination.color).slice(0, 3) : "",
+          combination.size ? skuSegment(combination.size) : ""
+        ].filter(Boolean).join("-"),
 
         visible:
           true,
@@ -2242,6 +2257,13 @@ function buildVariants(
       };
     }
   );
+
+  const skus = variants.map(variant => variant.sku);
+  if (new Set(skus).size !== skus.length) {
+    throw new Error("Los colores y tallas generaron SKUs duplicados. Usa nombres de color más distintos.");
+  }
+
+  return variants;
 }
 
 
@@ -2640,6 +2662,19 @@ async function createWixProduct(
       20
     );
 
+  const fulfillmentCode = safeText(input.fulfillmentCode, 10).toUpperCase();
+  const styleCode = safeText(input.styleCode, 30)
+    .replace(/[^A-Za-z0-9]/g, "")
+    .toUpperCase();
+
+  if (!["P", "R", "PR", "L", "PRL"].includes(fulfillmentCode)) {
+    throw new Error("Selecciona un tipo de entrega válido.");
+  }
+
+  if (!styleCode) {
+    throw new Error("Agrega un código de estilo para generar los SKUs.");
+  }
+
   if (
     !name
   ) {
@@ -2677,7 +2712,9 @@ async function createWixProduct(
       sizes,
       colors,
       price,
-      quantity
+      quantity,
+      fulfillmentCode,
+      styleCode
     );
 
   const product = {

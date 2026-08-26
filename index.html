@@ -4605,7 +4605,7 @@ svg{
       )
       .slice(
         0,
-        CONFIG.maxSlotsPerCategory
+        categoryId === "sun" ? 5 : CONFIG.maxSlotsPerCategory
       );
   }
 

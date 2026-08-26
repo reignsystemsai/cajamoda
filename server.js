@@ -1337,6 +1337,12 @@ function isNequiOrder(order) {
   return String(order?.channelInfo?.externalOrderId || "").startsWith("nequi:");
 }
 
+function getNequiReference(order) {
+  const title = safeText(order?.shippingInfo?.title, 350);
+  const match = title.match(/(?:Ref|Referencia)\s+([^·]+)$/i);
+  return safeText(match?.[1], 100).trim();
+}
+
 async function handleCreateNequiOrder(request, response) {
   if (!wix) return sendError(response, 503, "Wix no está configurado para recibir el pedido.");
   if (!NEQUI_PHONE) return sendError(response, 503, "El número Nequi todavía no está configurado.");
@@ -1430,7 +1436,6 @@ async function handleCreateNequiOrder(request, response) {
 
 async function handleConfirmNequiOrder(request, response, orderId) {
   if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
-  if (!isPlatformAdmin(request)) return sendError(response, 403, "La verificación de pagos corresponde a administración de CajaModa.");
   if (!wix) return sendError(response, 503, "Wix no está configurado.");
   const existingConfirmation = nequiConfirmationLocks.get(orderId);
   if (existingConfirmation) {
@@ -3495,6 +3500,11 @@ function normalizeWixOrder(
         ? "nequi"
         : "card",
 
+    nequiReference:
+      isNequiOrder(order)
+        ? getNequiReference(order)
+        : "",
+
     canConfirmPayment:
       isNequiOrder(order) &&
       !["PAID", "PARTIALLY_PAID"].includes(String(order?.paymentStatus || "").toUpperCase()),
@@ -3688,7 +3698,7 @@ async function handleGetOrders(
         .sort((left, right) => new Date(right.date) - new Date(left.date))
         .map(order => ({
           ...order,
-          canConfirmPayment: session.role === "admin" && order.canConfirmPayment,
+          canConfirmPayment: order.canConfirmPayment,
           canCapturePayment: session.role === "admin" && order.canCapturePayment,
           canCancelPayment: session.role === "admin" && order.canCancelPayment
         }))
@@ -4159,6 +4169,20 @@ function normalizeInventoryItem(
   };
 }
 
+function getProductImageUrl(product) {
+  const candidates = [
+    product?.media?.mainMedia?.image?.url,
+    product?.media?.mainMedia?.url,
+    product?.media?.itemsInfo?.items?.[0]?.image?.url,
+    product?.media?.itemsInfo?.items?.[0]?.url,
+    product?.media?.items?.[0]?.image?.url,
+    product?.media?.items?.[0]?.url,
+    product?.mediaItems?.[0]?.image?.url,
+    product?.mediaItems?.[0]?.url
+  ];
+  return safeText(candidates.find(Boolean), 1500);
+}
+
 async function getWixInventory() {
 
   if (
@@ -4194,7 +4218,7 @@ const inventoryItems =
   )
     ? result.items
     : [];
-  return inventoryItems
+  const normalized = inventoryItems
     .map(
       normalizeInventoryItem
     )
@@ -4202,6 +4226,31 @@ const inventoryItems =
       item =>
         item.id
     );
+
+  const productIds = [...new Set(normalized.map(item => item.productId).filter(Boolean))];
+  const productEntries = await Promise.all(productIds.map(async productId => {
+    try {
+      const result = await wix.productsV3.getProduct(productId);
+      return [productId, result?.product || result];
+    } catch (error) {
+      console.warn(`[WIX INVENTORY] No se pudo cargar la foto del producto ${productId}:`, error?.message || error);
+      return [productId, null];
+    }
+  }));
+  const productsById = new Map(productEntries);
+
+  return normalized.map(item => {
+    const product = productsById.get(item.productId);
+    const variants = product?.variantsInfo?.variants || product?.variants || [];
+    const variant = variants.find(candidate => String(candidate?._id || candidate?.id || candidate?.variantId) === item.variantId);
+    return {
+      ...item,
+      productName: item.productName || safeText(product?.name, 300),
+      image: getProductImageUrl(product),
+      price: wixVariantPrice(variant) ?? wixVariantPrice(product),
+      visible: product?.visible !== false
+    };
+  });
 }
 
 async function handleGetInventory(

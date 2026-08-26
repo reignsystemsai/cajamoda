@@ -4343,7 +4343,12 @@ function getProductImageUrl(product) {
   ];
   const value = safeText(candidates.find(Boolean), 1500);
   if (!value) return "";
-  if (/^https?:\/\//i.test(value)) return value;
+  if (/^https?:\/\//i.test(value)) {
+    return value.replace(
+      /(https:\/\/static\.wixstatic\.com\/media\/[^/]+)\/v1\/.*$/i,
+      "$1"
+    );
+  }
   const mediaId = value.startsWith("wix:image://")
     ? value.replace(/^wix:image:\/\/v1\//, "").split("/")[0].split("#")[0]
     : value.split("/")[0].split("#")[0];

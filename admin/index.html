@@ -2213,6 +2213,25 @@ img{
   #panel-add .formActions{justify-content:flex-end!important;margin-top:0!important}
 }
 
+/* Build 109 — final full-width Multimedia alignment */
+@media (min-width:900px){
+  #panel-add .productMediaCard{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-auto-columns:0!important;
+    justify-items:stretch!important;
+  }
+  #panel-add .mediaHeading{grid-column:1!important;width:100%!important}
+  #panel-add .verticalUploadControl,
+  #panel-add .portraitMediaGrid{
+    grid-column:1!important;
+    width:min(900px,100%)!important;
+    max-width:none!important;
+    justify-self:center!important;
+    margin-inline:auto!important;
+  }
+}
+
 </style>
 
 </head>

@@ -2071,6 +2071,147 @@ img{
   #panel-add .compactSettings{grid-column:2!important;position:static!important;display:flex!important;flex-direction:column!important;gap:5px!important;margin:0!important;padding:7px!important}
 }
 
+/* Build 105 — final approved Store Loader product workspace */
+@media (min-width:900px){
+  #panel-add{max-width:1380px!important}
+  #panel-add .pageHeadingRow{min-height:38px!important;margin:0 0 8px!important}
+  #panel-add .pageTitle{font-size:27px!important;line-height:1!important}
+  #panel-add .pageIntro{margin-top:3px!important;font-size:10px!important}
+
+  #panel-add .productWorkspace{
+    grid-template-columns:minmax(330px,.7fr) minmax(720px,1.55fr)!important;
+    gap:10px!important;
+  }
+  #panel-add .productFormCard{
+    border-radius:15px!important;
+    background:linear-gradient(145deg,rgba(255,255,255,.78),rgba(255,252,246,.58))!important;
+    box-shadow:0 12px 30px rgba(70,49,20,.065),inset 0 1px 0 rgba(255,255,255,.92)!important;
+    backdrop-filter:blur(24px) saturate(145%)!important;
+  }
+
+  #panel-add .productInformationCard,
+  #panel-add .productMediaCard{height:248px!important;min-height:248px!important}
+  #panel-add .productInformationCard{padding:11px 13px!important;gap:5px!important;overflow:hidden!important}
+  #panel-add .productInformationCard h2{font-size:15px!important}
+  #panel-add .productInformationCard .field{gap:3px 7px!important}
+  #panel-add .productInformationCard .field input{height:35px!important}
+  #panel-add .productInformationCard .field textarea{height:52px!important;min-height:52px!important}
+  #panel-add .productInformationCard .compactAssistButton{height:35px!important;min-width:104px!important}
+  #panel-add .productInformationCard .twoColumn{gap:8px!important;margin-top:1px!important}
+
+  #panel-add .productMediaCard{
+    display:grid!important;
+    grid-template-columns:1fr!important;
+    grid-template-rows:auto 30px minmax(0,1fr)!important;
+    gap:5px!important;
+    padding:10px 12px!important;
+    overflow:hidden!important;
+  }
+  #panel-add .mediaHeading{grid-column:1!important;grid-row:1!important;display:flex!important;align-items:baseline!important;gap:8px!important}
+  #panel-add .mediaHeading h2{font-size:15px!important}
+  #panel-add .mediaHeading .formSectionHelp{margin:0!important;font-size:8px!important}
+  #panel-add .verticalUploadControl{
+    grid-column:1!important;grid-row:2!important;
+    width:100%!important;height:30px!important;min-height:30px!important;
+    margin:0!important;padding:0 10px!important;
+    writing-mode:horizontal-tb!important;transform:none!important;
+    display:flex!important;align-items:center!important;justify-content:center!important;
+    border-radius:9px!important;
+  }
+  #panel-add .portraitMediaGrid{
+    grid-column:1!important;grid-row:3!important;
+    display:grid!important;
+    grid-template-columns:minmax(150px,1.55fr) repeat(4,minmax(72px,.7fr))!important;
+    grid-template-rows:174px!important;
+    gap:6px!important;height:174px!important;overflow:hidden!important;
+  }
+  #panel-add .portraitMediaGrid .photoBox,
+  #panel-add .portraitMediaGrid .photoBox:first-child{
+    display:block!important;grid-row:auto!important;
+    width:100%!important;height:174px!important;min-height:174px!important;max-height:174px!important;
+    aspect-ratio:3/4!important;border-radius:9px!important;overflow:hidden!important;
+  }
+  #panel-add .portraitMediaGrid .photoBox img{width:100%!important;height:100%!important;object-fit:cover!important;object-position:center top!important}
+
+  #panel-add .variantFormCard{
+    grid-column:1/-1!important;
+    display:grid!important;
+    grid-template-columns:minmax(680px,1fr) 265px!important;
+    gap:8px!important;
+    min-height:262px!important;
+    padding:10px 12px!important;
+  }
+  #panel-add .variantMainArea{grid-column:1!important;display:flex!important;flex-direction:column!important;gap:4px!important;min-width:0!important}
+  #panel-add .variantHeading h2{font-size:15px!important}
+  #panel-add .compactSizeSelector{
+    display:grid!important;grid-template-columns:42px repeat(4,56px)!important;
+    align-items:center!important;align-self:flex-start!important;gap:5px!important;
+    width:286px!important;margin:0!important;
+  }
+  #panel-add .compactSizeSelector .checkGrid{display:contents!important}
+  #panel-add .compactSizeSelector .checkOption label{height:26px!important;border-radius:999px!important}
+  #panel-add .variantBuilder{align-self:stretch!important;width:100%!important;max-width:none!important;margin:0!important;padding:6px 8px!important}
+  #panel-add .variantBuilderHeader{margin-bottom:3px!important}
+  #panel-add .variantRow{
+    grid-template-columns:30px 38px 64px 148px 190px!important;
+    justify-content:start!important;gap:4px!important;
+  }
+  #panel-add .variantSku,#panel-add .variantQuantity{height:28px!important}
+  #panel-add .deliveryChoices{gap:4px!important}
+  #panel-add .deliveryChoice{width:34px!important;height:26px!important;padding:0!important;text-align:center!important}
+  #panel-add .compactSettings{
+    grid-column:2!important;position:static!important;
+    display:flex!important;flex-direction:column!important;gap:5px!important;
+    margin:0!important;padding:7px!important;
+    border:1px solid rgba(0,0,0,.08)!important;border-radius:12px!important;
+    background:rgba(255,255,255,.48)!important;
+  }
+  #panel-add .compactSettings .field{order:-1!important;margin:0 0 2px!important}
+  #panel-add .compactSettings .field select{width:100%!important;height:32px!important}
+  #panel-add .compactSettings .switchRow{min-height:34px!important;padding:5px 7px!important}
+
+  #panel-add .formActions{grid-column:1/-1!important;margin:0!important;gap:8px!important}
+  #panel-add .formActions button{width:170px!important;min-height:37px!important}
+}
+
+/* Build 106 — approved compact product workspace */
+@media (min-width:900px){
+  #panel-add{max-width:1440px!important;padding-top:14px!important}
+  #panel-add .pageHeadingRow{margin:0 0 10px!important;min-height:30px!important}
+  #panel-add .pageHeadingRow>div{display:flex!important;align-items:baseline!important;gap:28px!important}
+  #panel-add .pageTitle{font-size:26px!important;line-height:1!important}
+  #panel-add .pageIntro{margin:0!important;font-size:12px!important}
+
+  #panel-add .productWorkspace{grid-template-columns:350px minmax(0,1fr)!important;gap:12px!important}
+  #panel-add .productInformationCard,#panel-add .productMediaCard{height:360px!important;min-height:360px!important}
+  #panel-add .productInformationCard{padding:16px 18px!important;gap:9px!important}
+  #panel-add .productInformationCard h2,#panel-add .mediaHeading h2,#panel-add .variantHeading h2{font-size:16px!important}
+  #panel-add .productInformationCard .field input{height:42px!important}
+  #panel-add .productInformationCard .field textarea{height:80px!important;min-height:80px!important}
+  #panel-add .productInformationCard .compactAssistButton{display:none!important}
+  #panel-add .productInformationCard .assistedField{grid-template-columns:1fr!important}
+  #panel-add .productInformationCard .twoColumn{margin-top:5px!important}
+
+  #panel-add .productMediaCard{grid-template-columns:1fr!important;grid-template-rows:auto 38px minmax(0,1fr)!important;padding:14px 20px!important;gap:10px!important}
+  #panel-add .mediaHeading{grid-column:1!important;grid-row:1!important}
+  #panel-add .verticalUploadControl{grid-column:1!important;grid-row:2!important;width:100%!important;height:38px!important;min-height:38px!important;writing-mode:horizontal-tb!important;transform:none!important;border-radius:10px!important}
+  #panel-add .verticalUploadControl strong{font-size:12px!important}
+  #panel-add .verticalUploadControl span{display:none!important}
+  #panel-add .portraitMediaGrid{grid-column:1!important;grid-row:3!important;grid-template-columns:minmax(180px,1.45fr) repeat(4,minmax(105px,.88fr))!important;grid-template-rows:250px!important;height:250px!important;gap:10px!important}
+  #panel-add .portraitMediaGrid .photoBox,#panel-add .portraitMediaGrid .photoBox:first-child{height:250px!important;min-height:250px!important;max-height:250px!important;aspect-ratio:3/4!important;border-radius:10px!important}
+
+  #panel-add .variantFormCard{grid-template-columns:minmax(0,1fr) 300px!important;min-height:286px!important;padding:14px 18px!important;gap:18px!important}
+  #panel-add .variantMainArea{gap:8px!important}
+  #panel-add .compactSizeSelector{grid-template-columns:64px repeat(4,66px)!important;width:348px!important;gap:7px!important}
+  #panel-add .compactSizeSelector .checkOption label{height:29px!important}
+  #panel-add .variantBuilder{padding:7px 9px!important}
+  #panel-add .variantRow{grid-template-columns:34px 52px 70px 170px minmax(230px,1fr)!important;gap:8px!important}
+  #panel-add .compactSettings{padding:10px 12px!important;gap:8px!important;justify-content:flex-start!important}
+  #panel-add .compactSettings .field{order:0!important;margin:0 0 4px!important}
+  #panel-add .compactSettings .switchRow{min-height:42px!important}
+  #panel-add .formActions{justify-content:flex-end!important;margin-top:0!important}
+}
+
 </style>
 
 </head>
@@ -2346,7 +2487,7 @@ img{
 >
 
   <div class="pageHeadingRow">
-    <div><h1 class="pageTitle">Nuevo producto</h1><p class="pageIntro">Completa cada sección y publica todo en tu tienda.</p></div>
+    <div><h1 class="pageTitle">Nuevo producto</h1><p class="pageIntro">Carga una vez. Publica todas las variantes.</p></div>
   </div>
 
   <div class="formGrid productWorkspace">
@@ -2389,7 +2530,7 @@ img{
 
     <section class="productFormCard productMediaCard"><div class="mediaHeading"><h2>Multimedia</h2><p class="formSectionHelp">Agrega hasta 5 fotos.</p></div>
       <div id="photoUploadGrid" class="photoUploadGrid portraitMediaGrid"></div>
-      <label id="photoDropZone" class="photoDropZone verticalUploadControl" for="photoBulkInput"><strong>Subir fotos</strong><span>Máximo 5</span><input id="photoBulkInput" type="file" accept="image/*" multiple></label>
+      <label id="photoDropZone" class="photoDropZone verticalUploadControl" for="photoBulkInput"><strong>Arrastra hasta 5 fotos aquí</strong><span>Máximo 5</span><input id="photoBulkInput" type="file" accept="image/*" multiple></label>
     </section>
 
     <section class="productFormCard variantFormCard"><div class="variantMainArea"><div class="variantHeading"><div><h2>Variantes e inventario</h2><p class="formSectionHelp">Elige las tallas y los métodos de entrega.</p></div>

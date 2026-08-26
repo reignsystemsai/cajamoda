@@ -2045,6 +2045,32 @@ img{
   .storeSelector,#logoutButton{left:20px!important;width:200px!important}
 }
 
+/* Build 103 — approved product-editor structure only */
+@media (min-width:900px){
+  .sidebarAccountControls{position:absolute;left:20px;right:20px;bottom:24px;display:grid;gap:10px}
+  .sidebarAccountControls .sidebarControl{position:static!important;width:100%!important;height:42px!important;margin:0!important}
+
+  #panel-add .productWorkspace{grid-template-columns:minmax(320px,.72fr) minmax(720px,1.58fr)!important;gap:8px!important}
+  #panel-add .productInformationCard,#panel-add .productMediaCard{height:238px!important}
+
+  #panel-add .productMediaCard{display:grid!important;grid-template-columns:minmax(0,1fr) 66px!important;grid-template-rows:auto 1fr!important;gap:6px!important;overflow:hidden!important}
+  #panel-add .mediaHeading{grid-column:1/-1;display:flex;align-items:baseline;gap:8px}
+  #panel-add .portraitMediaGrid{grid-column:1;grid-row:2;display:grid!important;grid-template-columns:2fr repeat(4,1fr)!important;grid-template-rows:1fr!important;gap:6px!important;height:190px!important}
+  #panel-add .portraitMediaGrid .photoBox,#panel-add .portraitMediaGrid .photoBox:first-child{display:block!important;grid-row:auto!important;width:100%!important;height:190px!important;aspect-ratio:3/4!important;border-radius:10px!important}
+  #panel-add .portraitMediaGrid .photoBox img{width:100%!important;height:100%!important;object-fit:cover!important;object-position:center top!important}
+  #panel-add .verticalUploadControl{grid-column:2!important;grid-row:2!important;width:66px!important;height:190px!important;min-height:0!important;margin:0!important;padding:8px 5px!important;writing-mode:vertical-rl!important;transform:rotate(180deg)!important}
+
+  #panel-add .variantFormCard{grid-column:1/-1!important;display:grid!important;grid-template-columns:minmax(650px,1fr) 250px!important;gap:8px!important;min-height:252px!important}
+  #panel-add .variantMainArea{grid-column:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+  #panel-add .variantHeading{display:flex;align-items:end;justify-content:space-between;gap:12px}
+  #panel-add .compactSizeSelector{display:grid!important;grid-template-columns:40px repeat(4,52px)!important;align-items:center;gap:5px!important;margin:0!important}
+  #panel-add .compactSizeSelector .checkGrid{display:contents!important}
+  #panel-add .compactSizeSelector .checkOption label{height:25px!important;border-radius:999px!important}
+  #panel-add .variantBuilder{margin:0!important;padding:5px 7px!important}
+  #panel-add .variantRow{grid-template-columns:30px 36px 60px 180px 220px!important;gap:4px!important}
+  #panel-add .compactSettings{grid-column:2!important;position:static!important;display:flex!important;flex-direction:column!important;gap:5px!important;margin:0!important;padding:7px!important}
+}
+
 </style>
 
 </head>
@@ -2166,13 +2192,14 @@ img{
 
   </nav>
 
-  <button id="logoutButton" class="secondaryButton" type="button" style="margin-top:auto;width:100%">Cerrar sesión</button>
+  <div class="sidebarAccountControls">
+    <select id="storeSelector" class="storeSelector sidebarControl" aria-label="Tienda activa">
+      <option value="store-001">Karolay Blanco · Propietaria</option>
+    </select>
+    <button id="logoutButton" class="secondaryButton sidebarControl" type="button">Cerrar sesión</button>
+  </div>
 
 </header>
-
-<select id="storeSelector" class="storeSelector" aria-label="Tienda activa">
-  <option value="store-001">Karolay Blanco · Propietaria</option>
-</select>
 
 <main class="loaderMain">
 
@@ -2322,8 +2349,8 @@ img{
     <div><h1 class="pageTitle">Nuevo producto</h1><p class="pageIntro">Completa cada sección y publica todo en tu tienda.</p></div>
   </div>
 
-  <div class="formGrid">
-    <section class="productFormCard"><h2>Información del producto</h2><div class="field">
+  <div class="formGrid productWorkspace">
+    <section class="productFormCard productInformationCard"><h2>Información del producto</h2><div class="field assistedField">
 
       <label for="productName">
         Nombre del producto
@@ -2338,7 +2365,7 @@ img{
 
     </div>
 
-    <div class="field">
+    <div class="field assistedField">
 
       <label for="productDescription">
         Descripción
@@ -2352,7 +2379,7 @@ img{
 
     </div>
 
-    <div class="twoColumn">
+    <div class="twoColumn priceFields">
 
       <div class="field"><label for="productCost">Costo del producto (COP)</label><input id="productCost" type="number" min="0" step="1" placeholder="0"></div>
 
@@ -2360,22 +2387,20 @@ img{
 
     </div></section>
 
-    <section class="productFormCard"><h2>Multimedia</h2><p class="formSectionHelp">Agrega hasta 5 fotos. Haz clic en cualquier cuadro para cargar una foto o arrástralas juntas.</p>
-      <label id="photoDropZone" class="photoDropZone" for="photoBulkInput"><strong>Arrastra hasta 5 fotos aquí</strong><span>o haz clic para seleccionar varias</span><input id="photoBulkInput" type="file" accept="image/*" multiple></label>
-      <div id="photoUploadGrid" class="photoUploadGrid"></div>
+    <section class="productFormCard productMediaCard"><div class="mediaHeading"><h2>Multimedia</h2><p class="formSectionHelp">Agrega hasta 5 fotos.</p></div>
+      <div id="photoUploadGrid" class="photoUploadGrid portraitMediaGrid"></div>
+      <label id="photoDropZone" class="photoDropZone verticalUploadControl" for="photoBulkInput"><strong>Subir fotos</strong><span>Máximo 5</span><input id="photoBulkInput" type="file" accept="image/*" multiple></label>
     </section>
 
-    <section class="productFormCard variantFormCard"><h2>Variantes e inventario</h2><p class="formSectionHelp">Elige las tallas. El color es opcional y cada talla puede tener uno o varios métodos de entrega.</p>
+    <section class="productFormCard variantFormCard"><div class="variantMainArea"><div class="variantHeading"><div><h2>Variantes e inventario</h2><p class="formSectionHelp">Elige las tallas y los métodos de entrega.</p></div>
       <input id="productFulfillment" type="hidden" value="P">
       <input id="productQuantity" type="hidden" value="0">
       <input id="productStockStatus" type="hidden" value="IN_STOCK">
       <input id="productStyleCode" type="hidden" value="">
 
-    <div class="field">
+    <div class="field compactSizeSelector">
 
-      <label>
-        Tallas
-      </label>
+      <label>Tallas</label>
 
       <div class="checkGrid">
 
@@ -2445,7 +2470,7 @@ img{
 
       </div>
 
-    </div>
+    </div></div>
 
     <input id="productColors" type="hidden" value="">
     <button id="clearOptions" type="button" hidden></button>
@@ -2458,13 +2483,13 @@ img{
         </div>
       </div>
       <div id="variantPreview" class="variantTable"></div>
-    </div>
-    <div class="compactSettings">
+    </div></div>
+    <aside class="compactSettings">
       <label class="switchRow"><span><strong>Controlar inventario</strong><small>Se actualiza por cantidad.</small></span><input id="trackInventory" type="checkbox" checked></label>
       <label class="switchRow"><span><strong>Vender como preventa</strong><small>Permite vender al agotarse.</small></span><input id="allowPreorder" type="checkbox"></label>
       <div class="field"><label for="productCategory">Categoría</label><select id="productCategory"><option value="late">Noches Largas</option><option value="chill">Días Tranquilos</option><option value="quick">Rápido y Fácil</option><option value="sun">Baño de Sol</option></select></div>
       <label class="switchRow"><span><strong>Producto físico</strong><small>Requiere entrega o recogida.</small></span><input id="physicalProduct" type="checkbox" checked></label>
-    </div>
+    </aside>
     <input id="packageLength" type="hidden" value="0">
     <input id="packageWidth" type="hidden" value="0">
     <input id="packageHeight" type="hidden" value="0">

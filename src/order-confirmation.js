@@ -55,11 +55,11 @@ async function loadConfirmation() {
       { headers: { Accept: "application/json" } }
     );
     const payload = await response.json();
-    if (!response.ok || !payload?.ok || !payload?.order?.paid) {
+    if (!response.ok || !payload?.ok || (!payload?.order?.paid && !payload?.order?.authorized)) {
       throw new Error(payload?.error || "El pago todavía no está confirmado.");
     }
     confirmation = payload.order;
-    $("confirmationTitle").textContent = "COMPRA CONFIRMADA";
+    $("confirmationTitle").textContent = confirmation.paid ? "COMPRA CONFIRMADA" : "PAGO AUTORIZADO";
     $("orderNumber").textContent = `Pago #${confirmation.number}`;
     $("paymentStatus").textContent = confirmation.payment;
     $("deliveryMethod").textContent = confirmation.delivery?.method || "Entrega CajaModa";
@@ -74,11 +74,11 @@ async function loadConfirmation() {
       { headers: { Accept: "application/json" } }
     );
     const payload = await response.json();
-    if (!response.ok || !payload?.ok || !payload?.order?.paid) {
+    if (!response.ok || !payload?.ok || (!payload?.order?.paid && !payload?.order?.authorized)) {
       throw new Error(payload?.error || "El pago todavía no está confirmado.");
     }
     confirmation = payload.order;
-    $("confirmationTitle").textContent = "COMPRA CONFIRMADA";
+    $("confirmationTitle").textContent = confirmation.paid ? "COMPRA CONFIRMADA" : "PAGO AUTORIZADO";
     $("orderNumber").textContent = `Pago #${confirmation.number}`;
     $("paymentStatus").textContent = confirmation.payment;
     $("deliveryMethod").textContent = confirmation.delivery?.method || "Entrega CajaModa";

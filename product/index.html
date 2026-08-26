@@ -4597,7 +4597,9 @@ svg{
       if(active){button.setAttribute("aria-current","true")}
       else{button.removeAttribute("aria-current")}
     });
-    $("fulfillmentExplanation").textContent=modes.includes("pickup")&&modes.includes("fast")
+    $("fulfillmentExplanation").textContent=modes.includes("pickup")&&modes.includes("fast")&&modes.includes("ship")
+      ? "Disponible para recoger ahora, entrega Rápido o Libéralo en 14–21 días."
+      : modes.includes("pickup")&&modes.includes("fast")
       ? "Disponible para Pickup Ahora o entrega Rápido en 24–48 horas."
       : (methods[0]||fulfillmentMethods.fast).copy;
   }

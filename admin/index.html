@@ -4346,7 +4346,7 @@ function renderInventory(){
     });
   }
 
-  function saveTracking(
+  async function saveTracking(
     orderId
   ){
 
@@ -4367,36 +4367,36 @@ function renderInventory(){
       return;
     }
 
-    order.status =
+    const status =
       document.querySelector(
         `[data-order-status="${orderId}"]`
       )?.value ||
       order.status;
 
-    order.carrier =
+    const carrier =
       document.querySelector(
         `[data-order-carrier="${orderId}"]`
       )?.value
         ?.trim() ||
       "";
 
-    order.trackingNumber =
+    const trackingNumber =
       document.querySelector(
         `[data-order-tracking="${orderId}"]`
       )?.value
         ?.trim() ||
       "";
 
-    saveJson(
-      "store-loader-orders",
-      orders
-    );
-
-    renderAll();
-
-    showToast(
-      "Rastreo actualizado."
-    );
+    try {
+      await apiRequest(`/api/orders/${encodeURIComponent(orderId)}/tracking`, {
+        method: "POST",
+        body: { status, carrier, trackingNumber }
+      });
+      showToast("Rastreo guardado en Wix.");
+      await loadRealOrders(true);
+    } catch (error) {
+      showToast(error?.message || "No pudimos guardar el rastreo.");
+    }
   }
 
   /* ============================================================

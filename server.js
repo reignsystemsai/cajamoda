@@ -17,7 +17,8 @@ import {
 } from "@wix/media";
 
 import {
-  orders as ecomOrders
+  orders as ecomOrders,
+  orderFulfillments
 } from "@wix/ecom";
 
 import * as categoriesV3
@@ -146,7 +147,9 @@ const wix =
           files,
 
           orders:
-            ecomOrders
+            ecomOrders,
+
+          orderFulfillments
         }
       })
 
@@ -3585,6 +3588,53 @@ async function handleGetOrders(
     }
   );
 }
+
+async function handleSaveOrderTracking(request, response, orderId) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
+  if (!wix) return sendError(response, 503, "Wix no está configurado.");
+
+  const body = await readBody(request);
+  const status = safeText(body?.status, 30).toLowerCase();
+  const carrier = safeText(body?.carrier, 100);
+  const trackingNumber = safeText(body?.trackingNumber, 100);
+  if (!trackingNumber || !carrier) return sendError(response, 400, "Ingresa la transportadora y el número de rastreo.");
+
+  const order = await wix.orders.getOrder(orderId);
+  const fulfillmentStatus = status === "delivered"
+    ? "Fulfilled"
+    : status === "shipped"
+      ? "In_Delivery"
+      : status === "processing"
+        ? "Accepted"
+        : "Pending";
+  const completed = status === "delivered";
+  const listed = await wix.orderFulfillments.listFulfillmentsForSingleOrder(orderId);
+  const existing = listed?.orderWithFulfillments?.fulfillments?.[0];
+  const fulfillment = {
+    trackingInfo: { trackingNumber, shippingProvider: carrier },
+    status: fulfillmentStatus,
+    completed
+  };
+
+  if (existing?.fulfillmentId) {
+    await wix.orderFulfillments.updateFulfillment(
+      { orderId, fulfillmentId: existing.fulfillmentId },
+      { fulfillment }
+    );
+  } else {
+    const lineItems = (Array.isArray(order?.lineItems) ? order.lineItems : [])
+      .map(line => ({
+        _id: safeText(line?._id || line?.id, 100),
+        quantity: Math.max(1, Math.floor(Number(line?.quantity || 1)))
+      }))
+      .filter(line => line._id);
+    if (!lineItems.length) return sendError(response, 409, "El pedido no tiene productos para despachar.");
+    await wix.orderFulfillments.createFulfillment(orderId, { ...fulfillment, lineItems });
+  }
+
+  const refreshed = await wix.orders.getOrder(orderId);
+  sendJson(response, 200, { ok: true, order: normalizeWixOrder(refreshed) });
+}
 async function handleTrackOrder(
   request,
   response,
@@ -4116,6 +4166,12 @@ const server =
         const cancelStripeMatch = url.pathname.match(/^\/api\/stripe\/authorizations\/(pi_[A-Za-z0-9]+)\/cancel$/);
         if (request.method === "POST" && cancelStripeMatch) {
           await handleCancelStripeAuthorization(request, response, cancelStripeMatch[1]);
+          return;
+        }
+
+        const orderTrackingMatch = url.pathname.match(/^\/api\/orders\/([^/]+)\/tracking$/);
+        if (request.method === "POST" && orderTrackingMatch) {
+          await handleSaveOrderTracking(request, response, decodeURIComponent(orderTrackingMatch[1]));
           return;
         }
 

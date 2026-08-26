@@ -3520,6 +3520,31 @@ svg{
      MEDIA
      ============================================================ */
 
+  function fullResolutionImageUrl(
+    value
+  ){
+
+    const url =
+      String(
+        value ||
+        ""
+      );
+
+    if(
+      !url.includes(
+        "static.wixstatic.com/media/"
+      )
+    ){
+
+      return url;
+    }
+
+    return url.replace(
+      /(https:\/\/static\.wixstatic\.com\/media\/[^/]+)\/v1\/.*$/i,
+      "$1"
+    );
+  }
+
   function getMedia(
     product
   ){
@@ -3539,15 +3564,17 @@ svg{
               "string"
             ){
 
-              return item;
+              return fullResolutionImageUrl(
+                item
+              );
             }
 
-            return (
+            return fullResolutionImageUrl(
               item.url ||
-              item.src ||
-              item.imageUrl ||
-              item.image?.url ||
-              ""
+                item.src ||
+                item.imageUrl ||
+                item.image?.url ||
+                ""
             );
 
           }
@@ -3556,9 +3583,11 @@ svg{
     }
 
     return [
-      product?.image ||
-      product?.imageUrl ||
-      ""
+      fullResolutionImageUrl(
+        product?.image ||
+          product?.imageUrl ||
+          ""
+      )
     ]
       .filter(Boolean);
   }

@@ -546,10 +546,26 @@ async function handleCreateStripeCheckout(request, response) {
     : deliveryMethod === "moto"
       ? `Moto Cartagena · ${delivery.quote.distanceKm} km`
       : `${delivery.quote.carrier || "Envia"} · ${delivery.quote.service || "Envío nacional"}`;
+  const intentLines = lineItems.map(line => ({
+    productId: safeText(line?.price_data?.product_data?.metadata?.productId, 80),
+    variantId: safeText(line?.price_data?.product_data?.metadata?.variantId, 80),
+    quantity: Math.max(1, Math.floor(Number(line?.quantity || 1))),
+    amount: Number(line?.price_data?.unit_amount || 0) / 100,
+    name: safeText(line?.price_data?.product_data?.name, 300) || "Producto CajaModa"
+  }));
+  const intentMetadata = stripeIntentMetadata(intentLines, body, delivery);
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     ui_mode: "elements",
     payment_method_types: ["card"],
+    payment_intent_data: {
+      capture_method: "manual",
+      receipt_email: customerEmail || undefined,
+      metadata: {
+        ...intentMetadata,
+        source: "cajamoda-checkout-elements"
+      }
+    },
     line_items: lineItems,
     customer_email: customerEmail || undefined,
     shipping_options: [{
@@ -592,13 +608,21 @@ async function handleStripeConfirmation(request, response, url) {
     sendError(response, 400, "La sesión de pago no es válida.");
     return;
   }
-  const session = await stripe.checkout.sessions.retrieve(sessionId);
+  const session = await stripe.checkout.sessions.retrieve(sessionId, {
+    expand: ["payment_intent"]
+  });
+  const intent = typeof session.payment_intent === "object"
+    ? session.payment_intent
+    : null;
+  const authorized = intent?.status === "requires_capture";
+  const paid = intent?.status === "succeeded" || session.payment_status === "paid";
   sendJson(response, 200, {
     ok: true,
     order: {
       number: session.id.slice(-10).toUpperCase(),
-      payment: session.payment_status === "paid" ? "Pago confirmado" : "Pago pendiente",
-      paid: session.payment_status === "paid",
+      payment: paid ? "Pago confirmado" : authorized ? "Pago autorizado" : "Pago pendiente",
+      paid,
+      authorized,
       delivery: {
         method: "Entrega CajaModa",
         message: "Te enviaremos la información de entrega por correo."
@@ -833,6 +857,7 @@ async function handleCreateStripePaymentIntent(request, response) {
   const intent = await stripe.paymentIntents.create({
     amount: totalCents,
     currency: "cop",
+    capture_method: "manual",
     payment_method_types: ["card", "link"],
     receipt_email: customerEmail || undefined,
     description: `CajaModa · ${lines.length} producto${lines.length === 1 ? "" : "s"}`,
@@ -965,6 +990,7 @@ async function handleStripeIntentConfirmation(request, response, url) {
   if (!/^pi_[A-Za-z0-9]+$/.test(intentId)) return sendError(response, 400, "El pago no es válido.");
   const intent = await stripe.paymentIntents.retrieve(intentId, { expand: ["payment_method"] });
   if (intent.status === "succeeded") await syncSucceededStripeIntent(intent);
+  const authorized = intent.status === "requires_capture";
   const deliveryTitle = intent.metadata.deliveryMethod === "pickup"
     ? "Pronto – Recoger en punto"
     : intent.metadata.deliveryMethod === "national"
@@ -974,8 +1000,13 @@ async function handleStripeIntentConfirmation(request, response, url) {
     ok: true,
     order: {
       paid: intent.status === "succeeded",
+      authorized,
       number: `S-${intent.id.slice(-12).toUpperCase()}`,
-      payment: intent.status === "succeeded" ? "Pago con tarjeta confirmado" : "Pago en proceso",
+      payment: intent.status === "succeeded"
+        ? "Pago con tarjeta confirmado"
+        : authorized
+          ? "Pago con tarjeta autorizado"
+          : "Pago en proceso",
       delivery: getConfirmationDelivery({ shippingInfo: { title: deliveryTitle } })
     }
   });
@@ -3422,6 +3453,75 @@ async function getWixOrders() {
     );
 }
 
+function normalizeStripeAuthorization(intent) {
+  const lines = stripeIntentLines(intent);
+  const deliveryMethod = safeText(intent?.metadata?.deliveryMethod, 20) || "pickup";
+  return {
+    id: intent.id,
+    number: `AUT-${intent.id.slice(-10).toUpperCase()}`,
+    date: new Date(Number(intent.created || 0) * 1000).toISOString(),
+    customer: safeText(intent?.metadata?.customerName, 160) || "Cliente CajaModa",
+    email: safeText(intent?.metadata?.customerEmail, 250),
+    products: lines.map(line => `${line.quantity} × ${line.name}`).join(", "),
+    total: Number(intent.amount || 0) / 100,
+    status: "authorized",
+    paymentStatus: "AUTHORIZED",
+    paymentMethod: "card",
+    source: "stripeAuthorization",
+    canCapturePayment: intent.status === "requires_capture",
+    canCancelPayment: intent.status === "requires_capture",
+    delivery: deliveryMethod === "pickup"
+      ? "Stripe – Pronto – Recoger"
+      : deliveryMethod === "national"
+        ? "Stripe – Rápido – Envío nacional 4–7 días"
+        : "Stripe – Pronto – Moto"
+  };
+}
+
+function isCajaModaStripeIntent(intent) {
+  return ["cajamoda-checkout-elements", "cajamoda-custom-card"].includes(
+    safeText(intent?.metadata?.source, 80)
+  );
+}
+
+async function getStripeAuthorizations() {
+  if (!stripe) return [];
+  const result = await stripe.paymentIntents.list({ limit: 100 });
+  return result.data
+    .filter(intent => intent.status === "requires_capture" && isCajaModaStripeIntent(intent))
+    .map(normalizeStripeAuthorization);
+}
+
+async function handleCaptureStripeAuthorization(request, response, intentId) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
+  if (!stripe) return sendError(response, 503, "Stripe todavía no está configurado.");
+  if (!/^pi_[A-Za-z0-9]+$/.test(intentId)) return sendError(response, 400, "La autorización no es válida.");
+
+  let intent = await stripe.paymentIntents.retrieve(intentId);
+  if (!isCajaModaStripeIntent(intent)) return sendError(response, 403, "La autorización no pertenece a CajaModa.");
+  if (intent.status === "requires_capture") intent = await stripe.paymentIntents.capture(intent.id);
+  if (intent.status !== "succeeded") return sendError(response, 409, "Stripe no pudo capturar esta autorización.");
+
+  await syncSucceededStripeIntent(intent);
+  sendJson(response, 200, { ok: true, status: intent.status });
+}
+
+async function handleCancelStripeAuthorization(request, response, intentId) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
+  if (!stripe) return sendError(response, 503, "Stripe todavía no está configurado.");
+  if (!/^pi_[A-Za-z0-9]+$/.test(intentId)) return sendError(response, 400, "La autorización no es válida.");
+
+  const intent = await stripe.paymentIntents.retrieve(intentId);
+  if (!isCajaModaStripeIntent(intent)) return sendError(response, 403, "La autorización no pertenece a CajaModa.");
+  if (intent.status === "canceled") return sendJson(response, 200, { ok: true, status: intent.status });
+  if (intent.status !== "requires_capture") return sendError(response, 409, "Esta autorización ya no se puede cancelar.");
+
+  const canceled = await stripe.paymentIntents.cancel(intent.id, {
+    cancellation_reason: "requested_by_customer"
+  });
+  sendJson(response, 200, { ok: true, status: canceled.status });
+}
+
 async function handleGetOrders(
   request,
   response
@@ -3442,8 +3542,10 @@ async function handleGetOrders(
     return;
   }
 
-  const orderList =
-    await getWixOrders();
+  const [orderList, stripeAuthorizations] = await Promise.all([
+    getWixOrders(),
+    getStripeAuthorizations()
+  ]);
 
   sendJson(
     response,
@@ -3453,8 +3555,8 @@ async function handleGetOrders(
       ok:
         true,
 
-      orders:
-        orderList
+      orders: [...stripeAuthorizations, ...orderList]
+        .sort((left, right) => new Date(right.date) - new Date(left.date))
     }
   );
 }
@@ -3977,6 +4079,18 @@ const server =
             }
           );
 
+          return;
+        }
+
+        const captureStripeMatch = url.pathname.match(/^\/api\/stripe\/authorizations\/(pi_[A-Za-z0-9]+)\/capture$/);
+        if (request.method === "POST" && captureStripeMatch) {
+          await handleCaptureStripeAuthorization(request, response, captureStripeMatch[1]);
+          return;
+        }
+
+        const cancelStripeMatch = url.pathname.match(/^\/api\/stripe\/authorizations\/(pi_[A-Za-z0-9]+)\/cancel$/);
+        if (request.method === "POST" && cancelStripeMatch) {
+          await handleCancelStripeAuthorization(request, response, cancelStripeMatch[1]);
           return;
         }
 

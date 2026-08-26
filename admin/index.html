@@ -3955,7 +3955,10 @@ function renderInventory(){
       "Enviado",
 
     delivered:
-      "Entregado"
+      "Entregado",
+
+    authorized:
+      "Autorizado"
   };
 
   function renderTrackingSteps(
@@ -4100,7 +4103,22 @@ function renderInventory(){
                   </div>
                 ` : ""}
 
-                <div class="trackingBlock">
+                ${order.source === "stripeAuthorization" ? `
+                  <div style="margin:12px 0;padding:12px 14px;border:1px solid rgba(0,0,0,.14);border-radius:14px;background:rgba(255,255,255,.62)">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+                      <div>
+                        <strong>Tarjeta autorizada</strong>
+                        <div style="margin-top:3px;font-size:11px;color:#6f6f6f">El pago está retenido. Captura para confirmar el pedido.</div>
+                      </div>
+                      <div style="display:flex;gap:8px">
+                        <button type="button" data-cancel-stripe="${escapeHtml(order.id)}" style="padding:10px 14px;border:1px solid #080808;border-radius:999px;background:#fff;color:#080808;font-weight:700;cursor:pointer">Cancelar</button>
+                        <button type="button" data-capture-stripe="${escapeHtml(order.id)}" style="padding:10px 14px;border:0;border-radius:999px;background:#080808;color:#fff;font-weight:700;cursor:pointer">Capturar pago</button>
+                      </div>
+                    </div>
+                  </div>
+                ` : ""}
+
+                ${order.source !== "stripeAuthorization" ? `<div class="trackingBlock">
 
                   <div class="trackingSteps">
 
@@ -4198,7 +4216,7 @@ function renderInventory(){
 
                   </div>
 
-                </div>
+                </div>` : ""}
 
               </article>
 
@@ -4289,6 +4307,40 @@ function renderInventory(){
           button.disabled = false;
           button.textContent = "Confirmar pago";
           showToast(error?.message || "No pudimos confirmar el pago.");
+        }
+      };
+    });
+
+    qsa("[data-capture-stripe]").forEach(button => {
+      button.onclick = async () => {
+        const intentId = button.dataset.captureStripe;
+        button.disabled = true;
+        button.textContent = "Capturando…";
+        try {
+          await apiRequest(`/api/stripe/authorizations/${encodeURIComponent(intentId)}/capture`, { method: "POST", body: {} });
+          showToast("Pago capturado y pedido confirmado.");
+          await loadRealOrders(true);
+        } catch (error) {
+          button.disabled = false;
+          button.textContent = "Capturar pago";
+          showToast(error?.message || "No pudimos capturar el pago.");
+        }
+      };
+    });
+
+    qsa("[data-cancel-stripe]").forEach(button => {
+      button.onclick = async () => {
+        const intentId = button.dataset.cancelStripe;
+        button.disabled = true;
+        button.textContent = "Cancelando…";
+        try {
+          await apiRequest(`/api/stripe/authorizations/${encodeURIComponent(intentId)}/cancel`, { method: "POST", body: {} });
+          showToast("Autorización cancelada.");
+          await loadRealOrders(true);
+        } catch (error) {
+          button.disabled = false;
+          button.textContent = "Cancelar";
+          showToast(error?.message || "No pudimos cancelar la autorización.");
         }
       };
     });

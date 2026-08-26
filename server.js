@@ -2201,7 +2201,11 @@ function buildVariants(
   sizes,
   colors,
   price,
+  cost,
   quantity,
+  trackInventory,
+  stockStatus,
+  allowPreorder,
   fulfillmentCode,
   styleCode,
   variantOverrides = []
@@ -2296,11 +2300,14 @@ function buildVariants(
           }
         },
 
-        inventoryItem: {
+        revenueDetails: cost > 0 ? { cost: { amount: String(cost) } } : undefined,
 
-          quantity:
-            variantQuantity
-        },
+        inventoryItem: trackInventory
+          ? {
+              quantity: stockStatus === "OUT_OF_STOCK" ? 0 : variantQuantity,
+              preorderInfo: allowPreorder ? { enabled: true, message: "Disponible para preventa", limit: 100000 } : undefined
+            }
+          : { inStock: stockStatus !== "OUT_OF_STOCK" },
 
         physicalProperties:
           {}
@@ -2671,6 +2678,11 @@ async function createWixProduct(
       0
     );
 
+  const cost = Math.max(0, Number(input.cost || 0));
+  const trackInventory = input.trackInventory !== false;
+  const stockStatus = input.stockStatus === "OUT_OF_STOCK" ? "OUT_OF_STOCK" : "IN_STOCK";
+  const allowPreorder = Boolean(input.allowPreorder);
+
   const quantity =
     Math.max(
       0,
@@ -2762,7 +2774,11 @@ async function createWixProduct(
       sizes,
       colors,
       price,
+      cost,
       quantity,
+      trackInventory,
+      stockStatus,
+      allowPreorder,
       fulfillmentCode,
       styleCode,
       input.variantOverrides
@@ -3152,6 +3168,46 @@ async function handleLogin(
 /* ============================================================
    PRODUCT ENDPOINT
    ============================================================ */
+
+async function handleAssistProduct(request, response) {
+  if (!isAuthorized(request)) {
+    sendError(response, 401, "Inicia sesión en Store Loader.");
+    return;
+  }
+  const apiKey = String(process.env.OPENAI_API_KEY || "").trim();
+  if (!apiKey) {
+    sendError(response, 503, "Configura OPENAI_API_KEY en Render para activar esta función.");
+    return;
+  }
+  const body = await readBody(request);
+  const kind = body?.kind === "description" ? "description" : "name";
+  const photo = String(body?.photo || "");
+  if (!/^data:image\/(png|jpe?g|webp);base64,/i.test(photo)) {
+    sendError(response, 400, "Carga una foto válida primero.");
+    return;
+  }
+  const currentName = safeText(body?.currentName, 80);
+  const instruction = kind === "name"
+    ? "Crea un nombre comercial original en español para esta prenda. Devuelve solo el nombre, de 2 a 4 palabras, sin comillas y evita nombres genéricos."
+    : `Escribe una descripción de producto original en español de 2 oraciones para una tienda de moda. Describe solo lo visible, tono elegante y claro, sin inventar materiales. Nombre actual: ${currentName || "sin nombre"}. Devuelve solo la descripción.`;
+  const openaiResponse = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {"Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json"},
+    body: JSON.stringify({
+      model: process.env.OPENAI_PRODUCT_MODEL || "gpt-5",
+      input: [{role:"user", content:[{type:"input_text", text:`${instruction}\nVariación creativa: ${Date.now()}`},{type:"input_image", image_url:photo, detail:"low"}]}],
+      max_output_tokens: 180
+    })
+  });
+  const result = await openaiResponse.json();
+  if (!openaiResponse.ok) throw new Error(result?.error?.message || "No pudimos analizar la foto.");
+  const responseText = result?.output_text || (Array.isArray(result?.output)
+    ? result.output.flatMap(item => Array.isArray(item?.content) ? item.content : []).map(item => item?.text || "").join(" ")
+    : "");
+  const value = safeText(responseText, kind === "name" ? 80 : 600);
+  if (!value) throw new Error("No recibimos texto para este producto.");
+  sendJson(response, 200, {ok:true, value});
+}
 
 async function handleCreateProduct(
   request,
@@ -4188,6 +4244,12 @@ function getProductImageUrl(product) {
     product?.thumbnail?.url,
     product?.thumbnail?._id,
     product?.thumbnail?.id,
+    product?.media?.main?.image?.url,
+    product?.media?.main?.image?._id,
+    product?.media?.main?.image?.id,
+    product?.media?.main?.url,
+    product?.media?.main?.id,
+    product?.media?.main?.thumbnail?.url,
     product?.media?.mainMedia?.image?.url,
     product?.media?.mainMedia?.image?._id,
     product?.media?.mainMedia?.image?.id,
@@ -4404,6 +4466,14 @@ const server =
         /* ------------------------------------------------------
            HEALTH
            ------------------------------------------------------ */
+
+        if (
+          request.method === "POST" &&
+          url.pathname === "/api/products/assist"
+        ) {
+          await handleAssistProduct(request, response);
+          return;
+        }
 
         if (
           request.method ===

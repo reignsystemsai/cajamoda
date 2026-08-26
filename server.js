@@ -4172,15 +4172,23 @@ function normalizeInventoryItem(
 function getProductImageUrl(product) {
   const candidates = [
     product?.media?.mainMedia?.image?.url,
+    product?.media?.mainMedia?.image?.imageInfo?.url,
+    product?.media?.mainMedia?.imageInfo?.url,
     product?.media?.mainMedia?.url,
     product?.media?.itemsInfo?.items?.[0]?.image?.url,
+    product?.media?.itemsInfo?.items?.[0]?.image?.imageInfo?.url,
     product?.media?.itemsInfo?.items?.[0]?.url,
     product?.media?.items?.[0]?.image?.url,
+    product?.media?.items?.[0]?.image?.imageInfo?.url,
+    product?.media?.items?.[0]?.thumbnail?.url,
     product?.media?.items?.[0]?.url,
     product?.mediaItems?.[0]?.image?.url,
     product?.mediaItems?.[0]?.url
   ];
-  return safeText(candidates.find(Boolean), 1500);
+  const value = safeText(candidates.find(Boolean), 1500);
+  if (!value.startsWith("wix:image://")) return value;
+  const mediaId = value.replace("wix:image://v1/", "").split("/")[0].split("#")[0];
+  return mediaId ? `https://static.wixstatic.com/media/${encodeURIComponent(mediaId)}` : "";
 }
 
 async function getWixInventory() {

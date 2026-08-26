@@ -22,7 +22,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
 <link
-  href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Italiana&display=swap"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
   rel="stylesheet"
 >
 
@@ -53,15 +53,15 @@
 
 /* CajaModa Store Loader Commerce Network */
 :root{--glass:rgba(255,255,255,.72);--ivory:#f7f4ee;--green:#2f7d32;--amber:#b66a00;--red:#b3261e}
-body{background:radial-gradient(circle at 85% 8%,#fff 0,var(--ivory) 48%,#f1ede5 100%);font-family:"DM Sans",Inter,sans-serif}
+body{background:radial-gradient(circle at 85% 8%,#fff 0,var(--ivory) 48%,#f1ede5 100%);font-family:Inter,sans-serif}
 .loaderApp{background:transparent}
 .loaderHeader,.sectionBlock,.metricCard,.earningSummary,.settingsCard,.orderCard,.productCard{background:var(--glass)!important;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(15,15,15,.10)!important;box-shadow:0 16px 44px rgba(28,20,10,.06)!important}
-.loaderBrand,.pageTitle,.sectionTitle,.earningSummaryValue{font-family:"Italiana",Georgia,serif!important;font-weight:400!important;letter-spacing:-.02em}
+.loaderBrand,.pageTitle,.sectionTitle,.earningSummaryValue{font-family:Inter,sans-serif!important;font-weight:500!important;letter-spacing:-.035em}
 .loaderBrand{font-size:27px!important;letter-spacing:.08em}.loaderLabel{letter-spacing:.22em!important}
 .pageTitle{font-size:clamp(42px,5vw,72px)!important;line-height:1!important}.pageIntro{font-size:14px!important;color:#5f5a52!important}
 .tabButton{border-radius:12px!important}.tabButton.active{background:#090909!important;color:#fff!important;box-shadow:0 10px 24px rgba(0,0,0,.12)}
 .primaryButton{background:#090909!important;border-radius:12px!important}.secondaryButton,input,select,textarea{border-radius:12px!important}
-.metricValue{font-family:"Italiana",Georgia,serif!important;font-size:42px!important;font-weight:400!important}
+.metricValue{font-family:Inter,sans-serif!important;font-size:42px!important;font-weight:500!important}
 .storeSelector{pointer-events:none;border:1px solid rgba(0,0,0,.10)!important;background:rgba(255,255,255,.7)!important}
 .ownerIdentity{display:flex;align-items:center;gap:10px;font-size:12px}.ownerDot{width:8px;height:8px;border-radius:50%;background:var(--green)}
 .pilotNotice{margin:0 0 22px;padding:14px 18px;border:1px solid rgba(0,0,0,.08);border-radius:14px;background:rgba(255,255,255,.58);font-size:12px;color:#5f5a52}
@@ -983,6 +983,12 @@ img{
   gap:6px;
 }
 
+.photoDropZone{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:82px;margin-bottom:10px;padding:14px;border:1px dashed rgba(0,0,0,.24);border-radius:14px;background:rgba(255,255,255,.58);color:#171717;text-align:center;cursor:pointer;transition:.18s ease}
+.photoDropZone strong{font-size:11px}
+.photoDropZone span{font-size:8px;color:#777}
+.photoDropZone input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.photoDropZone.dragging{border-color:#111;background:rgba(255,255,255,.9);transform:translateY(-1px)}
+
 .photoBox{
 
   position:relative;
@@ -1017,6 +1023,8 @@ img{
   opacity:0;
 
   cursor:pointer;
+
+  z-index:3;
 }
 
 .photoBox span{
@@ -1041,7 +1049,17 @@ img{
   height:100%;
 
   object-fit:cover;
+
+  pointer-events:none;
+
+  z-index:1;
 }
+
+.orderPager{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 4px 2px;color:#666;font-size:10px}
+.orderPagerControls{display:flex;align-items:center;gap:7px}
+.orderPager button{width:34px;height:32px;border:1px solid rgba(0,0,0,.12);border-radius:9px;background:rgba(255,255,255,.8);cursor:pointer}
+.orderPager button:disabled{opacity:.35;cursor:default}
+.orderPager strong{display:grid;place-items:center;width:32px;height:32px;border-radius:9px;background:#090909;color:#fff}
 
 /* ============================================================
    SIZES
@@ -1215,7 +1233,7 @@ img{
 .orderSummaryGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
 .orderSummaryCard{padding:14px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.55)}
 .orderSummaryLabel{font-size:7px;color:#706a61}
-.orderSummaryValue{margin-top:5px;font-family:"Italiana",Georgia,serif;font-size:18px}
+.orderSummaryValue{margin-top:5px;font-family:Inter,sans-serif;font-size:18px;font-weight:600}
 .orderTableHead{display:grid;grid-template-columns:110px minmax(150px,1fr) 100px 110px 110px;gap:14px;padding:10px 15px;color:#716b62;font-size:7px;font-weight:700}
 .orderCardMain{display:grid;grid-template-columns:110px minmax(150px,1fr) 100px 110px 110px;gap:14px;align-items:center}
 .orderStatusPill{display:inline-flex;align-items:center;justify-content:center;width:max-content;min-width:74px;padding:7px 10px;border-radius:999px;background:#edf5e9;color:#2f6b31;font-size:7px;font-weight:800}
@@ -1224,7 +1242,7 @@ img{
 .inventoryThumb{width:48px;height:58px;flex:0 0 auto;border-radius:10px;object-fit:cover;background:#eee8de;border:1px solid rgba(0,0,0,.08)}
 .inventorySummaryGrid,.productSummaryGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
 .inventorySummaryCard,.productSummaryCard{padding:14px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.55)}
-.inventorySummaryCard strong,.productSummaryCard strong{display:block;font-family:"Italiana",Georgia,serif;font-size:22px;font-weight:400}
+.inventorySummaryCard strong,.productSummaryCard strong{display:block;font-family:Inter,sans-serif;font-size:22px;font-weight:600}
 .inventorySummaryCard span,.productSummaryCard span{font-size:7px;color:#706a61}
 .productToolbar{display:grid;grid-template-columns:minmax(220px,1fr) auto;gap:12px;margin-bottom:14px}
 @media(max-width:899px){
@@ -1236,14 +1254,18 @@ img{
 
 .orderCard{
 
-  padding:13px;
+  padding:8px 12px;
 
   border:
     1px solid
     var(--line);
 
-  border-radius:15px;
+  border-radius:10px;
 }
+
+.orderActions{margin-top:6px;border-top:1px solid rgba(0,0,0,.06)}
+.orderActions summary{padding:7px 0;color:#555;font-size:10px;font-weight:700;cursor:pointer;list-style:none}
+.orderActions summary::-webkit-details-marker{display:none}
 
 .orderTop{
 
@@ -1735,7 +1757,7 @@ img{
 
   .orderList{display:flex;flex-direction:column;gap:12px}
 
-  .orderCard{padding:20px;border-radius:18px}
+  .orderCard{padding:9px 14px;border-radius:10px}
   .orderNumber{font-size:14px}
   .orderDate{font-size:11px}
   .orderCustomer{font-size:13px}
@@ -1784,10 +1806,10 @@ img{
   .sidebarMonogram{position:relative;width:88px;height:72px;font-family:"Italiana",Didot,serif}
   .sidebarMonogram span:first-child{position:absolute;left:4px;top:-14px;font-size:82px;line-height:1;transform:scaleX(.9)}
   .sidebarMonogram span:last-child{position:absolute;left:43px;top:14px;font-size:54px;line-height:1;transform:scaleX(.9)}
-  .loaderBrand{font-family:"Italiana",Georgia,serif!important;font-size:23px!important;letter-spacing:.22em!important;padding-left:.22em}
+  .loaderBrand{font-family:Inter,sans-serif!important;font-size:23px!important;font-weight:500!important;letter-spacing:.18em!important;padding-left:.18em}
   .loaderLabel{margin-top:9px!important;color:#151515!important;font-size:8px!important;line-height:1.45!important;font-weight:600!important;letter-spacing:.24em!important}
   .storeSelector{
-    position:fixed!important;z-index:100!important;top:34px!important;right:40px!important;width:190px!important;height:48px!important;
+    position:fixed!important;z-index:100!important;top:28px!important;right:40px!important;width:220px!important;height:48px!important;
     padding:0 16px 0 38px!important;border:1px solid rgba(83,66,43,.18)!important;border-radius:10px!important;
     background:radial-gradient(circle at 20px 50%,#4e9b55 0 5px,transparent 6px),rgba(255,255,255,.66)!important;
     box-shadow:0 8px 24px rgba(61,44,20,.07)!important;backdrop-filter:blur(22px)!important;-webkit-backdrop-filter:blur(22px)!important;
@@ -1797,7 +1819,7 @@ img{
   #logoutButton{position:absolute!important;left:20px!important;bottom:24px!important;width:200px!important}
   .tabButton{
     width:100%!important;min-height:48px!important;display:flex!important;align-items:center!important;gap:13px!important;
-    padding:0 15px!important;border-radius:10px!important;color:#181818!important;font-family:"Italiana",Georgia,serif!important;
+    padding:0 15px!important;border-radius:10px!important;color:#181818!important;font-family:Inter,sans-serif!important;
     font-size:16px!important;font-weight:400!important;text-align:left!important;text-transform:none!important;letter-spacing:0!important
   }
   .tabButton::before{width:23px;display:inline-grid;place-items:center;font-family:"DM Sans",sans-serif;font-size:20px;line-height:1}
@@ -1814,10 +1836,6 @@ img{
     border:1px solid rgba(82,62,35,.15)!important;border-radius:11px!important;background:rgba(255,255,255,.56)!important;
     box-shadow:0 12px 30px rgba(70,49,20,.06)!important;backdrop-filter:blur(24px) saturate(150%)!important;-webkit-backdrop-filter:blur(24px) saturate(150%)!important
   }
-  .pilotStep{min-height:54px;display:flex;align-items:center;justify-content:center;gap:13px;border-left:1px solid rgba(80,61,35,.18);font-size:13px;color:#151515}
-  .pilotStep:first-child{border-left:0}.pilotStep strong{width:38px;height:38px;display:grid;place-items:center;border:1px solid #b9aa90;border-radius:50%;font-size:18px;font-weight:500}
-  .pilotStep.complete strong{border-color:#599d58;background:#599d58;color:#fff}.pilotStep.current strong{border-color:#090909;background:#090909;color:#fff}
-  .pilotStep span{font-weight:700}
   .metricGrid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:14px!important;margin-top:0!important}
   .metricCard,.sectionBlock,.earningSummary,.settingsCard,.orderCard,.productCard{
     border:1px solid rgba(82,62,35,.14)!important;background:linear-gradient(145deg,rgba(255,255,255,.72),rgba(255,251,244,.46))!important;
@@ -1834,7 +1852,7 @@ img{
 }
 @media (min-width:900px) and (max-width:1120px){
   .loaderHeader{width:205px!important}.loaderMain{margin-left:205px!important;padding-left:25px!important;padding-right:25px!important}
-  .storeSelector{right:25px!important}.metricGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.pilotStep span{font-size:11px}
+  .storeSelector{right:25px!important}.metricGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 }
 
 </style>
@@ -1963,13 +1981,6 @@ img{
       Pedidos
     </button>
 
-    <button
-      class="tabButton"
-      data-tab="earnings"
-    >
-      Pagos
-    </button>
-
   </nav>
 
   <button id="logoutButton" class="secondaryButton" type="button" style="margin-top:auto;width:100%">Cerrar sesión</button>
@@ -1994,13 +2005,6 @@ img{
   <p class="pageIntro">
     Tu espacio para cargar, promover y hacer crecer la tienda.
   </p>
-
-  <div class="pilotNotice" aria-label="Progreso de la tienda">
-    <div class="pilotStep complete"><strong>✓</strong><span>1. Carga productos</span></div>
-    <div class="pilotStep complete"><strong>✓</strong><span>2. Revisa inventario</span></div>
-    <div class="pilotStep"><strong>3</strong><span>3. Promociona</span></div>
-    <div class="pilotStep current"><strong>4</strong><span>4. Recibe pagos</span></div>
-  </div>
 
   <div class="metricGrid">
 
@@ -2038,44 +2042,6 @@ img{
 
       <div class="metricSub">
         pedidos registrados
-      </div>
-
-    </div>
-
-    <div class="metricCard">
-
-      <div class="metricLabel">
-        Comisión
-      </div>
-
-      <div
-        id="dashboardEarned"
-        class="metricValue"
-      >
-        $0
-      </div>
-
-      <div class="metricSub">
-        comisión confirmada
-      </div>
-
-    </div>
-
-    <div class="metricCard">
-
-      <div class="metricLabel">
-        Tasa
-      </div>
-
-      <div
-      id="dashboardPotential"
-        class="metricValue"
-      >
-        0%
-      </div>
-
-      <div class="metricSub">
-        aplicada a ventas pagadas
       </div>
 
     </div>
@@ -2171,6 +2137,12 @@ img{
 
       <label>
         Fotos · máximo 5
+      </label>
+
+      <label id="photoDropZone" class="photoDropZone" for="photoBulkInput">
+        <strong>Arrastra hasta 5 fotos aquí</strong>
+        <span>o haz clic para seleccionarlas juntas desde tu computadora</span>
+        <input id="photoBulkInput" type="file" accept="image/*" multiple>
       </label>
 
       <div
@@ -2398,24 +2370,6 @@ img{
 
     </div>
 
-    <div
-      id="potentialPreview"
-      class="earningPreview"
-    >
-
-      <div class="earningPreviewLabel">
-        Ganancia potencial por venta
-      </div>
-
-      <div
-        id="potentialEarningValue"
-        class="earningPreviewValue"
-      >
-        $0
-      </div>
-
-    </div>
-
     <button
       id="publishProduct"
       class="primaryButton fullButton"
@@ -2481,60 +2435,6 @@ img{
     id="orderList"
     class="orderList sectionBlock"
   ></div>
-
-</section>
-
-<!-- ==========================================================
-     EARNINGS
-     ========================================================== -->
-
-<section
-  id="panel-earnings"
-  class="panel"
->
-
-  <h1 class="pageTitle">
-    Comisiones.
-  </h1>
-
-  <p class="pageIntro">
-    Consulta cuánto has generado con las ventas pagadas de tu tienda.
-  </p>
-
-  <div class="earningSummary">
-
-    <div class="earningSummaryLabel">
-      Comisión confirmada
-    </div>
-
-    <div
-      id="totalEarned"
-      class="earningSummaryValue"
-    >
-      $0
-    </div>
-
-    <div class="earningSummarySub">
-      Calculada automáticamente sobre pedidos pagados. CajaModa procesa y concilia los pagos.
-    </div>
-
-  </div>
-
-  <div class="sectionBlock">
-
-    <div class="sectionHeader">
-
-      <div class="sectionTitle">
-        Comisión por producto
-      </div>
-
-    </div>
-
-    <div
-      id="potentialProductList"
-    ></div>
-
-  </div>
 
 </section>
 
@@ -3060,17 +2960,7 @@ await loadOwnerWorkspace();
       "store-001",
 
     name:
-      "Karolay Blanco",
-
-    /*
-      Temporary internal prototype value.
-
-      Later this comes from the platform backend.
-      It is never editable in Store Loader.
-    */
-
-    platformEarningPercent:
-      0
+      "Karolay Blanco"
   };
 
   const storedStore =
@@ -3083,14 +2973,7 @@ await loadOwnerWorkspace();
 
     ...defaultStore,
 
-    ...storedStore,
-
-    platformEarningPercent:
-      Number(
-        storedStore
-          ?.platformEarningPercent ||
-        0
-      )
+    ...storedStore
   };
 
   /*
@@ -3124,8 +3007,7 @@ async function loadOwnerWorkspace(){
   store = {
     ...store,
     id: ownerProfile.storeId,
-    name: ownerProfile.ownerName,
-    platformEarningPercent: Number(ownerProfile.commissionPercent || 0)
+    name: ownerProfile.ownerName
   };
   renderAll();
 }
@@ -3203,6 +3085,7 @@ async function loadRealInventory(
 }
 
   let orders = [];
+  let orderPage = 1;
   async function loadRealOrders(
   silent = false
 ){
@@ -3420,6 +3303,33 @@ if(
       ""
     ];
 
+  function readPhotoFile(file){
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function addPhotoFiles(fileList){
+    const files = Array.from(fileList || [])
+      .filter(file => String(file.type || "").startsWith("image/"))
+      .slice(0, 5);
+    if(!files.length) return;
+    if(files.some(file => file.size > 8 * 1024 * 1024)){
+      showToast("Cada foto debe pesar menos de 8 MB.");
+      return;
+    }
+    try{
+      const photos = await Promise.all(files.map(readPhotoFile));
+      photos.forEach((photo, index) => { uploadedPhotos[index] = photo; });
+      renderPhotoInputs();
+    }catch(error){
+      showToast("No pudimos leer una de las fotos.");
+    }
+  }
+
   function renderPhotoInputs(){
 
     $("photoUploadGrid")
@@ -3498,83 +3408,27 @@ if(
                 return;
               }
 
-              const reader =
-                new FileReader();
-
-              reader.onload =
-                () => {
-
-                  uploadedPhotos[
-                    Number(
-                      input.dataset
-                        .photoIndex
-                    )
-                  ] =
-                    reader.result;
-
-                  renderPhotoInputs();
-                };
-
-              reader.readAsDataURL(
-                file
-              );
+              readPhotoFile(file).then(photo => {
+                uploadedPhotos[Number(input.dataset.photoIndex)] = photo;
+                renderPhotoInputs();
+              });
             };
         }
       );
   }
 
-  /* ============================================================
-     PLATFORM EARNINGS
-     ============================================================ */
-
-  function earningRate(){
-
-    return (
-      Number(
-        store
-          .platformEarningPercent ||
-        0
-      ) /
-      100
-    );
-  }
-
-  function potentialEarning(
-    price
-  ){
-
-    return (
-      Number(
-        price ||
-        0
-      ) *
-      earningRate()
-    );
-  }
-
-  function updatePotentialPreview(){
-
-    const price =
-      Number(
-        $("productPrice")
-          .value ||
-        0
-      );
-
-    $("potentialEarningValue")
-      .textContent =
-        money(
-          potentialEarning(
-            price
-          )
-        );
-  }
-
-  $("productPrice")
-    .addEventListener(
-      "input",
-      updatePotentialPreview
-    );
+  const photoBulkInput = $("photoBulkInput");
+  const photoDropZone = $("photoDropZone");
+  photoBulkInput.onchange = event => addPhotoFiles(event.target.files);
+  ["dragenter", "dragover"].forEach(type => photoDropZone.addEventListener(type, event => {
+    event.preventDefault();
+    photoDropZone.classList.add("dragging");
+  }));
+  ["dragleave", "drop"].forEach(type => photoDropZone.addEventListener(type, event => {
+    event.preventDefault();
+    photoDropZone.classList.remove("dragging");
+    if(type === "drop") addPhotoFiles(event.dataTransfer.files);
+  }));
 
   /* ============================================================
      PRODUCT FORM
@@ -3631,7 +3485,6 @@ if(
 
     renderPhotoInputs();
 
-    updatePotentialPreview();
   }
 
   function collectSizes(){
@@ -4018,16 +3871,6 @@ if(
 
                   </div>
 
-                  <div class="productEarning">
-                    Potencial:
-                    ${money(
-                      potentialEarning(
-                        product.price
-                      )
-                    )}
-                    por venta
-                  </div>
-
                 </div>
 
                 <div class="productStatus">
@@ -4274,18 +4117,16 @@ function renderInventory(){
       return;
     }
 
+    const ordersPerPage = 20;
+    const totalOrderPages = Math.max(1, Math.ceil(orders.length / ordersPerPage));
+    orderPage = Math.min(orderPage, totalOrderPages);
+    const pageStart = (orderPage - 1) * ordersPerPage;
+    const pageOrders = orders.slice(pageStart, pageStart + ordersPerPage);
+
     const html =
-      orders
+      pageOrders
         .map(
           order => {
-
-            const loaderEarning =
-              Number(
-                order.total ||
-                0
-              ) *
-              earningRate();
-
             return `
 
               <article
@@ -4299,6 +4140,9 @@ function renderInventory(){
                   <div class="orderMoney"><strong>${money(order.total)}</strong></div>
                   <div><span class="orderStatusPill ${order.canConfirmPayment ? "pending" : ""}">${order.canConfirmPayment ? "Por verificar" : escapeHtml(trackingLabels[order.status || "new"] || "Registrado")}</span></div>
                 </div>
+
+                <details class="orderActions">
+                  <summary>Gestionar pedido</summary>
 
                 ${order.paymentMethod === "nequi" ? `
                   <div style="margin:12px 0;padding:12px 14px;border:1px solid rgba(77,11,183,.18);border-radius:14px;background:rgba(255,255,255,.62)">
@@ -4429,6 +4273,8 @@ function renderInventory(){
 
                 </div>` : ""}
 
+                </details>
+
               </article>
 
             `;
@@ -4448,7 +4294,18 @@ function renderInventory(){
         <div class="orderSummaryCard"><div class="orderSummaryLabel">Últimos 30 días</div><div class="orderSummaryValue">${lastThirtyDays.length}</div></div>
       </div>
       <div class="orderTableHead"><span>Pedido</span><span>Cliente / producto</span><span>Pago</span><span>Total</span><span>Estado</span></div>
-      ${html}`;
+      ${html}
+      <div class="orderPager">
+        <span>Mostrando ${pageStart + 1}–${Math.min(pageStart + ordersPerPage, orders.length)} de ${orders.length}</span>
+        <div class="orderPagerControls">
+          <button id="previousOrderPage" type="button" ${orderPage <= 1 ? "disabled" : ""} aria-label="Página anterior">‹</button>
+          <strong>${orderPage}</strong>
+          <button id="nextOrderPage" type="button" ${orderPage >= totalOrderPages ? "disabled" : ""} aria-label="Página siguiente">›</button>
+        </div>
+      </div>`;
+
+    $("previousOrderPage").onclick = () => { if(orderPage > 1){ orderPage -= 1; renderOrders(); } };
+    $("nextOrderPage").onclick = () => { if(orderPage < totalOrderPages){ orderPage += 1; renderOrders(); } };
 
     $("recentOrders")
       .innerHTML =
@@ -4623,133 +4480,6 @@ function renderInventory(){
   }
 
   /* ============================================================
-     EARNINGS
-     ============================================================ */
-
-  function confirmedEarnings(){
-
-    return orders
-      .filter(
-        order =>
-          order.status ===
-          "delivered"
-      )
-      .reduce(
-        (
-          sum,
-          order
-        ) =>
-          sum +
-          (
-            Number(
-              order.total ||
-              0
-            ) *
-            earningRate()
-          ),
-        0
-      );
-  }
-
-  function totalPotential(){
-
-    return products
-      .reduce(
-        (
-          sum,
-          product
-        ) =>
-          sum +
-          potentialEarning(
-            product.price
-          ),
-        0
-      );
-  }
-
-  function renderEarnings(){
-
-    const earned = ownerSummary
-      ? Number(ownerSummary.commissionEarned || 0)
-      : confirmedEarnings();
-
-    $("totalEarned")
-      .textContent =
-        money(
-          earned
-        );
-
-    $("dashboardEarned")
-      .textContent =
-        money(
-          earned
-        );
-
-    $("dashboardPotential")
-      .textContent =
-        `${Number(store.platformEarningPercent || 0)}%`;
-
-    if(
-      !products.length
-    ){
-
-      $("potentialProductList")
-        .innerHTML = `
-
-          <div class="emptyState">
-
-            <div class="emptyStateTitle">
-              Sin productos
-            </div>
-
-            <div class="emptyStateText">
-              Agrega productos para calcular ganancias potenciales.
-            </div>
-
-          </div>
-
-        `;
-
-      return;
-    }
-
-    $("potentialProductList")
-      .innerHTML =
-        products
-          .map(
-            product => `
-
-              <div class="earningRow">
-
-                <div>
-
-                  <div class="earningRowLabel">
-                    ${escapeHtml(product.name)}
-                  </div>
-
-                  <div class="earningRowMeta">
-                    Venta:
-                    ${money(product.price)}
-                  </div>
-
-                </div>
-
-                <div class="earningRowValue">
-                  ${money(
-                    potentialEarning(
-                      product.price
-                    )
-                  )}
-                </div>
-
-              </div>
-
-            `
-          )
-          .join("");
-  }
-
-  /* ============================================================
      STORE SETTINGS
      ============================================================ */
 
@@ -4763,7 +4493,6 @@ function renderInventory(){
 
       `;
 
-    updatePotentialPreview();
   }
 
   /* ============================================================
@@ -4784,10 +4513,6 @@ function renderInventory(){
           orders.length
         );
 
-    if(ownerSummary){
-      $("dashboardEarned").textContent = money(ownerSummary.commissionEarned);
-      $("dashboardPotential").textContent = `${Number(ownerSummary.commissionPercent || 0)}%`;
-    }
   }
 
   /* ============================================================
@@ -4806,7 +4531,6 @@ function renderInventory(){
 
     renderOrders();
 
-    renderEarnings();
   }
 
   /* ============================================================

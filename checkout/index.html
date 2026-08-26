@@ -2740,8 +2740,7 @@ img{display:block;max-width:100%}
       checkoutActions = loaded.actions;
       paymentElement = checkoutElements.createPaymentElement({
         layout: "accordion",
-        fields: { billingDetails: "never" },
-        wallets: { link: "never" }
+        fields: { billingDetails: "never" }
       });
       paymentElement.mount("#paymentElement");
       stripeCanConfirm = false;

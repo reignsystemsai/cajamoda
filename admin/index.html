@@ -2013,6 +2013,38 @@ img{
   #panel-add .formActions button{min-height:36px!important;width:165px!important}
 }
 
+/* Build 102 — final single-screen product workspace */
+@media (min-width:900px){
+  #panel-add .pageHeadingRow{min-height:30px!important;margin-bottom:6px!important}
+  #panel-add .pageTitle{font-size:24px!important}
+  #panel-add .pageIntro{font-size:9px!important}
+  #panel-add .formGrid{grid-template-columns:minmax(300px,.78fr) minmax(600px,1.62fr)!important;gap:8px!important}
+  #panel-add .formGrid > .productFormCard:nth-child(1),#panel-add .formGrid > .productFormCard:nth-child(2){height:238px!important}
+  #panel-add .formGrid > .productFormCard:nth-child(1){padding:10px 12px!important}
+  #panel-add .formGrid > .productFormCard:nth-child(1) .field{gap:2px 6px!important}
+  #panel-add .formGrid > .productFormCard:nth-child(1) .field textarea{height:48px!important;min-height:48px!important}
+  #panel-add .formGrid > .productFormCard:nth-child(1) .twoColumn{margin-top:1px!important}
+  #panel-add .formGrid > .productFormCard:nth-child(2){display:grid!important;grid-template-columns:minmax(0,1fr) 112px!important;grid-template-rows:auto auto 1fr!important;column-gap:8px!important;row-gap:3px!important;padding:10px 11px!important;overflow:hidden!important}
+  #panel-add .formGrid > .productFormCard:nth-child(2) h2{grid-column:1/2!important;grid-row:1!important}
+  #panel-add .formGrid > .productFormCard:nth-child(2) .formSectionHelp{grid-column:1/2!important;grid-row:2!important;white-space:nowrap!important}
+  #panel-add .photoUploadGrid{grid-column:1!important;grid-row:3!important;order:0!important;display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;grid-template-rows:1fr!important;gap:6px!important;height:185px!important;min-height:0!important}
+  #panel-add .photoBox,#panel-add .photoBox:first-child{grid-row:auto!important;height:185px!important;min-height:0!important;aspect-ratio:3/4!important;border-radius:10px!important}
+  #panel-add .photoBox:nth-child(5){display:none!important}
+  #panel-add .photoBox img{object-fit:cover!important;object-position:center top!important}
+  #panel-add .photoDropZone{grid-column:2!important;grid-row:1/4!important;order:0!important;width:112px!important;height:auto!important;min-height:0!important;margin:0!important;padding:10px 8px!important;writing-mode:vertical-rl!important;transform:rotate(180deg)!important}
+  #panel-add .photoDropZone strong{font-size:9px!important;letter-spacing:.02em!important}
+  #panel-add .variantFormCard{grid-column:1/-1!important;display:grid!important;grid-template-columns:minmax(0,1fr) 245px!important;grid-template-rows:auto auto auto 1fr!important;gap:3px 8px!important;min-height:252px!important;padding:9px 11px!important}
+  #panel-add .variantFormCard > .field{grid-template-columns:40px minmax(0,240px)!important}
+  #panel-add .variantBuilder{padding:5px 7px!important}
+  #panel-add .variantRow{grid-template-columns:30px 36px 60px minmax(150px,210px) minmax(130px,180px)!important;gap:4px!important}
+  #panel-add .deliveryChoices{gap:4px!important}
+  #panel-add .deliveryChoice{width:32px!important;padding:0!important;text-align:center!important}
+  #panel-add .compactSettings{grid-column:2!important;grid-row:1/5!important;padding:6px!important;gap:4px!important}
+  #panel-add .compactSettings .switchRow{min-height:30px!important}
+  #panel-add .formActions{margin-top:0!important}
+  .storeSelector,#logoutButton{left:20px!important;width:200px!important}
+}
+
 </style>
 
 </head>
@@ -2322,9 +2354,9 @@ img{
 
     <div class="twoColumn">
 
-      <div class="field"><label for="productCost">Costo del producto</label><input id="productCost" type="number" min="0" step="1" placeholder="0"></div>
+      <div class="field"><label for="productCost">Costo del producto (COP)</label><input id="productCost" type="number" min="0" step="1" placeholder="0"></div>
 
-      <div class="field"><label for="productPrice">Precio de venta</label><input id="productPrice" type="number" min="0" step="1" placeholder="0" readonly></div>
+      <div class="field"><label for="productPrice">Precio de venta (COP)</label><input id="productPrice" type="number" min="0" step="1" placeholder="0" readonly></div>
 
     </div></section>
 
@@ -3564,7 +3596,7 @@ if(
         const quantity = editedVariantQuantities.has(key) ? existing.quantity : defaultQuantity;
         const finalSku = existing.persistedSku ? existing.sku : generatedSku;
         variantDrafts.set(key, {size:combination.size, color:"", methods, sku:finalSku, persistedSku:Boolean(existing.persistedSku), quantity, enabled:existing.enabled !== false});
-        const delivery = [["P","Pronto"],["R","Rápido"],["L","Libéralo"]].map(([code,label]) => `<button class="deliveryChoice ${methods.includes(code) ? "selected" : ""}" type="button" data-delivery="${code}" data-variant-key="${escapeHtml(key)}">${escapeHtml(label)}</button>`).join("");
+        const delivery = ["P","R","L"].map(code => `<button class="deliveryChoice ${methods.includes(code) ? "selected" : ""}" type="button" data-delivery="${code}" data-variant-key="${escapeHtml(key)}" aria-label="${code === "P" ? "Pronto" : code === "R" ? "Rápido" : "Libéralo"}">${code}</button>`).join("");
         return `<div class="variantRow" data-variant-row="${escapeHtml(key)}"><input class="variantUse" data-variant-use="${escapeHtml(key)}" type="checkbox" ${existing.enabled === false ? "" : "checked"}><span class="variantLabel">${escapeHtml(combination.size || "Única")}</span><input class="variantQuantity" data-variant-quantity="${escapeHtml(key)}" type="number" min="0" step="1" value="${quantity}"><div class="deliveryChoices">${delivery}</div><input class="variantSku" data-variant-sku="${escapeHtml(key)}" value="${escapeHtml(finalSku)}" readonly></div>`;
       }).join("")}`;
 

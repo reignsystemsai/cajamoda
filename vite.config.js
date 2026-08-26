@@ -1,7 +1,21 @@
 import { resolve } from "node:path";
+import { copyFileSync, mkdirSync } from "node:fs";
 import { defineConfig } from "vite";
 
 export default defineConfig({
+  plugins: [
+    {
+      name: "startup-store-loader-entry",
+      writeBundle(options) {
+        const outputDirectory = resolve(import.meta.dirname, options.dir || "dist");
+        mkdirSync(resolve(outputDirectory, "startup"), { recursive: true });
+        copyFileSync(
+          resolve(outputDirectory, "admin/index.html"),
+          resolve(outputDirectory, "startup/index.html"),
+        );
+      },
+    },
+  ],
   build: {
     rolldownOptions: {
       input: {

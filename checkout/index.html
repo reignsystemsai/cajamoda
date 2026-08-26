@@ -1249,7 +1249,7 @@ img{display:block;max-width:100%}
               <ol>
                 <li>Copia el número y el monto exacto.</li>
                 <li>Abre Nequi y realiza la transferencia.</li>
-                <li>Regresa e ingresa el número del comprobante.</li>
+                <li>Regresa e ingresa el número de referencia.</li>
               </ol>
             </div>
             <div class="paymentEyebrow">Envía exactamente</div>
@@ -1264,8 +1264,8 @@ img{display:block;max-width:100%}
               <button id="openNequiButton" class="paymentAction nequiOpen" type="button">Abrir Nequi</button>
             </div>
             <div class="paymentDivider"></div>
-            <label class="referenceLabel" for="nequiReference">Número de comprobante Nequi *
-              <input id="nequiReference" class="compactInput" inputmode="numeric" placeholder="Ingresa el número del comprobante" required aria-required="true">
+            <label class="referenceLabel" for="nequiReference">Número de referencia Nequi *
+              <input id="nequiReference" class="compactInput" inputmode="numeric" placeholder="Ingresa el número de referencia" required aria-required="true">
             </label>
             <button id="confirmNequiButton" class="confirmPayment" type="button" disabled>Confirmar que ya pagué</button>
             <p class="pendingNote">Verificaremos el pago antes de confirmar tu pedido.</p>
@@ -2792,7 +2792,7 @@ img{display:block;max-width:100%}
     const reference = $("nequiReference")?.value.trim() || "";
     if (!reference) {
       $("nequiReference")?.focus();
-      showToast("Ingresa el número del comprobante Nequi.");
+      showToast("Ingresa el número de referencia Nequi.");
       return;
     }
     const button = $("confirmNequiButton");

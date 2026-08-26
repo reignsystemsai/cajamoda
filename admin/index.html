@@ -1212,6 +1212,28 @@ img{
   gap:9px;
 }
 
+.orderSummaryGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.orderSummaryCard{padding:14px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.55)}
+.orderSummaryLabel{font-size:7px;color:#706a61}
+.orderSummaryValue{margin-top:5px;font-family:"Italiana",Georgia,serif;font-size:18px}
+.orderTableHead{display:grid;grid-template-columns:110px minmax(150px,1fr) 100px 110px 110px;gap:14px;padding:10px 15px;color:#716b62;font-size:7px;font-weight:700}
+.orderCardMain{display:grid;grid-template-columns:110px minmax(150px,1fr) 100px 110px 110px;gap:14px;align-items:center}
+.orderStatusPill{display:inline-flex;align-items:center;justify-content:center;width:max-content;min-width:74px;padding:7px 10px;border-radius:999px;background:#edf5e9;color:#2f6b31;font-size:7px;font-weight:800}
+.orderStatusPill.pending{background:#fff2d8;color:#8a5b00}
+.inventoryProductCell{display:flex;align-items:center;gap:11px;min-width:0}
+.inventoryThumb{width:48px;height:58px;flex:0 0 auto;border-radius:10px;object-fit:cover;background:#eee8de;border:1px solid rgba(0,0,0,.08)}
+.inventorySummaryGrid,.productSummaryGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.inventorySummaryCard,.productSummaryCard{padding:14px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.55)}
+.inventorySummaryCard strong,.productSummaryCard strong{display:block;font-family:"Italiana",Georgia,serif;font-size:22px;font-weight:400}
+.inventorySummaryCard span,.productSummaryCard span{font-size:7px;color:#706a61}
+.productToolbar{display:grid;grid-template-columns:minmax(220px,1fr) auto;gap:12px;margin-bottom:14px}
+@media(max-width:899px){
+  .orderSummaryGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .orderTableHead{display:none}
+  .orderCardMain{grid-template-columns:1fr auto;gap:10px}
+  .orderCardMain > :nth-child(2){grid-column:1 / -1}
+}
+
 .orderCard{
 
   padding:13px;
@@ -1711,12 +1733,7 @@ img{
   .inventoryRow{padding:16px 18px}
   .inventoryName,.inventoryQty,.inventoryState{font-size:13px}
 
-  .orderList{
-    display:grid;
-    grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:16px;
-    align-items:start;
-  }
+  .orderList{display:flex;flex-direction:column;gap:12px}
 
   .orderCard{padding:20px;border-radius:18px}
   .orderNumber{font-size:14px}
@@ -1727,6 +1744,12 @@ img{
   .orderMoney strong{font-size:14px}
   .trackingStep{font-size:9px}
   .trackingInputs input,.trackingInputs select{height:42px;font-size:11px}
+  .orderSummaryLabel,.orderTableHead,.orderStatusPill{font-size:11px}
+  .orderSummaryValue{font-size:27px}
+  .orderCardMain{grid-template-columns:120px minmax(190px,1fr) 120px 130px 120px}
+  .inventoryThumb{width:58px;height:70px}
+  .inventorySummaryCard span,.productSummaryCard span{font-size:11px}
+  .inventorySummaryCard strong,.productSummaryCard strong{font-size:32px}
 
   .earningSummaryLabel,.earningSummarySub{font-size:11px}
   .earningSummaryValue{font-size:42px}
@@ -1738,6 +1761,80 @@ img{
   .emptyStateTitle{font-size:15px}
   .emptyStateText{font-size:12px}
   .toast{font-size:12px;padding:12px 18px}
+}
+
+/* ============================================================
+   APPROVED DESKTOP STORE LOADER — LEFT RAIL + FROSTED GLASS
+   ============================================================ */
+@media (min-width:900px){
+  html,body{min-height:100%;background:#f4efe6!important}
+  body{background:
+    radial-gradient(circle at 82% 7%,rgba(255,255,255,.98) 0,rgba(255,252,246,.9) 28%,transparent 58%),
+    linear-gradient(135deg,#f7f2e9 0%,#eee5d8 100%)!important}
+  .loaderApp{width:100%!important;max-width:none!important;min-height:100vh!important;margin:0!important;padding:0!important;background:transparent!important}
+  .loaderHeader{
+    position:fixed!important;inset:0 auto 0 0!important;width:240px!important;height:100vh!important;
+    padding:34px 20px!important;border:0!important;border-right:1px solid rgba(80,61,35,.16)!important;
+    border-radius:0!important;background:rgba(255,252,246,.68)!important;
+    box-shadow:8px 0 36px rgba(69,50,24,.05)!important;
+    backdrop-filter:blur(30px) saturate(145%)!important;-webkit-backdrop-filter:blur(30px) saturate(145%)!important;
+  }
+  .headerTop{display:block!important}
+  .sidebarBrand{display:flex;flex-direction:column;align-items:center;text-align:center;color:#0a0a0a}
+  .sidebarMonogram{position:relative;width:88px;height:72px;font-family:"Italiana",Didot,serif}
+  .sidebarMonogram span:first-child{position:absolute;left:4px;top:-14px;font-size:82px;line-height:1;transform:scaleX(.9)}
+  .sidebarMonogram span:last-child{position:absolute;left:43px;top:14px;font-size:54px;line-height:1;transform:scaleX(.9)}
+  .loaderBrand{font-family:"Italiana",Georgia,serif!important;font-size:23px!important;letter-spacing:.22em!important;padding-left:.22em}
+  .loaderLabel{margin-top:9px!important;color:#151515!important;font-size:8px!important;line-height:1.45!important;font-weight:600!important;letter-spacing:.24em!important}
+  .storeSelector{
+    position:fixed!important;z-index:100!important;top:34px!important;right:40px!important;width:190px!important;height:48px!important;
+    padding:0 16px 0 38px!important;border:1px solid rgba(83,66,43,.18)!important;border-radius:10px!important;
+    background:radial-gradient(circle at 20px 50%,#4e9b55 0 5px,transparent 6px),rgba(255,255,255,.66)!important;
+    box-shadow:0 8px 24px rgba(61,44,20,.07)!important;backdrop-filter:blur(22px)!important;-webkit-backdrop-filter:blur(22px)!important;
+    color:#111!important;font-size:11px!important;font-weight:700!important;appearance:none!important
+  }
+  .loaderTabs{display:flex!important;flex-direction:column!important;gap:7px!important;margin-top:36px!important;overflow:visible!important}
+  #logoutButton{position:absolute!important;left:20px!important;bottom:24px!important;width:200px!important}
+  .tabButton{
+    width:100%!important;min-height:48px!important;display:flex!important;align-items:center!important;gap:13px!important;
+    padding:0 15px!important;border-radius:10px!important;color:#181818!important;font-family:"Italiana",Georgia,serif!important;
+    font-size:16px!important;font-weight:400!important;text-align:left!important;text-transform:none!important;letter-spacing:0!important
+  }
+  .tabButton::before{width:23px;display:inline-grid;place-items:center;font-family:"DM Sans",sans-serif;font-size:20px;line-height:1}
+  .tabButton:nth-child(1)::before{content:"⌂"}.tabButton:nth-child(2)::before{content:"◇"}.tabButton:nth-child(3)::before{content:"⬡"}
+  .tabButton:nth-child(4)::before{content:"♧"}.tabButton:nth-child(5)::before{content:"▣"}.tabButton:nth-child(6)::before{content:"⌁"}
+  .tabButton.active{background:#090909!important;color:#fff!important;box-shadow:0 10px 24px rgba(0,0,0,.16)!important}
+  .tabButton.active::after{display:none!important}
+  .loaderMain{width:auto!important;max-width:1510px!important;margin:0 0 0 240px!important;padding:38px 40px 72px!important}
+  .panel{width:100%!important;max-width:1325px!important;margin:0 auto!important}
+  .pageTitle{max-width:calc(100% - 250px);font-size:clamp(42px,4.2vw,64px)!important;line-height:.98!important}
+  .pageIntro{margin-top:4px!important;color:#191919!important;font-size:15px!important}
+  .pilotNotice{
+    display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:0!important;margin:18px 0 16px!important;padding:13px 18px!important;
+    border:1px solid rgba(82,62,35,.15)!important;border-radius:11px!important;background:rgba(255,255,255,.56)!important;
+    box-shadow:0 12px 30px rgba(70,49,20,.06)!important;backdrop-filter:blur(24px) saturate(150%)!important;-webkit-backdrop-filter:blur(24px) saturate(150%)!important
+  }
+  .pilotStep{min-height:54px;display:flex;align-items:center;justify-content:center;gap:13px;border-left:1px solid rgba(80,61,35,.18);font-size:13px;color:#151515}
+  .pilotStep:first-child{border-left:0}.pilotStep strong{width:38px;height:38px;display:grid;place-items:center;border:1px solid #b9aa90;border-radius:50%;font-size:18px;font-weight:500}
+  .pilotStep.complete strong{border-color:#599d58;background:#599d58;color:#fff}.pilotStep.current strong{border-color:#090909;background:#090909;color:#fff}
+  .pilotStep span{font-weight:700}
+  .metricGrid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:14px!important;margin-top:0!important}
+  .metricCard,.sectionBlock,.earningSummary,.settingsCard,.orderCard,.productCard{
+    border:1px solid rgba(82,62,35,.14)!important;background:linear-gradient(145deg,rgba(255,255,255,.72),rgba(255,251,244,.46))!important;
+    box-shadow:0 14px 34px rgba(70,49,20,.07),inset 0 1px 0 rgba(255,255,255,.9)!important;
+    backdrop-filter:blur(26px) saturate(145%)!important;-webkit-backdrop-filter:blur(26px) saturate(145%)!important
+  }
+  .metricCard{min-height:108px!important;padding:18px 20px!important;border-radius:11px!important}
+  .metricLabel{color:#24211d!important;font-size:11px!important;text-transform:none!important}.metricValue{margin-top:8px!important;font-size:34px!important}.metricSub{font-size:10px!important}
+  .sectionBlock{margin-top:16px!important;padding:20px!important;border-radius:12px!important}
+  .sectionTitle{font-size:24px!important}.sectionAction{font-size:11px!important}
+  .primaryButton,.secondaryButton{font-size:12px!important}.fullButton{max-width:320px!important}
+  .pilotNotice + .metricGrid + .sectionBlock{display:inline-block;width:30%;vertical-align:top;margin-right:1.3%}
+  .pilotNotice + .metricGrid + .sectionBlock + .sectionBlock{display:inline-block;width:68%;vertical-align:top}
+}
+@media (min-width:900px) and (max-width:1120px){
+  .loaderHeader{width:205px!important}.loaderMain{margin-left:205px!important;padding-left:25px!important;padding-right:25px!important}
+  .storeSelector{right:25px!important}.metricGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.pilotStep span{font-size:11px}
 }
 
 </style>
@@ -1817,16 +1914,10 @@ img{
 
   <div class="headerTop">
 
-    <div>
-
-      <div class="loaderBrand">
-        CAJAMODA
-      </div>
-
-      <div class="loaderLabel">
-        Commerce Network
-      </div>
-
+    <div class="sidebarBrand" aria-label="CajaModa Store Loader">
+      <div class="sidebarMonogram"><span>C</span><span>M</span></div>
+      <div class="loaderBrand">CAJAMODA</div>
+      <div class="loaderLabel">Store Loader<br>Commerce Network</div>
     </div>
 
     <select
@@ -1876,17 +1967,12 @@ img{
       class="tabButton"
       data-tab="earnings"
     >
-      Comisiones
-    </button>
-
-    <button
-      class="tabButton"
-      data-tab="store"
-    >
-      Promoción
+      Pagos
     </button>
 
   </nav>
+
+  <button id="logoutButton" class="secondaryButton" type="button" style="margin-top:auto;width:100%">Cerrar sesión</button>
 
 </header>
 
@@ -1909,8 +1995,11 @@ img{
     Tu espacio para cargar, promover y hacer crecer la tienda.
   </p>
 
-  <div class="pilotNotice">
-    Productos → inventario → pedidos → comisiones. CajaModa procesa los pagos; aquí ves los resultados y administras la operación diaria.
+  <div class="pilotNotice" aria-label="Progreso de la tienda">
+    <div class="pilotStep complete"><strong>✓</strong><span>1. Carga productos</span></div>
+    <div class="pilotStep complete"><strong>✓</strong><span>2. Revisa inventario</span></div>
+    <div class="pilotStep"><strong>3</strong><span>3. Promociona</span></div>
+    <div class="pilotStep current"><strong>4</strong><span>4. Recibe pagos</span></div>
   </div>
 
   <div class="metricGrid">
@@ -2047,18 +2136,6 @@ img{
   <p class="pageIntro">
     Carga productos manualmente hoy. Más adelante podrás importar desde Inventory Cloud.
   </p>
-
-  <div class="sectionBlock">
-
-    <button
-      id="openAddProduct"
-      class="primaryButton fullButton"
-      type="button"
-    >
-      + Nuevo producto
-    </button>
-
-  </div>
 
   <div class="sectionBlock">
 
@@ -2456,74 +2533,6 @@ img{
     <div
       id="potentialProductList"
     ></div>
-
-  </div>
-
-</section>
-
-<!-- ==========================================================
-     STORE
-     ========================================================== -->
-
-<section
-  id="panel-store"
-  class="panel"
->
-
-  <h1 class="pageTitle">
-    Promoción.
-  </h1>
-
-  <p class="pageIntro">
-    Comparte productos disponibles y convierte el interés en ventas.
-  </p>
-
-  <div class="settingsCard">
-
-    <div class="settingsTitle">
-      Promoción ligera
-    </div>
-
-    <div class="settingsText">
-      Selecciona productos disponibles para compartirlos. Los precios y descuentos centrales permanecen protegidos.
-    </div>
-
-    <div class="formGrid">
-
-      <div class="field">
-
-        <div class="pilotNotice">WhatsApp · Instagram · TikTok<br>Usa únicamente productos publicados y con inventario disponible.</div>
-
-        <label for="storeName">
-          Nombre visible
-        </label>
-
-        <input
-          id="storeName"
-          type="text"
-          value="Karolay Blanco"
-          readonly
-        >
-
-      </div>
-
-      <button
-        id="saveStoreSettings"
-        class="primaryButton fullButton"
-        type="button"
-      >
-        Preparar promoción
-      </button>
-
-      <button
-        id="logoutButton"
-        class="secondaryButton fullButton"
-        type="button"
-      >
-        Cerrar sesión
-      </button>
-
-    </div>
 
   </div>
 
@@ -2983,9 +2992,7 @@ showToast(
   "Sesión iniciada."
 );
 
-await loadRealOrders(
-  true
-);
+await Promise.all([loadRealOrders(true), loadRealInventory(true)]);
 
 await loadOwnerWorkspace();
 
@@ -3147,6 +3154,27 @@ async function loadRealInventory(
         ? result.inventory
         : [];
 
+    const wixProducts = new Map();
+    inventory.forEach(item => {
+      const key = item.productId || item.id;
+      const existing = wixProducts.get(key) || {
+        id: key,
+        wixProductId: key,
+        source: "wix",
+        name: item.productName || "Producto Wix",
+        price: Number(item.price || 0),
+        quantity: 0,
+        sizes: [],
+        photos: item.image ? [item.image] : [],
+        status: item.visible === false ? "hidden" : "published"
+      };
+      existing.quantity += Number(item.quantity || 0);
+      if(item.variantName && !existing.sizes.includes(item.variantName)) existing.sizes.push(item.variantName);
+      if(!existing.photos.length && item.image) existing.photos = [item.image];
+      wixProducts.set(key, existing);
+    });
+    products = [...wixProducts.values()];
+
     renderInventory();
 
     if(
@@ -3200,7 +3228,7 @@ async function loadRealInventory(
             order => ({
               ...order,
               source:
-                "wix"
+                order.source || "wix"
             })
           )
         : [];
@@ -3358,17 +3386,6 @@ if(
 
       }
     );
-
-  $("openAddProduct")
-    .onclick =
-      () => {
-
-        resetProductForm();
-
-        showPanel(
-          "add"
-        );
-      };
 
   $("dashboardAddProduct")
     .onclick =
@@ -3905,6 +3922,8 @@ if(
      PRODUCTS
      ============================================================ */
 
+  let productQuery = "";
+
   function renderProducts(){
 
     if(
@@ -3924,16 +3943,31 @@ if(
               Agrega tu primer producto para comenzar.
             </div>
 
+            <button id="openAddProduct" class="primaryButton" type="button" style="margin-top:16px">+ Nuevo producto</button>
+
           </div>
 
         `;
 
+      $("openAddProduct").onclick = () => { resetProductForm(); showPanel("add"); };
       return;
     }
 
+    const matchingProducts = products.filter(product => {
+      const query = productQuery.toLowerCase();
+      return !query || `${product.name || ""} ${(product.sizes || []).join(" ")}`.toLowerCase().includes(query);
+    });
+    const outCount = products.filter(product => Number(product.quantity || 0) <= 0).length;
+
     $("productList")
-      .innerHTML =
-        products
+      .innerHTML = `<div class="productSummaryGrid">
+        <div class="productSummaryCard"><strong>${products.length}</strong><span>Productos</span></div>
+        <div class="productSummaryCard"><strong>${inventory.length}</strong><span>Variantes</span></div>
+        <div class="productSummaryCard"><strong style="color:var(--green)">${products.length - outCount}</strong><span>Publicados</span></div>
+        <div class="productSummaryCard"><strong style="color:var(--red)">${outCount}</strong><span>Agotados</span></div>
+      </div>
+      <div class="productToolbar"><input id="productSearch" value="${escapeHtml(productQuery)}" placeholder="Buscar producto"><button id="openAddProduct" class="primaryButton" type="button">+ Nuevo producto</button></div>` +
+        matchingProducts
           .map(
             product => `
 
@@ -4005,6 +4039,9 @@ if(
             `
           )
           .join("");
+
+    $("productSearch").oninput = event => { productQuery = event.target.value; renderProducts(); };
+    $("openAddProduct").onclick = () => { resetProductForm(); showPanel("add"); };
   }
 
   /* ============================================================
@@ -4051,9 +4088,19 @@ function renderInventory(){
     return statusMatches && (!query || text.includes(query));
   });
 
+  const availableCount = inventory.filter(item => Number(item.quantity || 0) > 5).length;
+  const lowCount = inventory.filter(item => Number(item.quantity || 0) > 0 && Number(item.quantity || 0) <= 5).length;
+  const outCount = inventory.filter(item => Number(item.quantity || 0) <= 0).length;
+
   $("inventoryList")
     .innerHTML =
-      `<div style="display:grid;grid-template-columns:minmax(220px,1fr) 180px auto;gap:10px;margin-bottom:16px">
+      `<div class="inventorySummaryGrid">
+        <div class="inventorySummaryCard"><strong>${inventory.length}</strong><span>Variantes</span></div>
+        <div class="inventorySummaryCard"><strong style="color:var(--green)">${availableCount}</strong><span>Disponibles</span></div>
+        <div class="inventorySummaryCard"><strong style="color:var(--amber)">${lowCount}</strong><span>Bajo inventario</span></div>
+        <div class="inventorySummaryCard"><strong style="color:var(--red)">${outCount}</strong><span>Agotadas</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:minmax(220px,1fr) 180px auto;gap:10px;margin-bottom:16px">
         <input id="inventorySearch" value="${escapeHtml(inventoryQuery)}" placeholder="Buscar producto o SKU">
         <select id="inventoryStatusFilter">
           <option value="all" ${inventoryStatus === "all" ? "selected" : ""}>Todos</option>
@@ -4075,8 +4122,13 @@ function renderInventory(){
 
               <div class="inventoryName">
                 <input type="checkbox" data-inventory-select="${escapeHtml(item.id)}" ${selectedInventory.has(item.id) ? "checked" : ""}>
-                <strong>${escapeHtml(item.productName || "Producto Wix")}</strong>
-                <span style="display:block;margin-left:24px;color:#777;font-size:10px">${escapeHtml(item.variantName || item.sku || "Sin SKU")}</span>
+                <span class="inventoryProductCell">
+                  ${item.image ? `<img class="inventoryThumb" src="${escapeHtml(item.image)}" alt="">` : `<span class="inventoryThumb"></span>`}
+                  <span>
+                    <strong>${escapeHtml(item.productName || "Producto Wix")}</strong>
+                    <span style="display:block;color:#777;font-size:10px">${escapeHtml(item.variantName || item.sku || "Sin SKU")}</span>
+                  </span>
+                </span>
               </div>
 
               <div class="inventoryQty">
@@ -4240,47 +4292,12 @@ function renderInventory(){
                 class="orderCard"
                 data-order="${order.id}"
               >
-
-                <div class="orderTop">
-
-                  <div class="orderNumber">
-                    Pedido #${escapeHtml(order.number)}
-                  </div>
-
-                  <div class="orderDate">
-                    ${escapeHtml(
-  formatOrderDate(
-    order.date
-  )
-)}
-                  </div>
-
-                </div>
-
-                <div class="orderCustomer">
-                  ${escapeHtml(order.customer || "Cliente")}
-                </div>
-
-                <div class="orderProducts">
-                  ${escapeHtml(order.products || "")}
-                </div>
-
-                <div class="orderMoney">
-
-                  <span>
-                    Total
-                    <strong>
-                      ${money(order.total)}
-                    </strong>
-                  </span>
-
-                  <span>
-                    Tu ganancia
-                    <strong>
-                      ${money(loaderEarning)}
-                    </strong>
-                  </span>
-
+                <div class="orderCardMain">
+                  <div><div class="orderNumber">#${escapeHtml(order.number)}</div><div class="orderDate">${escapeHtml(formatOrderDate(order.date))}</div></div>
+                  <div><div class="orderCustomer">${escapeHtml(order.customer || "Cliente")}</div><div class="orderProducts">${escapeHtml(order.products || "")}</div></div>
+                  <div class="orderProducts">${order.paymentMethod === "nequi" ? "Nequi" : "Tarjeta"}</div>
+                  <div class="orderMoney"><strong>${money(order.total)}</strong></div>
+                  <div><span class="orderStatusPill ${order.canConfirmPayment ? "pending" : ""}">${order.canConfirmPayment ? "Por verificar" : escapeHtml(trackingLabels[order.status || "new"] || "Registrado")}</span></div>
                 </div>
 
                 ${order.paymentMethod === "nequi" ? `
@@ -4288,7 +4305,7 @@ function renderInventory(){
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
                       <div>
                         <strong style="color:#4d0bb7">Nequi</strong>
-                        <div style="margin-top:3px;font-size:11px;color:#6f6f6f">${escapeHtml(order.delivery || "Pago por confirmar")}</div>
+                        <div style="margin-top:3px;font-size:11px;color:#6f6f6f">Referencia Nequi: <strong>${escapeHtml(order.nequiReference || "Sin referencia")}</strong></div>
                       </div>
                       ${order.canConfirmPayment ? `
                         <button type="button" data-confirm-nequi="${escapeHtml(order.id)}" style="padding:10px 14px;border:0;border-radius:999px;background:#080808;color:#fff;font-weight:700;cursor:pointer">Confirmar pago</button>
@@ -4419,9 +4436,19 @@ function renderInventory(){
         )
         .join("");
 
-    $("orderList")
-      .innerHTML =
-        html;
+    const lastThirtyDays = orders.filter(order => Date.now() - new Date(order.date).getTime() <= 30 * 86400000);
+    const paidOrders = orders.filter(order => ["PAID", "PARTIALLY_PAID"].includes(String(order.paymentStatus || "").toUpperCase()));
+    const sales = paidOrders.reduce((sum, order) => sum + Number(order.total || 0), 0);
+    const average = paidOrders.length ? sales / paidOrders.length : 0;
+    $("orderList").innerHTML = `
+      <div class="orderSummaryGrid">
+        <div class="orderSummaryCard"><div class="orderSummaryLabel">Ventas</div><div class="orderSummaryValue">${money(sales)}</div></div>
+        <div class="orderSummaryCard"><div class="orderSummaryLabel">Pedidos</div><div class="orderSummaryValue">${orders.length}</div></div>
+        <div class="orderSummaryCard"><div class="orderSummaryLabel">Promedio por pedido</div><div class="orderSummaryValue">${money(average)}</div></div>
+        <div class="orderSummaryCard"><div class="orderSummaryLabel">Últimos 30 días</div><div class="orderSummaryValue">${lastThirtyDays.length}</div></div>
+      </div>
+      <div class="orderTableHead"><span>Pedido</span><span>Cliente / producto</span><span>Pago</span><span>Total</span><span>Estado</span></div>
+      ${html}`;
 
     $("recentOrders")
       .innerHTML =
@@ -4491,6 +4518,8 @@ function renderInventory(){
     qsa("[data-confirm-nequi]").forEach(button => {
       button.onclick = async () => {
         const orderId = button.dataset.confirmNequi;
+        const order = orders.find(item => String(item.id) === String(orderId));
+        if(!window.confirm(`Confirma que recibiste el pago Nequi con referencia ${order?.nequiReference || "indicada"}. Esta acción descuenta inventario una sola vez.`)) return;
         button.disabled = true;
         button.textContent = "Confirmando…";
         try {
@@ -4725,12 +4754,6 @@ function renderInventory(){
      ============================================================ */
 
   function renderStoreSettings(){
-
-    $("storeName")
-      .value =
-        store.name ||
-        "";
-
     $("storeSelector")
       .innerHTML = `
 
@@ -4742,35 +4765,6 @@ function renderInventory(){
 
     updatePotentialPreview();
   }
-
-  $("saveStoreSettings")
-    .onclick =
-      () => {
-
-        const name =
-          $("storeName")
-            .value
-            .trim();
-
-        store = {
-          ...store,
-
-          name:
-            name ||
-            "Mi Tienda"
-        };
-
-        saveJson(
-          "store-loader-store",
-          store
-        );
-
-        renderAll();
-
-        showToast(
-          "Tienda guardada."
-        );
-      };
 
   /* ============================================================
      DASHBOARD
@@ -4829,9 +4823,7 @@ if(
 
   hideLogin();
 
-  loadRealOrders(
-    true
-  );
+  Promise.all([loadRealOrders(true), loadRealInventory(true)]);
 
   loadOwnerWorkspace().catch(error => showToast(error?.message || "No pudimos cargar el espacio."));
 

@@ -45,6 +45,23 @@ const WIX_SITE_ID =
 const LOADER_PASSWORD =
   process.env.LOADER_PASSWORD;
 
+const PLATFORM_ADMIN_PASSWORD =
+  safeEnv(process.env.PLATFORM_ADMIN_PASSWORD);
+
+const STORE_OWNER_NAME =
+  safeEnv(process.env.STORE_OWNER_NAME) || "Karolay Blanco";
+
+const STORE_NAME =
+  safeEnv(process.env.STORE_NAME) || "CajaModa Colombia";
+
+const STORE_ID =
+  safeEnv(process.env.STORE_ID) || "store-001";
+
+const STORE_COMMISSION_PERCENT = Math.min(
+  100,
+  Math.max(0, Number(process.env.STORE_COMMISSION_PERCENT || 0))
+);
+
 const ALLOWED_ORIGIN =
   process.env.ALLOWED_ORIGIN ||
   "https://cajamoda.onrender.com";
@@ -815,6 +832,7 @@ async function syncCompletedStripeSession(session) {
 function stripeIntentMetadata(lines, body, delivery) {
   const metadata = {
     source: "cajamoda-custom-card",
+    storeId: STORE_ID,
     itemCount: String(lines.length),
     deliveryMethod: safeText(body?.delivery?.method, 20),
     deliveryPromise: safeText(body?.delivery?.promise, 40) || "pronto",
@@ -1412,6 +1430,7 @@ async function handleCreateNequiOrder(request, response) {
 
 async function handleConfirmNequiOrder(request, response, orderId) {
   if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
+  if (!isPlatformAdmin(request)) return sendError(response, 403, "La verificación de pagos corresponde a administración de CajaModa.");
   if (!wix) return sendError(response, 503, "Wix no está configurado.");
   const existingConfirmation = nequiConfirmationLocks.get(orderId);
   if (existingConfirmation) {
@@ -1536,7 +1555,7 @@ function cleanSessions() {
   }
 }
 
-function createSession() {
+function createSession(role = "owner") {
 
   cleanSessions();
 
@@ -1549,6 +1568,11 @@ function createSession() {
 
       createdAt:
         now(),
+
+      role,
+
+      storeId:
+        STORE_ID,
 
       expiresAt:
         now() +
@@ -1585,7 +1609,7 @@ function getBearerToken(
     .trim();
 }
 
-function isAuthorized(
+function getAuthorizedSession(
   request
 ) {
 
@@ -1600,7 +1624,7 @@ function isAuthorized(
     !token
   ) {
 
-    return false;
+    return null;
   }
 
   const session =
@@ -1612,7 +1636,7 @@ function isAuthorized(
     !session
   ) {
 
-    return false;
+    return null;
   }
 
   if (
@@ -1624,14 +1648,22 @@ function isAuthorized(
       token
     );
 
-    return false;
+    return null;
   }
 
   session.expiresAt =
     now() +
     SESSION_TTL;
 
-  return true;
+  return session;
+}
+
+function isAuthorized(request) {
+  return Boolean(getAuthorizedSession(request));
+}
+
+function isPlatformAdmin(request) {
+  return getAuthorizedSession(request)?.role === "admin";
 }
 
 /* ============================================================
@@ -3046,21 +3078,14 @@ async function handleLogin(
       password
     );
 
-  const expected =
-    Buffer.from(
-      LOADER_PASSWORD
-    );
-
-  const matches =
-
-    supplied.length ===
-      expected.length &&
-
-    crypto
-      .timingSafeEqual(
-        supplied,
-        expected
-      );
+  const ownerExpected = Buffer.from(LOADER_PASSWORD);
+  const adminExpected = Buffer.from(PLATFORM_ADMIN_PASSWORD || "");
+  const ownerMatches = supplied.length === ownerExpected.length &&
+    crypto.timingSafeEqual(supplied, ownerExpected);
+  const adminMatches = Boolean(PLATFORM_ADMIN_PASSWORD) &&
+    supplied.length === adminExpected.length &&
+    crypto.timingSafeEqual(supplied, adminExpected);
+  const matches = ownerMatches || adminMatches;
 
   if (
     !matches
@@ -3075,8 +3100,8 @@ async function handleLogin(
     return;
   }
 
-  const token =
-    createSession();
+  const role = adminMatches ? "admin" : "owner";
+  const token = createSession(role);
 
   sendJson(
     response,
@@ -3087,6 +3112,17 @@ async function handleLogin(
         true,
 
       token,
+
+      profile: {
+        role,
+        storeId: STORE_ID,
+        storeName: STORE_NAME,
+        ownerName: STORE_OWNER_NAME,
+        commissionPercent: STORE_COMMISSION_PERCENT,
+        permissions: role === "admin"
+          ? ["products", "inventory", "orders", "payments", "promotions", "platform"]
+          : ["products", "inventory", "orders", "commissions", "promotions"]
+      },
 
       expiresIn:
         SESSION_TTL
@@ -3392,6 +3428,10 @@ function normalizeWixOrder(
       order
     );
 
+  const paymentStatus = safeText(order?.paymentStatus, 100).toUpperCase();
+  const commissionEligible = ["PAID", "PARTIALLY_PAID"].includes(paymentStatus);
+  const total = getOrderTotal(order);
+
   return {
 
     id:
@@ -3431,22 +3471,24 @@ function normalizeWixOrder(
         order
       ),
 
-    total:
-      getOrderTotal(
-        order
-      ),
+    total,
+
+    storeId: STORE_ID,
+
+    commissionPercent: STORE_COMMISSION_PERCENT,
+
+    commissionAmount: commissionEligible
+      ? Math.round(total * STORE_COMMISSION_PERCENT) / 100
+      : 0,
+
+    commissionStatus: commissionEligible ? "earned" : "pending",
 
     status:
       getLocalOrderStatus(
         order
       ),
 
-    paymentStatus:
-      safeText(
-        order
-          ?.paymentStatus,
-        100
-      ),
+    paymentStatus,
 
     paymentMethod:
       isNequiOrder(order)
@@ -3578,6 +3620,7 @@ async function getStripeAuthorizations() {
 
 async function handleCaptureStripeAuthorization(request, response, intentId) {
   if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
+  if (!isPlatformAdmin(request)) return sendError(response, 403, "Esta acción está reservada para administración de CajaModa.");
   if (!stripe) return sendError(response, 503, "Stripe todavía no está configurado.");
   if (!/^pi_[A-Za-z0-9]+$/.test(intentId)) return sendError(response, 400, "La autorización no es válida.");
 
@@ -3592,6 +3635,7 @@ async function handleCaptureStripeAuthorization(request, response, intentId) {
 
 async function handleCancelStripeAuthorization(request, response, intentId) {
   if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
+  if (!isPlatformAdmin(request)) return sendError(response, 403, "Esta acción está reservada para administración de CajaModa.");
   if (!stripe) return sendError(response, 503, "Stripe todavía no está configurado.");
   if (!/^pi_[A-Za-z0-9]+$/.test(intentId)) return sendError(response, 400, "La autorización no es válida.");
 
@@ -3626,6 +3670,7 @@ async function handleGetOrders(
     return;
   }
 
+  const session = getAuthorizedSession(request);
   const [orderList, stripeAuthorizations] = await Promise.all([
     getWixOrders(),
     getStripeAuthorizations()
@@ -3641,8 +3686,59 @@ async function handleGetOrders(
 
       orders: [...stripeAuthorizations, ...orderList]
         .sort((left, right) => new Date(right.date) - new Date(left.date))
+        .map(order => ({
+          ...order,
+          canConfirmPayment: session.role === "admin" && order.canConfirmPayment,
+          canCapturePayment: session.role === "admin" && order.canCapturePayment,
+          canCancelPayment: session.role === "admin" && order.canCancelPayment
+        }))
     }
   );
+}
+
+async function handleStoreOwnerProfile(request, response) {
+  const session = getAuthorizedSession(request);
+  if (!session) return sendError(response, 401, "Inicia sesión en Store Loader.");
+  sendJson(response, 200, {
+    ok: true,
+    profile: {
+      role: session.role,
+      storeId: session.storeId,
+      storeName: STORE_NAME,
+      ownerName: STORE_OWNER_NAME,
+      commissionPercent: STORE_COMMISSION_PERCENT,
+      entryPath: "/startup/"
+    }
+  });
+}
+
+async function handleStoreOwnerSummary(request, response) {
+  const session = getAuthorizedSession(request);
+  if (!session) return sendError(response, 401, "Inicia sesión en Store Loader.");
+  const [orders, inventory] = await Promise.all([getWixOrders(), getWixInventory()]);
+  const paidOrders = orders.filter(order => ["PAID", "PARTIALLY_PAID"].includes(order.paymentStatus));
+  const grossSales = paidOrders.reduce((sum, order) => sum + Number(order.total || 0), 0);
+  const commissionEarned = paidOrders.reduce((sum, order) => sum + Number(order.commissionAmount || 0), 0);
+  const pendingNequi = orders.filter(order => order.paymentMethod === "nequi" && order.canConfirmPayment).length;
+  const lowStock = inventory.filter(item => item.trackQuantity && Number(item.quantity || 0) > 0 && Number(item.quantity || 0) <= 5).length;
+  const outOfStock = inventory.filter(item => item.trackQuantity && Number(item.quantity || 0) <= 0).length;
+  sendJson(response, 200, {
+    ok: true,
+    storeId: session.storeId,
+    summary: {
+      grossSales,
+      paidOrders: paidOrders.length,
+      commissionPercent: STORE_COMMISSION_PERCENT,
+      commissionEarned,
+      commissionPending: 0,
+      pendingNequi,
+      inventoryVariants: inventory.length,
+      lowStock,
+      outOfStock,
+      wixSynchronized: Boolean(wix),
+      stripeOperational: Boolean(stripe)
+    }
+  });
 }
 
 async function handleSaveOrderTracking(request, response, orderId) {
@@ -4028,6 +4124,12 @@ function normalizeInventoryItem(
         300
       ),
 
+    sku:
+      safeText(item?.product?.sku || item?.sku, 160),
+
+    revision:
+      safeText(item?.revision, 100),
+
     quantity:
       Number.isFinite(
         Number(
@@ -4136,6 +4238,43 @@ async function handleGetInventory(
       inventory
     }
   );
+}
+
+async function handleUpdateInventory(request, response) {
+  const session = getAuthorizedSession(request);
+  if (!session) return sendError(response, 401, "Inicia sesión en Store Loader.");
+  if (!wix) return sendError(response, 503, "Wix no está configurado.");
+  const body = await readBody(request);
+  const changes = Array.isArray(body?.changes) ? body.changes.slice(0, 100) : [];
+  if (!changes.length) return sendError(response, 400, "Selecciona al menos una variante para actualizar.");
+
+  const current = await getWixInventory();
+  const byId = new Map(current.map(item => [item.id, item]));
+  const updates = changes.map(change => {
+    const id = safeText(change?.id, 150);
+    const quantity = Number(change?.quantity);
+    const item = byId.get(id);
+    if (!item) throw new Error("Una variante ya no existe en el inventario de Wix.");
+    if (!Number.isInteger(quantity) || quantity < 0 || quantity > 100000) {
+      throw new Error("Cada cantidad debe ser un número entero entre 0 y 100000.");
+    }
+    return { item, quantity };
+  });
+
+  for (const { item, quantity } of updates) {
+    await wix.inventoryItemsV3.updateInventoryItem(
+      item.id,
+      { id: item.id, revision: item.revision, quantity },
+      { reason: "MANUAL" }
+    );
+  }
+
+  sendJson(response, 200, {
+    ok: true,
+    storeId: session.storeId,
+    updated: updates.length,
+    inventory: await getWixInventory()
+  });
 }
 
 /* ============================================================
@@ -4362,6 +4501,16 @@ const server =
           return;
         }
 
+        if (request.method === "GET" && url.pathname === "/api/store-owner/profile") {
+          await handleStoreOwnerProfile(request, response);
+          return;
+        }
+
+        if (request.method === "GET" && url.pathname === "/api/store-owner/summary") {
+          await handleStoreOwnerSummary(request, response);
+          return;
+        }
+
         /* ------------------------------------------------------
            CREATE PRODUCT
            ------------------------------------------------------ */
@@ -4416,6 +4565,11 @@ if (
     url
   );
 
+  return;
+}
+
+if (request.method === "PATCH" && url.pathname === "/api/inventory") {
+  await handleUpdateInventory(request, response);
   return;
 }
 /* ------------------------------------------------------

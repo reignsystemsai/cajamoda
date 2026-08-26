@@ -517,6 +517,9 @@ img{
   white-space:nowrap;
 }
 
+.navIcon{width:22px;height:22px;display:grid;place-items:center;flex:0 0 22px}
+.navIcon svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
 .tabButton.active{
 
   color:#080808;
@@ -1822,14 +1825,11 @@ img{
     padding:0 15px!important;border-radius:10px!important;color:#181818!important;font-family:Inter,sans-serif!important;
     font-size:16px!important;font-weight:400!important;text-align:left!important;text-transform:none!important;letter-spacing:0!important
   }
-  .tabButton::before{width:23px;display:inline-grid;place-items:center;font-family:"DM Sans",sans-serif;font-size:20px;line-height:1}
-  .tabButton:nth-child(1)::before{content:"⌂"}.tabButton:nth-child(2)::before{content:"◇"}.tabButton:nth-child(3)::before{content:"⬡"}
-  .tabButton:nth-child(4)::before{content:"♧"}.tabButton:nth-child(5)::before{content:"▣"}.tabButton:nth-child(6)::before{content:"⌁"}
   .tabButton.active{background:#090909!important;color:#fff!important;box-shadow:0 10px 24px rgba(0,0,0,.16)!important}
   .tabButton.active::after{display:none!important}
   .loaderMain{width:auto!important;max-width:1510px!important;margin:0 0 0 240px!important;padding:38px 40px 72px!important}
   .panel{width:100%!important;max-width:1325px!important;margin:0 auto!important}
-  .pageTitle{max-width:calc(100% - 250px);font-size:clamp(42px,4.2vw,64px)!important;line-height:.98!important}
+  .pageTitle{max-width:calc(100% - 250px);font-size:clamp(40px,3.2vw,54px)!important;line-height:1!important}
   .pageIntro{margin-top:4px!important;color:#191919!important;font-size:15px!important}
   .pilotNotice{
     display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:0!important;margin:18px 0 16px!important;padding:13px 18px!important;
@@ -1847,8 +1847,12 @@ img{
   .sectionBlock{margin-top:16px!important;padding:20px!important;border-radius:12px!important}
   .sectionTitle{font-size:24px!important}.sectionAction{font-size:11px!important}
   .primaryButton,.secondaryButton{font-size:12px!important}.fullButton{max-width:320px!important}
-  .pilotNotice + .metricGrid + .sectionBlock{display:inline-block;width:30%;vertical-align:top;margin-right:1.3%}
-  .pilotNotice + .metricGrid + .sectionBlock + .sectionBlock{display:inline-block;width:68%;vertical-align:top}
+  #panel-dashboard .metricGrid{margin-top:22px!important}
+  #panel-dashboard .dashboardQuickAction{width:100%;display:flex;justify-content:flex-start;padding:16px!important}
+  #panel-dashboard .dashboardQuickAction .fullButton{width:280px!important}
+  #panel-dashboard .dashboardOrdersBlock{width:100%;display:block}
+  .recentOrderRow{display:grid;grid-template-columns:minmax(120px,.75fr) minmax(170px,1.25fr) 90px 110px 110px;gap:16px;align-items:center;min-height:54px;padding:10px 14px;border:1px solid rgba(82,62,35,.12);border-radius:10px;background:rgba(255,255,255,.48);margin-top:8px}
+  .recentOrderRow .orderNumber,.recentOrderRow .orderCustomer{font-size:12px!important}.recentOrderRow .orderProducts,.recentOrderRow .orderDate{font-size:10px!important;color:#746f67!important}.recentOrderAmount{font-size:12px;font-weight:700;text-align:right}.recentOrderStatus{justify-self:end;padding:6px 9px;border-radius:999px;background:#edf5e8;color:#286f34;font-size:10px;font-weight:700}
 }
 @media (min-width:900px) and (max-width:1120px){
   .loaderHeader{width:205px!important}.loaderMain{margin-left:205px!important;padding-left:25px!important;padding-right:25px!important}
@@ -1938,17 +1942,6 @@ img{
       <div class="loaderLabel">Store Loader<br>Commerce Network</div>
     </div>
 
-    <select
-      id="storeSelector"
-      class="storeSelector"
-    >
-
-      <option value="store-001">
-        Karolay Blanco · Propietaria
-      </option>
-
-    </select>
-
   </div>
 
   <nav class="loaderTabs">
@@ -1957,6 +1950,7 @@ img{
       class="tabButton active"
       data-tab="dashboard"
     >
+      <span class="navIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V21h13V9.5"/><path d="M9.5 21v-7h5v7"/></svg></span>
       Inicio
     </button>
 
@@ -1964,6 +1958,7 @@ img{
       class="tabButton"
       data-tab="products"
     >
+      <span class="navIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20.5 13.5 13 21l-10-10V3h8z"/><circle cx="8" cy="8" r="1.5"/></svg></span>
       Productos
     </button>
 
@@ -1971,6 +1966,7 @@ img{
       class="tabButton"
       data-tab="inventory"
     >
+      <span class="navIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 2 9 5-9 5-9-5z"/><path d="m3 7 9 5 9-5v10l-9 5-9-5z"/><path d="M12 12v10"/></svg></span>
       Inventario
     </button>
 
@@ -1978,6 +1974,7 @@ img{
       class="tabButton"
       data-tab="orders"
     >
+      <span class="navIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 7h12l1 14H5z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg></span>
       Pedidos
     </button>
 
@@ -1986,6 +1983,10 @@ img{
   <button id="logoutButton" class="secondaryButton" type="button" style="margin-top:auto;width:100%">Cerrar sesión</button>
 
 </header>
+
+<select id="storeSelector" class="storeSelector" aria-label="Tienda activa">
+  <option value="store-001">Karolay Blanco · Propietaria</option>
+</select>
 
 <main class="loaderMain">
 
@@ -2046,9 +2047,21 @@ img{
 
     </div>
 
+    <div class="metricCard">
+      <div class="metricLabel">Inventario</div>
+      <div id="dashboardInventory" class="metricValue">0</div>
+      <div class="metricSub">variantes registradas</div>
+    </div>
+
+    <div class="metricCard">
+      <div class="metricLabel">Pagos pendientes</div>
+      <div id="dashboardPending" class="metricValue">0</div>
+      <div class="metricSub">Nequi por verificar</div>
+    </div>
+
   </div>
 
-  <div class="sectionBlock">
+  <div class="sectionBlock dashboardQuickAction">
 
     <button
       id="dashboardAddProduct"
@@ -2060,7 +2073,7 @@ img{
 
   </div>
 
-  <div class="sectionBlock">
+  <div class="sectionBlock dashboardOrdersBlock">
 
     <div class="sectionHeader">
 
@@ -3173,6 +3186,13 @@ function formatOrderDate(
     );
 }
 
+function displayOrderNumber(order){
+  const wixNumber = String(order?.number ?? "").replace(/^#/, "").trim();
+  if(wixNumber && wixNumber !== "0") return wixNumber;
+  const stableId = String(order?.id ?? "").replace(/[^a-z0-9]/gi, "");
+  return stableId ? stableId.slice(-8).toUpperCase() : "SIN-ID";
+}
+
   /* ============================================================
      TABS
      ============================================================ */
@@ -4134,7 +4154,7 @@ function renderInventory(){
                 data-order="${order.id}"
               >
                 <div class="orderCardMain">
-                  <div><div class="orderNumber">#${escapeHtml(order.number)}</div><div class="orderDate">${escapeHtml(formatOrderDate(order.date))}</div></div>
+                  <div><div class="orderNumber">#${escapeHtml(displayOrderNumber(order))}</div><div class="orderDate">${escapeHtml(formatOrderDate(order.date))}</div></div>
                   <div><div class="orderCustomer">${escapeHtml(order.customer || "Cliente")}</div><div class="orderProducts">${escapeHtml(order.products || "")}</div></div>
                   <div class="orderProducts">${order.paymentMethod === "nequi" ? "Nequi" : "Tarjeta"}</div>
                   <div class="orderMoney"><strong>${money(order.total)}</strong></div>
@@ -4317,36 +4337,12 @@ function renderInventory(){
           .map(
             order => `
 
-              <article class="orderCard">
-
-                <div class="orderTop">
-
-                  <div class="orderNumber">
-                    Pedido #${escapeHtml(order.number)}
-                  </div>
-
-                  <div class="orderDate">
-                    ${escapeHtml(
-  formatOrderDate(
-    order.date
-  )
-)}
-                  </div>
-
-                </div>
-
-                <div class="orderCustomer">
-                  ${escapeHtml(order.customer || "Cliente")}
-                </div>
-
-                <div class="orderProducts">
-                  Estado:
-                  ${trackingLabels[
-                    order.status ||
-                    "new"
-                  ]}
-                </div>
-
+              <article class="recentOrderRow">
+                <div><div class="orderNumber">#${escapeHtml(displayOrderNumber(order))}</div><div class="orderDate">${escapeHtml(formatOrderDate(order.date))}</div></div>
+                <div><div class="orderCustomer">${escapeHtml(order.customer || "Cliente")}</div><div class="orderProducts">${escapeHtml(order.products || "Pedido registrado")}</div></div>
+                <div class="orderProducts">${order.paymentMethod === "nequi" ? "Nequi" : "Tarjeta"}</div>
+                <div class="recentOrderAmount">${money(order.total)}</div>
+                <div class="recentOrderStatus">${order.canConfirmPayment ? "Por verificar" : escapeHtml(trackingLabels[order.status || "new"] || "Registrado")}</div>
               </article>
 
             `
@@ -4512,6 +4508,9 @@ function renderInventory(){
         String(
           orders.length
         );
+
+    $("dashboardInventory").textContent = String(inventory.length);
+    $("dashboardPending").textContent = String(orders.filter(order => order.canConfirmPayment).length);
 
   }
 

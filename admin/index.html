@@ -3307,6 +3307,15 @@ async function loadOwnerWorkspace(){
   renderAll();
 }
 
+function fullResolutionWixImageUrl(value){
+  const url = String(value || "");
+  if(!url.includes("static.wixstatic.com/media/")) return url;
+  return url.replace(
+    /(https:\/\/static\.wixstatic\.com\/media\/[^/]+)\/v1\/.*$/i,
+    "$1"
+  );
+}
+
 async function loadRealInventory(
   silent = false
 ){
@@ -3328,7 +3337,10 @@ async function loadRealInventory(
       Array.isArray(
         result?.inventory
       )
-        ? result.inventory
+        ? result.inventory.map(item => ({
+            ...item,
+            image: fullResolutionWixImageUrl(item.image)
+          }))
         : [];
 
     const wixProducts = new Map();
@@ -4313,7 +4325,7 @@ if(
       variantDrafts.set(size || "unique", {size, color:"", methods:["P","R","L"].filter(method => code.includes(method)), sku, persistedSku:true, quantity:Math.max(0, Number(item.quantity || 0)), enabled:true});
       editedVariantQuantities.add(size || "unique");
     });
-    uploadedPhotos = [detail.image || product.photos?.[0] || "", "", "", "", ""];
+    uploadedPhotos = [fullResolutionWixImageUrl(detail.image || product.photos?.[0] || ""), "", "", "", ""];
     renderPhotoInputs();
     renderVariantPreview();
     $("panel-add").querySelector(".pageTitle").textContent = "Editar producto";
@@ -4333,7 +4345,7 @@ if(
       const detailResult = await apiRequest(`/api/products/${encodeURIComponent(product.id)}`);
       const detail = detailResult?.product || product;
       const productVariants = inventory.filter(item => String(item.productId) === String(product.id));
-      const resolvedImage = detail.image || image;
+      const resolvedImage = fullResolutionWixImageUrl(detail.image || image);
       $("productQuickTitle").textContent = detail.name || product.name || "Producto";
       $("productQuickBody").innerHTML = `<div class="productQuickGrid">
         ${resolvedImage ? `<img class="productQuickImage" src="${escapeHtml(resolvedImage)}" alt="">` : `<div class="productQuickImage"></div>`}

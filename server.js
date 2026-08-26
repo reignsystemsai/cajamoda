@@ -65,6 +65,7 @@ const MOTO_EXTRA_KM_COP = 1000;
 const MOTO_QUOTE_CACHE_TTL = 24 * 60 * 60 * 1000;
 const motoQuoteCache = new Map();
 const stripeIntentSyncLocks = new Map();
+const nequiConfirmationLocks = new Map();
 const CARTAGENA_PICKUP_ADDRESS = "Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar, Colombia";
 const STOREFRONT_URL = String(
   process.env.STOREFRONT_URL || "https://www.cajamoda.com"
@@ -1378,7 +1379,6 @@ async function handleCreateNequiOrder(request, response) {
     }
   });
 
-  await decrementStripeInventory(lines);
   const order = imported?.order || imported;
   sendJson(response, 201, {
     ok: true,
@@ -1391,13 +1391,38 @@ async function handleCreateNequiOrder(request, response) {
 async function handleConfirmNequiOrder(request, response, orderId) {
   if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
   if (!wix) return sendError(response, 503, "Wix no está configurado.");
-  const order = await wix.orders.getOrder(orderId);
-  if (!isNequiOrder(order)) return sendError(response, 400, "Este no es un pedido Nequi.");
-  if (String(order.paymentStatus).toUpperCase() === "PAID") {
-    return sendJson(response, 200, { ok: true, order: normalizeWixOrder(order) });
+  const existingConfirmation = nequiConfirmationLocks.get(orderId);
+  if (existingConfirmation) {
+    const confirmed = await existingConfirmation;
+    return sendJson(response, 200, { ok: true, order: normalizeWixOrder(confirmed) });
   }
-  const updated = await wix.orders.importOrder({ ...order, paymentStatus: "PAID" });
-  sendJson(response, 200, { ok: true, order: normalizeWixOrder(updated?.order || updated) });
+
+  const confirmation = (async () => {
+    const order = await wix.orders.getOrder(orderId);
+    if (!isNequiOrder(order)) throw new Error("Este no es un pedido Nequi.");
+    if (String(order.paymentStatus).toUpperCase() === "PAID") return order;
+
+    const lines = (Array.isArray(order?.lineItems) ? order.lineItems : [])
+      .map(line => ({
+        productId: safeText(line?.catalogReference?.catalogItemId, 80),
+        variantId: safeText(line?.catalogReference?.options?.variantId, 80),
+        quantity: Math.max(1, Math.floor(Number(line?.quantity || 1)))
+      }))
+      .filter(line => line.productId && line.variantId);
+    if (!lines.length) throw new Error("El pedido Nequi no tiene inventario verificable.");
+
+    const updated = await wix.orders.importOrder({ ...order, paymentStatus: "PAID" });
+    await decrementStripeInventory(lines);
+    return updated?.order || updated;
+  })();
+
+  nequiConfirmationLocks.set(orderId, confirmation);
+  try {
+    const confirmed = await confirmation;
+    sendJson(response, 200, { ok: true, order: normalizeWixOrder(confirmed) });
+  } finally {
+    nequiConfirmationLocks.delete(orderId);
+  }
 }
 
 /* ============================================================

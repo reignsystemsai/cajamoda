@@ -530,7 +530,10 @@ async function stripeLineItemFromCartItem(item) {
   }
 
   const fulfillmentSku = safeText(variant?.sku || product?.sku, 100).toUpperCase();
-  const fulfillmentCode = fulfillmentSku.split("-", 1)[0];
+  const fulfillmentSegments = fulfillmentSku.split("-").filter(Boolean);
+  const fulfillmentCode = [...fulfillmentSegments].reverse().find(segment =>
+    ["P", "PR", "RP", "R", "L", "PRL"].includes(segment)
+  ) || fulfillmentSegments[0];
   const normalizedFulfillmentCode = ["P", "PR", "RP", "R", "L", "PRL"].includes(fulfillmentCode)
     ? fulfillmentCode
     : "R";
@@ -2200,7 +2203,8 @@ function buildVariants(
   price,
   quantity,
   fulfillmentCode,
-  styleCode
+  styleCode,
+  variantOverrides = []
 ) {
 
   const combinations =
@@ -2238,16 +2242,22 @@ function buildVariants(
     .replace(/[^A-Za-z0-9]/g, "")
     .toUpperCase();
 
+  const overrideMap = new Map(
+    (Array.isArray(variantOverrides) ? variantOverrides : []).map(item => [
+      `${safeText(item?.size, 20)}::${safeText(item?.color, 50)}`,
+      item
+    ])
+  );
+
   const variants = combinations.map(
     combination => {
 
-      const variantQuantity =
-        quantityPerVariant +
-        (
-          remainder > 0
-            ? 1
-            : 0
-        );
+      const override = overrideMap.get(`${combination.size}::${combination.color}`);
+      const defaultQuantity = quantityPerVariant + (remainder > 0 ? 1 : 0);
+      const requestedQuantity = Number(override?.quantity);
+      const variantQuantity = Number.isInteger(requestedQuantity) && requestedQuantity >= 0
+        ? requestedQuantity
+        : defaultQuantity;
 
       if(
         remainder > 0
@@ -2255,14 +2265,17 @@ function buildVariants(
         remainder -= 1;
       }
 
-      return {
-
-        sku: [
-          fulfillmentCode,
+      const generatedSku = [
           styleCode,
           combination.color ? skuSegment(combination.color).slice(0, 3) : "",
-          combination.size ? skuSegment(combination.size) : ""
-        ].filter(Boolean).join("-"),
+          combination.size ? skuSegment(combination.size) : "",
+          fulfillmentCode
+        ].filter(Boolean).join("-");
+      const customSku = safeText(override?.sku, 100).replace(/[^A-Za-z0-9-]/g, "").toUpperCase();
+
+      return {
+
+        sku: customSku || generatedSku,
 
         visible:
           true,
@@ -2751,7 +2764,8 @@ async function createWixProduct(
       price,
       quantity,
       fulfillmentCode,
-      styleCode
+      styleCode,
+      input.variantOverrides
     );
 
   const product = {
@@ -4135,7 +4149,7 @@ function normalizeInventoryItem(
       ),
 
     sku:
-      safeText(item?.product?.sku || item?.sku, 160),
+      safeText(item?.product?.variantSku || item?.product?.sku || item?.sku, 160),
 
     revision:
       safeText(item?.revision, 100),
@@ -4171,13 +4185,24 @@ function normalizeInventoryItem(
 
 function getProductImageUrl(product) {
   const candidates = [
+    product?.thumbnail?.url,
+    product?.thumbnail?._id,
+    product?.thumbnail?.id,
     product?.media?.mainMedia?.image?.url,
+    product?.media?.mainMedia?.image?._id,
+    product?.media?.mainMedia?.image?.id,
     product?.media?.mainMedia?.image?.imageInfo?.url,
     product?.media?.mainMedia?.imageInfo?.url,
     product?.media?.mainMedia?.url,
+    product?.media?.mainMedia?._id,
+    product?.media?.mainMedia?.id,
     product?.media?.itemsInfo?.items?.[0]?.image?.url,
+    product?.media?.itemsInfo?.items?.[0]?.image?._id,
+    product?.media?.itemsInfo?.items?.[0]?.image?.id,
     product?.media?.itemsInfo?.items?.[0]?.image?.imageInfo?.url,
     product?.media?.itemsInfo?.items?.[0]?.url,
+    product?.media?.itemsInfo?.items?.[0]?._id,
+    product?.media?.itemsInfo?.items?.[0]?.id,
     product?.media?.items?.[0]?.image?.url,
     product?.media?.items?.[0]?.image?.imageInfo?.url,
     product?.media?.items?.[0]?.thumbnail?.url,
@@ -4186,9 +4211,12 @@ function getProductImageUrl(product) {
     product?.mediaItems?.[0]?.url
   ];
   const value = safeText(candidates.find(Boolean), 1500);
-  if (!value.startsWith("wix:image://")) return value;
-  const mediaId = value.replace("wix:image://v1/", "").split("/")[0].split("#")[0];
-  return mediaId ? `https://static.wixstatic.com/media/${encodeURIComponent(mediaId)}` : "";
+  if (!value) return "";
+  if (/^https?:\/\//i.test(value)) return value;
+  const mediaId = value.startsWith("wix:image://")
+    ? value.replace(/^wix:image:\/\/v1\//, "").split("/")[0].split("#")[0]
+    : value.split("/")[0].split("#")[0];
+  return mediaId ? `https://static.wixstatic.com/media/${mediaId}` : "";
 }
 
 async function getWixInventory() {
@@ -4238,7 +4266,9 @@ const inventoryItems =
   const productIds = [...new Set(normalized.map(item => item.productId).filter(Boolean))];
   const productEntries = await Promise.all(productIds.map(async productId => {
     try {
-      const result = await wix.productsV3.getProduct(productId);
+      const result = await wix.productsV3.getProduct(productId, {
+        fields: ["MEDIA_ITEMS_INFO", "THUMBNAIL"]
+      });
       return [productId, result?.product || result];
     } catch (error) {
       console.warn(`[WIX INVENTORY] No se pudo cargar la foto del producto ${productId}:`, error?.message || error);

@@ -2716,33 +2716,23 @@ async function createWixProduct(
       10
     );
 
-  const colors =
-    cleanList(
-      input.colors,
-      20
-    );
+  const colors = [];
 
   const fulfillmentCode = safeText(input.fulfillmentCode, 10).toUpperCase();
-  let styleCode = safeText(input.styleCode, 30)
-    .replace(/[^A-Za-z0-9]/g, "")
-    .toUpperCase();
+  // The numeric product record is generated on the server so a client cannot
+  // accidentally reuse it. It becomes the permanent SKU family for every
+  // size of this product and remains unchanged when inventory quantities move.
+  let styleCode = `CM${Math.floor(Date.now() / 1000)}`;
 
   if (!["P", "R", "PR", "L", "PL", "RL", "PRL"].includes(fulfillmentCode)) {
     throw new Error("Selecciona un tipo de entrega válido.");
   }
 
-  if (!styleCode) {
-    throw new Error("Agrega un código de estilo para generar los SKUs.");
-  }
-
-  // A newly created product always receives an unused SKU family. Inventory
-  // updates use the update endpoint and therefore preserve existing SKUs.
+  // Existing catalog inventory is the permanent record. Even if two requests
+  // arrive in the same second, advance the number instead of reusing a family.
   const usedSkus = new Set((await getWixInventory()).map(item => safeText(item?.sku, 100).toUpperCase()));
-  const baseStyleCode = styleCode;
-  let suffix = 1;
   while ([...usedSkus].some(sku => sku === styleCode || sku.startsWith(`${styleCode}-`))) {
-    suffix += 1;
-    styleCode = `${baseStyleCode}${suffix}`;
+    styleCode = `CM${Number(styleCode.slice(2)) + 1}`;
   }
 
   if (
@@ -2789,7 +2779,11 @@ async function createWixProduct(
       allowPreorder,
       fulfillmentCode,
       styleCode,
-      input.variantOverrides
+      // New catalog records always receive their permanent server-assigned
+      // SKU family. Client-side previews must never become the saved record.
+      Array.isArray(input.variantOverrides)
+        ? input.variantOverrides.map((variant) => ({ ...variant, sku: "" }))
+        : []
     );
 
   const product = {

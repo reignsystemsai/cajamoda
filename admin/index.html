@@ -1885,6 +1885,58 @@ img{
   .storeSelector{right:25px!important}.metricGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 }
 
+/* Launch 99 — lean single-screen product editor */
+@media (min-width:900px){
+  .storeSelector{
+    top:auto!important;right:auto!important;left:20px!important;bottom:98px!important;
+    width:200px!important;height:42px!important;padding-left:42px!important;
+  }
+  #panel-add .pageHeadingRow{align-items:center!important;margin:0 0 8px!important;padding:0!important}
+  #panel-add .pageTitle{font-size:32px!important;line-height:1!important}
+  #panel-add .pageIntro{margin-top:2px!important;font-size:11px!important}
+  #panel-add .pageHeadingRow .primaryButton{min-height:40px!important;padding:0 22px!important}
+  #panel-add .formGrid{grid-template-columns:minmax(0,.78fr) minmax(0,1.22fr)!important;gap:9px!important;margin-top:0!important}
+  #panel-add .productFormCard{padding:10px 12px!important;border-radius:14px!important;gap:6px!important}
+  #panel-add .productFormCard h2{font-size:14px!important}
+  #panel-add .formSectionHelp{margin:-3px 0 0!important;font-size:8px!important}
+  #panel-add .formGrid > .productFormCard:nth-child(1),
+  #panel-add .formGrid > .productFormCard:nth-child(2){height:222px!important;overflow:hidden}
+  #panel-add .formGrid > .productFormCard:nth-child(1) .field{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:4px 7px!important}
+  #panel-add .formGrid > .productFormCard:nth-child(1) .field > label{grid-column:1/-1!important}
+  #panel-add .formGrid > .productFormCard:nth-child(1) .field > input,
+  #panel-add .formGrid > .productFormCard:nth-child(1) .field > textarea{grid-column:1!important}
+  #panel-add .formGrid > .productFormCard:nth-child(1) .compactAssistButton{grid-column:2!important;grid-row:2!important;align-self:stretch!important;height:34px!important;min-width:96px!important}
+  #panel-add .formGrid > .productFormCard:nth-child(1) .field:nth-of-type(2) .compactAssistButton{grid-row:2!important}
+  #panel-add .field input,#panel-add .field select{height:34px!important;padding:0 10px!important;font-size:10px!important}
+  #panel-add .field textarea{min-height:50px!important;height:50px!important;padding:9px 10px!important;font-size:10px!important}
+  #panel-add .twoColumn{gap:7px!important}
+  #panel-add .photoDropZone{min-height:36px!important;height:36px!important;margin:0!important;padding:5px!important;border-radius:9px!important}
+  #panel-add .photoDropZone strong{font-size:9px!important}#panel-add .photoDropZone span{display:none!important}
+  #panel-add .photoUploadGrid{height:148px!important;display:grid!important;grid-template-columns:1.55fr repeat(2,.72fr)!important;grid-template-rows:repeat(2,1fr)!important;gap:5px!important}
+  #panel-add .photoBox{aspect-ratio:auto!important;min-height:0!important;border-radius:9px!important}
+  #panel-add .photoBox:first-child{grid-row:1/3!important}
+  #panel-add .variantFormCard{display:grid!important;grid-template-columns:190px minmax(0,1fr)!important;gap:6px 10px!important;padding:9px 12px!important}
+  #panel-add .variantFormCard > h2,#panel-add .variantFormCard > .formSectionHelp,#panel-add .variantBuilder,#panel-add .compactSettings{grid-column:1/-1!important}
+  #panel-add .variantFormCard > .field{grid-column:1/-1!important;display:grid!important;grid-template-columns:52px 1fr!important;align-items:center!important;gap:6px!important}
+  #panel-add .variantFormCard > .field > label{margin:0!important}
+  #panel-add .checkGrid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:5px!important}
+  #panel-add .checkOption label{height:29px!important;border-radius:8px!important;font-size:10px!important}
+  #panel-add .variantBuilder{margin:0!important;padding:7px 9px!important;border-radius:10px!important}
+  #panel-add .variantBuilderHeader{margin-bottom:5px!important}.variantBuilderTitle{font-size:11px!important}.variantBuilderHelp{font-size:8px!important}
+  #panel-add .variantTable{gap:3px!important}
+  #panel-add .variantRow{grid-template-columns:42px 52px 70px minmax(230px,1.25fr) minmax(170px,.85fr)!important;gap:5px!important}
+  #panel-add .variantSku,#panel-add .variantQuantity{height:29px!important;font-size:9px!important}
+  #panel-add .deliveryChoice{height:27px!important;padding:0 10px!important;font-size:8px!important}
+  #panel-add .compactSettings{grid-template-columns:1fr 1.05fr .85fr 1.35fr!important;gap:5px!important;padding:6px!important}
+  #panel-add .compactSettings .switchRow{padding:5px 7px!important}.compactSettings .switchRow strong{font-size:9px!important}.compactSettings .switchRow small{font-size:7px!important}
+  #panel-add .compactSettings .field input,#panel-add .compactSettings .field select{height:30px!important}
+  #panel-add .compactDimensions .field label{font-size:7px!important}
+  #panel-add .formActions{gap:7px!important}.formActions button{min-height:38px!important;width:170px!important}
+}
+@media (min-width:900px) and (max-width:1120px){
+  .storeSelector{left:12px!important;width:181px!important}
+}
+
 </style>
 
 </head>
@@ -2288,36 +2340,14 @@ img{
 
     </div>
 
-    <div class="field">
-
-      <label for="productColors">
-        Colores
-      </label>
-
-      <div class="colorQuickChoices" aria-label="Colores rápidos">
-        <button type="button" data-color-choice="" class="selected"><i style="background:#111"></i>Sin color</button>
-        <button type="button" data-color-choice="Negro"><i style="background:#111"></i>Negro</button>
-        <button type="button" data-color-choice="Blanco"><i style="background:#fff"></i>Blanco</button>
-        <button type="button" data-color-choice="Café"><i style="background:#76513b"></i>Café</button>
-        <button type="button" data-color-choice="Beige"><i style="background:#d9c4a5"></i>Beige</button>
-        <button type="button" data-color-choice="Rojo"><i style="background:#b92828"></i>Rojo</button>
-        <button type="button" data-color-choice="Azul"><i style="background:#244d86"></i>Azul</button>
-      </div>
-
-      <input
-        id="productColors"
-        type="text"
-        placeholder="Otro color o varios separados por comas"
-      >
-      <button id="clearOptions" type="button" hidden></button>
-
-    </div>
+    <input id="productColors" type="hidden" value="">
+    <button id="clearOptions" type="button" hidden></button>
 
     <div class="variantBuilder">
       <div class="variantBuilderHeader">
         <div>
           <div class="variantBuilderTitle">Variantes y SKU</div>
-          <div class="variantBuilderHelp">Cada SKU se crea una sola vez. Cambiar la cantidad no crea otro SKU.</div>
+          <div class="variantBuilderHelp">Cada producto recibe un número permanente. Cambiar la cantidad no crea otro SKU.</div>
         </div>
       </div>
       <div id="variantPreview" class="variantTable"></div>
@@ -3439,36 +3469,31 @@ if(
   }
 
   function renderVariantPreview(){
-    const name = $("productName").value.trim();
-    const styleCode = automaticProductCode(name) || "SKU";
+    const styleCode = editingProductId
+      ? ($("productStyleCode").value || "REGISTRO")
+      : "NUEVO";
     $("productStyleCode").value = styleCode;
     const sizes = collectSizes();
-    const colors = collectColors();
     const combinations = (sizes.length ? sizes : [""]).map(size => ({size, color:""}));
     const total = Math.max(0, Number($("productQuantity").value || 0));
     const baseQuantity = combinations.length ? Math.floor(total / combinations.length) : total;
     let remainder = combinations.length ? total % combinations.length : 0;
-    const colorOptions = ["", ...colors].filter((value,index,array) => array.indexOf(value) === index);
-
     $("variantPreview").innerHTML = `
-      <div class="variantRow variantRowHead"><span>Usar</span><span>Talla</span><span>Color</span><span>Cantidad</span><span>Métodos de entrega</span><span>SKU</span></div>
+      <div class="variantRow variantRowHead"><span>Usar</span><span>Talla</span><span>Cantidad</span><span>Métodos de entrega</span><span>SKU permanente</span></div>
       ${combinations.map(combination => {
         const key = combination.size || "unique";
         const existing = variantDrafts.get(key) || {};
-        const color = existing.color ?? colorOptions[0] ?? "";
         const methods = Array.isArray(existing.methods) && existing.methods.length ? existing.methods : ["P"];
-        const generatedSku = [styleCode, color ? automaticColorCode(color) : "", combination.size ? skuText(combination.size) : "", fulfillmentCode(methods)].filter(Boolean).join("-");
+        const generatedSku = [styleCode, combination.size ? skuText(combination.size) : "", fulfillmentCode(methods)].filter(Boolean).join("-");
         const defaultQuantity = baseQuantity + (remainder-- > 0 ? 1 : 0);
         const quantity = editedVariantQuantities.has(key) ? existing.quantity : defaultQuantity;
         const finalSku = existing.persistedSku ? existing.sku : generatedSku;
-        variantDrafts.set(key, {size:combination.size, color, methods, sku:finalSku, persistedSku:Boolean(existing.persistedSku), quantity, enabled:existing.enabled !== false});
-        const options = colorOptions.map(value => `<option value="${escapeHtml(value)}" ${value === color ? "selected" : ""}>${escapeHtml(value || "Sin color")}</option>`).join("");
+        variantDrafts.set(key, {size:combination.size, color:"", methods, sku:finalSku, persistedSku:Boolean(existing.persistedSku), quantity, enabled:existing.enabled !== false});
         const delivery = [["P","Pronto"],["R","Rápido"],["L","Libéralo"]].map(([code,label]) => `<button class="deliveryChoice ${methods.includes(code) ? "selected" : ""}" type="button" data-delivery="${code}" data-variant-key="${escapeHtml(key)}">${escapeHtml(label)}</button>`).join("");
-        return `<div class="variantRow" data-variant-row="${escapeHtml(key)}"><input class="variantUse" data-variant-use="${escapeHtml(key)}" type="checkbox" ${existing.enabled === false ? "" : "checked"}><span class="variantLabel">${escapeHtml(combination.size || "Única")}</span><select class="variantColor" data-variant-color="${escapeHtml(key)}">${options}</select><input class="variantQuantity" data-variant-quantity="${escapeHtml(key)}" type="number" min="0" step="1" value="${quantity}"><div class="deliveryChoices">${delivery}</div><input class="variantSku" data-variant-sku="${escapeHtml(key)}" value="${escapeHtml(finalSku)}" readonly></div>`;
+        return `<div class="variantRow" data-variant-row="${escapeHtml(key)}"><input class="variantUse" data-variant-use="${escapeHtml(key)}" type="checkbox" ${existing.enabled === false ? "" : "checked"}><span class="variantLabel">${escapeHtml(combination.size || "Única")}</span><input class="variantQuantity" data-variant-quantity="${escapeHtml(key)}" type="number" min="0" step="1" value="${quantity}"><div class="deliveryChoices">${delivery}</div><input class="variantSku" data-variant-sku="${escapeHtml(key)}" value="${escapeHtml(finalSku)}" readonly></div>`;
       }).join("")}`;
 
     qsa("[data-variant-use]").forEach(input => input.onchange = () => { const draft = variantDrafts.get(input.dataset.variantUse); if(draft) draft.enabled = input.checked; });
-    qsa("[data-variant-color]").forEach(input => input.onchange = () => { const draft = variantDrafts.get(input.dataset.variantColor); if(draft){ draft.color = input.value; draft.sku = ""; renderVariantPreview(); } });
     qsa("[data-delivery]").forEach(button => button.onclick = () => {
       const draft = variantDrafts.get(button.dataset.variantKey);
       if(!draft) return;

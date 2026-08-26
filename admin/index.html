@@ -992,6 +992,10 @@ img{
 .photoDropZone input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .photoDropZone.dragging{border-color:#111;background:rgba(255,255,255,.9);transform:translateY(-1px)}
 
+.variantBuilder{margin-top:14px;padding:14px;border:1px solid rgba(0,0,0,.09);border-radius:14px;background:rgba(255,255,255,.58)}
+.variantBuilderHeader{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:10px}.variantBuilderTitle{font-size:13px;font-weight:750}.variantBuilderHelp{color:#777;font-size:10px}
+.variantTable{display:flex;flex-direction:column;gap:7px}.variantRow{display:grid;grid-template-columns:minmax(120px,1fr) minmax(180px,1.25fr) 90px;gap:8px;align-items:center}.variantRowHead{color:#716b62;font-size:9px;font-weight:700}.variantLabel{font-size:11px;font-weight:650}.variantSku,.variantQuantity{width:100%;height:38px;padding:0 10px;border:1px solid rgba(0,0,0,.12);border-radius:10px;background:rgba(255,255,255,.82);font-size:11px}.variantEmpty{padding:12px;color:#777;font-size:10px;text-align:center}
+
 .photoBox{
 
   position:relative;
@@ -1267,7 +1271,9 @@ img{
 }
 
 .orderActions{margin-top:6px;border-top:1px solid rgba(0,0,0,.06)}
-.orderActions summary{padding:7px 0;color:#555;font-size:10px;font-weight:700;cursor:pointer;list-style:none}
+.orderActions summary{display:inline-flex;align-items:center;gap:5px;padding:7px 0;color:#555;font-size:10px;font-weight:700;cursor:pointer;list-style:none}
+.orderActions summary::after{content:"⌄";font-size:11px;line-height:1;transition:transform .18s ease}
+.orderActions[open] summary::after{transform:rotate(180deg)}
 .orderActions summary::-webkit-details-marker{display:none}
 
 .orderTop{
@@ -1813,7 +1819,7 @@ img{
   .loaderLabel{margin-top:9px!important;color:#151515!important;font-size:8px!important;line-height:1.45!important;font-weight:600!important;letter-spacing:.24em!important}
   .storeSelector{
     position:fixed!important;z-index:100!important;top:28px!important;right:40px!important;width:220px!important;height:48px!important;
-    padding:0 16px 0 38px!important;border:1px solid rgba(83,66,43,.18)!important;border-radius:10px!important;
+    padding:0 16px 0 48px!important;border:1px solid rgba(83,66,43,.18)!important;border-radius:10px!important;
     background:radial-gradient(circle at 20px 50%,#4e9b55 0 5px,transparent 6px),rgba(255,255,255,.66)!important;
     box-shadow:0 8px 24px rgba(61,44,20,.07)!important;backdrop-filter:blur(22px)!important;-webkit-backdrop-filter:blur(22px)!important;
     color:#111!important;font-size:11px!important;font-weight:700!important;appearance:none!important
@@ -1853,6 +1859,16 @@ img{
   #panel-dashboard .dashboardOrdersBlock{width:100%;display:block}
   .recentOrderRow{display:grid;grid-template-columns:minmax(120px,.75fr) minmax(170px,1.25fr) 90px 110px 110px;gap:16px;align-items:center;min-height:54px;padding:10px 14px;border:1px solid rgba(82,62,35,.12);border-radius:10px;background:rgba(255,255,255,.48);margin-top:8px}
   .recentOrderRow .orderNumber,.recentOrderRow .orderCustomer{font-size:12px!important}.recentOrderRow .orderProducts,.recentOrderRow .orderDate{font-size:10px!important;color:#746f67!important}.recentOrderAmount{font-size:12px;font-weight:700;text-align:right}.recentOrderStatus{justify-self:end;padding:6px 9px;border-radius:999px;background:#edf5e8;color:#286f34;font-size:10px;font-weight:700}
+  #panel-orders .sectionBlock{padding:14px!important}
+  #panel-orders .orderSummaryGrid{gap:8px!important;margin-bottom:10px!important}
+  #panel-orders .orderSummaryCard{padding:10px 12px!important;border-radius:10px!important}
+  #panel-orders .orderSummaryValue{margin-top:2px!important;font-size:21px!important}
+  #panel-orders .orderList{gap:5px!important}
+  #panel-orders .orderCard{padding:5px 10px!important;min-height:0!important}
+  #panel-orders .orderCardMain{grid-template-columns:110px minmax(190px,1fr) 100px 110px 105px!important;min-height:34px!important}
+  #panel-orders .orderStatusPill{min-width:0!important;padding:4px 8px!important;font-size:10px!important}
+  #panel-orders .orderActions{margin-top:2px!important}
+  #panel-orders .orderActions summary{padding:3px 0!important;font-size:9px!important}
 }
 @media (min-width:900px) and (max-width:1120px){
   .loaderHeader{width:205px!important}.loaderMain{margin-left:205px!important;padding-left:25px!important;padding-right:25px!important}
@@ -2000,7 +2016,7 @@ img{
 >
 
   <h1 class="pageTitle">
-    Buenos días, Karolay.
+    Buenos días, Karolay
   </h1>
 
   <p class="pageIntro">
@@ -2109,7 +2125,7 @@ img{
 >
 
   <h1 class="pageTitle">
-    Productos.
+    Productos
   </h1>
 
   <p class="pageIntro">
@@ -2137,7 +2153,7 @@ img{
 >
 
   <h1 class="pageTitle">
-    Nuevo producto.
+    Nuevo producto
   </h1>
 
   <p class="pageIntro">
@@ -2213,7 +2229,7 @@ img{
       <div class="field">
 
         <label for="productQuantity">
-          Inventario
+          Inventario total inicial
         </label>
 
         <input
@@ -2274,9 +2290,9 @@ img{
 
       <div class="field">
 
-        <label for="productStyleCode">Código de estilo</label>
+        <label for="productStyleCode">Código de producto (automático)</label>
 
-        <input id="productStyleCode" type="text" maxlength="30" placeholder="Ej. NL001">
+        <input id="productStyleCode" type="text" maxlength="30" placeholder="Se genera del nombre" readonly>
 
       </div>
 
@@ -2383,6 +2399,16 @@ img{
 
     </div>
 
+    <div class="variantBuilder">
+      <div class="variantBuilderHeader">
+        <div>
+          <div class="variantBuilderTitle">Variantes y SKU</div>
+          <div class="variantBuilderHelp">Revisa cada combinación. Puedes ajustar el SKU y la cantidad antes de publicar.</div>
+        </div>
+      </div>
+      <div id="variantPreview" class="variantTable"></div>
+    </div>
+
     <button
       id="publishProduct"
       class="primaryButton fullButton"
@@ -2413,7 +2439,7 @@ img{
 >
 
   <h1 class="pageTitle">
-    Inventario.
+    Inventario
   </h1>
 
   <p class="pageIntro">
@@ -2437,7 +2463,7 @@ img{
 >
 
   <h1 class="pageTitle">
-    Pedidos.
+    Pedidos
   </h1>
 
   <p class="pageIntro">
@@ -3454,6 +3480,88 @@ if(
      PRODUCT FORM
      ============================================================ */
 
+  const variantDrafts = new Map();
+  const editedVariantQuantities = new Set();
+
+  function skuText(value){
+    return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+  }
+
+  function automaticProductCode(name){
+    const words = String(name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").match(/[A-Za-z0-9]+/g) || [];
+    if(!words.length) return "";
+    if(words.length === 1) return skuText(words[0]).slice(0, 3);
+    return `${skuText(words[0]).slice(0, 2)}${skuText(words[1]).slice(0, 1)}`;
+  }
+
+  function automaticColorCode(color){
+    const normalized = skuText(color);
+    const known = {
+      BROWN:"BRN", MARRON:"BRN", CAFE:"BRN", BLACK:"BLK", NEGRO:"BLK",
+      WHITE:"WHT", BLANCO:"WHT", RED:"RED", ROJO:"RED", BLUE:"BLU", AZUL:"BLU",
+      GREEN:"GRN", VERDE:"GRN", CREAM:"CRM", CREMA:"CRM", BEIGE:"BEI",
+      PINK:"PNK", ROSA:"PNK", ROSADO:"PNK", YELLOW:"YLW", AMARILLO:"YLW",
+      ORANGE:"ORG", NARANJA:"ORG", PURPLE:"PUR", MORADO:"PUR", GRAY:"GRY",
+      GREY:"GRY", GRIS:"GRY"
+    };
+    return known[normalized] || normalized.slice(0, 3);
+  }
+
+  function variantCombinations(sizes, colors){
+    if(sizes.length && colors.length) return sizes.flatMap(size => colors.map(color => ({size, color})));
+    if(sizes.length) return sizes.map(size => ({size, color:""}));
+    if(colors.length) return colors.map(color => ({size:"", color}));
+    return [{size:"", color:""}];
+  }
+
+  function renderVariantPreview(){
+    const name = $("productName").value.trim();
+    const styleCode = automaticProductCode(name);
+    $("productStyleCode").value = styleCode;
+    if(!styleCode){
+      $("variantPreview").innerHTML = `<div class="variantEmpty">Escribe el nombre para generar las variantes.</div>`;
+      return;
+    }
+    const sizes = collectSizes();
+    const colors = collectColors();
+    const combinations = variantCombinations(sizes, colors);
+    const total = Math.max(0, Number($("productQuantity").value || 0));
+    const baseQuantity = combinations.length ? Math.floor(total / combinations.length) : total;
+    let remainder = combinations.length ? total % combinations.length : 0;
+    const fulfillment = $("productFulfillment").value;
+
+    $("variantPreview").innerHTML = `
+      <div class="variantRow variantRowHead"><span>Variante</span><span>SKU editable</span><span>Cantidad</span></div>
+      ${combinations.map(combination => {
+        const key = `${combination.size}::${combination.color}`;
+        const generatedSku = [styleCode, combination.color ? automaticColorCode(combination.color) : "", combination.size ? skuText(combination.size) : "", fulfillment].filter(Boolean).join("-");
+        const existing = variantDrafts.get(key) || {};
+        const defaultQuantity = baseQuantity + (remainder-- > 0 ? 1 : 0);
+        const quantity = editedVariantQuantities.has(key) ? existing.quantity : defaultQuantity;
+        variantDrafts.set(key, {size:combination.size, color:combination.color, sku:existing.skuEdited ? existing.sku : generatedSku, skuEdited:Boolean(existing.skuEdited), quantity});
+        const label = [combination.color, combination.size].filter(Boolean).join(" / ") || "Única";
+        return `<div class="variantRow" data-variant-row="${escapeHtml(key)}"><span class="variantLabel">${escapeHtml(label)}</span><input class="variantSku" data-variant-sku="${escapeHtml(key)}" value="${escapeHtml(variantDrafts.get(key).sku)}" maxlength="100"><input class="variantQuantity" data-variant-quantity="${escapeHtml(key)}" type="number" min="0" step="1" value="${quantity}"></div>`;
+      }).join("")}`;
+
+    qsa("[data-variant-sku]").forEach(input => input.oninput = () => {
+      const draft = variantDrafts.get(input.dataset.variantSku);
+      if(draft){ draft.sku = input.value.replace(/[^A-Za-z0-9-]/g, "").toUpperCase(); draft.skuEdited = true; }
+    });
+    qsa("[data-variant-quantity]").forEach(input => input.oninput = () => {
+      const key = input.dataset.variantQuantity;
+      const draft = variantDrafts.get(key);
+      if(draft){ draft.quantity = Math.max(0, Number(input.value || 0)); editedVariantQuantities.add(key); }
+    });
+  }
+
+  function collectVariantOverrides(){
+    return qsa("[data-variant-row]").map(row => {
+      const key = row.dataset.variantRow;
+      const draft = variantDrafts.get(key);
+      return {size:draft?.size || "", color:draft?.color || "", sku:row.querySelector("[data-variant-sku]").value.trim().toUpperCase(), quantity:Number(row.querySelector("[data-variant-quantity]").value || 0)};
+    });
+  }
+
   function resetProductForm(){
 
     $("productName")
@@ -3478,6 +3586,8 @@ if(
 
     $("productFulfillment").value = "P";
     $("productStyleCode").value = "";
+    variantDrafts.clear();
+    editedVariantQuantities.clear();
 
     $("productColors")
       .value =
@@ -3504,6 +3614,7 @@ if(
       ];
 
     renderPhotoInputs();
+    renderVariantPreview();
 
   }
 
@@ -3577,6 +3688,8 @@ if(
       uploadedPhotos
         .filter(Boolean);
 
+    const variantOverrides = collectVariantOverrides();
+
     if(
       !name
     ){
@@ -3613,8 +3726,18 @@ if(
     }
 
     if(!styleCode){
-      $("productStyleCode").focus();
-      showToast("Agrega un código de estilo.");
+      $("productName").focus();
+      showToast("Agrega un nombre para generar el código del producto.");
+      return;
+    }
+
+    if(!variantOverrides.length || variantOverrides.some(variant => !variant.sku || !Number.isInteger(variant.quantity) || variant.quantity < 0)){
+      showToast("Revisa el SKU y la cantidad de cada variante.");
+      return;
+    }
+
+    if(new Set(variantOverrides.map(variant => variant.sku)).size !== variantOverrides.length){
+      showToast("Cada variante necesita un SKU único.");
       return;
     }
 
@@ -3676,6 +3799,8 @@ if(
 
               colors,
 
+              variantOverrides,
+
               photos
             }
           }
@@ -3721,7 +3846,8 @@ if(
 
         price,
 
-        quantity,
+        quantity:
+          variantOverrides.reduce((sum, variant) => sum + variant.quantity, 0),
 
         category,
 
@@ -3790,6 +3916,15 @@ if(
   $("publishProduct")
     .onclick =
       publishProduct;
+
+  $("productName").addEventListener("input", renderVariantPreview);
+  $("productColors").addEventListener("input", renderVariantPreview);
+  $("productFulfillment").addEventListener("change", renderVariantPreview);
+  $("productQuantity").addEventListener("input", () => {
+    editedVariantQuantities.clear();
+    renderVariantPreview();
+  });
+  qsa("[data-size]").forEach(input => input.addEventListener("change", renderVariantPreview));
 
   /* ============================================================
      PRODUCTS
@@ -3951,7 +4086,7 @@ function renderInventory(){
     return statusMatches && (!query || text.includes(query));
   });
 
-  const availableCount = inventory.filter(item => Number(item.quantity || 0) > 5).length;
+  const availableCount = inventory.filter(item => Number(item.quantity || 0) > 0).length;
   const lowCount = inventory.filter(item => Number(item.quantity || 0) > 0 && Number(item.quantity || 0) <= 5).length;
   const outCount = inventory.filter(item => Number(item.quantity || 0) <= 0).length;
 
@@ -4162,7 +4297,7 @@ function renderInventory(){
                 </div>
 
                 <details class="orderActions">
-                  <summary>Gestionar pedido</summary>
+                  <summary>Actualizar</summary>
 
                 ${order.paymentMethod === "nequi" ? `
                   <div style="margin:12px 0;padding:12px 14px;border:1px solid rgba(77,11,183,.18);border-radius:14px;background:rgba(255,255,255,.62)">

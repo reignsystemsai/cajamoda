@@ -2048,26 +2048,26 @@ img{
 /* Build 103 — approved product-editor structure only */
 @media (min-width:900px){
   .sidebarAccountControls{position:absolute;left:20px;right:20px;bottom:24px;display:grid;gap:10px}
-  .sidebarAccountControls .sidebarControl{position:static!important;width:100%!important;height:42px!important;margin:0!important}
+  .sidebarAccountControls #storeSelector,.sidebarAccountControls #logoutButton{position:static!important;inset:auto!important;width:100%!important;height:42px!important;margin:0!important}
 
   #panel-add .productWorkspace{grid-template-columns:minmax(320px,.72fr) minmax(720px,1.58fr)!important;gap:8px!important}
   #panel-add .productInformationCard,#panel-add .productMediaCard{height:238px!important}
 
   #panel-add .productMediaCard{display:grid!important;grid-template-columns:minmax(0,1fr) 66px!important;grid-template-rows:auto 1fr!important;gap:6px!important;overflow:hidden!important}
   #panel-add .mediaHeading{grid-column:1/-1;display:flex;align-items:baseline;gap:8px}
-  #panel-add .portraitMediaGrid{grid-column:1;grid-row:2;display:grid!important;grid-template-columns:2fr repeat(4,1fr)!important;grid-template-rows:1fr!important;gap:6px!important;height:190px!important}
-  #panel-add .portraitMediaGrid .photoBox,#panel-add .portraitMediaGrid .photoBox:first-child{display:block!important;grid-row:auto!important;width:100%!important;height:190px!important;aspect-ratio:3/4!important;border-radius:10px!important}
+  #panel-add .portraitMediaGrid{grid-column:1;grid-row:2;display:grid!important;grid-template-columns:150px repeat(4,96px)!important;grid-template-rows:190px!important;align-items:stretch!important;justify-content:start!important;gap:6px!important;height:190px!important;overflow:hidden!important}
+  #panel-add .portraitMediaGrid .photoBox,#panel-add .portraitMediaGrid .photoBox:first-child{position:relative!important;inset:auto!important;display:block!important;grid-row:auto!important;width:100%!important;height:190px!important;min-height:190px!important;max-height:190px!important;margin:0!important;padding:0!important;aspect-ratio:auto!important;overflow:hidden!important;border-radius:10px!important}
   #panel-add .portraitMediaGrid .photoBox img{width:100%!important;height:100%!important;object-fit:cover!important;object-position:center top!important}
   #panel-add .verticalUploadControl{grid-column:2!important;grid-row:2!important;width:66px!important;height:190px!important;min-height:0!important;margin:0!important;padding:8px 5px!important;writing-mode:vertical-rl!important;transform:rotate(180deg)!important}
 
   #panel-add .variantFormCard{grid-column:1/-1!important;display:grid!important;grid-template-columns:minmax(650px,1fr) 250px!important;gap:8px!important;min-height:252px!important}
   #panel-add .variantMainArea{grid-column:1;min-width:0;display:flex;flex-direction:column;gap:4px}
-  #panel-add .variantHeading{display:flex;align-items:end;justify-content:space-between;gap:12px}
-  #panel-add .compactSizeSelector{display:grid!important;grid-template-columns:40px repeat(4,52px)!important;align-items:center;gap:5px!important;margin:0!important}
+  #panel-add .variantHeading{display:block!important}
+  #panel-add .compactSizeSelector{display:grid!important;grid-template-columns:40px repeat(4,52px)!important;align-items:center!important;align-self:flex-start!important;gap:5px!important;width:268px!important;margin:0!important}
   #panel-add .compactSizeSelector .checkGrid{display:contents!important}
   #panel-add .compactSizeSelector .checkOption label{height:25px!important;border-radius:999px!important}
-  #panel-add .variantBuilder{margin:0!important;padding:5px 7px!important}
-  #panel-add .variantRow{grid-template-columns:30px 36px 60px 180px 220px!important;gap:4px!important}
+  #panel-add .variantBuilder{align-self:flex-start!important;width:760px!important;max-width:100%!important;margin:0!important;padding:5px 7px!important}
+  #panel-add .variantRow{grid-template-columns:30px 36px 60px 150px 240px!important;gap:4px!important}
   #panel-add .compactSettings{grid-column:2!important;position:static!important;display:flex!important;flex-direction:column!important;gap:5px!important;margin:0!important;padding:7px!important}
 }
 

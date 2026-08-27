@@ -899,6 +899,16 @@ img{
 .quickEditForm{display:grid;gap:12px}.quickEditForm label{display:grid;gap:6px;font-size:11px;font-weight:700}.quickEditForm input,.quickEditForm textarea,.quickEditForm select{width:100%;padding:11px 12px;border:1px solid rgba(0,0,0,.14);border-radius:11px;background:rgba(255,255,255,.8);font:inherit}.quickEditForm textarea{min-height:92px;resize:vertical}.quickEditColumns{display:grid;grid-template-columns:1fr 1fr;gap:12px}.quickVariantList{display:grid;gap:8px}.quickVariantRow{display:grid;grid-template-columns:minmax(0,1fr) 105px;align-items:center;gap:10px;padding:9px 10px;border:1px solid rgba(0,0,0,.08);border-radius:11px;background:rgba(255,255,255,.66)}.quickVariantRow small{display:block;color:#777}.quickEditActions{display:flex;justify-content:flex-end;gap:10px;margin-top:4px}.quickEditActions button{min-width:140px}
 @media(max-width:760px){.deliveryGuide{grid-template-columns:1fr}.formGrid{grid-template-columns:1fr}.pageHeadingRow{align-items:stretch;flex-direction:column}.pageHeadingRow .primaryButton{width:100%}.productFormCard{padding:14px;border-radius:15px}.twoColumn,.threeColumn,.compactSettings{grid-template-columns:1fr}.photoUploadGrid{grid-template-columns:repeat(3,1fr)}.variantBuilder{overflow-x:auto}.variantRow{min-width:560px}.colorQuickChoices{display:grid;grid-template-columns:repeat(2,1fr)}.colorQuickChoices button{justify-content:flex-start}.productQuickGrid{grid-template-columns:1fr}.productQuickImage{max-height:220px;object-fit:contain}.productQuickDetails,.quickEditColumns{grid-template-columns:1fr}.quickEditActions,.formActions{display:grid}.quickEditActions button,.formActions button{width:100%}.compactAssistButton{width:100%}.productRowActions{align-items:flex-end;flex-direction:column}.productFullEdit{padding:8px 10px}}
 
+@media(min-width:900px){
+  #panel-products .productRow{grid-template-columns:20px 72px minmax(0,1fr)!important;gap:10px!important;min-height:112px;padding:10px 12px!important;border-radius:16px!important}
+  #panel-products .productThumb{width:72px!important;height:86px!important;border-radius:12px!important}
+  #panel-products .productName{max-width:100%;overflow:hidden;font-size:12px!important;line-height:1.15;white-space:nowrap;text-overflow:ellipsis}
+  #panel-products .productMeta{display:-webkit-box;max-width:100%;overflow:hidden;font-size:9px!important;line-height:1.35;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+  #panel-products .productRowActions{grid-column:3;display:flex;align-items:center;justify-content:flex-start;gap:6px;min-width:0;overflow:hidden}
+  #panel-products .productFullEdit,#panel-products .productDelete{min-width:0;padding:7px 9px;font-size:8px}
+  #panel-products .productStatus{min-width:66px!important;height:27px!important;padding:0 8px;font-size:8px!important}
+}
+
 .field{
 
   display:flex;

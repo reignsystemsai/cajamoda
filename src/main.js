@@ -286,8 +286,16 @@ function getImages(
   const urls = [];
 
   function add(
-    url
+    value
   ) {
+    const raw = typeof value === "string"
+      ? value
+      : value?.url || value?.src || value?.imageUrl || value?._id || value?.id || "";
+    const url = raw.startsWith("wix:image://")
+      ? `https://static.wixstatic.com/media/${raw.replace(/^wix:image:\/\/v1\//, "").split("/")[0].split("#")[0]}`
+      : raw && !/^https?:\/\//i.test(raw) && /^[a-f0-9_~-]+\.(?:jpe?g|png|webp|gif)$/i.test(raw)
+        ? `https://static.wixstatic.com/media/${raw}`
+        : raw;
     if (
       url &&
       !urls.includes(url)
@@ -301,7 +309,6 @@ function getImages(
       ?.media
       ?.mainMedia
       ?.image
-      ?.url
   );
 
   add(
@@ -335,7 +342,6 @@ function getImages(
     add(
       item
         ?.image
-        ?.url
     );
 
     add(
@@ -347,6 +353,16 @@ function getImages(
       item
         ?.imageUrl
     );
+  }
+
+  add(product?.v3Media?.main?.image);
+  add(product?.v3Media?.main);
+  add(product?.v3Thumbnail);
+
+  const v3MediaItems = product?.v3Media?.itemsInfo?.items || product?.v3Media?.items || [];
+  for (const item of v3MediaItems) {
+    add(item?.image || item);
+    add(item?.url);
   }
 
   return urls;
@@ -2086,7 +2102,9 @@ async function loadCatalog() {
         .queryProducts({
           fields: [
             "DIRECT_CATEGORIES_INFO",
-            "BREADCRUMBS_INFO"
+            "BREADCRUMBS_INFO",
+            "MEDIA_ITEMS_INFO",
+            "THUMBNAIL"
           ]
         })
         .limit(100)
@@ -2135,6 +2153,10 @@ async function loadCatalog() {
   const categoryProducts =
     categoryProductResult?.items ||
     [];
+
+  const v3ProductsById = new Map(
+    categoryProducts.map(product => [String(product?._id || product?.id || ""), product])
+  );
 
   const categoryVibes =
     new Map(
@@ -2257,7 +2279,11 @@ async function loadCatalog() {
           index
         ) =>
           normalizeProduct(
-            product,
+            {
+              ...product,
+              v3Media: v3ProductsById.get(String(product?._id || product?.id || ""))?.media,
+              v3Thumbnail: v3ProductsById.get(String(product?._id || product?.id || ""))?.thumbnail
+            },
             index,
             collectionVibes,
             productCategoryVibes

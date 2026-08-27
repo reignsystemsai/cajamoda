@@ -647,11 +647,19 @@ function normalizeProduct(
     ""
   ).trim().toUpperCase();
 
-  const fulfillmentCode = fulfillmentSku.split("-", 1)[0];
+  const fulfillmentSegments = fulfillmentSku.split("-").filter(Boolean);
+  const fulfillmentCodes = new Set(["P", "R", "L", "PR", "RP", "PL", "LP", "RL", "LR", "PRL"]);
+  const fulfillmentCode = fulfillmentCodes.has(fulfillmentSegments[0])
+    ? fulfillmentSegments[0]
+    : [...fulfillmentSegments].reverse().find(segment => fulfillmentCodes.has(segment)) || "R";
   const deliveryModes = fulfillmentCode === "PRL"
     ? ["pickup", "fast", "ship"]
     : fulfillmentCode === "PR" || fulfillmentCode === "RP"
     ? ["pickup", "fast"]
+    : fulfillmentCode === "PL" || fulfillmentCode === "LP"
+      ? ["pickup", "ship"]
+      : fulfillmentCode === "RL" || fulfillmentCode === "LR"
+        ? ["fast", "ship"]
     : fulfillmentCode === "P"
       ? ["pickup"]
       : fulfillmentCode === "L"

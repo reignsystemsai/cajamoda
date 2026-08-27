@@ -4365,6 +4365,10 @@ const result =
   await wix
     .inventoryItemsV3
     .queryInventoryItems()
+    .ne(
+      "_id",
+      ""
+    )
     .limit(
       1000
     )

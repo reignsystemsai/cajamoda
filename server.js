@@ -2428,31 +2428,38 @@ let categoryRouteCache = {
 
 async function queryRoutedCategories() {
 
-  const result =
-    await wix
-      .categoriesV3
-      .queryCategories({
-        treeReference:
-          STORE_CATEGORY_TREE,
+  const results =
+    await Promise.all(
+      Object.values(
+        CATEGORY_NAMES
+      ).map(
+        name =>
+          wix
+            .categoriesV3
+            .queryCategories({
+              treeReference:
+                STORE_CATEGORY_TREE,
 
-        returnNonVisibleCategories:
-          true
-      })
-      .hasSome(
-        "name",
-        Object.values(
-          CATEGORY_NAMES
-        )
+              returnNonVisibleCategories:
+                true
+            })
+            .eq(
+              "name",
+              name
+            )
+            .limit(
+              1
+            )
+            .find()
       )
-      .limit(
-        1000
-      )
-      .find();
+    );
 
-  return (
-    result?.items ||
-    []
-  )
+  return results
+    .flatMap(
+      result =>
+        result?.items ||
+        []
+    )
     .map(
       category => ({
         id:

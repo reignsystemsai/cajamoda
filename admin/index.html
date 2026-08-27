@@ -899,15 +899,35 @@ img{
 .quickEditForm{display:grid;gap:12px}.quickEditForm label{display:grid;gap:6px;font-size:11px;font-weight:700}.quickEditForm input,.quickEditForm textarea,.quickEditForm select{width:100%;padding:11px 12px;border:1px solid rgba(0,0,0,.14);border-radius:11px;background:rgba(255,255,255,.8);font:inherit}.quickEditForm textarea{min-height:92px;resize:vertical}.quickEditColumns{display:grid;grid-template-columns:1fr 1fr;gap:12px}.quickVariantList{display:grid;gap:8px}.quickVariantRow{display:grid;grid-template-columns:minmax(0,1fr) 105px;align-items:center;gap:10px;padding:9px 10px;border:1px solid rgba(0,0,0,.08);border-radius:11px;background:rgba(255,255,255,.66)}.quickVariantRow small{display:block;color:#777}.quickEditActions{display:flex;justify-content:flex-end;gap:10px;margin-top:4px}.quickEditActions button{min-width:140px}
 @media(max-width:760px){.deliveryGuide{grid-template-columns:1fr}.formGrid{grid-template-columns:1fr}.pageHeadingRow{align-items:stretch;flex-direction:column}.pageHeadingRow .primaryButton{width:100%}.productFormCard{padding:14px;border-radius:15px}.twoColumn,.threeColumn,.compactSettings{grid-template-columns:1fr}.photoUploadGrid{grid-template-columns:repeat(3,1fr)}.variantBuilder{overflow-x:auto}.variantRow{min-width:560px}.colorQuickChoices{display:grid;grid-template-columns:repeat(2,1fr)}.colorQuickChoices button{justify-content:flex-start}.productQuickGrid{grid-template-columns:1fr}.productQuickImage{max-height:220px;object-fit:contain}.productQuickDetails,.quickEditColumns{grid-template-columns:1fr}.quickEditActions,.formActions{display:grid}.quickEditActions button,.formActions button{width:100%}.compactAssistButton{width:100%}.productRowActions{align-items:flex-end;flex-direction:column}.productFullEdit{padding:8px 10px}}
 
-@media(min-width:900px){
-  #panel-products .productRow{grid-template-columns:20px 72px minmax(0,1fr)!important;gap:10px!important;min-height:112px;padding:10px 12px!important;border-radius:16px!important}
-  #panel-products .productThumb{width:72px!important;height:86px!important;border-radius:12px!important}
-  #panel-products .productName{max-width:100%;overflow:hidden;font-size:12px!important;line-height:1.15;white-space:nowrap;text-overflow:ellipsis}
-  #panel-products .productMeta{display:-webkit-box;max-width:100%;overflow:hidden;font-size:9px!important;line-height:1.35;-webkit-box-orient:vertical;-webkit-line-clamp:2}
-  #panel-products .productRowActions{grid-column:3;display:flex;align-items:center;justify-content:flex-start;gap:6px;min-width:0;overflow:hidden}
-  #panel-products .productFullEdit,#panel-products .productDelete{min-width:0;padding:7px 9px;font-size:8px}
-  #panel-products .productStatus{min-width:66px!important;height:27px!important;padding:0 8px;font-size:8px!important}
-}
+/* Refined Products list — compact CajaModa catalog workspace */
+#panel-products .productCatalogRows{display:grid;overflow:hidden;border:1px solid var(--line);border-radius:15px;background:#fff}
+#panel-products .productTableHead{display:grid;grid-template-columns:24px 58px minmax(180px,1.4fr) minmax(95px,.55fr) minmax(150px,1fr) 82px minmax(190px,auto);gap:14px;align-items:center;padding:9px 14px;border-bottom:1px solid var(--line);color:#777168;font-size:8px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+#panel-products .productTableHeadProduct{grid-column:2/4}
+#panel-products .productList{display:block}
+#panel-products .productRow{display:grid;grid-template-columns:24px 58px minmax(180px,1.4fr) minmax(95px,.55fr) minmax(150px,1fr) 82px minmax(190px,auto);gap:14px;align-items:center;min-height:78px;padding:8px 14px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:#fff}
+#panel-products .productRow:last-child{border-bottom:0}
+#panel-products .productRow:hover{transform:none;background:#fbfaf7;border-color:var(--line)}
+#panel-products .productRow.productRowSelected{background:#faf8f3;box-shadow:inset 3px 0 0 #111}
+#panel-products .productThumb{width:52px;height:62px;border-radius:9px}
+#panel-products .productName{overflow:hidden;font-size:11px;line-height:1.25;white-space:nowrap;text-overflow:ellipsis}
+#panel-products .productCell{min-width:0}
+#panel-products .productCellPrice{font-size:10px;font-weight:700;white-space:nowrap}
+#panel-products .productMeta{margin-top:4px;overflow:hidden;color:#777168;font-size:8.5px;line-height:1.35;white-space:nowrap;text-overflow:ellipsis}
+#panel-products .productInventory{font-size:9px;color:#514d47;line-height:1.4}
+#panel-products .productInventory strong{display:block;color:#111;font-size:10px}
+#panel-products .productRowActions{display:flex;align-items:center;justify-content:flex-end;gap:7px;min-width:0}
+#panel-products .productFullEdit,#panel-products .productDelete{min-width:0;padding:7px 10px;font-size:8.5px}
+#panel-products .productDelete{display:inline-flex;align-items:center;gap:5px}
+#panel-products .productDelete::before{content:"⌫";font-size:10px}
+#panel-products .productStatus{min-width:72px;height:27px;padding:0 9px;font-size:8px}
+#panel-products .productSummaryGrid{gap:12px;margin-bottom:12px}
+#panel-products .productSummaryCard{padding:11px 13px;border-radius:12px}
+#panel-products .productSummaryCard strong{font-size:19px}
+#panel-products .productBulkBar{min-height:46px;margin-bottom:8px;padding:7px 10px;border-radius:12px}
+#panel-products .productToolbar{grid-template-columns:minmax(220px,1fr) auto;margin-bottom:10px}
+#panel-products .productToolbar input,#panel-products .productToolbar .primaryButton{min-height:40px;height:40px}
+@media(max-width:1100px){#panel-products .productTableHead,#panel-products .productRow{grid-template-columns:22px 54px minmax(145px,1fr) 86px minmax(120px,.8fr) 72px minmax(155px,auto);gap:9px;padding-left:10px;padding-right:10px}#panel-products .productFullEdit,#panel-products .productDelete{padding:6px 8px;font-size:7.5px}}
+@media(max-width:899px){#panel-products .productCatalogRows{border:0;background:transparent;gap:8px}#panel-products .productTableHead{display:none}#panel-products .productRow{grid-template-columns:22px 54px minmax(0,1fr) auto;min-height:74px;border:1px solid var(--line);border-radius:12px;padding:8px}#panel-products .productCellPrice,#panel-products .productInventory{display:none}#panel-products .productStatus{display:none}#panel-products .productRowActions{grid-column:4;grid-row:1;align-self:center}#panel-products .productFullEdit{display:none}#panel-products .productDelete{padding:7px;font-size:0}#panel-products .productDelete::before{font-size:14px}}
 
 .field{
 
@@ -4763,7 +4783,11 @@ if(
           <div class="productBulkMenu"><button id="bulkDeleteProducts" class="productBulkDelete" type="button">Eliminar seleccionados</button></div>
         </details>
       </div>
-      <div class="productToolbar"><input id="productSearch" value="${escapeHtml(productQuery)}" placeholder="Buscar producto"><button id="openAddProduct" class="primaryButton" type="button">+ Nuevo producto</button></div>` +
+      <div class="productToolbar"><input id="productSearch" value="${escapeHtml(productQuery)}" placeholder="Buscar producto"><button id="openAddProduct" class="primaryButton" type="button">+ Nuevo producto</button></div>
+      <div class="productCatalogRows">
+        <div class="productTableHead" aria-hidden="true">
+          <span></span><span class="productTableHeadProduct">Producto</span><span>Precio</span><span>Inventario · tallas</span><span>Estado</span><span>Acciones</span>
+        </div>` +
         matchingProducts
           .map(
             product => `
@@ -4797,39 +4821,32 @@ if(
 
                 </div>
 
-                <div>
+                <div class="productCell">
 
                   <div class="productName">
                     ${escapeHtml(product.name)}
                   </div>
 
-                  <div class="productMeta">
-
-                    ${money(product.price)}
-
-                    ·
-
-                    ${product.quantity} unidades
-
-                    <br>
-
-                    ${product.sizes?.join(", ") || "Sin talla"}
-
-                  </div>
+                  <div class="productMeta">${product.categoryName ? escapeHtml(product.categoryName) : "Producto físico"}</div>
 
                 </div>
 
+                <div class="productCellPrice">${money(product.price)}</div>
+
+                <div class="productInventory"><strong>${product.quantity} unidades</strong>${escapeHtml(product.sizes?.join(", ") || "Sin talla")}</div>
+
+                <div class="productStatus">Publicado</div>
+
                 <div class="productRowActions">
-                  <button class="productFullEdit" type="button" data-full-edit="${escapeHtml(product.id)}">Edición completa</button>
+                  <button class="productFullEdit" type="button" data-full-edit="${escapeHtml(product.id)}">Editar</button>
                   <button class="productDelete" type="button" data-delete-product="${escapeHtml(product.id)}" data-delete-name="${escapeHtml(product.name)}">Eliminar</button>
-                  <div class="productStatus">Publicado</div>
                 </div>
 
               </article>
 
             `
           )
-          .join("");
+          .join("") + "</div>";
 
     $("productSearch").oninput = event => { productQuery = event.target.value; renderProducts(); };
     $("openAddProduct").onclick = () => { resetProductForm(); showPanel("add"); };
@@ -4856,16 +4873,15 @@ if(
       button.textContent = "Eliminando…";
       try{
         const deletion = await apiRequest("/api/products/bulk-delete", {method:"POST", body:{productIds}});
-        if(deletion?.deletedCount !== productIds.length) throw new Error("Wix no confirmó la eliminación completa.");
-        productIds.forEach(productId => deletedProductIds.add(String(productId)));
+        const confirmedIds = Array.isArray(deletion?.productIds) ? deletion.productIds.map(String) : [];
+        if(!confirmedIds.length) throw new Error(deletion?.failed?.[0]?.message || "Wix no confirmó ninguna eliminación.");
+        confirmedIds.forEach(productId => deletedProductIds.add(productId));
         saveJson("store-loader-deleted-products", [...deletedProductIds]);
-        products = products.filter(product => !selectedProductIds.has(String(product.id)));
-        inventory = inventory.filter(item => !selectedProductIds.has(String(item.productId || item.id)));
-        selectedProductIds.clear();
-        saveJson("store-loader-products", products);
-        renderInventory();
+        confirmedIds.forEach(productId => selectedProductIds.delete(productId));
+        await loadRealInventory(true);
         renderProducts();
-        showToast(`${productIds.length} productos eliminados.`);
+        if(deletion?.failed?.length) showToast(`${confirmedIds.length} eliminados; ${deletion.failed.length} no se pudieron eliminar.`);
+        else showToast(`${confirmedIds.length} productos eliminados.`);
       }catch(error){
         showToast(error?.message || "No pudimos eliminar los productos seleccionados.");
         button.disabled = false;
@@ -4900,10 +4916,7 @@ if(
           await apiRequest(`/api/products/${encodeURIComponent(productId)}`, {method:"DELETE"});
           deletedProductIds.add(String(productId));
           saveJson("store-loader-deleted-products", [...deletedProductIds]);
-          products = products.filter(product => String(product.id) !== String(productId));
-          inventory = inventory.filter(item => String(item.productId || item.id) !== String(productId));
-          saveJson("store-loader-products", products);
-          renderInventory();
+          await loadRealInventory(true);
           renderProducts();
           showToast("Producto eliminado de Wix y de la tienda.");
         }catch(error){

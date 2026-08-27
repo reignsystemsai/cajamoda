@@ -4824,8 +4824,12 @@ if(
       async function saveQuickShowcasePosition(){
         $("quickShowcaseMessage").textContent="Guardando…";
         try{
-          await apiRequest(`/api/products/${encodeURIComponent(product.id)}`,{method:"PATCH",body:{action:"MOVE_SHOWCASE_POSITION",category:$("quickProductCategory").value,targetSlot:quickTargetSlot}});
-          quickCurrentSlot=quickTargetSlot;
+          const requestedSlot=quickTargetSlot;
+          await apiRequest(`/api/products/${encodeURIComponent(product.id)}`,{method:"PATCH",body:{action:"MOVE_SHOWCASE_POSITION",category:$("quickProductCategory").value,targetSlot:requestedSlot}});
+          const confirmed=await apiRequest(`/api/products/${encodeURIComponent(product.id)}/showcase-position`);
+          if(Number(confirmed?.slot)!==requestedSlot) throw new Error("Wix no confirmó la posición seleccionada.");
+          quickCurrentSlot=Number(confirmed.slot);
+          quickTargetSlot=quickCurrentSlot;
           await loadRealInventory(true);renderProducts();renderQuickShowcase();showToast("Posición guardada en Wix.");
         }catch(error){quickTargetSlot=quickCurrentSlot;showToast(error?.message||"No pudimos cambiar la posición.");renderQuickShowcase();}
       }

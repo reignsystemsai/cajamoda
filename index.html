@@ -4794,6 +4794,11 @@ svg{
                 productCard
               );
 
+            const slotLimit =
+              category.id === "sun"
+                ? 5
+                : CONFIG.maxSlotsPerCategory;
+
             if(!searching){
 
               for(
@@ -4801,7 +4806,7 @@ svg{
                   products.length + 1;
 
                 slot <=
-                  CONFIG.maxSlotsPerCategory;
+                  slotLimit;
 
                 slot += 1
               ){

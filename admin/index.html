@@ -4797,8 +4797,7 @@ if(
       $("quickShowcaseMove").onclick=async()=>{
         const button=$("quickShowcaseMove");button.disabled=true;button.textContent="Moviendo…";
         try{
-          const fulfillmentCode=qsa("[data-quick-delivery]:checked").map(input=>input.dataset.quickDelivery).join("");
-          await apiRequest(`/api/products/${encodeURIComponent(product.id)}`,{method:"PATCH",body:{name:$("quickProductName").value.trim(),description:$("quickProductDescription").value.trim(),cost:Number($("quickProductCost").value),price:Number(product.price||0),category:$("quickProductCategory").value,fulfillmentCode,photos:quickPhotoValues.filter(Boolean),visible:$("quickProductVisible").checked,showcaseSlot:quickTargetSlot}});
+          await apiRequest(`/api/products/${encodeURIComponent(product.id)}`,{method:"PATCH",body:{action:"MOVE_SHOWCASE_POSITION",category:$("quickProductCategory").value,targetSlot:quickTargetSlot}});
           quickCurrentSlot=quickTargetSlot;
           await loadRealInventory(true);renderProducts();renderQuickShowcase();showToast("Posición actualizada en Wix.");
         }catch(error){showToast(error?.message||"No pudimos cambiar la posición.");renderQuickShowcase();}

@@ -4,13 +4,13 @@ on:
   push:
     branches:
       - fix/store-loader-media-redesign-112
+  workflow_dispatch: {}
 
 permissions:
   contents: write
 
 jobs:
   apply-fix:
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,100 +18,8 @@ jobs:
           ref: fix/store-loader-media-redesign-112
       - name: Apply surgical Multimedia redesign
         run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          path = Path('admin/index.html')
-          text = path.read_text()
-
-          marker = '''
-</style>'''
-          css = '''
-
-/* Build 112 - Multimedia rendition only */
-@media (min-width:900px){
-  #panel-add .productMediaCard{
-    grid-template-columns:minmax(0,1fr)!important;
-    grid-template-rows:auto 92px 158px!important;
-    align-content:start!important;
-    gap:16px!important;
-    padding:18px 22px!important;
-  }
-  #panel-add .mediaHeading{
-    display:flex!important;
-    align-items:baseline!important;
-    gap:10px!important;
-    margin:0!important;
-  }
-  #panel-add .verticalUploadControl{
-    grid-column:1!important;
-    grid-row:2!important;
-    width:100%!important;
-    height:92px!important;
-    min-height:92px!important;
-    margin:0!important;
-    padding:0 28px!important;
-    display:flex!important;
-    align-items:center!important;
-    justify-content:center!important;
-    writing-mode:horizontal-tb!important;
-    transform:none!important;
-    border:1px dashed rgba(0,0,0,.25)!important;
-    border-radius:16px!important;
-    background:rgba(255,255,255,.45)!important;
-  }
-  #panel-add .verticalUploadControl strong{
-    font-size:14px!important;
-    font-weight:650!important;
-  }
-  #panel-add .verticalUploadControl span{
-    display:none!important;
-  }
-  #panel-add .portraitMediaGrid{
-    grid-column:1!important;
-    grid-row:3!important;
-    width:100%!important;
-    height:158px!important;
-    min-height:158px!important;
-    margin:0!important;
-    display:grid!important;
-    grid-template-columns:repeat(5,minmax(0,1fr))!important;
-    grid-template-rows:158px!important;
-    gap:14px!important;
-    align-items:stretch!important;
-  }
-  #panel-add .portraitMediaGrid .photoBox,
-  #panel-add .portraitMediaGrid .photoBox:first-child{
-    width:100%!important;
-    height:158px!important;
-    min-height:158px!important;
-    max-height:158px!important;
-    min-width:0!important;
-    margin:0!important;
-    padding:0!important;
-    aspect-ratio:auto!important;
-    border:1px dashed rgba(0,0,0,.22)!important;
-    border-radius:14px!important;
-    background:rgba(255,255,255,.35)!important;
-    overflow:hidden!important;
-  }
-  #panel-add .portraitMediaGrid .photoBox img{
-    width:100%!important;
-    height:100%!important;
-    object-fit:cover!important;
-    object-position:center top!important;
-  }
-}
-'''
-
-          if '/* Build 112 - Multimedia rendition only */' in text:
-              raise SystemExit('Multimedia redesign already present')
-          if marker not in text:
-              raise SystemExit('Style marker not found')
-
-          text = text.replace(marker, css + marker, 1)
-          path.write_text(text)
-          PY
+          echo 'ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCgpwYXRoID0gUGF0aCgiYWRtaW4vaW5kZXguaHRtbCIpCnRleHQgPSBwYXRoLnJlYWRfdGV4dCgpCgptYXJrZXIgPSAiXG48L3N0eWxlPiIKY3NzID0gcicnJwovKiBCdWlsZCAxMTIgLSBNdWx0aW1lZGlhIHJlbmRpdGlvbiBvbmx5ICovCkBtZWRpYSAobWluLXdpZHRoOjkwMHB4KXsKICAjcGFuZWwtYWRkIC5wcm9kdWN0TWVkaWFDYXJkewogICAgZ3JpZC10ZW1wbGF0ZS1jb2x1bW5zOm1pbm1heCgwLDFmcikhaW1wb3J0YW50OwogICAgZ3JpZC10ZW1wbGF0ZS1yb3dzOmF1dG8gOTJweCAxNThweCFpbXBvcnRhbnQ7CiAgICBhbGlnbi1jb250ZW50OnN0YXJ0IWltcG9ydGFudDsKICAgIGdhcDoxNnB4IWltcG9ydGFudDsKICAgIHBhZGRpbmc6MThweCAyMnB4IWltcG9ydGFudDsKICB9CiAgI3BhbmVsLWFkZCAubWVkaWFIZWFkaW5newogICAgZGlzcGxheTpmbGV4IWltcG9ydGFudDsKICAgIGFsaWduLWl0ZW1zOmJhc2VsaW5lIWltcG9ydGFudDsKICAgIGdhcDoxMHB4IWltcG9ydGFudDsKICAgIG1hcmdpbjowIWltcG9ydGFudDsKICB9CiAgI3BhbmVsLWFkZCAudmVydGljYWxVcGxvYWRDb250cm9sewogICAgZ3JpZC1jb2x1bW46MSFpbXBvcnRhbnQ7CiAgICBncmlkLXJvdzoyIWltcG9ydGFudDsKICAgIHdpZHRoOjEwMCUhaW1wb3J0YW50OwogICAgaGVpZ2h0OjkycHghaW1wb3J0YW50OwogICAgbWluLWhlaWdodDo5MnB4IWltcG9ydGFudDsKICAgIG1hcmdpbjowIWltcG9ydGFudDsKICAgIHBhZGRpbmc6MCAyOHB4IWltcG9ydGFudDsKICAgIGRpc3BsYXk6ZmxleCFpbXBvcnRhbnQ7CiAgICBhbGlnbi1pdGVtczpjZW50ZXIhaW1wb3J0YW50OwogICAganVzdGlmeS1jb250ZW50OmNlbnRlciFpbXBvcnRhbnQ7CiAgICB3cml0aW5nLW1vZGU6aG9yaXpvbnRhbC10YiFpbXBvcnRhbnQ7CiAgICB0cmFuc2Zvcm06bm9uZSFpbXBvcnRhbnQ7CiAgICBib3JkZXI6MXB4IGRhc2hlZCByZ2JhKDAsMCwwLC4yNSkhaW1wb3J0YW50OwogICAgYm9yZGVyLXJhZGl1czoxNnB4IWltcG9ydGFudDsKICAgIGJhY2tncm91bmQ6cmdiYSgyNTUsMjU1LDI1NSwuNDUpIWltcG9ydGFudDsKICB9CiAgI3BhbmVsLWFkZCAudmVydGljYWxVcGxvYWRDb250cm9sIHN0cm9uZ3sKICAgIGZvbnQtc2l6ZToxNHB4IWltcG9ydGFudDsKICAgIGZvbnQtd2VpZ2h0OjY1MCFpbXBvcnRhbnQ7CiAgfQogICNwYW5lbC1hZGQgLnZlcnRpY2FsVXBsb2FkQ29udHJvbCBzcGFuewogICAgZGlzcGxheTpub25lIWltcG9ydGFudDsKICB9CiAgI3BhbmVsLWFkZCAucG9ydHJhaXRNZWRpYUdyaWR7CiAgICBncmlkLWNvbHVtbjoxIWltcG9ydGFudDsKICAgIGdyaWQtcm93OjMhaW1wb3J0YW50OwogICAgd2lkdGg6MTAwJSFpbXBvcnRhbnQ7CiAgICBoZWlnaHQ6MTU4cHghaW1wb3J0YW50OwogICAgbWluLWhlaWdodDoxNThweCFpbXBvcnRhbnQ7CiAgICBtYXJnaW46MCFpbXBvcnRhbnQ7CiAgICBkaXNwbGF5OmdyaWQhaW1wb3J0YW50OwogICAgZ3JpZC10ZW1wbGF0ZS1jb2x1bW5zOnJlcGVhdCg1LG1pbm1heCgwLDFmcikpIWltcG9ydGFudDsKICAgIGdyaWQtdGVtcGxhdGUtcm93czoxNThweCFpbXBvcnRhbnQ7CiAgICBnYXA6MTRweCFpbXBvcnRhbnQ7CiAgICBhbGlnbi1pdGVtczpzdHJldGNoIWltcG9ydGFudDsKICB9CiAgI3BhbmVsLWFkZCAucG9ydHJhaXRNZWRpYUdyaWQgLnBob3RvQm94LAogICNwYW5lbC1hZGQgLnBvcnRyYWl0TWVkaWFHcmlkIC5waG90b0JveDpmaXJzdC1jaGlsZHsKICAgIHdpZHRoOjEwMCUhaW1wb3J0YW50OwogICAgaGVpZ2h0OjE1OHB4IWltcG9ydGFudDsKICAgIG1pbi1oZWlnaHQ6MTU4cHghaW1wb3J0YW50OwogICAgbWF4LWhlaWdodDoxNThweCFpbXBvcnRhbnQ7CiAgICBtaW4td2lkdGg6MCFpbXBvcnRhbnQ7CiAgICBtYXJnaW46MCFpbXBvcnRhbnQ7CiAgICBwYWRkaW5nOjAhaW1wb3J0YW50OwogICAgYXNwZWN0LXJhdGlvOmF1dG8haW1wb3J0YW50OwogICAgYm9yZGVyOjFweCBkYXNoZWQgcmdiYSgwLDAsMCwuMjIpIWltcG9ydGFudDsKICAgIGJvcmRlci1yYWRpdXM6MTRweCFpbXBvcnRhbnQ7CiAgICBiYWNrZ3JvdW5kOnJnYmEoMjU1LDI1NSwyNTUsLjM1KSFpbXBvcnRhbnQ7CiAgICBvdmVyZmxvdzpoaWRkZW4haW1wb3J0YW50OwogIH0KICAjcGFuZWwtYWRkIC5wb3J0cmFpdE1lZGlhR3JpZCAucGhvdG9Cb3ggaW1newogICAgd2lkdGg6MTAwJSFpbXBvcnRhbnQ7CiAgICBoZWlnaHQ6MTAwJSFpbXBvcnRhbnQ7CiAgICBvYmplY3QtZml0OmNvdmVyIWltcG9ydGFudDsKICAgIG9iamVjdC1wb3NpdGlvbjpjZW50ZXIgdG9wIWltcG9ydGFudDsKICB9Cn0KJycnCgppZiAiLyogQnVpbGQgMTEyIC0gTXVsdGltZWRpYSByZW5kaXRpb24gb25seSAqLyIgaW4gdGV4dDoKICAgIHJhaXNlIFN5c3RlbUV4aXQoIk11bHRpbWVkaWEgcmVkZXNpZ24gYWxyZWFkeSBwcmVzZW50IikKaWYgbWFya2VyIG5vdCBpbiB0ZXh0OgogICAgcmFpc2UgU3lzdGVtRXhpdCgiU3R5bGUgbWFya2VyIG5vdCBmb3VuZCIpCgp0ZXh0ID0gdGV4dC5yZXBsYWNlKG1hcmtlciwgIlxuIiArIGNzcyArIG1hcmtlciwgMSkKcGF0aC53cml0ZV90ZXh0KHRleHQpCg==' | base64 -d > /tmp/fix.py
+          python /tmp/fix.py
       - name: Commit fix and remove helper workflow
         run: |
           rm .github/workflows/fix-store-loader-media-redesign-112.yml

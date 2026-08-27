@@ -2225,10 +2225,13 @@ img{
   #panel-add .verticalUploadControl,
   #panel-add .portraitMediaGrid{
     grid-column:1!important;
-    width:min(900px,100%)!important;
+    width:100%!important;
     max-width:none!important;
-    justify-self:center!important;
-    margin-inline:auto!important;
+    justify-self:stretch!important;
+    margin-inline:0!important;
+  }
+  #panel-add .portraitMediaGrid{
+    grid-template-columns:repeat(5,minmax(0,1fr))!important;
   }
   .sidebarAccountControls{
     left:50%!important;
@@ -2242,10 +2245,22 @@ img{
     width:100%!important;
     max-width:100%!important;
     box-sizing:border-box!important;
+    border:0!important;
+    border-radius:0!important;
+    box-shadow:none!important;
   }
   .sidebarAccountControls #storeSelector{
-    padding-left:44px!important;
-    background:radial-gradient(circle at 16px 50%,#4e9b55 0 5px,transparent 6px),rgba(255,255,255,.66)!important;
+    height:28px!important;
+    padding:0!important;
+    background:transparent!important;
+    text-align:center!important;
+    text-align-last:center!important;
+  }
+  .sidebarAccountControls #logoutButton{
+    height:28px!important;
+    min-height:0!important;
+    padding:0!important;
+    background:transparent!important;
   }
 }
 

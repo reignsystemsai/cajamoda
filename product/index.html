@@ -3524,11 +3524,19 @@ svg{
     value
   ){
 
-    const url =
-      String(
-        value ||
-        ""
-      );
+    const raw = typeof value === "string"
+      ? value
+      : value?.url || value?.src || value?.imageUrl || value?.image?.url || value?._id || value?.id || "";
+    const url = String(raw || "");
+
+    if(url.startsWith("wix:image://")){
+      const mediaId = url.replace(/^wix:image:\/\/v1\//, "").split("/")[0].split("#")[0];
+      return mediaId ? `https://static.wixstatic.com/media/${mediaId}` : "";
+    }
+
+    if(!/^https?:\/\//i.test(url) && /^[a-f0-9_~-]+\.(?:jpe?g|png|webp|gif)$/i.test(url)){
+      return `https://static.wixstatic.com/media/${url}`;
+    }
 
     if(
       !url.includes(
@@ -3569,13 +3577,7 @@ svg{
               );
             }
 
-            return fullResolutionImageUrl(
-              item.url ||
-                item.src ||
-                item.imageUrl ||
-                item.image?.url ||
-                ""
-            );
+            return fullResolutionImageUrl(item);
 
           }
         )
@@ -3967,6 +3969,19 @@ svg{
 
     photo.src =
       currentImage;
+
+    photo.onerror = () => {
+      const failedUrl = photo.currentSrc || photo.src;
+      const nextIndex = media.findIndex((url, index) => index > state.imageIndex && url && url !== failedUrl);
+      if(nextIndex >= 0){
+        state.imageIndex = nextIndex;
+        photo.src = media[nextIndex];
+        return;
+      }
+      photo.onerror = null;
+      photo.removeAttribute("src");
+      showToast("No pudimos cargar la foto de este producto.");
+    };
 
     photo.alt =
       safeText(

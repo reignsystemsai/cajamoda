@@ -837,7 +837,7 @@ function normalizeProduct(
       ),
 
     showcaseSlot:
-      Number(product?.v3ExtendedFields?.namespaces?.cajamoda?.showcaseSlot) || null,
+      Number(product?.showcaseSlot) || null,
 
     reviews:
       []
@@ -1994,7 +1994,7 @@ async function loadRenderCategoryRoutes() {
     const payload =
       await response.json();
 
-    return new Map(
+    const routes = new Map(
       Object.entries(
         payload?.routes ||
         {}
@@ -2027,6 +2027,8 @@ async function loadRenderCategoryRoutes() {
             vibeId
         )
     );
+    routes.showcaseSlots = new Map(Object.entries(payload?.showcaseSlots || {}).map(([productId, slot]) => [String(productId), Number(slot)]));
+    return routes;
 
   } catch (
     error
@@ -2107,8 +2109,7 @@ async function loadCatalog() {
             "DIRECT_CATEGORIES_INFO",
             "BREADCRUMBS_INFO",
             "MEDIA_ITEMS_INFO",
-            "THUMBNAIL",
-            "EXTENDED_FIELDS"
+            "THUMBNAIL"
           ]
         })
         .limit(100)
@@ -2287,7 +2288,7 @@ async function loadCatalog() {
               ...product,
               v3Media: v3ProductsById.get(String(product?._id || product?.id || ""))?.media,
               v3Thumbnail: v3ProductsById.get(String(product?._id || product?.id || ""))?.thumbnail,
-              v3ExtendedFields: v3ProductsById.get(String(product?._id || product?.id || ""))?.extendedFields
+              showcaseSlot: renderCategoryRoutes.showcaseSlots?.get(String(product?._id || product?.id || "")) || null
             },
             index,
             collectionVibes,

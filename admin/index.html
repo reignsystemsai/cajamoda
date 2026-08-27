@@ -4062,29 +4062,25 @@ if(
     });
   }
 
-  async function buildAssistPhotoSheet(sources){
+  async function buildAssistPhotos(sources){
     const images = await Promise.all(sources.slice(0, 5).map(loadAssistImage));
-    const columns = images.length <= 2 ? images.length : 3;
-    const rows = Math.ceil(images.length / columns);
-    const cellWidth = 360;
-    const cellHeight = 480;
+    return images.map(image => {
+    const cellWidth = 512;
+    const cellHeight = 682;
     const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, columns) * cellWidth;
-    canvas.height = Math.max(1, rows) * cellHeight;
+    canvas.width = cellWidth;
+    canvas.height = cellHeight;
     const context = canvas.getContext("2d");
     context.fillStyle = "#fff";
     context.fillRect(0, 0, canvas.width, canvas.height);
-    images.forEach((image, index) => {
-      const column = index % columns;
-      const row = Math.floor(index / columns);
       const scale = Math.min(cellWidth / image.naturalWidth, cellHeight / image.naturalHeight);
       const width = image.naturalWidth * scale;
       const height = image.naturalHeight * scale;
-      const x = (column * cellWidth) + ((cellWidth - width) / 2);
-      const y = (row * cellHeight) + ((cellHeight - height) / 2);
+      const x = (cellWidth - width) / 2;
+      const y = (cellHeight - height) / 2;
       context.drawImage(image, x, y, width, height);
+      return canvas.toDataURL("image/jpeg", .86);
     });
-    return canvas.toDataURL("image/jpeg", .9);
   }
 
   async function assistProductField(kind){
@@ -4095,8 +4091,8 @@ if(
     button.disabled = true;
     button.textContent = "Analizando...";
     try{
-      const photo = await buildAssistPhotoSheet(photos);
-      const result = await apiRequest("/api/products/assist", {method:"POST", body:{kind, photo, currentName:$("productName").value.trim(), exclude:productSuggestionHistory[kind].slice(-5)}});
+      const assistPhotos = await buildAssistPhotos(photos);
+      const result = await apiRequest("/api/products/assist", {method:"POST", body:{kind, photos:assistPhotos, currentName:$("productName").value.trim(), exclude:productSuggestionHistory[kind].slice(-5)}});
       if(kind === "name"){
         $("productName").value = result.value || "";
         renderVariantPreview();

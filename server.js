@@ -3249,6 +3249,9 @@ async function handleUpdateProduct(request, response, productId) {
     fields: ["PLAIN_DESCRIPTION", "MERCHANT_DATA", "CURRENCY", "MEDIA_ITEMS_INFO", "THUMBNAIL"]
   });
   if (body?.category) await assignProductCategory(productId, safeText(body.category, 30));
+  if (body?.showcaseSlot) {
+    await applyShowcasePosition(productId, safeText(body.category, 30), Number(body.showcaseSlot));
+  }
   sendJson(response, 200, { ok: true, product: updated?.product || updated });
 }
 
@@ -3281,15 +3284,10 @@ async function handleGetProduct(request, response, productId) {
   });
 }
 
-async function handleShowcasePosition(request, response, productId) {
-  if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
-  if (!wix) return sendError(response, 503, "La tienda todavía no está conectada.");
-  const body = await readBody(request);
-  const category = safeText(body?.category, 30);
-  const targetSlot = Number(body?.targetSlot);
+async function applyShowcasePosition(productId, category, targetSlot) {
   const limit = showcaseLimit(category);
   if (!Number.isInteger(targetSlot) || targetSlot < 1 || targetSlot > limit) {
-    return sendError(response, 400, `Selecciona una posición entre 1 y ${limit}.`);
+    throw new Error(`Selecciona una posición entre 1 y ${limit}.`);
   }
   const routes = await getCategoryRoutes();
   if (routes[String(productId)] !== category) await assignProductCategory(productId, category);
@@ -3314,12 +3312,20 @@ async function handleShowcasePosition(request, response, productId) {
     slotById.set(id, open);
   }
   const current = products.find(item => String(item?._id || item?.id || "") === String(productId));
-  if (!current) return sendError(response, 404, "El producto no pertenece a esa categoría de vitrina.");
+  if (!current) throw new Error("El producto no pertenece a esa categoría de vitrina.");
   const currentSlot = slotById.get(String(productId)) || null;
   const occupant = products.find(item => slotById.get(String(item?._id || item?.id || "")) === targetSlot && String(item?._id || item?.id || "") !== String(productId));
   if (occupant && currentSlot) await saveShowcaseSlot(occupant._id || occupant.id, currentSlot);
   await saveShowcaseSlot(productId, targetSlot);
-  sendJson(response, 200, {ok:true, from:currentSlot, to:targetSlot, swappedProductId:occupant?._id || occupant?.id || null});
+  return {from:currentSlot, to:targetSlot, swappedProductId:occupant?._id || occupant?.id || null};
+}
+
+async function handleShowcasePosition(request, response, productId) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
+  if (!wix) return sendError(response, 503, "La tienda todavía no está conectada.");
+  const body = await readBody(request);
+  const result = await applyShowcasePosition(productId, safeText(body?.category, 30), Number(body?.targetSlot));
+  sendJson(response, 200, {ok:true, ...result});
 }
 
 async function handleDeleteProduct(request, response, productId) {

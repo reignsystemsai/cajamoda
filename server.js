@@ -2381,38 +2381,46 @@ const CATEGORY_ROUTE_BY_NAME = {
     "sun"
 };
 
-const SHOWCASE_NAMESPACE = "cajamoda";
-
-function showcaseSlotFromProduct(product) {
-  const value = Number(product?.extendedFields?.namespaces?.[SHOWCASE_NAMESPACE]?.showcaseSlot);
-  return Number.isInteger(value) && value > 0 ? value : null;
-}
-
 function showcaseLimit(categoryKey) {
   return categoryKey === "sun" ? 4 : 10;
 }
 
-async function saveShowcaseSlot(productId, slot) {
-  await wix.productsV3.updateExtendedFields(String(productId), SHOWCASE_NAMESPACE, {
-    namespaceData: { showcaseSlot: Number(slot) },
-    fields: ["EXTENDED_FIELDS"]
+async function categoryArrangement(categoryKey) {
+  const categories = await queryRoutedCategories();
+  const category = categories.find(item => item.vibeId === categoryKey);
+  if (!category) throw new Error(`No existe la categoría Wix "${CATEGORY_NAMES[categoryKey] || categoryKey}".`);
+  const [listed, arranged] = await Promise.all([
+    wix.categoriesV3.listItemsInCategory(category.id, STORE_CATEGORY_TREE, {cursorPaging:{limit:1000}}),
+    wix.categoriesV3.getArrangedItems(category.id, STORE_CATEGORY_TREE)
+  ]);
+  const allIds = (listed?.items || []).map(item => String(item?.catalogItemId || "")).filter(Boolean);
+  const orderedIds = (arranged?.items || []).map(item => String(item?.catalogItemId || "")).filter(id => allIds.includes(id));
+  allIds.forEach(id => { if (!orderedIds.includes(id)) orderedIds.push(id); });
+  return {category, orderedIds};
+}
+
+async function saveCategoryArrangement(categoryId, orderedIds) {
+  await wix.categoriesV3.setArrangedItems(categoryId, STORE_CATEGORY_TREE, {
+    items: orderedIds.map(catalogItemId => ({appId:WIX_STORES_APP_ID, catalogItemId}))
   });
 }
 
-async function showcaseProducts(categoryKey) {
-  const [routes, result] = await Promise.all([
-    getCategoryRoutes(),
-    wix.productsV3.queryProducts({fields: ["EXTENDED_FIELDS"]}).limit(1000).find()
-  ]);
-  return (result?.items || []).filter(product => routes[String(product?._id || product?.id || "")] === categoryKey);
+async function getShowcaseSlots() {
+  const categories = await queryRoutedCategories();
+  const entries = await Promise.all(categories.map(async category => {
+    const arranged = await wix.categoriesV3.getArrangedItems(category.id, STORE_CATEGORY_TREE);
+    return (arranged?.items || []).map((item, index) => [String(item?.catalogItemId || ""), index + 1]);
+  }));
+  return Object.fromEntries(entries.flat().filter(([id]) => id));
 }
 
 async function assignFirstOpenShowcaseSlot(productId, categoryKey) {
-  const products = await showcaseProducts(categoryKey);
-  const used = new Set(products.map(showcaseSlotFromProduct).filter(Boolean));
-  const slot = Array.from({length: showcaseLimit(categoryKey)}, (_, index) => index + 1).find(value => !used.has(value));
-  if (slot) await saveShowcaseSlot(productId, slot);
-  return slot || null;
+  const {category, orderedIds} = await categoryArrangement(categoryKey);
+  const id = String(productId);
+  const without = orderedIds.filter(itemId => itemId !== id);
+  without.push(id);
+  await saveCategoryArrangement(category.id, without);
+  return without.indexOf(id) + 1;
 }
 
 function normalizeCategoryRouteName(
@@ -3265,10 +3273,11 @@ async function handleGetProduct(request, response, productId) {
   if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
   if (!wix) return sendError(response, 503, "La tienda todavía no está conectada.");
   const result = await wix.productsV3.getProduct(productId, {
-    fields: ["PLAIN_DESCRIPTION", "MERCHANT_DATA", "CURRENCY", "MEDIA_ITEMS_INFO", "THUMBNAIL", "EXTENDED_FIELDS"]
+    fields: ["PLAIN_DESCRIPTION", "MERCHANT_DATA", "CURRENCY", "MEDIA_ITEMS_INFO", "THUMBNAIL"]
   });
   const product = result?.product || result;
   if (!product?._id && !product?.id) return sendError(response, 404, "No encontramos el producto.");
+  const showcaseSlots = await getShowcaseSlots().catch(() => ({}));
   sendJson(response, 200, {
     ok: true,
     product: {
@@ -3279,7 +3288,7 @@ async function handleGetProduct(request, response, productId) {
       image: getProductImageUrl(product),
       photos: getProductImageUrls(product)
       ,cost: Number(product?.variantsInfo?.variants?.[0]?.revenueDetails?.cost?.amount || 0),
-      showcaseSlot: showcaseSlotFromProduct(product)
+      showcaseSlot: Number(showcaseSlots[String(productId)] || 0) || null
     }
   });
 }
@@ -3291,33 +3300,19 @@ async function applyShowcasePosition(productId, category, targetSlot) {
   }
   const routes = await getCategoryRoutes();
   if (routes[String(productId)] !== category) await assignProductCategory(productId, category);
-  const products = await showcaseProducts(category);
-  const slotById = new Map();
-  const used = new Set();
-  for (const item of products) {
-    const id = String(item?._id || item?.id || "");
-    const slot = showcaseSlotFromProduct(item);
-    if (slot && slot <= limit && !used.has(slot)) {
-      used.add(slot);
-      slotById.set(id, slot);
-    }
+  const {category: wixCategory, orderedIds} = await categoryArrangement(category);
+  const id = String(productId);
+  const currentIndex = orderedIds.indexOf(id);
+  if (currentIndex < 0) throw new Error("El producto no pertenece a esa categoría de vitrina.");
+  const targetIndex = targetSlot - 1;
+  const occupantId = orderedIds[targetIndex] || null;
+  if (occupantId) [orderedIds[currentIndex], orderedIds[targetIndex]] = [orderedIds[targetIndex], orderedIds[currentIndex]];
+  else {
+    orderedIds.splice(currentIndex, 1);
+    orderedIds.splice(targetIndex, 0, id);
   }
-  for (const item of products) {
-    const id = String(item?._id || item?.id || "");
-    if (slotById.has(id)) continue;
-    const open = Array.from({length:limit}, (_, index) => index + 1).find(slot => !used.has(slot));
-    if (!open) break;
-    await saveShowcaseSlot(id, open);
-    used.add(open);
-    slotById.set(id, open);
-  }
-  const current = products.find(item => String(item?._id || item?.id || "") === String(productId));
-  if (!current) throw new Error("El producto no pertenece a esa categoría de vitrina.");
-  const currentSlot = slotById.get(String(productId)) || null;
-  const occupant = products.find(item => slotById.get(String(item?._id || item?.id || "")) === targetSlot && String(item?._id || item?.id || "") !== String(productId));
-  if (occupant && currentSlot) await saveShowcaseSlot(occupant._id || occupant.id, currentSlot);
-  await saveShowcaseSlot(productId, targetSlot);
-  return {from:currentSlot, to:targetSlot, swappedProductId:occupant?._id || occupant?.id || null};
+  await saveCategoryArrangement(wixCategory.id, orderedIds);
+  return {from:currentIndex + 1, to:targetSlot, swappedProductId:occupantId};
 }
 
 async function handleShowcasePosition(request, response, productId) {
@@ -4505,7 +4500,7 @@ const inventoryItems =
   const productEntries = await Promise.all(productIds.map(async productId => {
     try {
       const result = await wix.productsV3.getProduct(productId, {
-        fields: ["MEDIA_ITEMS_INFO", "THUMBNAIL", "EXTENDED_FIELDS"]
+        fields: ["MEDIA_ITEMS_INFO", "THUMBNAIL"]
       });
       return [productId, result?.product || result];
     } catch (error) {
@@ -4515,6 +4510,7 @@ const inventoryItems =
   }));
   const productsById = new Map(productEntries);
   const categoryRoutes = await getCategoryRoutes().catch(() => ({}));
+  const showcaseSlots = await getShowcaseSlots().catch(() => ({}));
 
   return normalized.map(item => {
     const product = productsById.get(item.productId);
@@ -4527,7 +4523,7 @@ const inventoryItems =
       category: safeText(categoryRoutes[item.productId], 30),
       price: wixVariantPrice(variant) ?? wixVariantPrice(product),
       visible: product?.visible !== false,
-      showcaseSlot: showcaseSlotFromProduct(product)
+      showcaseSlot: Number(showcaseSlots[item.productId] || 0) || null
     };
   });
 }
@@ -4722,11 +4718,18 @@ const server =
             const routes =
               await getCategoryRoutes();
 
+            const showcaseSlots =
+              await getShowcaseSlots().catch(error => {
+                console.warn("[Category arrangement]", error?.message || error);
+                return {};
+              });
+
             sendJson(
               response,
               200,
               {
-                routes
+                routes,
+                showcaseSlots
               }
             );
 

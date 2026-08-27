@@ -3546,6 +3546,7 @@ await loadOwnerWorkspace();
       "store-loader-products",
       []
     );
+const deletedProductIds = new Set(readJson("store-loader-deleted-products", []));
 let inventory = [];
 
 async function loadOwnerWorkspace(){
@@ -3590,7 +3591,7 @@ async function loadRealInventory(
         "/api/inventory"
       );
 
-    inventory =
+    const receivedInventory =
       Array.isArray(
         result?.inventory
       )
@@ -3599,6 +3600,17 @@ async function loadRealInventory(
             image: fullResolutionWixImageUrl(item.image)
           }))
         : [];
+
+    const receivedProductIds = new Set(receivedInventory.map(item => String(item.productId || item.id)));
+    let deletedIdsChanged = false;
+    deletedProductIds.forEach(productId => {
+      if(!receivedProductIds.has(productId)){
+        deletedProductIds.delete(productId);
+        deletedIdsChanged = true;
+      }
+    });
+    if(deletedIdsChanged) saveJson("store-loader-deleted-products", [...deletedProductIds]);
+    inventory = receivedInventory.filter(item => !deletedProductIds.has(String(item.productId || item.id)));
 
     const wixProducts = new Map();
     inventory.forEach(item => {
@@ -4817,9 +4829,12 @@ if(
         button.textContent = "Eliminando…";
         try{
           await apiRequest(`/api/products/${encodeURIComponent(productId)}`, {method:"DELETE"});
+          deletedProductIds.add(String(productId));
+          saveJson("store-loader-deleted-products", [...deletedProductIds]);
           products = products.filter(product => String(product.id) !== String(productId));
+          inventory = inventory.filter(item => String(item.productId || item.id) !== String(productId));
           saveJson("store-loader-products", products);
-          await loadRealInventory(true);
+          renderInventory();
           renderProducts();
           showToast("Producto eliminado de Wix y de la tienda.");
         }catch(error){

@@ -3191,14 +3191,14 @@ async function handleAssistProduct(request, response) {
   const currentName = safeText(body?.currentName, 80);
   const excluded = cleanList(body?.exclude, 5).join(" | ");
   const instruction = kind === "name"
-    ? `Crea un nombre comercial original en español para esta prenda. Devuelve solo el nombre, de 2 a 4 palabras, sin comillas y evita nombres genéricos. No repitas: ${excluded || "ninguno"}.`
-    : `Escribe una descripción de producto original en español de 2 oraciones para una tienda de moda. Describe solo lo visible, tono elegante y claro, sin inventar materiales. Nombre actual: ${currentName || "sin nombre"}. No repitas: ${excluded || "ninguna"}. Devuelve solo la descripción.`;
+    ? `Analiza todos los ángulos visibles de la prenda en la imagen compuesta. Compárala visualmente con siluetas, cortes y estilos de moda similares que conozcas, sin afirmar una marca o material que no puedas verificar. Crea un nombre comercial original, moderno y fashionable en español para boutique femenina. Devuelve solo el nombre, de 2 a 4 palabras, sin comillas, evita nombres genéricos y no repitas: ${excluded || "ninguno"}.`
+    : `Analiza todos los ángulos visibles de la prenda en la imagen compuesta y compárala visualmente con prendas de silueta, corte y estilo similares que conozcas. Escribe una descripción de producto original en español de 2 oraciones, con lenguaje de moda atractivo para boutique femenina. Describe solo detalles visibles, no inventes marca ni materiales. Nombre actual: ${currentName || "sin nombre"}. No repitas: ${excluded || "ninguna"}. Devuelve solo la descripción.`;
   const openaiResponse = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {"Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json"},
     body: JSON.stringify({
       model: process.env.OPENAI_PRODUCT_MODEL || "gpt-5",
-      input: [{role:"user", content:[{type:"input_text", text:`${instruction}\nVariación creativa: ${Date.now()}`},{type:"input_image", image_url:photo, detail:"low"}]}],
+      input: [{role:"user", content:[{type:"input_text", text:`${instruction}\nVariación creativa: ${Date.now()}`},{type:"input_image", image_url:photo, detail:"high"}]}],
       max_output_tokens: 180
     })
   });

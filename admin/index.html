@@ -2264,6 +2264,108 @@ img{
   }
 }
 
+
+/* Build 111 — AI garment assist + right-side 5-photo media workspace */
+@media (min-width:900px){
+  #panel-add .productWorkspace{
+    grid-template-columns:350px minmax(0,1fr)!important;
+    gap:18px!important;
+    align-items:start!important;
+  }
+  #panel-add .productInformationCard,
+  #panel-add .productMediaCard{
+    height:400px!important;
+    min-height:400px!important;
+  }
+  #panel-add .productInformationCard{
+    padding:20px 18px!important;
+    gap:14px!important;
+    overflow:visible!important;
+    align-content:start!important;
+  }
+  #panel-add .productInformationCard .assistedField{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) 112px!important;
+    grid-template-rows:auto auto!important;
+    column-gap:10px!important;
+    row-gap:6px!important;
+    align-items:start!important;
+  }
+  #panel-add .productInformationCard .assistedField > label{
+    grid-column:1/-1!important;
+    grid-row:1!important;
+  }
+  #panel-add .productInformationCard .assistedField > input,
+  #panel-add .productInformationCard .assistedField > textarea{
+    grid-column:1!important;
+    grid-row:2!important;
+    width:100%!important;
+  }
+  #panel-add .productInformationCard .compactAssistButton{
+    display:inline-flex!important;
+    grid-column:2!important;
+    grid-row:2!important;
+    width:112px!important;
+    min-width:112px!important;
+    height:42px!important;
+    padding:0 10px!important;
+    align-items:center!important;
+    justify-content:center!important;
+    align-self:start!important;
+    white-space:nowrap!important;
+  }
+  #panel-add .productInformationCard #describeProduct{
+    height:42px!important;
+  }
+  #panel-add .productInformationCard .twoColumn{
+    margin-top:2px!important;
+    gap:10px!important;
+  }
+
+  #panel-add .productMediaCard{
+    width:100%!important;
+    padding:16px 18px!important;
+    gap:12px!important;
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-rows:auto 48px minmax(0,1fr)!important;
+    align-content:stretch!important;
+  }
+  #panel-add .mediaHeading{
+    width:100%!important;
+    margin:0!important;
+  }
+  #panel-add .verticalUploadControl{
+    width:100%!important;
+    height:48px!important;
+    min-height:48px!important;
+    margin:0!important;
+    justify-self:stretch!important;
+    border-style:dashed!important;
+  }
+  #panel-add .portraitMediaGrid{
+    width:100%!important;
+    height:270px!important;
+    min-height:270px!important;
+    margin:0!important;
+    justify-self:stretch!important;
+    grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    grid-template-rows:270px!important;
+    gap:10px!important;
+  }
+  #panel-add .portraitMediaGrid .photoBox,
+  #panel-add .portraitMediaGrid .photoBox:first-child{
+    width:100%!important;
+    height:270px!important;
+    min-height:270px!important;
+    max-height:270px!important;
+    min-width:0!important;
+  }
+
+  .sidebarAccountControls #storeSelector{
+    display:none!important;
+  }
+}
+
 </style>
 
 </head>
@@ -2296,7 +2398,7 @@ img{
     </div>
 
     <div class="loginText">
-      Ingresa tu contraseña para abrir el espacio de Karolay Blanco.
+      Ingresa tu contraseña para abrir el Store Loader.
     </div>
 
     <div class="loginForm">
@@ -2387,7 +2489,7 @@ img{
 
   <div class="sidebarAccountControls">
     <select id="storeSelector" class="storeSelector sidebarControl" aria-label="Tienda activa">
-      <option value="store-001">Karolay Blanco · Propietaria</option>
+      <option value="store-001">CajaModa Colombia</option>
     </select>
     <button id="logoutButton" class="secondaryButton sidebarControl" type="button">Cerrar sesión</button>
   </div>
@@ -2406,7 +2508,7 @@ img{
 >
 
   <h1 class="pageTitle">
-    Buenos días, Karolay
+    Buenos días
   </h1>
 
   <p class="pageIntro">
@@ -2582,7 +2684,7 @@ img{
 
     <section class="productFormCard productMediaCard"><div class="mediaHeading"><h2>Multimedia</h2><p class="formSectionHelp">Agrega hasta 5 fotos.</p></div>
       <div id="photoUploadGrid" class="photoUploadGrid portraitMediaGrid"></div>
-      <label id="photoDropZone" class="photoDropZone verticalUploadControl" for="photoBulkInput"><strong>Arrastra hasta 5 fotos aquí</strong><span>Máximo 5</span><input id="photoBulkInput" type="file" accept="image/*" multiple></label>
+      <label id="photoDropZone" class="photoDropZone verticalUploadControl" for="photoBulkInput"><strong>Selecciona o arrastra hasta 5 fotos</strong><span>Se cargan juntas</span><input id="photoBulkInput" type="file" accept="image/*" multiple></label>
     </section>
 
     <section class="productFormCard variantFormCard"><div class="variantMainArea"><div class="variantHeading"><div><h2>Variantes e inventario</h2><p class="formSectionHelp">Elige las tallas y los métodos de entrega.</p></div>
@@ -3856,14 +3958,49 @@ if(
     }).filter(Boolean);
   }
 
+  function loadAssistImage(source){
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = source;
+    });
+  }
+
+  async function buildAssistPhotoSheet(sources){
+    const images = await Promise.all(sources.slice(0, 5).map(loadAssistImage));
+    const columns = images.length <= 2 ? images.length : 3;
+    const rows = Math.ceil(images.length / columns);
+    const cellWidth = 360;
+    const cellHeight = 480;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, columns) * cellWidth;
+    canvas.height = Math.max(1, rows) * cellHeight;
+    const context = canvas.getContext("2d");
+    context.fillStyle = "#fff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    images.forEach((image, index) => {
+      const column = index % columns;
+      const row = Math.floor(index / columns);
+      const scale = Math.min(cellWidth / image.naturalWidth, cellHeight / image.naturalHeight);
+      const width = image.naturalWidth * scale;
+      const height = image.naturalHeight * scale;
+      const x = (column * cellWidth) + ((cellWidth - width) / 2);
+      const y = (row * cellHeight) + ((cellHeight - height) / 2);
+      context.drawImage(image, x, y, width, height);
+    });
+    return canvas.toDataURL("image/jpeg", .9);
+  }
+
   async function assistProductField(kind){
-    const photo = uploadedPhotos.find(Boolean);
-    if(!photo){ showToast("Carga una foto primero."); return; }
+    const photos = uploadedPhotos.filter(Boolean).slice(0, 5);
+    if(!photos.length){ showToast("Carga una foto primero."); return; }
     const button = kind === "name" ? $("nameProduct") : $("describeProduct");
     const originalText = button.textContent;
     button.disabled = true;
-    button.textContent = "Creando...";
+    button.textContent = "Analizando...";
     try{
+      const photo = await buildAssistPhotoSheet(photos);
       const result = await apiRequest("/api/products/assist", {method:"POST", body:{kind, photo, currentName:$("productName").value.trim(), exclude:productSuggestionHistory[kind].slice(-5)}});
       if(kind === "name"){
         $("productName").value = result.value || "";

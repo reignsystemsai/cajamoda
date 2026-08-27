@@ -3188,15 +3188,29 @@ async function handleBulkDeleteProducts(request, response) {
 
   if (!productIds.length) return sendError(response, 400, "Selecciona al menos un producto.");
 
-  const result = await wix.productsV3.bulkDeleteProducts(productIds);
-  const failed = (Array.isArray(result?.results) ? result.results : [])
-    .filter(item => item?.itemMetadata?.success === false);
-  if (failed.length) {
-    throw new Error(failed[0]?.itemMetadata?.error?.message || "Wix no pudo eliminar todos los productos seleccionados.");
-  }
+  // Delete each catalog product through the same confirmed Wix operation used
+  // by the per-row action. Wix bulk jobs can be accepted before their items
+  // are actually removed, which left stale cards in Store Loader.
+  const results = await Promise.allSettled(
+    productIds.map(productId => wix.productsV3.deleteProduct(productId))
+  );
+  const deletedProductIds = [];
+  const failed = [];
+  results.forEach((result, index) => {
+    if (result.status === "fulfilled") deletedProductIds.push(productIds[index]);
+    else failed.push({
+      productId: productIds[index],
+      message: result.reason?.message || "Wix rechazó la eliminación."
+    });
+  });
 
   categoryRouteCache.expiresAt = 0;
-  sendJson(response, 200, { ok: true, productIds, deletedCount: productIds.length });
+  sendJson(response, failed.length ? 207 : 200, {
+    ok: failed.length === 0,
+    productIds: deletedProductIds,
+    deletedCount: deletedProductIds.length,
+    failed
+  });
 }
 
 /* ============================================================

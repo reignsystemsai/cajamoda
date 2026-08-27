@@ -649,8 +649,9 @@ function normalizeProduct(
 
   const fulfillmentSegments = fulfillmentSku.split("-").filter(Boolean);
   const fulfillmentCodes = new Set(["P", "R", "L", "PR", "RP", "PL", "LP", "RL", "LR", "PRL"]);
-  const fulfillmentCode = fulfillmentCodes.has(fulfillmentSegments[0])
-    ? fulfillmentSegments[0]
+  const prefixedFulfillmentCode = fulfillmentSku.match(/^(PRL|PR|RP|PL|LP|RL|LR|P|R|L)(?:-|$)/)?.[1];
+  const fulfillmentCode = prefixedFulfillmentCode
+    ? prefixedFulfillmentCode
     : [...fulfillmentSegments].reverse().find(segment => fulfillmentCodes.has(segment)) || "R";
   const deliveryModes = fulfillmentCode === "PRL"
     ? ["pickup", "fast", "ship"]

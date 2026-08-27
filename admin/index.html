@@ -4081,7 +4081,7 @@ if(
         const key = combination.size || "unique";
         const existing = variantDrafts.get(key) || {};
         const methods = Array.isArray(existing.methods) && existing.methods.length ? existing.methods : ["P"];
-        const generatedSku = [styleCode, combination.size ? skuText(combination.size) : "", fulfillmentCode(methods)].filter(Boolean).join("-");
+        const generatedSku = [fulfillmentCode(methods), styleCode, combination.size ? skuText(combination.size) : ""].filter(Boolean).join("-");
         const defaultQuantity = baseQuantity + (remainder-- > 0 ? 1 : 0);
         const quantity = editedVariantQuantities.has(key) ? existing.quantity : defaultQuantity;
         const finalSku = existing.persistedSku ? existing.sku : generatedSku;

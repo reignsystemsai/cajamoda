@@ -310,7 +310,7 @@ function setCors(
 
   response.setHeader(
     "Access-Control-Allow-Methods",
-    "GET,POST,OPTIONS"
+    "GET,POST,PATCH,DELETE,OPTIONS"
   );
 
   response.setHeader(

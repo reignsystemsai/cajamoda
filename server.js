@@ -2413,8 +2413,8 @@ async function saveCategoryArrangement(categoryId, orderedIds) {
 async function getShowcaseSlots() {
   const categories = await queryRoutedCategories();
   const entries = await Promise.all(categories.map(async category => {
-    const arranged = await wix.categoriesV3.getArrangedItems(category.id, STORE_CATEGORY_TREE);
-    return (arranged?.items || []).map((item, index) => [String(item?.catalogItemId || ""), index + 1]);
+    const {orderedIds} = await categoryArrangement(category.vibeId);
+    return orderedIds.slice(0, showcaseLimit(category.vibeId)).map((id, index) => [id, index + 1]);
   }));
   return Object.fromEntries(entries.flat().filter(([id]) => id));
 }

@@ -1955,7 +1955,7 @@ async function uploadPhotos(
           .filter(Boolean)
           .slice(
             0,
-            6
+            5
           )
       : [];
 
@@ -3179,7 +3179,7 @@ async function handleAssistProduct(request, response) {
   const photos = (Array.isArray(body?.photos) ? body.photos : [body?.photo])
     .map(photo => String(photo || ""))
     .filter(photo => /^data:image\/(png|jpe?g|webp);base64,/i.test(photo))
-    .slice(0, 6);
+    .slice(0, 5);
   if (!photos.length) {
     sendError(response, 400, "Carga una foto válida primero.");
     return;

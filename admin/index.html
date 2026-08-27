@@ -4898,7 +4898,6 @@ if(
         event.preventDefault();
         const button = $("quickEditSave");
         const variantOverrides = qsa("[data-quick-size]").map(input => ({size: input.dataset.quickSize, quantity: Number(input.value)}));
-        const changes = qsa("[data-quick-inventory-id]").map(input => ({id: input.dataset.quickInventoryId, quantity: Number(input.value)}));
         if(variantOverrides.some(variant => !Number.isInteger(variant.quantity) || variant.quantity < 0)) return showToast("Revisa la cantidad de cada variante.");
         button.disabled = true;
         button.textContent = "Guardando…";
@@ -4906,8 +4905,6 @@ if(
           const fulfillmentCode = qsa("[data-quick-delivery]:checked").map(input => input.dataset.quickDelivery).join("");
           if(!fulfillmentCode) throw new Error("Selecciona al menos un método de entrega.");
           await apiRequest(`/api/products/${encodeURIComponent(product.id)}`, {method:"PATCH", body:{name:$("quickProductName").value.trim(), description:$("quickProductDescription").value.trim(), cost:Number($("quickProductCost").value), price:Number(product.price || 0), category:$("quickProductCategory").value, fulfillmentCode, sizes:quickSizes, variantOverrides, photos:quickPhotoValues.filter(Boolean), visible:$("quickProductVisible").checked}});
-          const keepsExistingVariantSet = productVariants.length === quickSizes.length && quickSizes.every(size => quickVariantBySize.has(normalizedQuickSize(size)));
-          if(keepsExistingVariantSet && changes.length) await apiRequest("/api/inventory", {method:"PATCH", body:{changes}});
           await loadRealInventory(true);
           renderProducts();
           showToast("Producto actualizado.");

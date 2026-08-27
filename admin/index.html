@@ -4723,6 +4723,9 @@ if(
       const detailResult = await apiRequest(`/api/products/${encodeURIComponent(product.id)}`);
       const detail = detailResult?.product || product;
       const productVariants = inventory.filter(item => String(item.productId) === String(product.id));
+      const quickSizes = ["S", "M", "Large", "X-Large"];
+      const normalizedQuickSize = value => String(value || "").trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+      const quickVariantBySize = new Map(productVariants.map(item => [normalizedQuickSize(item.variantName), item]));
       const resolvedImage = fullResolutionWixImageUrl(detail.image || image);
       let quickPhotoValues = (Array.isArray(detail.photos) ? detail.photos : [resolvedImage]).map(fullResolutionWixImageUrl).filter(Boolean).slice(0, 5);
       while(quickPhotoValues.length < 5) quickPhotoValues.push("");
@@ -4750,7 +4753,7 @@ if(
           <div class="quickAssistField"><label>Descripción<textarea id="quickProductDescription" maxlength="16000">${escapeHtml(detail.description || "")}</textarea></label><button id="quickDescribeProduct" class="secondaryButton quickAssistButton" type="button">Descríbelo</button></div>
           <div><strong>Métodos de entrega</strong><div class="quickDeliveryChoices">${[["P","Pronto"],["R","Rápido"],["L","Libéralo"]].map(([code,label]) => `<label class="quickDeliveryChoice"><input data-quick-delivery="${code}" type="checkbox" ${quickFulfillment.includes(code) ? "checked" : ""}><span>${code} · ${label}</span></label>`).join("")}</div></div>
           <div class="quickShowcase"><div class="quickShowcaseHead"><strong>Posición en vitrina</strong><small id="quickShowcaseCategory"></small></div><div id="quickSlotGrid" class="quickSlotGrid"></div><div class="quickShowcaseAction"><small id="quickShowcaseMessage">Arrastra el cuadro negro a otra posición.</small><button id="quickShowcaseMove" class="secondaryButton" type="button" disabled>Cambiar posición</button></div></div>
-          <div><strong>Variantes e inventario</strong><div class="quickVariantList"><div class="quickVariantHead"><span>Talla</span><span>Cantidad</span><span>SKU permanente</span><span>Acción</span></div>${productVariants.length ? productVariants.map((item,index) => `<label class="quickVariantRow"><span>${escapeHtml(item.variantName || "Única")}</span><input data-quick-inventory-id="${escapeHtml(item.id)}" type="number" min="0" step="1" value="${Math.max(0, Math.trunc(Number(item.quantity || 0)))}" aria-label="Cantidad ${escapeHtml(item.variantName || item.sku || "variante")}"><small>${escapeHtml(item.sku || "Sin SKU")}</small>${index===0?`<button data-quick-generate-sku class="quickSkuRepair" type="button">Generar / reparar SKU</button>`:`<span></span>`}</label>`).join("") : `<div class="emptyStateText">Este producto no tiene variantes editables.</div>`}</div></div>
+          <div><strong>Variantes e inventario</strong><div class="quickVariantList"><div class="quickVariantHead"><span>Talla</span><span>Cantidad</span><span>SKU permanente</span><span>Acción</span></div>${quickSizes.map((size,index) => { const item = quickVariantBySize.get(normalizedQuickSize(size)); return `<label class="quickVariantRow"><span>${escapeHtml(size)}</span><input data-quick-size="${escapeHtml(size)}" ${item?.id ? `data-quick-inventory-id="${escapeHtml(item.id)}"` : ""} type="number" min="0" step="1" value="${Math.max(0, Math.trunc(Number(item?.quantity || 0)))}" aria-label="Cantidad ${escapeHtml(size)}"><small>${escapeHtml(item?.sku || "Se genera al guardar")}</small>${index===0?`<button data-quick-generate-sku class="quickSkuRepair" type="button">Generar / reparar SKU</button>`:`<span></span>`}</label>`; }).join("")}</div></div>
           <label class="switchRow quickVisibility"><span><strong>Visible en la tienda</strong></span><input id="quickProductVisible" type="checkbox" ${detail.visible !== false ? "checked" : ""}></label>
           <div class="quickEditFooter"><details class="quickMoreWrap"><summary>Más acciones ▾</summary><div class="quickMoreMenu"><button id="quickDeleteProduct" type="button">Eliminar producto</button></div></details><div class="quickEditActions"><button id="quickEditCancel" class="secondaryButton" type="button">Cancelar</button><button id="quickEditSaveNext" class="secondaryButton" type="button">Guardar y siguiente</button><button id="quickEditSave" class="primaryButton" type="submit">Guardar cambios</button></div></div>
         </form>
@@ -4843,7 +4846,7 @@ if(
         $("quickProductPrice").value = cost > 0 ? Math.round(cost * 1.75) : "";
       };
       const quickSkuButton = qsa("[data-quick-generate-sku]")[0];
-      quickSkuButton.onclick = async () => {
+      if(quickSkuButton) quickSkuButton.onclick = async () => {
         if(!confirm("Esto reemplazará el SKU permanente de todas las variantes de este producto. ¿Continuar?")) return;
         const adminCode = prompt("Ingresa el código administrativo de 4 dígitos:", "") || "";
         if(!/^\d{4}$/.test(adminCode)) return showToast("Ingresa el código administrativo de cuatro dígitos.");
@@ -4894,15 +4897,17 @@ if(
       $("quickEditForm").onsubmit = async event => {
         event.preventDefault();
         const button = $("quickEditSave");
+        const variantOverrides = qsa("[data-quick-size]").map(input => ({size: input.dataset.quickSize, quantity: Number(input.value)}));
         const changes = qsa("[data-quick-inventory-id]").map(input => ({id: input.dataset.quickInventoryId, quantity: Number(input.value)}));
-        if(changes.some(change => !Number.isInteger(change.quantity) || change.quantity < 0)) return showToast("Revisa la cantidad de cada variante.");
+        if(variantOverrides.some(variant => !Number.isInteger(variant.quantity) || variant.quantity < 0)) return showToast("Revisa la cantidad de cada variante.");
         button.disabled = true;
         button.textContent = "Guardando…";
         try{
           const fulfillmentCode = qsa("[data-quick-delivery]:checked").map(input => input.dataset.quickDelivery).join("");
           if(!fulfillmentCode) throw new Error("Selecciona al menos un método de entrega.");
-          await apiRequest(`/api/products/${encodeURIComponent(product.id)}`, {method:"PATCH", body:{name:$("quickProductName").value.trim(), description:$("quickProductDescription").value.trim(), cost:Number($("quickProductCost").value), price:Number(product.price || 0), category:$("quickProductCategory").value, fulfillmentCode, photos:quickPhotoValues.filter(Boolean), visible:$("quickProductVisible").checked}});
-          if(changes.length) await apiRequest("/api/inventory", {method:"PATCH", body:{changes}});
+          await apiRequest(`/api/products/${encodeURIComponent(product.id)}`, {method:"PATCH", body:{name:$("quickProductName").value.trim(), description:$("quickProductDescription").value.trim(), cost:Number($("quickProductCost").value), price:Number(product.price || 0), category:$("quickProductCategory").value, fulfillmentCode, sizes:quickSizes, variantOverrides, photos:quickPhotoValues.filter(Boolean), visible:$("quickProductVisible").checked}});
+          const keepsExistingVariantSet = productVariants.length === quickSizes.length && quickSizes.every(size => quickVariantBySize.has(normalizedQuickSize(size)));
+          if(keepsExistingVariantSet && changes.length) await apiRequest("/api/inventory", {method:"PATCH", body:{changes}});
           await loadRealInventory(true);
           renderProducts();
           showToast("Producto actualizado.");

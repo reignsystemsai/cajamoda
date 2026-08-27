@@ -2438,6 +2438,12 @@ async function queryRoutedCategories() {
         returnNonVisibleCategories:
           true
       })
+      .hasSome(
+        "name",
+        Object.values(
+          CATEGORY_NAMES
+        )
+      )
       .limit(
         1000
       )

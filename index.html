@@ -4789,31 +4789,28 @@ svg{
             visibleSections +=
               1;
 
-            const cards =
-              products.map(
-                productCard
-              );
-
             const slotLimit =
               category.id === "sun"
                 ? 4
                 : CONFIG.maxSlotsPerCategory;
 
+            const cards = searching
+              ? products.map(productCard)
+              : Array(slotLimit).fill("");
+
             if(!searching){
-
-              for(
-                let slot =
-                  products.length + 1;
-
-                slot <=
-                  slotLimit;
-
-                slot += 1
-              ){
-
-                cards.push(
-                  placeholderCard(category.id,slot)
-                );
+              const waiting = [];
+              products.forEach(product => {
+                const slot = Number(product.showcaseSlot);
+                if(Number.isInteger(slot) && slot >= 1 && slot <= slotLimit && !cards[slot - 1]) cards[slot - 1] = productCard(product);
+                else waiting.push(product);
+              });
+              waiting.forEach(product => {
+                const openIndex = cards.findIndex(card => !card);
+                if(openIndex >= 0) cards[openIndex] = productCard(product);
+              });
+              for(let index = 0; index < slotLimit; index += 1){
+                if(!cards[index]) cards[index] = placeholderCard(category.id,index + 1);
               }
             }
 

@@ -45,6 +45,9 @@ const WIX_SITE_ID =
 const LOADER_PASSWORD =
   process.env.LOADER_PASSWORD;
 
+const SKU_4DIGIT_CODE =
+  safeEnv(process.env.SKU_4DIGIT_CODE);
+
 const PLATFORM_ADMIN_PASSWORD =
   safeEnv(process.env.PLATFORM_ADMIN_PASSWORD);
 
@@ -2716,7 +2719,8 @@ async function assignProductCategory(
       0;
 }
 
-async function nextPermanentStyleCode() {
+let lastReservedStyleNumber = 0;
+async function nextPermanentStyleCode(reserve = false) {
   const result = await wix.inventoryItemsV3
     .queryInventoryItems()
     .ne("_id", "00000000-0000-0000-0000-000000000000")
@@ -2731,7 +2735,8 @@ async function nextPermanentStyleCode() {
     const match = String(item.sku || "").toUpperCase().match(/(?:^|-)CM(\d+)(?:-|$)/);
     if (match) highest = Math.max(highest, Number(match[1]) || 0);
   }
-  const next = Math.max(highest + 1, productIds.size + 1);
+  const next = Math.max(highest + 1, productIds.size + 1, lastReservedStyleNumber + 1);
+  if (reserve) lastReservedStyleNumber = next;
   return `CM${String(next).padStart(4, "0")}`;
 }
 
@@ -2811,7 +2816,7 @@ async function createWixProduct(
   // The numeric product record is generated on the server so a client cannot
   // accidentally reuse it. It becomes the permanent SKU family for every
   // size of this product and remains unchanged when inventory quantities move.
-  const styleCode = await nextPermanentStyleCode();
+  const styleCode = await nextPermanentStyleCode(true);
 
   if (!["P", "R", "PR", "L", "PL", "RL", "PRL"].includes(fulfillmentCode)) {
     throw new Error("Selecciona un tipo de entrega válido.");
@@ -3185,6 +3190,29 @@ async function handleUpdateProduct(request, response, productId) {
   if (!wix) return sendError(response, 503, "La tienda todavía no está conectada.");
 
   const body = await readBody(request);
+  if (body?.action === "REGENERATE_PERMANENT_SKU") {
+    if (!/^\d{4}$/.test(SKU_4DIGIT_CODE || "")) return sendError(response, 503, "Configura SKU_4DIGIT_CODE en Render con cuatro números.");
+    const supplied = Buffer.from(String(body?.adminCode || ""));
+    const expected = Buffer.from(SKU_4DIGIT_CODE);
+    if (supplied.length !== expected.length || !crypto.timingSafeEqual(supplied, expected)) return sendError(response, 403, "Código administrativo incorrecto.");
+    const fulfillmentCode = safeText(body?.fulfillmentCode, 10).toUpperCase();
+    if (!/^(?:PRL|PR|PL|RL|P|R|L)$/.test(fulfillmentCode)) return sendError(response, 400, "Selecciona los métodos de entrega antes de generar el SKU.");
+    const currentResult = await wix.productsV3.getProduct(productId, {fields:["CURRENCY"]});
+    const current = currentResult?.product || currentResult;
+    if (!current?._id && !current?.id) return sendError(response, 404, "No encontramos el producto.");
+    const currentVariants = Array.isArray(current?.variantsInfo?.variants) ? current.variantsInfo.variants : [];
+    if (!currentVariants.length) return sendError(response, 400, "Este producto no tiene variantes para actualizar.");
+    const styleCode = await nextPermanentStyleCode(true);
+    const variants = currentVariants.map((variant, index) => {
+      const oldSku = safeText(variant?.sku, 100).toUpperCase();
+      const savedSuffix = oldSku.match(/^(?:PRL|PR|PL|RL|P|R|L)-(?:CM\d{4}|[^-]+)-(.+)$/)?.[1];
+      const suffix = savedSuffix || (currentVariants.length > 1 ? String(index + 1) : "");
+      return {...variant, sku:[fulfillmentCode, styleCode, suffix].filter(Boolean).join("-")};
+    });
+    const updated = await wix.productsV3.updateProduct(productId, {revision:current.revision, options:current.options || [], variantsInfo:{variants}}, {fields:["CURRENCY"]});
+    sendJson(response, 200, {ok:true, styleCode, skus:variants.map(variant => variant.sku), product:updated?.product || updated});
+    return;
+  }
   const name = safeText(body?.name, 80);
   const description = safeText(body?.description, 16000);
   const cost = Math.max(0, Number(body?.cost || 0));
@@ -3203,7 +3231,7 @@ async function handleUpdateProduct(request, response, productId) {
     ? current.variantsInfo.variants
     : [];
   const missingStyleCode = fulfillmentCode && currentVariants.some(variant => !safeText(variant?.sku, 100))
-    ? await nextPermanentStyleCode()
+    ? await nextPermanentStyleCode(true)
     : "";
   const variants = Array.isArray(current?.variantsInfo?.variants)
     ? current.variantsInfo.variants.map((variant, index) => {

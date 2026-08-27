@@ -2906,7 +2906,7 @@ async function createWixProduct(
     colors,
 
     photos:
-      [getProductImageUrl(created)].filter(Boolean),
+      [getProductImageUrl(created) || (photoIds[0] ? `https://static.wixstatic.com/media/${photoIds[0]}` : "")].filter(Boolean),
 
     wixMediaIds:
       photoIds,
@@ -4165,6 +4165,7 @@ function normalizeInventoryItem(
 function getProductImageUrl(product) {
   const candidates = [
     product?.media?.main?.image?.url,
+    typeof product?.media?.main?.image === "string" ? product.media.main.image : "",
     product?.media?.main?.image?._id,
     product?.media?.main?.image?.id,
     product?.media?.main?.url,
@@ -4179,10 +4180,12 @@ function getProductImageUrl(product) {
     product?.media?.mainMedia?._id,
     product?.media?.mainMedia?.id,
     product?.media?.itemsInfo?.items?.[0]?.image?.url,
+    typeof product?.media?.itemsInfo?.items?.[0]?.image === "string" ? product.media.itemsInfo.items[0].image : "",
     product?.media?.itemsInfo?.items?.[0]?.image?._id,
     product?.media?.itemsInfo?.items?.[0]?.image?.id,
     product?.media?.itemsInfo?.items?.[0]?.image?.imageInfo?.url,
     product?.media?.itemsInfo?.items?.[0]?.url,
+    typeof product?.media?.itemsInfo?.items?.[0] === "string" ? product.media.itemsInfo.items[0] : "",
     product?.media?.itemsInfo?.items?.[0]?._id,
     product?.media?.itemsInfo?.items?.[0]?.id,
     product?.media?.items?.[0]?.image?.url,
@@ -4192,6 +4195,7 @@ function getProductImageUrl(product) {
     product?.mediaItems?.[0]?.image?.url,
     product?.mediaItems?.[0]?.url,
     product?.thumbnail?.url,
+    typeof product?.thumbnail === "string" ? product.thumbnail : "",
     product?.thumbnail?._id,
     product?.thumbnail?.id
   ];

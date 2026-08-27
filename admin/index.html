@@ -897,7 +897,8 @@ img{
 .productQuickView.open{display:flex}.productQuickCard{width:min(1120px,96vw);max-height:92vh;overflow:auto;padding:24px;border:1px solid rgba(255,255,255,.75);border-radius:24px;background:rgba(255,255,255,.9);box-shadow:0 30px 90px rgba(35,27,18,.24);backdrop-filter:blur(26px)}
 .productQuickHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.productQuickHeader h2{font-size:24px;margin:0}.productQuickClose{border:0;background:transparent;font-size:26px;cursor:pointer}.productQuickGrid{display:grid;grid-template-columns:310px minmax(0,1fr);gap:24px;margin-top:18px}.quickMediaPanel{min-width:0}.productQuickImage{width:100%;aspect-ratio:.8;border-radius:16px;background:#eee;object-fit:cover}.quickPhotoGrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-top:9px}.quickPhotoSlot{position:relative;aspect-ratio:.82;overflow:hidden;border:1px solid rgba(0,0,0,.12);border-radius:9px;background:#f3f2ef;cursor:pointer}.quickPhotoSlot img{width:100%;height:100%;object-fit:cover}.quickPhotoSlot span{position:absolute;inset:0;display:grid;place-items:center;color:#8a857e;font-size:8px}.quickPhotoSlot input{position:absolute;width:1px;height:1px;opacity:0}.quickPhotoRemove{width:100%;margin-top:8px;border:0;background:transparent;color:#a6382d;font-size:9px;cursor:pointer}.productQuickDetails{display:grid;grid-template-columns:1fr 1fr;gap:12px}.productQuickField{padding:12px;border:1px solid rgba(0,0,0,.08);border-radius:12px;background:rgba(255,255,255,.72)}.productQuickField span{display:block;color:#777;font-size:9px}.productQuickField strong{font-size:12px}
 .quickEditForm{display:grid;gap:11px}.quickEditForm label{display:grid;gap:6px;font-size:10px;font-weight:700}.quickEditForm input,.quickEditForm textarea,.quickEditForm select{width:100%;padding:10px 11px;border:1px solid rgba(0,0,0,.14);border-radius:10px;background:rgba(255,255,255,.88);font:inherit}.quickEditForm textarea{min-height:76px;resize:vertical}.quickAssistField{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px}.quickAssistButton{min-width:112px;height:38px;padding:0 12px;font-size:9px}.quickEditColumns{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.quickCalculatedPrice{background:#f4f3ef!important;font-weight:750}.quickDeliveryChoices{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.quickDeliveryChoice{display:flex!important;grid-template-columns:auto 1fr!important;align-items:center;gap:8px!important;padding:10px 12px;border:1px solid rgba(0,0,0,.12);border-radius:10px;background:#fff;cursor:pointer}.quickDeliveryChoice:has(input:checked){background:#080808;color:#fff}.quickDeliveryChoice input{width:16px;height:16px;padding:0;accent-color:#111}.quickVariantList{display:grid;overflow:hidden;border:1px solid rgba(0,0,0,.1);border-radius:11px}.quickVariantHead,.quickVariantRow{display:grid;grid-template-columns:minmax(0,1fr) 92px minmax(145px,1fr);align-items:center;gap:10px;padding:8px 10px}.quickVariantHead{color:#777;font-size:8px;font-weight:800;text-transform:uppercase}.quickVariantRow{border-top:1px solid rgba(0,0,0,.08);background:rgba(255,255,255,.66)}.quickVariantRow small{display:block;color:#777}.quickVariantRow input{padding:8px}.quickVisibility{padding:9px 11px}.quickEditFooter{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:3px}.quickEditActions{display:flex;justify-content:flex-end;gap:8px}.quickEditActions button{min-width:125px}.quickMoreWrap{position:relative}.quickMoreWrap summary{list-style:none;padding:10px 13px;border:1px solid rgba(0,0,0,.14);border-radius:10px;background:#fff;font-size:9px;font-weight:700;cursor:pointer}.quickMoreWrap summary::-webkit-details-marker{display:none}.quickMoreMenu{position:absolute;z-index:4;bottom:calc(100% + 6px);left:0;min-width:170px;padding:6px;border:1px solid rgba(0,0,0,.1);border-radius:10px;background:#fff;box-shadow:0 12px 28px rgba(0,0,0,.12)}.quickMoreMenu button{width:100%;padding:9px;border:0;border-radius:8px;background:transparent;color:#a6382d;text-align:left;font:inherit;font-size:9px;font-weight:700;cursor:pointer}.quickMoreMenu button:hover{background:#fff0ee}
-.quickShowcase{display:grid;gap:8px}.quickShowcaseHead{display:flex;align-items:end;justify-content:space-between;gap:12px}.quickShowcaseHead small{color:#777}.quickSlotGrid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:6px}.quickSlot{aspect-ratio:1;border:1px solid #aaa;border-radius:0;background:#fff;color:#111;font:inherit;font-weight:800;cursor:pointer;transition:transform .12s ease,background .12s ease}.quickSlot.current{background:#111;color:#fff;border-color:#111;cursor:grab}.quickSlot.current:active{cursor:grabbing}.quickSlot.selected,.quickSlot.dragOver{outline:2px solid #111;outline-offset:2px;transform:translateY(-2px)}.quickSlot.empty{border-style:dashed;color:#888}.quickShowcaseAction{display:flex;align-items:center;justify-content:space-between;gap:10px}.quickShowcaseAction small{color:#666}.quickShowcaseAction button{padding:9px 13px;border-radius:0}
+.quickShowcase{display:grid;gap:8px}.quickShowcaseHead{display:flex;align-items:end;justify-content:space-between;gap:12px}.quickShowcaseHead small{color:#777}.quickSlotGrid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:6px;touch-action:none}.quickSlot{display:grid;place-items:center;aspect-ratio:1;border:1px solid #aaa;border-radius:0;background:#fff;color:#111;font:inherit;font-weight:800;cursor:pointer;user-select:none;transition:transform .12s ease,background .12s ease}.quickSlot.current{background:#111;color:#fff;border-color:#111;cursor:grab}.quickSlot.current.dragging{cursor:grabbing;opacity:.35}.quickSlot.selected,.quickSlot.dragOver{outline:2px solid #111;outline-offset:2px;transform:translateY(-2px)}.quickSlot.empty{border-style:dashed;color:#888}.quickDragGhost{position:fixed;z-index:9999;display:grid;place-items:center;width:58px;height:58px;pointer-events:none;background:#111;color:#fff;font-weight:800;box-shadow:0 10px 24px rgba(0,0,0,.25);transform:translate(-50%,-50%)}.quickShowcaseAction{display:flex;align-items:center;justify-content:space-between;gap:10px}.quickShowcaseAction small{color:#666}.quickShowcaseAction button{padding:9px 13px;border-radius:0}
+.productQuickCard,.productQuickCard input,.productQuickCard textarea,.productQuickCard select,.productQuickCard button,.productQuickCard summary,.productQuickCard .quickPhotoSlot,.productQuickCard .quickVariantList,.productQuickCard .quickVariantRow,.productQuickCard .quickDeliveryChoice,.productQuickCard .quickVisibility,.productQuickCard .quickMoreMenu{border-radius:0!important}
 @media(max-width:760px){.deliveryGuide{grid-template-columns:1fr}.formGrid{grid-template-columns:1fr}.pageHeadingRow{align-items:stretch;flex-direction:column}.pageHeadingRow .primaryButton{width:100%}.productFormCard{padding:14px;border-radius:15px}.twoColumn,.threeColumn,.compactSettings{grid-template-columns:1fr}.photoUploadGrid{grid-template-columns:repeat(3,1fr)}.variantBuilder{overflow-x:auto}.variantRow{min-width:560px}.colorQuickChoices{display:grid;grid-template-columns:repeat(2,1fr)}.colorQuickChoices button{justify-content:flex-start}.productQuickGrid{grid-template-columns:1fr}.productQuickImage{max-height:220px;object-fit:contain}.productQuickDetails,.quickEditColumns{grid-template-columns:1fr}.quickEditActions,.formActions{display:grid}.quickEditActions button,.formActions button{width:100%}.compactAssistButton{width:100%}.productRowActions{align-items:flex-end;flex-direction:column}.productFullEdit{padding:8px 10px}}
 @media(max-width:760px){.quickAssistField{grid-template-columns:1fr}.quickAssistButton{width:100%}.quickEditFooter{align-items:stretch;flex-direction:column}}
 
@@ -3668,10 +3669,12 @@ async function loadRealInventory(
         quantity: 0,
         sizes: [],
         category: item.category || "",
+        showcaseSlot: Number(item.showcaseSlot || 0) || null,
         photos: item.image ? [item.image] : [],
         status: item.visible === false ? "hidden" : "published"
       };
       existing.quantity += Number(item.quantity || 0);
+      if(!existing.showcaseSlot && item.showcaseSlot) existing.showcaseSlot = Number(item.showcaseSlot);
       if(item.variantName && !existing.sizes.includes(item.variantName)) existing.sizes.push(item.variantName);
       if(!existing.photos.length && item.image) existing.photos = [item.image];
       wixProducts.set(key, existing);
@@ -4761,28 +4764,36 @@ if(
         const names = {late:"Noches Largas",chill:"Días Tranquilos",quick:"Rápido y Fácil",sun:"Baño de Sol"};
         $("quickShowcaseCategory").textContent = `${names[category]} · ${limit} espacios`;
         const categoryProducts = products.filter(item => item.category === category && String(item.id) !== String(product.id));
+        const visualSlot = quickTargetSlot || quickCurrentSlot;
         $("quickSlotGrid").style.gridTemplateColumns = `repeat(${limit},minmax(0,1fr))`;
         $("quickSlotGrid").innerHTML = Array.from({length:limit},(_,index)=>{
           const slot=index+1;
           const occupied=categoryProducts.some(item=>Number(item.showcaseSlot)===slot);
-          return `<button class="quickSlot ${slot===quickCurrentSlot?"current":""} ${slot===quickTargetSlot&&slot!==quickCurrentSlot?"selected":""} ${occupied?"":"empty"}" data-showcase-slot="${slot}" type="button" draggable="${slot===quickCurrentSlot}" title="${slot===quickCurrentSlot?"Arrastra este producto":occupied?"Ocupado: intercambiar":"Vacío: mover"}">${slot}</button>`;
+          return `<div class="quickSlot ${slot===visualSlot?"current":""} ${slot===quickTargetSlot&&slot!==quickCurrentSlot?"selected":""} ${occupied?"":"empty"}" data-showcase-slot="${slot}" role="button" tabindex="0" title="${slot===visualSlot?"Arrastra este producto":occupied?"Ocupado: intercambiar":"Vacío: mover"}">${slot}</div>`;
         }).join("");
         qsa("[data-showcase-slot]").forEach(button=>{
           button.onclick=()=>{quickTargetSlot=Number(button.dataset.showcaseSlot);renderQuickShowcase();};
-          button.ondragstart=event=>{
-            if(Number(button.dataset.showcaseSlot)!==quickCurrentSlot){event.preventDefault();return;}
-            event.dataTransfer.effectAllowed="move";
-            event.dataTransfer.setData("text/plain",String(quickCurrentSlot));
+          button.onkeydown=event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();quickTargetSlot=Number(button.dataset.showcaseSlot);renderQuickShowcase();}};
+        });
+        const draggable=qsa("[data-showcase-slot]").find(slot=>Number(slot.dataset.showcaseSlot)===visualSlot);
+        if(draggable) draggable.onpointerdown=event=>{
+          event.preventDefault();
+          const ghost=document.createElement("div");ghost.className="quickDragGhost";ghost.textContent=String(visualSlot);document.body.appendChild(ghost);
+          draggable.classList.add("dragging");draggable.setPointerCapture(event.pointerId);
+          const move=pointerEvent=>{
+            ghost.style.left=`${pointerEvent.clientX}px`;ghost.style.top=`${pointerEvent.clientY}px`;
+            qsa("[data-showcase-slot]").forEach(slot=>slot.classList.remove("dragOver"));
+            const target=document.elementFromPoint(pointerEvent.clientX,pointerEvent.clientY)?.closest?.("[data-showcase-slot]");
+            if(target) target.classList.add("dragOver");
           };
-          button.ondragover=event=>{event.preventDefault();event.dataTransfer.dropEffect="move";button.classList.add("dragOver");};
-          button.ondragleave=()=>button.classList.remove("dragOver");
-          button.ondrop=event=>{
-            event.preventDefault();button.classList.remove("dragOver");
-            if(!event.dataTransfer.getData("text/plain")) return;
-            quickTargetSlot=Number(button.dataset.showcaseSlot);
+          const end=pointerEvent=>{
+            draggable.releasePointerCapture?.(event.pointerId);draggable.classList.remove("dragging");ghost.remove();
+            const target=document.elementFromPoint(pointerEvent.clientX,pointerEvent.clientY)?.closest?.("[data-showcase-slot]");
+            if(target) quickTargetSlot=Number(target.dataset.showcaseSlot);
             renderQuickShowcase();
           };
-        });
+          draggable.onpointermove=move;draggable.onpointerup=end;draggable.onpointercancel=end;move(event);
+        };
         const occupant=categoryProducts.find(item=>Number(item.showcaseSlot)===quickTargetSlot);
         $("quickShowcaseMessage").textContent=!quickTargetSlot?"Arrastra el cuadro negro a otra posición.":quickTargetSlot===quickCurrentSlot?`Posición actual: ${quickCurrentSlot}. Arrástrala para moverla.`:occupant?`${quickCurrentSlot||"Sin posición"} ↔ ${quickTargetSlot} · Listo para intercambiar con ${occupant.name}.`:`${quickCurrentSlot||"Sin posición"} → ${quickTargetSlot} · Listo para mover al espacio vacío.`;
         $("quickShowcaseMove").disabled=!quickTargetSlot||quickTargetSlot===quickCurrentSlot;

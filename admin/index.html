@@ -2442,6 +2442,25 @@ img{
   }
 }
 
+/* Build 113 - balanced Multimedia content */
+@media (min-width:900px){
+  #panel-add .productMediaCard{
+    grid-template-rows:auto 92px minmax(0,1fr)!important;
+    align-content:stretch!important;
+  }
+  #panel-add .portraitMediaGrid{
+    height:100%!important;
+    min-height:0!important;
+    grid-template-rows:minmax(0,1fr)!important;
+  }
+  #panel-add .portraitMediaGrid .photoBox,
+  #panel-add .portraitMediaGrid .photoBox:first-child{
+    height:100%!important;
+    min-height:0!important;
+    max-height:none!important;
+  }
+}
+
 </style>
 
 </head>

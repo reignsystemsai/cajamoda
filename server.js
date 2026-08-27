@@ -2273,10 +2273,10 @@ function buildVariants(
 
       const variantFulfillment = safeText(override?.fulfillmentCode || fulfillmentCode, 10).toUpperCase();
       const generatedSku = [
+          variantFulfillment,
           styleCode,
           combination.color ? skuSegment(combination.color).slice(0, 3) : "",
-          combination.size ? skuSegment(combination.size) : "",
-          variantFulfillment
+          combination.size ? skuSegment(combination.size) : ""
         ].filter(Boolean).join("-");
       const customSku = safeText(override?.sku, 100).replace(/[^A-Za-z0-9-]/g, "").toUpperCase();
 

@@ -2381,6 +2381,40 @@ const CATEGORY_ROUTE_BY_NAME = {
     "sun"
 };
 
+const SHOWCASE_NAMESPACE = "cajamoda";
+
+function showcaseSlotFromProduct(product) {
+  const value = Number(product?.extendedFields?.namespaces?.[SHOWCASE_NAMESPACE]?.showcaseSlot);
+  return Number.isInteger(value) && value > 0 ? value : null;
+}
+
+function showcaseLimit(categoryKey) {
+  return categoryKey === "sun" ? 4 : 10;
+}
+
+async function saveShowcaseSlot(productId, slot) {
+  await wix.productsV3.updateExtendedFields(String(productId), SHOWCASE_NAMESPACE, {
+    namespaceData: { showcaseSlot: Number(slot) },
+    fields: ["EXTENDED_FIELDS"]
+  });
+}
+
+async function showcaseProducts(categoryKey) {
+  const [routes, result] = await Promise.all([
+    getCategoryRoutes(),
+    wix.productsV3.queryProducts({fields: ["EXTENDED_FIELDS"]}).limit(1000).find()
+  ]);
+  return (result?.items || []).filter(product => routes[String(product?._id || product?.id || "")] === categoryKey);
+}
+
+async function assignFirstOpenShowcaseSlot(productId, categoryKey) {
+  const products = await showcaseProducts(categoryKey);
+  const used = new Set(products.map(showcaseSlotFromProduct).filter(Boolean));
+  const slot = Array.from({length: showcaseLimit(categoryKey)}, (_, index) => index + 1).find(value => !used.has(value));
+  if (slot) await saveShowcaseSlot(productId, slot);
+  return slot || null;
+}
+
 function normalizeCategoryRouteName(
   value
 ) {
@@ -2897,6 +2931,7 @@ async function createWixProduct(
 
   try {
     await assignProductCategory(created._id || created.id, category);
+    await assignFirstOpenShowcaseSlot(created._id || created.id, category);
   } catch (error) {
     await wix.productsV3.deleteProduct(created._id || created.id);
     throw error;
@@ -3217,11 +3252,17 @@ async function handleUpdateProduct(request, response, productId) {
   sendJson(response, 200, { ok: true, product: updated?.product || updated });
 }
 
+async function handleNextPermanentSku(request, response) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
+  if (!wix) return sendError(response, 503, "La tienda todavía no está conectada.");
+  sendJson(response, 200, {ok:true, styleCode: await nextPermanentStyleCode()});
+}
+
 async function handleGetProduct(request, response, productId) {
   if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
   if (!wix) return sendError(response, 503, "La tienda todavía no está conectada.");
   const result = await wix.productsV3.getProduct(productId, {
-    fields: ["PLAIN_DESCRIPTION", "MERCHANT_DATA", "CURRENCY", "MEDIA_ITEMS_INFO", "THUMBNAIL"]
+    fields: ["PLAIN_DESCRIPTION", "MERCHANT_DATA", "CURRENCY", "MEDIA_ITEMS_INFO", "THUMBNAIL", "EXTENDED_FIELDS"]
   });
   const product = result?.product || result;
   if (!product?._id && !product?.id) return sendError(response, 404, "No encontramos el producto.");
@@ -3234,9 +3275,51 @@ async function handleGetProduct(request, response, productId) {
       visible: product.visible !== false,
       image: getProductImageUrl(product),
       photos: getProductImageUrls(product)
-      ,cost: Number(product?.variantsInfo?.variants?.[0]?.revenueDetails?.cost?.amount || 0)
+      ,cost: Number(product?.variantsInfo?.variants?.[0]?.revenueDetails?.cost?.amount || 0),
+      showcaseSlot: showcaseSlotFromProduct(product)
     }
   });
+}
+
+async function handleShowcasePosition(request, response, productId) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
+  if (!wix) return sendError(response, 503, "La tienda todavía no está conectada.");
+  const body = await readBody(request);
+  const category = safeText(body?.category, 30);
+  const targetSlot = Number(body?.targetSlot);
+  const limit = showcaseLimit(category);
+  if (!Number.isInteger(targetSlot) || targetSlot < 1 || targetSlot > limit) {
+    return sendError(response, 400, `Selecciona una posición entre 1 y ${limit}.`);
+  }
+  const routes = await getCategoryRoutes();
+  if (routes[String(productId)] !== category) await assignProductCategory(productId, category);
+  const products = await showcaseProducts(category);
+  const slotById = new Map();
+  const used = new Set();
+  for (const item of products) {
+    const id = String(item?._id || item?.id || "");
+    const slot = showcaseSlotFromProduct(item);
+    if (slot && slot <= limit && !used.has(slot)) {
+      used.add(slot);
+      slotById.set(id, slot);
+    }
+  }
+  for (const item of products) {
+    const id = String(item?._id || item?.id || "");
+    if (slotById.has(id)) continue;
+    const open = Array.from({length:limit}, (_, index) => index + 1).find(slot => !used.has(slot));
+    if (!open) break;
+    await saveShowcaseSlot(id, open);
+    used.add(open);
+    slotById.set(id, open);
+  }
+  const current = products.find(item => String(item?._id || item?.id || "") === String(productId));
+  if (!current) return sendError(response, 404, "El producto no pertenece a esa categoría de vitrina.");
+  const currentSlot = slotById.get(String(productId)) || null;
+  const occupant = products.find(item => slotById.get(String(item?._id || item?.id || "")) === targetSlot && String(item?._id || item?.id || "") !== String(productId));
+  if (occupant && currentSlot) await saveShowcaseSlot(occupant._id || occupant.id, currentSlot);
+  await saveShowcaseSlot(productId, targetSlot);
+  sendJson(response, 200, {ok:true, from:currentSlot, to:targetSlot, swappedProductId:occupant?._id || occupant?.id || null});
 }
 
 async function handleDeleteProduct(request, response, productId) {
@@ -4416,7 +4499,7 @@ const inventoryItems =
   const productEntries = await Promise.all(productIds.map(async productId => {
     try {
       const result = await wix.productsV3.getProduct(productId, {
-        fields: ["MEDIA_ITEMS_INFO", "THUMBNAIL"]
+        fields: ["MEDIA_ITEMS_INFO", "THUMBNAIL", "EXTENDED_FIELDS"]
       });
       return [productId, result?.product || result];
     } catch (error) {
@@ -4437,7 +4520,8 @@ const inventoryItems =
       image: getProductImageUrl(product),
       category: safeText(categoryRoutes[item.productId], 30),
       price: wixVariantPrice(variant) ?? wixVariantPrice(product),
-      visible: product?.visible !== false
+      visible: product?.visible !== false,
+      showcaseSlot: showcaseSlotFromProduct(product)
     };
   });
 }
@@ -4757,6 +4841,15 @@ const server =
           return;
         }
 
+        if (request.method === "GET" && url.pathname === "/api/products/next-sku") {
+          await handleNextPermanentSku(request, response);
+          return;
+        }
+        const showcasePositionMatch = url.pathname.match(/^\/api\/products\/([^/]+)\/showcase-position$/);
+        if (request.method === "POST" && showcasePositionMatch) {
+          await handleShowcasePosition(request, response, decodeURIComponent(showcasePositionMatch[1]));
+          return;
+        }
         const productUpdateMatch = url.pathname.match(/^\/api\/products\/([^/]+)$/);
         if (request.method === "GET" && productUpdateMatch) {
           await handleGetProduct(request, response, decodeURIComponent(productUpdateMatch[1]));

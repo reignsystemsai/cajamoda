@@ -2834,106 +2834,12 @@ async function createWixProduct(
         : undefined
   };
 
-  const result =
-    await wix
-      .productsV3
-      .bulkCreateProductsWithInventory(
-        [
-          product
-        ],
-        {
+  const result = await wix.productsV3.createProductWithInventory(product, {
+    returnEntity: true,
+    fields: ["CURRENCY", "MEDIA_ITEMS_INFO", "THUMBNAIL"]
+  });
 
-          fields: [
-            "CURRENCY"
-          ],
-
-          returnEntity:
-            true
-        }
-      );
-
-  const productResult =
-    result
-      ?.productResults
-      ?.results
-      ?.[0];
-
-  if (
-    productResult
-      ?.itemMetadata
-      ?.success ===
-    false
-  ) {
-
-    throw new Error(
-      productResult
-        ?.itemMetadata
-        ?.error
-        ?.message ||
-      "Wix rechazó el producto."
-    );
-  }
-const inventoryResults =
-  Array.isArray(
-    result
-      ?.inventoryResults
-      ?.results
-  )
-    ? result.inventoryResults.results
-    : [];
-
-if(
-  !inventoryResults.length
-){
-
-  console.error(
-    "[Store Loader Inventory]",
-    JSON.stringify(
-      result?.inventoryResults || {},
-      null,
-      2
-    )
-  );
-
-  throw new Error(
-    "Wix creó el producto, pero no creó ningún registro de inventario."
-  );
-}
-
-const failedInventory =
-  inventoryResults.filter(
-    item =>
-      item
-        ?.itemMetadata
-        ?.success ===
-      false
-  );
-
-if(
-  failedInventory.length
-){
-
-  console.error(
-    "[Store Loader Inventory Failure]",
-    JSON.stringify(
-      failedInventory,
-      null,
-      2
-    )
-  );
-
-  throw new Error(
-    failedInventory[0]
-      ?.itemMetadata
-      ?.error
-      ?.message ||
-    "Wix creó el producto, pero rechazó su inventario."
-  );
-}
-
-  const created =
-    productResult
-      ?.item;
+  const created = result?.product;
 
   if (
     !created
@@ -2946,97 +2852,21 @@ if(
       "Wix no devolvió el producto creado."
     );
   }
-const createdInventoryItems =
-  inventoryResults
-    .map(
-      inventoryResult =>
-        inventoryResult?.item
-    )
-    .filter(
-      inventoryItem =>
-        inventoryItem &&
-        (
-          inventoryItem._id ||
-          inventoryItem.id
-        )
-    );
+  const inventoryResults = Array.isArray(result?.inventoryResults?.results)
+    ? result.inventoryResults.results
+    : [];
 
-if(
-  !createdInventoryItems.length
-){
-  throw new Error(
-    "Wix creó el producto, pero no devolvió los registros de inventario."
-  );
-}
-
-const trackedQuantity =
-  Math.max(
-    0,
-    Math.trunc(
-      Number(
-        quantity || 0
-      )
-    )
-  );
-
-const quantityPerItem =
-  Math.floor(
-    trackedQuantity /
-    createdInventoryItems.length
-  );
-
-let quantityRemainder =
-  trackedQuantity %
-  createdInventoryItems.length;
-
-for(
-  const inventoryItem
-  of createdInventoryItems
-){
-
-  const inventoryItemId =
-    inventoryItem._id ||
-    inventoryItem.id;
-
-  const itemQuantity =
-    quantityPerItem +
-    (
-      quantityRemainder > 0
-        ? 1
-        : 0
-    );
-
-  if(
-    quantityRemainder > 0
-  ){
-    quantityRemainder -= 1;
+  if (trackInventory && !inventoryResults.length) {
+    await wix.productsV3.deleteProduct(created._id || created.id);
+    throw new Error("Wix no creó el inventario del producto. No se guardó una copia incompleta.");
   }
 
-  await wix
-    .inventoryItemsV3
-    .updateInventoryItem(
-      inventoryItemId,
-      {
-        id:
-          inventoryItemId,
-
-        revision:
-          inventoryItem.revision,
-
-        quantity:
-          itemQuantity
-      },
-      {
-        reason:
-          "MANUAL"
-      }
-    );
-}
-  await assignProductCategory(
-    created._id ||
-    created.id,
-    category
-  );
+  try {
+    await assignProductCategory(created._id || created.id, category);
+  } catch (error) {
+    await wix.productsV3.deleteProduct(created._id || created.id);
+    throw error;
+  }
 
   return {
 
@@ -3076,6 +2906,9 @@ for(
     colors,
 
     photos:
+      [getProductImageUrl(created)].filter(Boolean),
+
+    wixMediaIds:
       photoIds,
 
     wixProduct:
@@ -3331,6 +3164,15 @@ async function handleGetProduct(request, response, productId) {
       ,cost: Number(product?.variantsInfo?.variants?.[0]?.revenueDetails?.cost?.amount || 0)
     }
   });
+}
+
+async function handleDeleteProduct(request, response, productId) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
+  if (!wix) return sendError(response, 503, "La tienda todavía no está conectada.");
+
+  await wix.productsV3.deleteProduct(productId);
+  categoryRouteCache.expiresAt = 0;
+  sendJson(response, 200, { ok: true, productId });
 }
 
 /* ============================================================
@@ -4760,6 +4602,10 @@ const server =
         }
         if (request.method === "PATCH" && productUpdateMatch) {
           await handleUpdateProduct(request, response, decodeURIComponent(productUpdateMatch[1]));
+          return;
+        }
+        if (request.method === "DELETE" && productUpdateMatch) {
+          await handleDeleteProduct(request, response, decodeURIComponent(productUpdateMatch[1]));
           return;
         }
 

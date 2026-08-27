@@ -2689,7 +2689,7 @@ async function createWixProduct(
     );
 
   const cost = Math.max(0, Number(input.cost || 0));
-  const price = cost > 0 ? Math.round((cost * 2) + 12500) : 0;
+  const price = cost > 0 ? Math.round(cost * 1.75) : 0;
   const trackInventory = input.trackInventory !== false;
   const stockStatus = input.stockStatus === "OUT_OF_STOCK" ? "OUT_OF_STOCK" : "IN_STOCK";
   const allowPreorder = Boolean(input.allowPreorder);
@@ -3108,7 +3108,8 @@ async function handleUpdateProduct(request, response, productId) {
   const name = safeText(body?.name, 80);
   const description = safeText(body?.description, 16000);
   const cost = Math.max(0, Number(body?.cost || 0));
-  const price = cost > 0 ? Math.round((cost * 2) + 12500) : Number(body?.price);
+  const price = cost > 0 ? Math.round(cost * 1.75) : Number(body?.price);
+  const fulfillmentCode = safeText(body?.fulfillmentCode, 10).toUpperCase();
   if (!name) return sendError(response, 400, "Agrega el nombre del producto.");
   if (!Number.isFinite(price) || price <= 0) return sendError(response, 400, "Agrega un precio válido.");
 
@@ -3119,13 +3120,21 @@ async function handleUpdateProduct(request, response, productId) {
   if (!current?._id && !current?.id) return sendError(response, 404, "No encontramos el producto.");
 
   const variants = Array.isArray(current?.variantsInfo?.variants)
-    ? current.variantsInfo.variants.map(variant => ({
-        ...variant,
-        price: {
-          ...(variant.price || {}),
-          actualPrice: { amount: String(Math.round(price)) }
-        }
-      }))
+    ? current.variantsInfo.variants.map(variant => {
+        const currentSku = safeText(variant?.sku, 100).toUpperCase();
+        const skuTail = currentSku.replace(/^(?:PRL|PR|PL|RL|P|R|L)-?/i, "");
+        return {
+          ...variant,
+          sku: fulfillmentCode ? `${fulfillmentCode}-${skuTail || `CM${Date.now().toString(36).toUpperCase()}`}` : currentSku,
+          price: {
+            ...(variant.price || {}),
+            actualPrice: { amount: String(Math.round(price)) }
+          },
+          revenueDetails: cost > 0
+            ? { ...(variant.revenueDetails || {}), cost: { amount: String(cost) } }
+            : variant.revenueDetails
+        };
+      })
     : [];
 
   const update = {
@@ -3139,9 +3148,23 @@ async function handleUpdateProduct(request, response, productId) {
     update.variantsInfo = { variants };
   }
 
+  if (Array.isArray(body?.photos)) {
+    const photoIds = [];
+    const photos = body.photos.filter(Boolean).slice(0, 5);
+    for (let index = 0; index < photos.length; index += 1) {
+      const value = String(photos[index] || "");
+      const existingId = wixMediaId(value);
+      photoIds.push(existingId || await uploadImage(value, index));
+    }
+    update.media = photoIds.length
+      ? { itemsInfo: { items: photoIds.map(id => ({ id })) } }
+      : { itemsInfo: { items: [] } };
+  }
+
   const updated = await wix.productsV3.updateProduct(productId, update, {
-    fields: ["PLAIN_DESCRIPTION", "MERCHANT_DATA", "CURRENCY"]
+    fields: ["PLAIN_DESCRIPTION", "MERCHANT_DATA", "CURRENCY", "MEDIA_ITEMS_INFO", "THUMBNAIL"]
   });
+  if (body?.category) await assignProductCategory(productId, safeText(body.category, 30));
   sendJson(response, 200, { ok: true, product: updated?.product || updated });
 }
 
@@ -3160,7 +3183,8 @@ async function handleGetProduct(request, response, productId) {
       name: safeText(product.name, 80),
       description: safeText(String(product.plainDescription || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " "), 16000),
       visible: product.visible !== false,
-      image: getProductImageUrl(product)
+      image: getProductImageUrl(product),
+      photos: getProductImageUrls(product)
       ,cost: Number(product?.variantsInfo?.variants?.[0]?.revenueDetails?.cost?.amount || 0)
     }
   });
@@ -4200,7 +4224,48 @@ function normalizeInventoryItem(
   };
 }
 
+function wixMediaId(value) {
+  const raw = safeText(value, 2000);
+  if (!raw || /^data:image\//i.test(raw)) return "";
+  if (raw.startsWith("wix:image://")) return raw.replace(/^wix:image:\/\/v1\//, "").split("/")[0].split("#")[0];
+  const match = raw.match(/static\.wixstatic\.com\/media\/([^/?#]+)/i);
+  return match?.[1] || "";
+}
+
+function productImageCandidates(product) {
+  return [
+    product?.media?.main?.image,
+    product?.media?.main,
+    product?.media?.mainMedia?.image,
+    product?.media?.mainMedia,
+    ...(product?.media?.itemsInfo?.items || []),
+    ...(product?.media?.items || []),
+    ...(product?.mediaItems || []),
+    product?.thumbnail
+  ];
+}
+
+function imageCandidateValue(candidate) {
+  if (typeof candidate === "string") return candidate;
+  return candidate?.image?.url || candidate?.image?.imageInfo?.url || candidate?.imageInfo?.url ||
+    candidate?.thumbnail?.url || candidate?.url || candidate?.image?._id || candidate?.image?.id ||
+    candidate?._id || candidate?.id || "";
+}
+
+function getProductImageUrls(product) {
+  return [...new Set(productImageCandidates(product)
+    .map(imageCandidateValue)
+    .map(value => {
+      if (/^https?:\/\//i.test(value)) return value;
+      const mediaId = wixMediaId(value) || safeText(value, 1500).split("/")[0].split("#")[0];
+      return mediaId ? `https://static.wixstatic.com/media/${mediaId}` : "";
+    })
+    .filter(Boolean))].slice(0, 5);
+}
+
 function getProductImageUrl(product) {
+  const resolved = getProductImageUrls(product)[0];
+  if (resolved) return resolved;
   const candidates = [
     product?.media?.main?.image?.url,
     typeof product?.media?.main?.image === "string" ? product.media.main.image : "",
@@ -4307,6 +4372,7 @@ const inventoryItems =
     }
   }));
   const productsById = new Map(productEntries);
+  const categoryRoutes = await getCategoryRoutes().catch(() => ({}));
 
   return normalized.map(item => {
     const product = productsById.get(item.productId);
@@ -4316,6 +4382,7 @@ const inventoryItems =
       ...item,
       productName: item.productName || safeText(product?.name, 300),
       image: getProductImageUrl(product),
+      category: safeText(categoryRoutes[item.productId], 30),
       price: wixVariantPrice(variant) ?? wixVariantPrice(product),
       visible: product?.visible !== false
     };

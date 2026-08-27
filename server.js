@@ -3357,6 +3357,17 @@ async function handleShowcasePosition(request, response, productId) {
   sendJson(response, 200, {ok:true, ...result});
 }
 
+async function handleGetShowcasePosition(request, response, productId) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
+  if (!wix) return sendError(response, 503, "La tienda todavía no está conectada.");
+  const routes = await getCategoryRoutes();
+  const category = routes[String(productId)] || "";
+  if (!category) return sendError(response, 404, "Este producto no tiene una categoría de vitrina.");
+  const {orderedIds} = await categoryArrangement(category);
+  const slot = orderedIds.indexOf(String(productId)) + 1;
+  sendJson(response, 200, {ok:true, category, slot:slot > 0 ? slot : null, limit:showcaseLimit(category)});
+}
+
 async function handleDeleteProduct(request, response, productId) {
   if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
   if (!wix) return sendError(response, 503, "La tienda todavía no está conectada.");
@@ -4889,6 +4900,10 @@ const server =
           return;
         }
         const showcasePositionMatch = url.pathname.match(/^\/api\/products\/([^/]+)\/showcase-position$/);
+        if (request.method === "GET" && showcasePositionMatch) {
+          await handleGetShowcasePosition(request, response, decodeURIComponent(showcasePositionMatch[1]));
+          return;
+        }
         if (request.method === "POST" && showcasePositionMatch) {
           await handleShowcasePosition(request, response, decodeURIComponent(showcasePositionMatch[1]));
           return;

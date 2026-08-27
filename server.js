@@ -2413,8 +2413,8 @@ async function saveCategoryArrangement(categoryId, orderedIds) {
 async function getShowcaseSlots() {
   const categories = await queryRoutedCategories();
   const entries = await Promise.all(categories.map(async category => {
-    const arranged = await wix.categoriesV3.getArrangedItems(category.id, STORE_CATEGORY_TREE);
-    return (arranged?.items || []).map((item, index) => [String(item?.catalogItemId || ""), index + 1]);
+    const {orderedIds} = await categoryArrangement(category.vibeId);
+    return orderedIds.slice(0, showcaseLimit(category.vibeId)).map((id, index) => [id, index + 1]);
   }));
   return Object.fromEntries(entries.flat().filter(([id]) => id));
 }
@@ -3355,6 +3355,17 @@ async function handleShowcasePosition(request, response, productId) {
   const body = await readBody(request);
   const result = await applyShowcasePosition(productId, safeText(body?.category, 30), Number(body?.targetSlot));
   sendJson(response, 200, {ok:true, ...result});
+}
+
+async function handleGetShowcasePosition(request, response, productId) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
+  if (!wix) return sendError(response, 503, "La tienda todavía no está conectada.");
+  const routes = await getCategoryRoutes();
+  const category = routes[String(productId)] || "";
+  if (!category) return sendError(response, 404, "Este producto no tiene una categoría de vitrina.");
+  const {orderedIds} = await categoryArrangement(category);
+  const slot = orderedIds.indexOf(String(productId)) + 1;
+  sendJson(response, 200, {ok:true, category, slot:slot > 0 ? slot : null, limit:showcaseLimit(category)});
 }
 
 async function handleDeleteProduct(request, response, productId) {
@@ -4889,6 +4900,10 @@ const server =
           return;
         }
         const showcasePositionMatch = url.pathname.match(/^\/api\/products\/([^/]+)\/showcase-position$/);
+        if (request.method === "GET" && showcasePositionMatch) {
+          await handleGetShowcasePosition(request, response, decodeURIComponent(showcasePositionMatch[1]));
+          return;
+        }
         if (request.method === "POST" && showcasePositionMatch) {
           await handleShowcasePosition(request, response, decodeURIComponent(showcasePositionMatch[1]));
           return;

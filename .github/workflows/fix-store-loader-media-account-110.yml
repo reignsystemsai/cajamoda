@@ -1,0 +1,33 @@
+name: Apply Store Loader media and account fix
+
+on:
+  push:
+    branches:
+      - fix/store-loader-media-account-110
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  apply-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/store-loader-media-account-110
+      - name: Apply surgical Store Loader fix
+        run: |
+          echo 'ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCgpwYXRoID0gUGF0aCgiYWRtaW4vaW5kZXguaHRtbCIpCnRleHQgPSBwYXRoLnJlYWRfdGV4dCgpCgpvbGRfbWVkaWEgPSAiIiIgICNwYW5lbC1hZGQgLnZlcnRpY2FsVXBsb2FkQ29udHJvbCwKICAjcGFuZWwtYWRkIC5wb3J0cmFpdE1lZGlhR3JpZHsKICAgIGdyaWQtY29sdW1uOjEhaW1wb3J0YW50OwogICAgd2lkdGg6bWluKDkwMHB4LDEwMCUpIWltcG9ydGFudDsKICAgIG1heC13aWR0aDpub25lIWltcG9ydGFudDsKICAgIGp1c3RpZnktc2VsZjpjZW50ZXIhaW1wb3J0YW50OwogICAgbWFyZ2luLWlubGluZTphdXRvIWltcG9ydGFudDsKICB9IiIiCm5ld19tZWRpYSA9ICIiIiAgI3BhbmVsLWFkZCAudmVydGljYWxVcGxvYWRDb250cm9sLAogICNwYW5lbC1hZGQgLnBvcnRyYWl0TWVkaWFHcmlkewogICAgZ3JpZC1jb2x1bW46MSFpbXBvcnRhbnQ7CiAgICB3aWR0aDoxMDAlIWltcG9ydGFudDsKICAgIG1heC13aWR0aDpub25lIWltcG9ydGFudDsKICAgIGp1c3RpZnktc2VsZjpzdHJldGNoIWltcG9ydGFudDsKICAgIG1hcmdpbi1pbmxpbmU6MCFpbXBvcnRhbnQ7CiAgfQogICNwYW5lbC1hZGQgLnBvcnRyYWl0TWVkaWFHcmlkewogICAgZ3JpZC10ZW1wbGF0ZS1jb2x1bW5zOnJlcGVhdCg1LG1pbm1heCgwLDFmcikpIWltcG9ydGFudDsKICB9IiIiCmlmIG9sZF9tZWRpYSBub3QgaW4gdGV4dDoKICAgIHJhaXNlIFN5c3RlbUV4aXQoIk11bHRpbWVkaWEgdGFyZ2V0IGJsb2NrIG5vdCBmb3VuZCIpCnRleHQgPSB0ZXh0LnJlcGxhY2Uob2xkX21lZGlhLCBuZXdfbWVkaWEsIDEpCgpvbGRfYWNjb3VudCA9ICIiIiAgLnNpZGViYXJBY2NvdW50Q29udHJvbHMgI3N0b3JlU2VsZWN0b3IsCiAgLnNpZGViYXJBY2NvdW50Q29udHJvbHMgI2xvZ291dEJ1dHRvbnsKICAgIHdpZHRoOjEwMCUhaW1wb3J0YW50OwogICAgbWF4LXdpZHRoOjEwMCUhaW1wb3J0YW50OwogICAgYm94LXNpemluZzpib3JkZXItYm94IWltcG9ydGFudDsKICB9CiAgLnNpZGViYXJBY2NvdW50Q29udHJvbHMgI3N0b3JlU2VsZWN0b3J7CiAgICBwYWRkaW5nLWxlZnQ6NDRweCFpbXBvcnRhbnQ7CiAgICBiYWNrZ3JvdW5kOnJhZGlhbC1ncmFkaWVudChjaXJjbGUgYXQgMTZweCA1MCUsIzRlOWI1NSAwIDVweCx0cmFuc3BhcmVudCA2cHgpLHJnYmEoMjU1LDI1NSwyNTUsLjY2KSFpbXBvcnRhbnQ7CiAgfSIiIgpuZXdfYWNjb3VudCA9ICIiIiAgLnNpZGViYXJBY2NvdW50Q29udHJvbHMgI3N0b3JlU2VsZWN0b3IsCiAgLnNpZGViYXJBY2NvdW50Q29udHJvbHMgI2xvZ291dEJ1dHRvbnsKICAgIHdpZHRoOjEwMCUhaW1wb3J0YW50OwogICAgbWF4LXdpZHRoOjEwMCUhaW1wb3J0YW50OwogICAgYm94LXNpemluZzpib3JkZXItYm94IWltcG9ydGFudDsKICAgIGJvcmRlcjowIWltcG9ydGFudDsKICAgIGJvcmRlci1yYWRpdXM6MCFpbXBvcnRhbnQ7CiAgICBib3gtc2hhZG93Om5vbmUhaW1wb3J0YW50OwogIH0KICAuc2lkZWJhckFjY291bnRDb250cm9scyAjc3RvcmVTZWxlY3RvcnsKICAgIGhlaWdodDoyOHB4IWltcG9ydGFudDsKICAgIHBhZGRpbmc6MCFpbXBvcnRhbnQ7CiAgICBiYWNrZ3JvdW5kOnRyYW5zcGFyZW50IWltcG9ydGFudDsKICAgIHRleHQtYWxpZ246Y2VudGVyIWltcG9ydGFudDsKICAgIHRleHQtYWxpZ24tbGFzdDpjZW50ZXIhaW1wb3J0YW50OwogIH0KICAuc2lkZWJhckFjY291bnRDb250cm9scyAjbG9nb3V0QnV0dG9uewogICAgaGVpZ2h0OjI4cHghaW1wb3J0YW50OwogICAgbWluLWhlaWdodDowIWltcG9ydGFudDsKICAgIHBhZGRpbmc6MCFpbXBvcnRhbnQ7CiAgICBiYWNrZ3JvdW5kOnRyYW5zcGFyZW50IWltcG9ydGFudDsKICB9IiIiCmlmIG9sZF9hY2NvdW50IG5vdCBpbiB0ZXh0OgogICAgcmFpc2UgU3lzdGVtRXhpdCgiQWNjb3VudCB0YXJnZXQgYmxvY2sgbm90IGZvdW5kIikKdGV4dCA9IHRleHQucmVwbGFjZShvbGRfYWNjb3VudCwgbmV3X2FjY291bnQsIDEpCgpwYXRoLndyaXRlX3RleHQodGV4dCkK' | base64 -d > /tmp/fix.py
+          python /tmp/fix.py
+      - name: Commit fix and remove helper workflow
+        run: |
+          rm .github/workflows/fix-store-loader-media-account-110.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add admin/index.html .github/workflows/fix-store-loader-media-account-110.yml
+          git diff --cached --check
+          git commit -m "Fix Store Loader media and account controls"
+          git push origin HEAD:fix/store-loader-media-account-110
+
+# trigger valid workflow

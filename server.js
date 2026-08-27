@@ -2633,21 +2633,36 @@ async function assignProductCategory(
     );
   }
 
+  const itemReference = {
+    appId: WIX_STORES_APP_ID,
+    catalogItemId: String(productId)
+  };
+
+  for (const category of categories) {
+    if (category.id === target.id) continue;
+    const listed = await wix.categoriesV3.listItemsInCategory(
+      category.id,
+      STORE_CATEGORY_TREE,
+      { cursorPaging: { limit: 1000 } }
+    );
+    const belongsHere = (listed?.items || []).some(item =>
+      String(item?.catalogItemId || "") === String(productId) &&
+      (!item?.appId || item.appId === WIX_STORES_APP_ID)
+    );
+    if (belongsHere) {
+      await wix.categoriesV3.bulkRemoveItemsFromCategory(
+        category.id,
+        [itemReference],
+        { treeReference: STORE_CATEGORY_TREE }
+      );
+    }
+  }
+
   await wix
     .categoriesV3
     .bulkAddItemsToCategory(
       target.id,
-      [
-        {
-          appId:
-            WIX_STORES_APP_ID,
-
-          catalogItemId:
-            String(
-              productId
-            )
-        }
-      ],
+      [itemReference],
       {
         treeReference:
           STORE_CATEGORY_TREE
@@ -3043,7 +3058,10 @@ async function handleAssistProduct(request, response) {
   const kind = body?.kind === "description" ? "description" : "name";
   const photos = (Array.isArray(body?.photos) ? body.photos : [body?.photo])
     .map(photo => String(photo || ""))
-    .filter(photo => /^data:image\/(png|jpe?g|webp);base64,/i.test(photo))
+    .filter(photo =>
+      /^data:image\/(png|jpe?g|webp);base64,/i.test(photo) ||
+      /^https:\/\/static\.wixstatic\.com\/media\/[A-Za-z0-9._~-]+/i.test(photo)
+    )
     .slice(0, 5);
   if (!photos.length) {
     sendError(response, 400, "Carga una foto válida primero.");
@@ -3138,13 +3156,20 @@ async function handleUpdateProduct(request, response, productId) {
   const current = currentResult?.product || currentResult;
   if (!current?._id && !current?.id) return sendError(response, 404, "No encontramos el producto.");
 
+  const currentVariants = Array.isArray(current?.variantsInfo?.variants)
+    ? current.variantsInfo.variants
+    : [];
+  const missingStyleCode = fulfillmentCode && currentVariants.some(variant => !safeText(variant?.sku, 100))
+    ? await nextPermanentStyleCode()
+    : "";
   const variants = Array.isArray(current?.variantsInfo?.variants)
-    ? current.variantsInfo.variants.map(variant => {
+    ? current.variantsInfo.variants.map((variant, index) => {
         const currentSku = safeText(variant?.sku, 100).toUpperCase();
         const skuTail = currentSku.replace(/^(?:PRL|PR|PL|RL|P|R|L)-?/i, "");
+        const generatedTail = `${missingStyleCode}${currentVariants.length > 1 ? `-${index + 1}` : ""}`;
         return {
           ...variant,
-          sku: fulfillmentCode ? `${fulfillmentCode}-${skuTail || `CM${Date.now().toString(36).toUpperCase()}`}` : currentSku,
+          sku: fulfillmentCode ? `${fulfillmentCode}-${skuTail || generatedTail}` : currentSku,
           price: {
             ...(variant.price || {}),
             actualPrice: { amount: String(Math.round(price)) }
@@ -3169,11 +3194,16 @@ async function handleUpdateProduct(request, response, productId) {
 
   if (Array.isArray(body?.photos)) {
     const photoIds = [];
+    const seenPhotoIds = new Set();
     const photos = body.photos.filter(Boolean).slice(0, 5);
     for (let index = 0; index < photos.length; index += 1) {
       const value = String(photos[index] || "");
       const existingId = wixMediaId(value);
-      photoIds.push(existingId || await uploadImage(value, index));
+      const photoId = existingId || await uploadImage(value, index);
+      if (photoId && !seenPhotoIds.has(photoId)) {
+        seenPhotoIds.add(photoId);
+        photoIds.push(photoId);
+      }
     }
     update.media = photoIds.length
       ? { itemsInfo: { items: photoIds.map(id => ({ id })) } }
@@ -4272,14 +4302,18 @@ function imageCandidateValue(candidate) {
 }
 
 function getProductImageUrls(product) {
-  return [...new Set(productImageCandidates(product)
-    .map(imageCandidateValue)
-    .map(value => {
-      if (/^https?:\/\//i.test(value)) return value;
-      const mediaId = wixMediaId(value) || safeText(value, 1500).split("/")[0].split("#")[0];
-      return mediaId ? `https://static.wixstatic.com/media/${mediaId}` : "";
-    })
-    .filter(Boolean))].slice(0, 5);
+  const urls = [];
+  const seenMediaIds = new Set();
+  for (const candidate of productImageCandidates(product)) {
+    const value = imageCandidateValue(candidate);
+    const mediaId = wixMediaId(value) || (!/^https?:\/\//i.test(value) ? safeText(value, 1500).split("/")[0].split("#")[0] : "");
+    const key = mediaId || safeText(value, 1500);
+    if (!key || seenMediaIds.has(key)) continue;
+    seenMediaIds.add(key);
+    urls.push(mediaId ? `https://static.wixstatic.com/media/${mediaId}` : value);
+    if (urls.length === 5) break;
+  }
+  return urls;
 }
 
 function getProductImageUrl(product) {

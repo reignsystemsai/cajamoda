@@ -4846,7 +4846,7 @@ if(
         $("quickProductPrice").value = cost > 0 ? Math.round(cost * 2.56) : "";
       };
       const quickSkuButton = qsa("[data-quick-generate-sku]")[0];
-      if(quickSkuButton) quickSkuButton.onclick = async () => {
+if (quickSkuButton) quickSkuButton.onclick = async () => {        
         if(!confirm("Esto reemplazará el SKU permanente de todas las variantes de este producto. ¿Continuar?")) return;
         const adminCode = prompt("Ingresa el código administrativo de 4 dígitos:", "") || "";
         if(!/^\d{4}$/.test(adminCode)) return showToast("Ingresa el código administrativo de cuatro dígitos.");

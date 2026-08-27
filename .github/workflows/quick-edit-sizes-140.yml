@@ -1,0 +1,249 @@
+name: Quick Edit Sizes 140
+
+on:
+  push:
+    branches:
+      - fix/quick-edit-sizes-140
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/quick-edit-sizes-140
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Apply surgical Quick Edit size patch
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          admin_path = Path('admin/index.html')
+          server_path = Path('server.js')
+          admin = admin_path.read_text()
+          server = server_path.read_text()
+
+          old = '      const productVariants = inventory.filter(item => String(item.productId) === String(product.id));'
+          new = '''      const productVariants = inventory.filter(item => String(item.productId) === String(product.id));
+          const quickSizeDefinitions = [
+            {label:"S", key:"S"},
+            {label:"M", key:"M"},
+            {label:"Large", key:"L"},
+            {label:"X-Large", key:"XL"}
+          ];
+          const quickVariantSizeKey = value => {
+            const normalized = String(value || "").toUpperCase().replace(/[^A-Z0-9]+/g, " ").trim();
+            if (/(^| )X LARGE( |$)|(^| )XL( |$)|(^| )X L( |$)/.test(normalized)) return "XL";
+            if (/(^| )LARGE( |$)|(^| )L( |$)/.test(normalized)) return "L";
+            if (/(^| )M( |$)/.test(normalized)) return "M";
+            if (/(^| )S( |$)/.test(normalized)) return "S";
+            return "";
+          };
+          const quickSizeVariants = quickSizeDefinitions.map(definition => {
+            const item = productVariants.find(candidate => quickVariantSizeKey(candidate.variantName || candidate.sku) === definition.key) || null;
+            return {
+              ...definition,
+              quantity: Math.max(0, Math.trunc(Number(item?.quantity || 0))),
+              sku: String(item?.sku || "")
+            };
+          });'''
+          if old not in admin:
+              raise SystemExit('admin quick-size anchor missing')
+          admin = admin.replace(old, new, 1)
+
+          old = '${productVariants.length ? productVariants.map((item,index) => `<label class="quickVariantRow"><span>${escapeHtml(item.variantName || "Única")}</span><input data-quick-inventory-id="${escapeHtml(item.id)}" type="number" min="0" step="1" value="${Math.max(0, Math.trunc(Number(item.quantity || 0)))}" aria-label="Cantidad ${escapeHtml(item.variantName || item.sku || "variante")}"><small>${escapeHtml(item.sku || "Sin SKU")}</small>${index===0?`<button data-quick-generate-sku class="quickSkuRepair" type="button">Generar / reparar SKU</button>`:`<span></span>`}</label>`).join("") : `<div class="emptyStateText">Este producto no tiene variantes editables.</div>`}'
+          new = '${quickSizeVariants.map((entry,index) => `<label class="quickVariantRow"><span>${escapeHtml(entry.label)}</span><input data-quick-size="${escapeHtml(entry.label)}" type="number" min="0" step="1" value="${entry.quantity}" aria-label="Cantidad ${escapeHtml(entry.label)}"><small>${escapeHtml(entry.sku || "Se creará en Wix")}</small>${index===0?`<button data-quick-generate-sku class="quickSkuRepair" type="button">Generar / reparar SKU</button>`:`<span></span>`}</label>`).join("")}'
+          if old not in admin:
+              raise SystemExit('admin quick-row anchor missing')
+          admin = admin.replace(old, new, 1)
+
+          old = 'if($("quickProductStatus").value === "out") qsa("[data-quick-inventory-id]").forEach(input => input.value = "0");'
+          new = 'if($("quickProductStatus").value === "out") qsa("[data-quick-size]").forEach(input => input.value = "0");'
+          if old not in admin:
+              raise SystemExit('admin stock anchor missing')
+          admin = admin.replace(old, new, 1)
+
+          old = '''        const changes = qsa("[data-quick-inventory-id]").map(input => ({id: input.dataset.quickInventoryId, quantity: Number(input.value)}));
+          if(changes.some(change => !Number.isInteger(change.quantity) || change.quantity < 0)) return showToast("Revisa la cantidad de cada variante.");'''
+          new = '''        const quickSizes = qsa("[data-quick-size]").map(input => ({size: input.dataset.quickSize, quantity: Number(input.value)}));
+          if(quickSizes.some(change => !Number.isInteger(change.quantity) || change.quantity < 0)) return showToast("Revisa la cantidad de cada variante.");'''
+          if old not in admin:
+              raise SystemExit('admin save anchor missing')
+          admin = admin.replace(old, new, 1)
+
+          old = '''          await apiRequest(`/api/products/${encodeURIComponent(product.id)}`, {method:"PATCH", body:{name:$("quickProductName").value.trim(), description:$("quickProductDescription").value.trim(), cost:Number($("quickProductCost").value), price:Number(product.price || 0), category:$("quickProductCategory").value, fulfillmentCode, photos:quickPhotoValues.filter(Boolean), visible:$("quickProductVisible").checked}});
+          if(changes.length) await apiRequest("/api/inventory", {method:"PATCH", body:{changes}});'''
+          new = '''          await apiRequest(`/api/products/${encodeURIComponent(product.id)}`, {method:"PATCH", body:{name:$("quickProductName").value.trim(), description:$("quickProductDescription").value.trim(), cost:Number($("quickProductCost").value), price:Number(product.price || 0), category:$("quickProductCategory").value, fulfillmentCode, photos:quickPhotoValues.filter(Boolean), visible:$("quickProductVisible").checked, quickSizes}});'''
+          if old not in admin:
+              raise SystemExit('admin wix-save anchor missing')
+          admin = admin.replace(old, new, 1)
+          admin_path.write_text(admin)
+
+          old = 'async function handleUpdateProduct(request, response, productId) {'
+          new = '''const QUICK_EDIT_SIZES = [
+            {label:"S", key:"S", suffix:"S"},
+            {label:"M", key:"M", suffix:"M"},
+            {label:"Large", key:"L", suffix:"L"},
+            {label:"X-Large", key:"XL", suffix:"XL"}
+          ];
+
+          function quickEditSizeKey(value) {
+            const normalized = safeText(value, 300).toUpperCase().replace(/[^A-Z0-9]+/g, " ").trim();
+            if (/(^| )X LARGE( |$)|(^| )XL( |$)|(^| )X L( |$)/.test(normalized)) return "XL";
+            if (/(^| )LARGE( |$)|(^| )L( |$)/.test(normalized)) return "L";
+            if (/(^| )M( |$)/.test(normalized)) return "M";
+            if (/(^| )S( |$)/.test(normalized)) return "S";
+            return "";
+          }
+
+          function variantQuickEditSizeKey(variant) {
+            for (const choice of Array.isArray(variant?.choices) ? variant.choices : []) {
+              const option = choice?.optionChoiceNames || choice || {};
+              if (safeText(option?.optionName, 50).toLowerCase() === "size") {
+                const key = quickEditSizeKey(option?.choiceName);
+                if (key) return key;
+              }
+            }
+            return quickEditSizeKey(variant?.sku);
+          }
+
+          function normalizeQuickEditSizes(input) {
+            if (!Array.isArray(input)) return [];
+            const requested = new Map();
+            for (const item of input) {
+              const definition = QUICK_EDIT_SIZES.find(size => size.label === safeText(item?.size, 20));
+              const quantity = Number(item?.quantity);
+              if (!definition || !Number.isInteger(quantity) || quantity < 0 || quantity > 100000) {
+                throw new Error("Revisa las cantidades de S, M, Large y X-Large.");
+              }
+              requested.set(definition.key, quantity);
+            }
+            return QUICK_EDIT_SIZES.map(size => ({...size, quantity: requested.get(size.key) ?? 0}));
+          }
+
+          async function handleUpdateProduct(request, response, productId) {'''
+          if old not in server:
+              raise SystemExit('server handler anchor missing')
+          server = server.replace(old, new, 1)
+
+          old = '''  const currentVariants = Array.isArray(current?.variantsInfo?.variants)
+            ? current.variantsInfo.variants
+            : [];
+          const missingStyleCode ='''
+          new = '''  const currentVariants = Array.isArray(current?.variantsInfo?.variants)
+            ? current.variantsInfo.variants
+            : [];
+          const quickSizes = normalizeQuickEditSizes(body?.quickSizes);
+          const missingStyleCode ='''
+          if old not in server:
+              raise SystemExit('server current variants anchor missing')
+          server = server.replace(old, new, 1)
+
+          old = '''  if (variants.length) {
+            update.options = current.options || [];
+            update.variantsInfo = { variants };
+          }'''
+          new = '''  if (quickSizes.length) {
+            const currentBySize = new Map(
+              currentVariants
+                .map(variant => [variantQuickEditSizeKey(variant), variant])
+                .filter(([key]) => key)
+            );
+            const firstSku = safeText(currentVariants.find(variant => safeText(variant?.sku, 100))?.sku, 100).toUpperCase();
+            const existingStyleCode = firstSku.match(/(?:^|-)CM(\\d+)(?:-|$)/)?.[0]?.replace(/^-/, "") || "";
+            const styleCode = existingStyleCode || await nextPermanentStyleCode(true);
+            const baseVariant = currentVariants[0] || {};
+            update.options = buildOptions(QUICK_EDIT_SIZES.map(size => size.label), []);
+            update.variantsInfo = {
+              variants: quickSizes.map(size => {
+                const existing = currentBySize.get(size.key);
+                const variant = {
+                  sku: safeText(existing?.sku, 100).toUpperCase() || [fulfillmentCode || "R", styleCode, size.suffix].join("-"),
+                  visible: existing?.visible !== false,
+                  choices: buildVariantChoices({size:size.label, color:""}),
+                  price: {
+                    ...(existing?.price || baseVariant.price || {}),
+                    actualPrice: { amount: String(Math.round(price)) }
+                  },
+                  revenueDetails: cost > 0
+                    ? { ...(existing?.revenueDetails || baseVariant.revenueDetails || {}), cost: { amount: String(cost) } }
+                    : (existing?.revenueDetails || baseVariant.revenueDetails),
+                  physicalProperties: existing?.physicalProperties || baseVariant.physicalProperties || {}
+                };
+                if (existing?._id) variant._id = existing._id;
+                return variant;
+              })
+            };
+          } else if (variants.length) {
+            update.options = current.options || [];
+            update.variantsInfo = { variants };
+          }'''
+          if old not in server:
+              raise SystemExit('server variants update anchor missing')
+          server = server.replace(old, new, 1)
+
+          old = '''  const updated = await wix.productsV3.updateProduct(productId, update, {
+            fields: ["PLAIN_DESCRIPTION", "MERCHANT_DATA", "CURRENCY", "MEDIA_ITEMS_INFO", "THUMBNAIL"]
+          });'''
+          new = '''  const updated = await wix.productsV3.updateProduct(productId, update, {
+            fields: ["PLAIN_DESCRIPTION", "MERCHANT_DATA", "CURRENCY", "MEDIA_ITEMS_INFO", "THUMBNAIL"]
+          });
+
+          if (quickSizes.length) {
+            let productInventory = [];
+            for (let attempt = 0; attempt < 5; attempt += 1) {
+              const inventoryResult = await wix.inventoryItemsV3
+                .queryInventoryItems()
+                .ne("_id", "00000000-0000-0000-0000-000000000000")
+                .limit(1000)
+                .find();
+              productInventory = (inventoryResult?.items || [])
+                .map(normalizeInventoryItem)
+                .filter(item => String(item.productId) === String(productId));
+              const found = new Set(productInventory.map(item => quickEditSizeKey(item.variantName || item.sku)).filter(Boolean));
+              if (QUICK_EDIT_SIZES.every(size => found.has(size.key))) break;
+              if (attempt < 4) await sleep(300);
+            }
+            for (const size of quickSizes) {
+              const inventoryItem = productInventory.find(item => quickEditSizeKey(item.variantName || item.sku) === size.key);
+              if (!inventoryItem?.id) throw new Error(`Wix no confirmó la variante ${size.label}.`);
+              await wix.inventoryItemsV3.updateInventoryItem(
+                inventoryItem.id,
+                { id: inventoryItem.id, revision: inventoryItem.revision, quantity: size.quantity },
+                { reason: "MANUAL" }
+              );
+            }
+          }'''
+          if old not in server:
+              raise SystemExit('server Wix inventory anchor missing')
+          server = server.replace(old, new, 1)
+          server_path.write_text(server)
+          PY
+
+          rm .github/workflows/quick-edit-sizes-140.yml
+
+      - name: Validate build
+        run: |
+          npm ci --ignore-scripts
+          npm run build
+
+      - name: Commit surgical source change
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add admin/index.html server.js .github/workflows/quick-edit-sizes-140.yml
+          git commit -m "Add quick edit size variants wired to Wix"
+          git push origin HEAD:fix/quick-edit-sizes-140

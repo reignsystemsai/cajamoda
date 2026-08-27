@@ -4605,7 +4605,7 @@ svg{
       )
       .slice(
         0,
-        categoryId === "sun" ? 5 : CONFIG.maxSlotsPerCategory
+        categoryId === "sun" ? 4 : CONFIG.maxSlotsPerCategory
       );
   }
 
@@ -4796,7 +4796,7 @@ svg{
 
             const slotLimit =
               category.id === "sun"
-                ? 5
+                ? 4
                 : CONFIG.maxSlotsPerCategory;
 
             if(!searching){
@@ -4835,7 +4835,7 @@ svg{
                       ${
                         searching
                           ?`${products.length} encontrados`
-                          :`${products.length} / ${CONFIG.maxSlotsPerCategory}`
+                          :`${products.length} / ${category.id === "sun" ? 4 : CONFIG.maxSlotsPerCategory}`
                       }
                     </span>
 

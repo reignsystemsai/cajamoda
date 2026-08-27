@@ -45,11 +45,11 @@ const WIX_SITE_ID =
 const LOADER_PASSWORD =
   process.env.LOADER_PASSWORD;
 
-const PLATFORM_ADMIN_PASSWORD =
-  safeEnv(process.env.PLATFORM_ADMIN_PASSWORD);
-
 const SKU_4DIGIT_CODE =
   safeEnv(process.env.SKU_4DIGIT_CODE);
+
+const PLATFORM_ADMIN_PASSWORD =
+  safeEnv(process.env.PLATFORM_ADMIN_PASSWORD);
 
 const STORE_OWNER_NAME =
   safeEnv(process.env.STORE_OWNER_NAME) || "Karolay Blanco";
@@ -2406,15 +2406,13 @@ async function saveCategoryArrangement(categoryId, orderedIds) {
   await wix.categoriesV3.setArrangedItems(categoryId, STORE_CATEGORY_TREE, {
     items: orderedIds.map(catalogItemId => ({appId:WIX_STORES_APP_ID, catalogItemId}))
   });
-  const confirmed = await wix.categoriesV3.getArrangedItems(categoryId, STORE_CATEGORY_TREE);
-  return (confirmed?.items || []).map(item => String(item?.catalogItemId || "")).filter(Boolean);
 }
 
 async function getShowcaseSlots() {
   const categories = await queryRoutedCategories();
   const entries = await Promise.all(categories.map(async category => {
-    const {orderedIds} = await categoryArrangement(category.vibeId);
-    return orderedIds.slice(0, showcaseLimit(category.vibeId)).map((id, index) => [id, index + 1]);
+    const arranged = await wix.categoriesV3.getArrangedItems(category.id, STORE_CATEGORY_TREE);
+    return (arranged?.items || []).map((item, index) => [String(item?.catalogItemId || ""), index + 1]);
   }));
   return Object.fromEntries(entries.flat().filter(([id]) => id));
 }
@@ -2721,7 +2719,8 @@ async function assignProductCategory(
       0;
 }
 
-async function nextPermanentStyleCode() {
+let lastReservedStyleNumber = 0;
+async function nextPermanentStyleCode(reserve = false) {
   const result = await wix.inventoryItemsV3
     .queryInventoryItems()
     .ne("_id", "00000000-0000-0000-0000-000000000000")
@@ -2736,7 +2735,8 @@ async function nextPermanentStyleCode() {
     const match = String(item.sku || "").toUpperCase().match(/(?:^|-)CM(\d+)(?:-|$)/);
     if (match) highest = Math.max(highest, Number(match[1]) || 0);
   }
-  const next = Math.max(highest + 1, productIds.size + 1);
+  const next = Math.max(highest + 1, productIds.size + 1, lastReservedStyleNumber + 1);
+  if (reserve) lastReservedStyleNumber = next;
   return `CM${String(next).padStart(4, "0")}`;
 }
 
@@ -2816,7 +2816,7 @@ async function createWixProduct(
   // The numeric product record is generated on the server so a client cannot
   // accidentally reuse it. It becomes the permanent SKU family for every
   // size of this product and remains unchanged when inventory quantities move.
-  const styleCode = await nextPermanentStyleCode();
+  const styleCode = await nextPermanentStyleCode(true);
 
   if (!["P", "R", "PR", "L", "PL", "RL", "PRL"].includes(fulfillmentCode)) {
     throw new Error("Selecciona un tipo de entrega válido.");
@@ -3202,20 +3202,22 @@ async function handleUpdateProduct(request, response, productId) {
     if (!current?._id && !current?.id) return sendError(response, 404, "No encontramos el producto.");
     const currentVariants = Array.isArray(current?.variantsInfo?.variants) ? current.variantsInfo.variants : [];
     if (!currentVariants.length) return sendError(response, 400, "Este producto no tiene variantes para actualizar.");
-    const styleCode = await nextPermanentStyleCode();
+    const styleCode = await nextPermanentStyleCode(true);
     const variants = currentVariants.map((variant, index) => {
       const oldSku = safeText(variant?.sku, 100).toUpperCase();
       const savedSuffix = oldSku.match(/^(?:PRL|PR|PL|RL|P|R|L)-(?:CM\d{4}|[^-]+)-(.+)$/)?.[1];
       const suffix = savedSuffix || (currentVariants.length > 1 ? String(index + 1) : "");
       return {...variant, sku:[fulfillmentCode, styleCode, suffix].filter(Boolean).join("-")};
     });
-    const updated = await wix.productsV3.updateProduct(productId, {revision:current.revision, options:current.options || [], variantsInfo:{variants}}, {fields:["CURRENCY"]});
-    sendJson(response, 200, {ok:true, styleCode, skus:variants.map(variant => variant.sku), product:updated?.product || updated});
-    return;
-  }
-  if (body?.action === "MOVE_SHOWCASE_POSITION") {
-    const result = await applyShowcasePosition(productId, safeText(body?.category, 30), Number(body?.targetSlot));
-    sendJson(response, 200, {ok:true, showcasePosition:result});
+    await wix.productsV3.updateProduct(productId, {revision:current.revision, options:current.options || [], variantsInfo:{variants}}, {fields:["CURRENCY"]});
+    const verifiedResult = await wix.productsV3.getProduct(productId, {fields:["CURRENCY"]});
+    const verifiedProduct = verifiedResult?.product || verifiedResult;
+    const verifiedSkus = (verifiedProduct?.variantsInfo?.variants || []).map(variant => safeText(variant?.sku, 100).toUpperCase());
+    const expectedSkus = variants.map(variant => safeText(variant?.sku, 100).toUpperCase());
+    if (expectedSkus.some(sku => !verifiedSkus.includes(sku))) {
+      throw new Error("Wix no confirmó el nuevo SKU permanente.");
+    }
+    sendJson(response, 200, {ok:true, styleCode, skus:verifiedSkus, product:verifiedProduct});
     return;
   }
   const name = safeText(body?.name, 80);
@@ -3236,7 +3238,7 @@ async function handleUpdateProduct(request, response, productId) {
     ? current.variantsInfo.variants
     : [];
   const missingStyleCode = fulfillmentCode && currentVariants.some(variant => !safeText(variant?.sku, 100))
-    ? await nextPermanentStyleCode()
+    ? await nextPermanentStyleCode(true)
     : "";
   const variants = Array.isArray(current?.variantsInfo?.variants)
     ? current.variantsInfo.variants.map((variant, index) => {
@@ -3344,8 +3346,7 @@ async function applyShowcasePosition(productId, category, targetSlot) {
     orderedIds.splice(currentIndex, 1);
     orderedIds.splice(targetIndex, 0, id);
   }
-  const confirmedIds = await saveCategoryArrangement(wixCategory.id, orderedIds);
-  if (confirmedIds[targetIndex] !== id) throw new Error("Wix no confirmó la nueva posición del producto.");
+  await saveCategoryArrangement(wixCategory.id, orderedIds);
   return {from:currentIndex + 1, to:targetSlot, swappedProductId:occupantId};
 }
 
@@ -3355,17 +3356,6 @@ async function handleShowcasePosition(request, response, productId) {
   const body = await readBody(request);
   const result = await applyShowcasePosition(productId, safeText(body?.category, 30), Number(body?.targetSlot));
   sendJson(response, 200, {ok:true, ...result});
-}
-
-async function handleGetShowcasePosition(request, response, productId) {
-  if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
-  if (!wix) return sendError(response, 503, "La tienda todavía no está conectada.");
-  const routes = await getCategoryRoutes();
-  const category = routes[String(productId)] || "";
-  if (!category) return sendError(response, 404, "Este producto no tiene una categoría de vitrina.");
-  const {orderedIds} = await categoryArrangement(category);
-  const slot = orderedIds.indexOf(String(productId)) + 1;
-  sendJson(response, 200, {ok:true, category, slot:slot > 0 ? slot : null, limit:showcaseLimit(category)});
 }
 
 async function handleDeleteProduct(request, response, productId) {
@@ -4900,10 +4890,6 @@ const server =
           return;
         }
         const showcasePositionMatch = url.pathname.match(/^\/api\/products\/([^/]+)\/showcase-position$/);
-        if (request.method === "GET" && showcasePositionMatch) {
-          await handleGetShowcasePosition(request, response, decodeURIComponent(showcasePositionMatch[1]));
-          return;
-        }
         if (request.method === "POST" && showcasePositionMatch) {
           await handleShowcasePosition(request, response, decodeURIComponent(showcasePositionMatch[1]));
           return;

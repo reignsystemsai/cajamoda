@@ -1,0 +1,115 @@
+name: Apply Multimedia redesign 112
+on:
+  push:
+    branches: [tmp/apply-media-redesign-112]
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: tmp/apply-media-redesign-112
+      - name: Update Multimedia CSS only
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('admin/index.html')
+          text = path.read_text()
+          marker = '\n</style>'
+          css = r'''
+
+/* Build 112 — Multimedia rendition only */
+@media (min-width:900px){
+  #panel-add .productMediaCard{
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-rows:auto 92px 158px!important;
+    align-content:start!important;
+    gap:16px!important;
+    padding:18px 22px!important;
+  }
+  #panel-add .mediaHeading{
+    display:flex!important;
+    align-items:baseline!important;
+    gap:10px!important;
+    margin:0!important;
+  }
+  #panel-add .verticalUploadControl{
+    grid-column:1!important;
+    grid-row:2!important;
+    width:100%!important;
+    height:92px!important;
+    min-height:92px!important;
+    margin:0!important;
+    padding:0 28px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    writing-mode:horizontal-tb!important;
+    transform:none!important;
+    border:1px dashed rgba(0,0,0,.25)!important;
+    border-radius:16px!important;
+    background:rgba(255,255,255,.45)!important;
+  }
+  #panel-add .verticalUploadControl strong{
+    font-size:14px!important;
+    font-weight:650!important;
+  }
+  #panel-add .verticalUploadControl span{
+    display:none!important;
+  }
+  #panel-add .portraitMediaGrid{
+    grid-column:1!important;
+    grid-row:3!important;
+    width:100%!important;
+    height:158px!important;
+    min-height:158px!important;
+    margin:0!important;
+    display:grid!important;
+    grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    grid-template-rows:158px!important;
+    gap:14px!important;
+    align-items:stretch!important;
+  }
+  #panel-add .portraitMediaGrid .photoBox,
+  #panel-add .portraitMediaGrid .photoBox:first-child{
+    width:100%!important;
+    height:158px!important;
+    min-height:158px!important;
+    max-height:158px!important;
+    min-width:0!important;
+    margin:0!important;
+    padding:0!important;
+    aspect-ratio:auto!important;
+    border:1px dashed rgba(0,0,0,.22)!important;
+    border-radius:14px!important;
+    background:rgba(255,255,255,.35)!important;
+    overflow:hidden!important;
+  }
+  #panel-add .portraitMediaGrid .photoBox img{
+    width:100%!important;
+    height:100%!important;
+    object-fit:cover!important;
+    object-position:center top!important;
+  }
+}
+'''
+          if '/* Build 112 — Multimedia rendition only */' not in text:
+              if marker not in text:
+                  raise SystemExit('style marker not found')
+              text = text.replace(marker, css + marker, 1)
+              path.write_text(text)
+          PY
+      - name: Verify only admin file change
+        run: |
+          git diff --check
+          git diff --name-only | grep -qx 'admin/index.html'
+      - name: Commit surgical change
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add admin/index.html
+          git commit -m 'Redesign Multimedia with compact thumbnails'
+          git push origin HEAD:tmp/apply-media-redesign-112

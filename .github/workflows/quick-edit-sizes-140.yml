@@ -18,17 +18,11 @@ jobs:
           ref: fix/quick-edit-sizes-140
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: npm
-
       - name: Apply surgical Quick Edit size patch
         shell: bash
         run: |
           python3 <<'PY'
           from pathlib import Path
-          import re
 
           admin_path = Path('admin/index.html')
           server_path = Path('server.js')
@@ -236,7 +230,7 @@ jobs:
 
       - name: Validate build
         run: |
-          npm ci --ignore-scripts
+          npm install --no-package-lock --ignore-scripts
           npm run build
 
       - name: Commit surgical source change

@@ -4737,7 +4737,7 @@ if(
           </div>
           <div class="quickAssistField"><label>Descripción<textarea id="quickProductDescription" maxlength="16000">${escapeHtml(detail.description || "")}</textarea></label><button id="quickDescribeProduct" class="secondaryButton quickAssistButton" type="button">Descríbelo</button></div>
           <div><strong>Métodos de entrega</strong><div class="quickDeliveryChoices">${[["P","Pronto"],["R","Rápido"],["L","Libéralo"]].map(([code,label]) => `<label class="quickDeliveryChoice"><input data-quick-delivery="${code}" type="checkbox" ${quickFulfillment.includes(code) ? "checked" : ""}><span>${code} · ${label}</span></label>`).join("")}</div></div>
-          <div class="quickShowcase"><div class="quickShowcaseHead"><strong>Posición en vitrina</strong><small id="quickShowcaseCategory"></small></div><div id="quickSlotGrid" class="quickSlotGrid"></div><div class="quickShowcaseAction"><small id="quickShowcaseMessage">Arrastra el cuadro negro a otra posición.</small></div></div>
+          <div class="quickShowcase"><div class="quickShowcaseHead"><strong>Posición en vitrina</strong><small id="quickShowcaseCategory"></small></div><div id="quickSlotGrid" class="quickSlotGrid"></div><div class="quickShowcaseAction"><small id="quickShowcaseMessage">Drag and drop</small></div></div>
           <div><strong>Variantes e inventario</strong><div class="quickVariantList"><div class="quickVariantHead"><span>Talla</span><span>Cantidad</span><span>SKU permanente</span></div>${productVariants.length ? productVariants.map(item => `<label class="quickVariantRow"><span>${escapeHtml(item.variantName || "Única")}</span><input data-quick-inventory-id="${escapeHtml(item.id)}" type="number" min="0" step="1" value="${Math.max(0, Math.trunc(Number(item.quantity || 0)))}" aria-label="Cantidad ${escapeHtml(item.variantName || item.sku || "variante")}"><small>${escapeHtml(item.sku || "Sin SKU")}</small></label>`).join("") : `<div class="emptyStateText">Este producto no tiene variantes editables.</div>`}</div></div>
           <label class="switchRow quickVisibility"><span><strong>Visible en la tienda</strong></span><input id="quickProductVisible" type="checkbox" ${detail.visible !== false ? "checked" : ""}></label>
           <div class="quickEditFooter"><details class="quickMoreWrap"><summary>Más acciones ▾</summary><div class="quickMoreMenu"><button id="quickDeleteProduct" type="button">Eliminar producto</button></div></details><div class="quickEditActions"><button id="quickEditCancel" class="secondaryButton" type="button">Cancelar</button><button id="quickEditSaveNext" class="secondaryButton" type="button">Guardar y siguiente</button><button id="quickEditSave" class="primaryButton" type="submit">Guardar cambios</button></div></div>
@@ -4790,7 +4790,7 @@ if(
           };
         });
         const occupant=categoryProducts.find(item=>Number(item.showcaseSlot)===quickTargetSlot);
-        $("quickShowcaseMessage").textContent=!quickTargetSlot?"Arrastra el cuadro negro a otra posición.":quickTargetSlot===quickCurrentSlot?`Posición actual: ${quickCurrentSlot}. Arrástrala para moverla.`:occupant?`${quickCurrentSlot||"Sin posición"} ↔ ${quickTargetSlot} · Listo para intercambiar con ${occupant.name}.`:`${quickCurrentSlot||"Sin posición"} → ${quickTargetSlot} · Listo para mover al espacio vacío.`;
+        $("quickShowcaseMessage").textContent="Drag and drop";
       }
       renderQuickShowcase();
       $("quickProductCategory").addEventListener("change",()=>{quickTargetSlot=null;renderQuickShowcase();});

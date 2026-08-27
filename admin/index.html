@@ -1267,7 +1267,8 @@ img{
 .inventorySummaryCard strong,.productSummaryCard strong{display:block;font-family:Inter,sans-serif;font-size:22px;font-weight:600}
 .inventorySummaryCard span,.productSummaryCard span{font-size:7px;color:#706a61}
 .productToolbar{display:grid;grid-template-columns:minmax(220px,1fr) auto;gap:12px;margin-bottom:14px}
-.productBulkBar{display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:10px 12px;border:1px solid rgba(0,0,0,.09);border-radius:14px;background:rgba(255,255,255,.7)}
+.productBulkBar{display:flex!important;align-items:center;gap:12px;min-height:52px;margin-bottom:12px;padding:10px 14px;border:1px solid rgba(0,0,0,.16);border-radius:14px;background:#fff}
+.productSelectAllLabel{display:flex;align-items:center;gap:8px;font-size:10px;font-weight:750;cursor:pointer}
 .productSelect,.productSelectAll{display:block;width:20px;height:20px;flex:0 0 20px;margin:0;accent-color:#111;cursor:pointer}
 .productRow.productRowSelected{border-color:#111;background:rgba(250,249,246,.94);box-shadow:inset 3px 0 0 #111}
 .productBulkCount{margin-right:auto;color:#6f6961;font-size:10px;font-weight:700}
@@ -4745,7 +4746,7 @@ if(
         <div class="productSummaryCard"><strong style="color:var(--red)">${outCount}</strong><span>Agotados</span></div>
       </div>
       <div class="productBulkBar">
-        <input id="selectAllProducts" class="productSelectAll" type="checkbox" ${allMatchingSelected ? "checked" : ""} aria-label="Seleccionar todos los productos visibles">
+        <label class="productSelectAllLabel"><input id="selectAllProducts" class="productSelectAll" type="checkbox" ${allMatchingSelected ? "checked" : ""}>Seleccionar todos</label>
         <span class="productBulkCount">${selectedProductIds.size ? `${selectedProductIds.size} seleccionados` : "Seleccionar productos"}</span>
         <details class="productBulkActions ${selectedProductIds.size ? "" : "disabled"}">
           <summary>Más acciones ▾</summary>

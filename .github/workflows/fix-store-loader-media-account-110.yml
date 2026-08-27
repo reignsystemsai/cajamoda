@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - fix/store-loader-media-account-110
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -68,8 +69,10 @@ jobs:
   }
   .sidebarAccountControls #storeSelector{
     height:28px!important;
-    padding:0 0 0 34px!important;
-    background:radial-gradient(circle at 10px 50%,#4e9b55 0 4px,transparent 5px),transparent!important;
+    padding:0!important;
+    background:transparent!important;
+    text-align:center!important;
+    text-align-last:center!important;
   }
   .sidebarAccountControls #logoutButton{
     height:28px!important;

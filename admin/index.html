@@ -4426,7 +4426,7 @@ if(
         const currentId = editingProductId;
         await apiRequest(`/api/products/${encodeURIComponent(currentId)}`, {
           method:"PATCH",
-          body:{name, description, cost, price, visible:true}
+          body:{name, description, cost, price, photos, visible:true}
         });
         const quantityBySku = new Map(variantOverrides.map(variant => [variant.sku, stockStatus === "OUT_OF_STOCK" ? 0 : variant.quantity]));
         const changes = inventory
@@ -4672,7 +4672,15 @@ if(
       variantDrafts.set(size || "unique", {size, color:"", methods:["P","R","L"].filter(method => code.includes(method)), sku, persistedSku:true, quantity:Math.max(0, Number(item.quantity || 0)), enabled:true});
       editedVariantQuantities.add(size || "unique");
     });
-    uploadedPhotos = [fullResolutionWixImageUrl(detail.image || product.photos?.[0] || ""), "", "", "", ""];
+    uploadedPhotos = (Array.isArray(detail.photos) && detail.photos.length
+      ? detail.photos
+      : Array.isArray(product.photos) && product.photos.length
+        ? product.photos
+        : [detail.image || ""])
+      .map(fullResolutionWixImageUrl)
+      .filter(Boolean)
+      .slice(0, 5);
+    while(uploadedPhotos.length < 5) uploadedPhotos.push("");
     renderPhotoInputs();
     renderVariantPreview();
     $("panel-add").querySelector(".pageTitle").textContent = "Editar producto";

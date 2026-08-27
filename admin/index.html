@@ -2198,7 +2198,7 @@ img{
   #panel-add .verticalUploadControl{grid-column:1!important;grid-row:2!important;width:100%!important;height:38px!important;min-height:38px!important;writing-mode:horizontal-tb!important;transform:none!important;border-radius:10px!important}
   #panel-add .verticalUploadControl strong{font-size:12px!important}
   #panel-add .verticalUploadControl span{display:none!important}
-  #panel-add .portraitMediaGrid{grid-column:1!important;grid-row:3!important;width:100%!important;min-width:0!important;justify-self:stretch!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;grid-template-rows:250px!important;height:250px!important;gap:10px!important}
+  #panel-add .portraitMediaGrid{grid-column:1!important;grid-row:3!important;width:100%!important;min-width:0!important;justify-self:stretch!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;grid-template-rows:250px!important;height:250px!important;gap:10px!important}
   #panel-add .portraitMediaGrid .photoBox,#panel-add .portraitMediaGrid .photoBox:first-child{width:100%!important;min-width:0!important;height:250px!important;min-height:250px!important;max-height:250px!important;aspect-ratio:auto!important;border-radius:10px!important}
 
   #panel-add .variantFormCard{grid-template-columns:minmax(0,1fr) 300px!important;min-height:286px!important;padding:14px 18px!important;gap:18px!important}
@@ -2231,7 +2231,7 @@ img{
     margin-inline:0!important;
   }
   #panel-add .portraitMediaGrid{
-    grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    grid-template-columns:repeat(6,minmax(0,1fr))!important;
   }
   .sidebarAccountControls{
     left:50%!important;
@@ -2348,7 +2348,7 @@ img{
     min-height:270px!important;
     margin:0!important;
     justify-self:stretch!important;
-    grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    grid-template-columns:repeat(6,minmax(0,1fr))!important;
     grid-template-rows:270px!important;
     gap:10px!important;
   }
@@ -2414,7 +2414,7 @@ img{
     min-height:158px!important;
     margin:0!important;
     display:grid!important;
-    grid-template-columns:repeat(5,minmax(0,1fr))!important;
+    grid-template-columns:repeat(6,minmax(0,1fr))!important;
     grid-template-rows:158px!important;
     gap:14px!important;
     align-items:stretch!important;
@@ -2777,9 +2777,9 @@ img{
 
     </div></section>
 
-    <section class="productFormCard productMediaCard"><div class="mediaHeading"><h2>Multimedia</h2><p class="formSectionHelp">Agrega hasta 5 fotos.</p></div>
+    <section class="productFormCard productMediaCard"><div class="mediaHeading"><h2>Multimedia</h2><p class="formSectionHelp">Agrega hasta 6 fotos.</p></div>
       <div id="photoUploadGrid" class="photoUploadGrid portraitMediaGrid"></div>
-      <label id="photoDropZone" class="photoDropZone verticalUploadControl" for="photoBulkInput"><strong>Selecciona o arrastra hasta 5 fotos</strong><span>Se cargan juntas</span><input id="photoBulkInput" type="file" accept="image/*" multiple></label>
+      <label id="photoDropZone" class="photoDropZone verticalUploadControl" for="photoBulkInput"><strong>Selecciona o arrastra hasta 6 fotos</strong><span>Se cargan juntas</span><input id="photoBulkInput" type="file" accept="image/*" multiple></label>
     </section>
 
     <section class="productFormCard variantFormCard"><div class="variantMainArea"><div class="variantHeading"><div><h2>Variantes e inventario</h2><p class="formSectionHelp">Elige las tallas y los métodos de entrega.</p></div>
@@ -3826,6 +3826,7 @@ if(
       "",
       "",
       "",
+      "",
       ""
     ];
 
@@ -3841,7 +3842,7 @@ if(
   async function addPhotoFiles(fileList){
     const files = Array.from(fileList || [])
       .filter(file => String(file.type || "").startsWith("image/"))
-      .slice(0, 5);
+      .slice(0, 6);
     if(!files.length) return;
     if(files.some(file => file.size > 8 * 1024 * 1024)){
       showToast("Cada foto debe pesar menos de 8 MB.");
@@ -4063,7 +4064,7 @@ if(
   }
 
   async function buildAssistPhotos(sources){
-    const images = await Promise.all(sources.slice(0, 5).map(loadAssistImage));
+    const images = await Promise.all(sources.slice(0, 6).map(loadAssistImage));
     return images.map(image => {
     const cellWidth = 512;
     const cellHeight = 682;
@@ -4084,7 +4085,7 @@ if(
   }
 
   async function assistProductField(kind){
-    const photos = uploadedPhotos.filter(Boolean).slice(0, 5);
+    const photos = uploadedPhotos.filter(Boolean).slice(0, 6);
     if(!photos.length){ showToast("Carga una foto primero."); return; }
     const button = kind === "name" ? $("nameProduct") : $("describeProduct");
     const originalText = button.textContent;
@@ -4163,6 +4164,7 @@ if(
 
     uploadedPhotos =
       [
+        "",
         "",
         "",
         "",
@@ -4568,7 +4570,7 @@ if(
       variantDrafts.set(size || "unique", {size, color:"", methods:["P","R","L"].filter(method => code.includes(method)), sku, persistedSku:true, quantity:Math.max(0, Number(item.quantity || 0)), enabled:true});
       editedVariantQuantities.add(size || "unique");
     });
-    uploadedPhotos = [fullResolutionWixImageUrl(detail.image || product.photos?.[0] || ""), "", "", "", ""];
+    uploadedPhotos = [fullResolutionWixImageUrl(detail.image || product.photos?.[0] || ""), "", "", "", "", ""];
     renderPhotoInputs();
     renderVariantPreview();
     $("panel-add").querySelector(".pageTitle").textContent = "Editar producto";

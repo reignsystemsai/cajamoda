@@ -3166,6 +3166,15 @@ async function handleGetProduct(request, response, productId) {
   });
 }
 
+async function handleDeleteProduct(request, response, productId) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
+  if (!wix) return sendError(response, 503, "La tienda todavía no está conectada.");
+
+  await wix.productsV3.deleteProduct(productId);
+  categoryRouteCache.expiresAt = 0;
+  sendJson(response, 200, { ok: true, productId });
+}
+
 /* ============================================================
    REAL WIX ORDERS
    ============================================================ */
@@ -4593,6 +4602,10 @@ const server =
         }
         if (request.method === "PATCH" && productUpdateMatch) {
           await handleUpdateProduct(request, response, decodeURIComponent(productUpdateMatch[1]));
+          return;
+        }
+        if (request.method === "DELETE" && productUpdateMatch) {
+          await handleDeleteProduct(request, response, decodeURIComponent(productUpdateMatch[1]));
           return;
         }
 

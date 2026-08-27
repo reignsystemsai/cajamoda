@@ -3209,8 +3209,15 @@ async function handleUpdateProduct(request, response, productId) {
       const suffix = savedSuffix || (currentVariants.length > 1 ? String(index + 1) : "");
       return {...variant, sku:[fulfillmentCode, styleCode, suffix].filter(Boolean).join("-")};
     });
-    const updated = await wix.productsV3.updateProduct(productId, {revision:current.revision, options:current.options || [], variantsInfo:{variants}}, {fields:["CURRENCY"]});
-    sendJson(response, 200, {ok:true, styleCode, skus:variants.map(variant => variant.sku), product:updated?.product || updated});
+    await wix.productsV3.updateProduct(productId, {revision:current.revision, options:current.options || [], variantsInfo:{variants}}, {fields:["CURRENCY"]});
+    const verifiedResult = await wix.productsV3.getProduct(productId, {fields:["CURRENCY"]});
+    const verifiedProduct = verifiedResult?.product || verifiedResult;
+    const verifiedSkus = (verifiedProduct?.variantsInfo?.variants || []).map(variant => safeText(variant?.sku, 100).toUpperCase());
+    const expectedSkus = variants.map(variant => safeText(variant?.sku, 100).toUpperCase());
+    if (expectedSkus.some(sku => !verifiedSkus.includes(sku))) {
+      throw new Error("Wix no confirmó el nuevo SKU permanente.");
+    }
+    sendJson(response, 200, {ok:true, styleCode, skus:verifiedSkus, product:verifiedProduct});
     return;
   }
   const name = safeText(body?.name, 80);

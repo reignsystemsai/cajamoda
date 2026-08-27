@@ -2403,6 +2403,8 @@ async function saveCategoryArrangement(categoryId, orderedIds) {
   await wix.categoriesV3.setArrangedItems(categoryId, STORE_CATEGORY_TREE, {
     items: orderedIds.map(catalogItemId => ({appId:WIX_STORES_APP_ID, catalogItemId}))
   });
+  const confirmed = await wix.categoriesV3.getArrangedItems(categoryId, STORE_CATEGORY_TREE);
+  return (confirmed?.items || []).map(item => String(item?.catalogItemId || "")).filter(Boolean);
 }
 
 async function getShowcaseSlots() {
@@ -3185,6 +3187,11 @@ async function handleUpdateProduct(request, response, productId) {
   if (!wix) return sendError(response, 503, "La tienda todavía no está conectada.");
 
   const body = await readBody(request);
+  if (body?.action === "MOVE_SHOWCASE_POSITION") {
+    const result = await applyShowcasePosition(productId, safeText(body?.category, 30), Number(body?.targetSlot));
+    sendJson(response, 200, {ok:true, showcasePosition:result});
+    return;
+  }
   const name = safeText(body?.name, 80);
   const description = safeText(body?.description, 16000);
   const cost = Math.max(0, Number(body?.cost || 0));
@@ -3311,7 +3318,8 @@ async function applyShowcasePosition(productId, category, targetSlot) {
     orderedIds.splice(currentIndex, 1);
     orderedIds.splice(targetIndex, 0, id);
   }
-  await saveCategoryArrangement(wixCategory.id, orderedIds);
+  const confirmedIds = await saveCategoryArrangement(wixCategory.id, orderedIds);
+  if (confirmedIds[targetIndex] !== id) throw new Error("Wix no confirmó la nueva posición del producto.");
   return {from:currentIndex + 1, to:targetSlot, swappedProductId:occupantId};
 }
 

@@ -3175,6 +3175,30 @@ async function handleDeleteProduct(request, response, productId) {
   sendJson(response, 200, { ok: true, productId });
 }
 
+async function handleBulkDeleteProducts(request, response) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
+  if (!wix) return sendError(response, 503, "La tienda todavía no está conectada.");
+
+  const body = await readBody(request);
+  const productIds = [...new Set(
+    (Array.isArray(body?.productIds) ? body.productIds : [])
+      .map(productId => safeText(productId, 36))
+      .filter(Boolean)
+  )].slice(0, 100);
+
+  if (!productIds.length) return sendError(response, 400, "Selecciona al menos un producto.");
+
+  const result = await wix.productsV3.bulkDeleteProducts(productIds);
+  const failed = (Array.isArray(result?.results) ? result.results : [])
+    .filter(item => item?.itemMetadata?.success === false);
+  if (failed.length) {
+    throw new Error(failed[0]?.itemMetadata?.error?.message || "Wix no pudo eliminar todos los productos seleccionados.");
+  }
+
+  categoryRouteCache.expiresAt = 0;
+  sendJson(response, 200, { ok: true, productIds });
+}
+
 /* ============================================================
    REAL WIX ORDERS
    ============================================================ */
@@ -4610,6 +4634,10 @@ const server =
         }
         if (request.method === "DELETE" && productUpdateMatch) {
           await handleDeleteProduct(request, response, decodeURIComponent(productUpdateMatch[1]));
+          return;
+        }
+        if (request.method === "POST" && url.pathname === "/api/products/bulk-delete") {
+          await handleBulkDeleteProducts(request, response);
           return;
         }
 

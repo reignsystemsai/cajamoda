@@ -1,12 +1,13 @@
 name: Apply Multimedia redesign 112
 on:
   push:
-    branches: [tmp/apply-media-redesign-112]
+    branches:
+      - tmp/apply-media-redesign-112
 permissions:
   contents: write
 jobs:
   apply:
-    if: github.actor != 'github-actions[bot]'
+    if: ${{ github.actor != 'github-actions[bot]' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,7 +22,7 @@ jobs:
           marker = '\n</style>'
           css = r'''
 
-/* Build 112 — Multimedia rendition only */
+/* Build 112 - Multimedia rendition only */
 @media (min-width:900px){
   #panel-add .productMediaCard{
     grid-template-columns:minmax(0,1fr)!important;
@@ -96,7 +97,7 @@ jobs:
   }
 }
 '''
-          if '/* Build 112 — Multimedia rendition only */' not in text:
+          if '/* Build 112 - Multimedia rendition only */' not in text:
               if marker not in text:
                   raise SystemExit('style marker not found')
               text = text.replace(marker, css + marker, 1)

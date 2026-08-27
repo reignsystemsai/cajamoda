@@ -1,0 +1,94 @@
+name: Apply Store Loader media and account fix
+
+on:
+  push:
+    branches:
+      - fix/store-loader-media-account-110
+
+permissions:
+  contents: write
+
+jobs:
+  apply-fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/store-loader-media-account-110
+      - name: Apply surgical Store Loader fix
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('admin/index.html')
+          text = path.read_text()
+
+          old = '''  #panel-add .verticalUploadControl,
+  #panel-add .portraitMediaGrid{
+    grid-column:1!important;
+    width:min(900px,100%)!important;
+    max-width:none!important;
+    justify-self:center!important;
+    margin-inline:auto!important;
+  }'''
+          new = '''  #panel-add .verticalUploadControl,
+  #panel-add .portraitMediaGrid{
+    grid-column:1!important;
+    width:100%!important;
+    max-width:none!important;
+    justify-self:stretch!important;
+    margin-inline:0!important;
+  }
+  #panel-add .portraitMediaGrid{
+    grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  }'''
+          if old not in text:
+              raise SystemExit('Multimedia target block not found')
+          text = text.replace(old, new, 1)
+
+          old = '''  .sidebarAccountControls #storeSelector,
+  .sidebarAccountControls #logoutButton{
+    width:100%!important;
+    max-width:100%!important;
+    box-sizing:border-box!important;
+  }
+  .sidebarAccountControls #storeSelector{
+    padding-left:44px!important;
+    background:radial-gradient(circle at 16px 50%,#4e9b55 0 5px,transparent 6px),rgba(255,255,255,.66)!important;
+  }'''
+          new = '''  .sidebarAccountControls #storeSelector,
+  .sidebarAccountControls #logoutButton{
+    width:100%!important;
+    max-width:100%!important;
+    box-sizing:border-box!important;
+    border:0!important;
+    border-radius:0!important;
+    box-shadow:none!important;
+  }
+  .sidebarAccountControls #storeSelector{
+    height:28px!important;
+    padding:0 0 0 34px!important;
+    background:radial-gradient(circle at 10px 50%,#4e9b55 0 4px,transparent 5px),transparent!important;
+  }
+  .sidebarAccountControls #logoutButton{
+    height:28px!important;
+    min-height:0!important;
+    padding:0!important;
+    background:transparent!important;
+  }'''
+          if old not in text:
+              raise SystemExit('Account target block not found')
+          text = text.replace(old, new, 1)
+
+          path.write_text(text)
+          PY
+      - name: Commit fix and remove helper workflow
+        run: |
+          rm .github/workflows/fix-store-loader-media-account-110.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add admin/index.html .github/workflows/fix-store-loader-media-account-110.yml
+          git diff --cached --check
+          git commit -m "Fix Store Loader media and account controls"
+          git push origin HEAD:fix/store-loader-media-account-110

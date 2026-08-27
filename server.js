@@ -1955,7 +1955,7 @@ async function uploadPhotos(
           .filter(Boolean)
           .slice(
             0,
-            5
+            6
           )
       : [];
 
@@ -3186,7 +3186,7 @@ async function handleAssistProduct(request, response) {
   const photos = (Array.isArray(body?.photos) ? body.photos : [body?.photo])
     .map(photo => String(photo || ""))
     .filter(photo => /^data:image\/(png|jpe?g|webp);base64,/i.test(photo))
-    .slice(0, 5);
+    .slice(0, 6);
   if (!photos.length) {
     sendError(response, 400, "Carga una foto válida primero.");
     return;
@@ -3200,12 +3200,12 @@ async function handleAssistProduct(request, response) {
     method: "POST",
     headers: {"Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json"},
     body: JSON.stringify({
-      model: process.env.OPENAI_PRODUCT_MODEL || "gpt-5",
+      model: process.env.OPENAI_PRODUCT_MODEL || "gpt-4.1-mini",
       input: [{role:"user", content:[
         {type:"input_text", text:`${instruction}\nVariación creativa: ${Date.now()}`},
         ...photos.map(photo => ({type:"input_image", image_url:photo, detail:"high"}))
       ]}],
-      max_output_tokens: 180
+      max_output_tokens: 300
     })
   });
   const result = await openaiResponse.json();

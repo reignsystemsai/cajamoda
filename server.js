@@ -3183,8 +3183,11 @@ async function handleAssistProduct(request, response) {
   }
   const body = await readBody(request);
   const kind = body?.kind === "description" ? "description" : "name";
-  const photo = String(body?.photo || "");
-  if (!/^data:image\/(png|jpe?g|webp);base64,/i.test(photo)) {
+  const photos = (Array.isArray(body?.photos) ? body.photos : [body?.photo])
+    .map(photo => String(photo || ""))
+    .filter(photo => /^data:image\/(png|jpe?g|webp);base64,/i.test(photo))
+    .slice(0, 5);
+  if (!photos.length) {
     sendError(response, 400, "Carga una foto válida primero.");
     return;
   }
@@ -3198,7 +3201,10 @@ async function handleAssistProduct(request, response) {
     headers: {"Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json"},
     body: JSON.stringify({
       model: process.env.OPENAI_PRODUCT_MODEL || "gpt-5",
-      input: [{role:"user", content:[{type:"input_text", text:`${instruction}\nVariación creativa: ${Date.now()}`},{type:"input_image", image_url:photo, detail:"high"}]}],
+      input: [{role:"user", content:[
+        {type:"input_text", text:`${instruction}\nVariación creativa: ${Date.now()}`},
+        ...photos.map(photo => ({type:"input_image", image_url:photo, detail:"high"}))
+      ]}],
       max_output_tokens: 180
     })
   });
@@ -4365,6 +4371,10 @@ const result =
   await wix
     .inventoryItemsV3
     .queryInventoryItems()
+    .ne(
+      "_id",
+      ""
+    )
     .limit(
       1000
     )

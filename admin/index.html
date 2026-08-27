@@ -3667,12 +3667,14 @@ async function loadRealInventory(
         price: Number(item.price || 0),
         quantity: 0,
         sizes: [],
+        skus: [],
         category: item.category || "",
         photos: item.image ? [item.image] : [],
         status: item.visible === false ? "hidden" : "published"
       };
       existing.quantity += Number(item.quantity || 0);
       if(item.variantName && !existing.sizes.includes(item.variantName)) existing.sizes.push(item.variantName);
+      if(item.sku && !existing.skus.includes(item.sku)) existing.skus.push(item.sku);
       if(!existing.photos.length && item.image) existing.photos = [item.image];
       wixProducts.set(key, existing);
     });
@@ -4985,6 +4987,7 @@ if(
                   </div>
 
                   <div class="productMeta">${product.categoryName ? escapeHtml(product.categoryName) : "Producto físico"}</div>
+                  <div class="productMeta">SKU · ${escapeHtml(product.skus?.[0] || "Sin SKU")}${product.skus?.length > 1 ? ` · +${product.skus.length - 1}` : ""}</div>
 
                 </div>
 

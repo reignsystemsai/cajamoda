@@ -4710,7 +4710,10 @@ if(
     modal.classList.add("open");
     modal.setAttribute("aria-hidden", "false");
     try{
-      const detailResult = await apiRequest(`/api/products/${encodeURIComponent(product.id)}`);
+      const [detailResult, positionResult] = await Promise.all([
+        apiRequest(`/api/products/${encodeURIComponent(product.id)}`),
+        apiRequest(`/api/products/${encodeURIComponent(product.id)}/showcase-position`)
+      ]);
       const detail = detailResult?.product || product;
       const productVariants = inventory.filter(item => String(item.productId) === String(product.id));
       const resolvedImage = fullResolutionWixImageUrl(detail.image || image);
@@ -4719,8 +4722,8 @@ if(
       let quickSelectedPhoto = 0;
       const firstSku = String(productVariants.find(item => item.sku)?.sku || "").toUpperCase();
       const quickFulfillment = firstSku.match(/^(PRL|PR|PL|RL|P|R|L)(?:-|$)/)?.[1] || "R";
-      const quickCategory = product.category || "quick";
-      let quickCurrentSlot = Number(detail.showcaseSlot || product.showcaseSlot || 0) || null;
+      const quickCategory = positionResult?.category || product.category || "quick";
+      let quickCurrentSlot = Number(positionResult?.slot || 0) || null;
       let quickTargetSlot = quickCurrentSlot;
       $("productQuickTitle").textContent = detail.name || product.name || "Producto";
       $("productQuickBody").innerHTML = `<div class="productQuickGrid">

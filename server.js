@@ -3237,43 +3237,11 @@ async function handleUpdateProduct(request, response, productId) {
   const currentVariants = Array.isArray(current?.variantsInfo?.variants)
     ? current.variantsInfo.variants
     : [];
-  const requestedSizes = Array.isArray(body?.sizes) ? cleanList(body.sizes, 10) : null;
-  const requestedVariantOverrides = Array.isArray(body?.variantOverrides)
-    ? body.variantOverrides.map(item => ({
-        size: safeText(item?.size, 20),
-        color: "",
-        quantity: Number(item?.quantity)
-      }))
-    : [];
-  if (requestedSizes && requestedSizes.some(size => !["S", "M", "Large", "X-Large"].includes(size))) {
-    return sendError(response, 400, "Las tallas permitidas son S, M, Large y X-Large.");
-  }
-  if (requestedSizes && requestedVariantOverrides.some(item => !Number.isInteger(item.quantity) || item.quantity < 0 || item.quantity > 100000)) {
-    return sendError(response, 400, "Cada cantidad debe ser un número entero entre 0 y 100000.");
-  }
-  const savedStyleCode = currentVariants
-    .map(variant => safeText(variant?.sku, 100).toUpperCase().match(/(?:^|-)(CM\d{4})(?:-|$)/)?.[1])
-    .find(Boolean);
   const missingStyleCode = fulfillmentCode && currentVariants.some(variant => !safeText(variant?.sku, 100))
     ? await nextPermanentStyleCode(true)
     : "";
-  const sizeStyleCode = requestedSizes ? (savedStyleCode || missingStyleCode || await nextPermanentStyleCode(true)) : "";
-  const currentFulfillmentCode = safeText(currentVariants[0]?.sku, 100).toUpperCase().match(/^(PRL|PR|PL|RL|P|R|L)(?:-|$)/)?.[1] || "R";
-  const variants = requestedSizes
-    ? buildVariants(
-        requestedSizes,
-        [],
-        Math.round(price),
-        cost,
-        requestedVariantOverrides.reduce((sum, item) => sum + item.quantity, 0),
-        true,
-        "IN_STOCK",
-        false,
-        fulfillmentCode || currentFulfillmentCode,
-        sizeStyleCode,
-        requestedVariantOverrides
-      )
-    : currentVariants.map((variant, index) => {
+  const variants = Array.isArray(current?.variantsInfo?.variants)
+    ? current.variantsInfo.variants.map((variant, index) => {
         const currentSku = safeText(variant?.sku, 100).toUpperCase();
         const skuTail = currentSku.replace(/^(?:PRL|PR|PL|RL|P|R|L)-?/i, "");
         const generatedTail = `${missingStyleCode}${currentVariants.length > 1 ? `-${index + 1}` : ""}`;
@@ -3288,7 +3256,8 @@ async function handleUpdateProduct(request, response, productId) {
             ? { ...(variant.revenueDetails || {}), cost: { amount: String(cost) } }
             : variant.revenueDetails
         };
-      });
+      })
+    : [];
 
   const update = {
     revision: current.revision,
@@ -3297,7 +3266,7 @@ async function handleUpdateProduct(request, response, productId) {
     visible: body?.visible !== false
   };
   if (variants.length) {
-    update.options = requestedSizes ? buildOptions(requestedSizes, []) : (current.options || []);
+    update.options = current.options || [];
     update.variantsInfo = { variants };
   }
 

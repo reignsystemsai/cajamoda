@@ -2659,6 +2659,25 @@ async function assignProductCategory(
       0;
 }
 
+async function nextPermanentStyleCode() {
+  const result = await wix.inventoryItemsV3
+    .queryInventoryItems()
+    .ne("_id", "00000000-0000-0000-0000-000000000000")
+    .limit(1000)
+    .find();
+  const items = Array.isArray(result?.items) ? result.items : [];
+  const productIds = new Set();
+  let highest = 0;
+  for (const rawItem of items) {
+    const item = normalizeInventoryItem(rawItem);
+    if (item.productId) productIds.add(item.productId);
+    const match = String(item.sku || "").toUpperCase().match(/(?:^|-)CM(\d+)(?:-|$)/);
+    if (match) highest = Math.max(highest, Number(match[1]) || 0);
+  }
+  const next = Math.max(highest + 1, productIds.size + 1);
+  return `CM${String(next).padStart(4, "0")}`;
+}
+
 /* ============================================================
    CREATE WIX PRODUCT
    ============================================================ */
@@ -2735,7 +2754,7 @@ async function createWixProduct(
   // The numeric product record is generated on the server so a client cannot
   // accidentally reuse it. It becomes the permanent SKU family for every
   // size of this product and remains unchanged when inventory quantities move.
-  const styleCode = `CM${Date.now().toString(36).toUpperCase()}`;
+  const styleCode = await nextPermanentStyleCode();
 
   if (!["P", "R", "PR", "L", "PL", "RL", "PRL"].includes(fulfillmentCode)) {
     throw new Error("Selecciona un tipo de entrega válido.");

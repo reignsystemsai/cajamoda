@@ -3196,7 +3196,7 @@ async function handleBulkDeleteProducts(request, response) {
   }
 
   categoryRouteCache.expiresAt = 0;
-  sendJson(response, 200, { ok: true, productIds });
+  sendJson(response, 200, { ok: true, productIds, deletedCount: productIds.length });
 }
 
 /* ============================================================

@@ -1618,6 +1618,18 @@ img{display:block;max-width:100%}
         item.priceData?.discountedPrice,
         item.priceData?.price
       );
+      const allowedDeliveryModes = [...new Set((Array.isArray(item.allowedDeliveryModes)
+        ? item.allowedDeliveryModes
+        : Array.isArray(item.deliveryModes)
+          ? item.deliveryModes
+          : [item.deliveryMode || "fast"]
+      ).map(normalizeDeliveryMode).filter(Boolean))];
+      const selectedCandidate = normalizeDeliveryMode(item.selectedDeliveryMode);
+      const selectedDeliveryMode = selectedCandidate && allowedDeliveryModes.includes(selectedCandidate)
+        ? selectedCandidate
+        : allowedDeliveryModes.length === 1
+          ? allowedDeliveryModes[0]
+          : "";
 
       return {
         id:
@@ -1662,18 +1674,13 @@ img{display:block;max-width:100%}
           "",
 
         deliveryMode:
-          item.deliveryMode ||
+          selectedDeliveryMode ||
+          allowedDeliveryModes[0] ||
           "fast",
 
-        allowedDeliveryModes: Array.isArray(item.allowedDeliveryModes)
-          ? item.allowedDeliveryModes
-          : Array.isArray(item.deliveryModes)
-            ? item.deliveryModes
-            : [item.deliveryMode || "fast"],
+        allowedDeliveryModes,
 
-        selectedDeliveryMode:
-          item.selectedDeliveryMode ||
-          "",
+        selectedDeliveryMode,
 
         quantity: Math.max(
           1,

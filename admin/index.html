@@ -4938,13 +4938,33 @@ if(
   
       async function moveQuickShowcaseProduct(productId, targetSlot){
         const category = $("quickProductCategory").value;
-        await apiRequest(`/api/products/${encodeURIComponent(productId)}/showcase-position`, {
+        const result = await apiRequest(`/api/products/${encodeURIComponent(productId)}/showcase-position`, {
           method:"POST",
           body:{category,targetSlot}
         });
-        await loadRealInventory(true);
-        if(String(productId) === String(product.id)) quickCurrentSlot = targetSlot;
-        quickTargetSlot = String(productId) === String(product.id) ? targetSlot : quickCurrentSlot;
+        const confirmedIds = Array.isArray(result?.orderedProductIds)
+          ? result.orderedProductIds.map(String)
+          : [];
+        if(!confirmedIds.length) throw new Error("Wix no devolvió el orden confirmado de la vitrina.");
+        const currentItems = Array.isArray(showcasesByCategory[category])
+          ? showcasesByCategory[category]
+          : [];
+        const itemsById = new Map(currentItems.map(item => [String(item.id), item]));
+        itemsById.set(String(product.id), {
+          ...product,
+          ...detail,
+          id:String(product.id),
+          photos:quickPhotoValues.filter(Boolean)
+        });
+        showcasesByCategory[category] = confirmedIds
+          .map((id,index) => {
+            const item = itemsById.get(id);
+            return item ? {...item,showcaseSlot:index + 1} : null;
+          })
+          .filter(Boolean);
+        const confirmedCurrentIndex = confirmedIds.indexOf(String(product.id));
+        quickCurrentSlot = confirmedCurrentIndex >= 0 ? confirmedCurrentIndex + 1 : null;
+        quickTargetSlot = quickCurrentSlot;
         renderProducts();
         renderQuickShowcase();
       }

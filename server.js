@@ -4836,8 +4836,11 @@ async function handleGetInventory(
     return;
   }
 
-  const inventory =
-    await getWixInventory();
+  const [inventory, showcases] =
+    await Promise.all([
+      getWixInventory(),
+      getCategoryShowcases()
+    ]);
 
   sendJson(
     response,
@@ -4847,7 +4850,8 @@ async function handleGetInventory(
       ok:
         true,
 
-      inventory
+      inventory,
+      showcases
     }
   );
 }

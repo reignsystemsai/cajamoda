@@ -4628,10 +4628,23 @@ svg{
     ship:{key:"liberalo",copy:"Entrega estimada en 14–21 días."}
   };
 
+  function selectedDeliveryVariant(){
+    const size=normalizeChoice(state.selectedSize);
+    const color=normalizeChoice(state.selectedColor);
+    if(!size||!Array.isArray(state.product?.variants)){return null}
+    return state.product.variants.find(variant=>
+      normalizeChoice(variant.size)===size&&
+      (!variant.color||normalizeChoice(variant.color)===color)
+    )||state.product.variants.find(variant=>normalizeChoice(variant.size)===size)||null;
+  }
+
   function renderFulfillmentMethod(){
-    const modes=Array.isArray(state.product?.deliveryModes)&&state.product.deliveryModes.length
-      ? state.product.deliveryModes
-      : [state.product?.deliveryMode||"fast"];
+    const selectedVariant=selectedDeliveryVariant();
+    const modes=Array.isArray(selectedVariant?.deliveryModes)&&selectedVariant.deliveryModes.length
+      ? selectedVariant.deliveryModes
+      : Array.isArray(state.product?.deliveryModes)&&state.product.deliveryModes.length
+        ? state.product.deliveryModes
+        : [selectedVariant?.deliveryMode||state.product?.deliveryMode||"fast"];
     const methods=modes.map(mode=>fulfillmentMethods[mode]).filter(Boolean);
     const activeKeys=methods.map(method=>method.key);
     qsa("[data-fulfillment-preview]").forEach(button=>{
@@ -5183,6 +5196,7 @@ price:
       $("selectedSizeLabel").textContent="Selecciona";
       renderSizeState();
       renderQuantityState();
+      renderFulfillmentMethod();
       removeProductSelection();
       showToast("Producto eliminado de tu bolsa.");
       return;
@@ -5193,6 +5207,7 @@ price:
     $("selectedSizeLabel").textContent=size;
     renderSizeState();
     renderQuantityState();
+    renderFulfillmentMethod();
     if(navigator.vibrate){navigator.vibrate(20)}
     track("SIZE_SELECTED",{size,color:state.selectedColor});
   }
@@ -5314,6 +5329,7 @@ price:
 
     renderSizeState();
     renderQuantityState();
+    renderFulfillmentMethod();
   }
 
   /* ============================================================
@@ -5437,6 +5453,10 @@ const selectedVariant =
 const variantId =
   selectedVariant?.id ||
   null;
+const selectedDeliveryMode =
+  selectedVariant?.deliveryMode ||
+  state.product.deliveryMode ||
+  "fast";
 
 const desiredKey =
   cartLineKey({
@@ -5514,7 +5534,7 @@ const desiredKey =
   variantId;
 
       line.deliveryMode =
-        state.product.deliveryMode || "fast";
+        selectedDeliveryMode;
 
 line.unitPrice =
   normalizePrice(
@@ -5554,7 +5574,7 @@ line.quantity =
           state.selectedColor,
 
         deliveryMode:
-          state.product.deliveryMode || "fast",
+          selectedDeliveryMode,
 
         quantity:
           Math.max(1,Number(state.selectedQuantity||1)),

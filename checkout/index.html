@@ -486,38 +486,6 @@ img{display:block;max-width:100%}
   font-weight:700
 }
 
-.bagDeliveryNote{
-  margin-top:22px;
-  padding:18px 20px;
-  border-radius:20px
-}
-.bagDeliveryNote h2{
-  margin:0;
-  font-family:"Cormorant Garamond",Georgia,serif;
-  font-size:20px;
-  font-weight:600
-}
-.bagDeliveryNoteIntro,
-.bagDeliveryNoteFoot{
-  margin:7px 0 0;
-  color:#666;
-  font-size:9px;
-  line-height:1.55
-}
-.bagDeliveryMethods{
-  margin-top:13px;
-  display:grid;
-  gap:8px
-}
-.bagDeliveryMethod{
-  display:flex;
-  justify-content:space-between;
-  gap:12px;
-  font-size:9px
-}
-.bagDeliveryMethod strong{font-weight:750}
-.bagDeliveryMethod span:last-child{color:#666;text-align:right}
-
 .summaryCard{
   margin-top:22px;
   padding:18px 20px;
@@ -1026,6 +994,10 @@ img{display:block;max-width:100%}
   -webkit-backdrop-filter:blur(30px) saturate(150%)
 }
 .deliveryGlass{padding:17px;margin-bottom:24px}
+.promiseRow{display:grid;grid-template-columns:48px 1fr 36px;gap:12px;align-items:center}
+.promiseBadge{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:#080808;color:#fff;font-size:22px;font-weight:650}
+.promiseName{font-size:13px;font-weight:750}.promiseTime{margin-top:3px;color:#737373;font-size:9px}
+.infoButton{width:34px;height:34px;border:1px solid rgba(0,0,0,.13);border-radius:50%;display:grid;place-items:center;font-family:Georgia,serif;font-size:15px}
 .deliveryDivider,.paymentDivider{height:1px;margin:15px 0;background:rgba(0,0,0,.09)}
 .deliveryChoiceLabel{margin-bottom:10px;font-size:10px;font-weight:600}
 .deliveryChoices{display:grid;grid-template-columns:1fr 1fr;gap:9px}
@@ -1166,17 +1138,6 @@ img{display:block;max-width:100%}
 
         <div id="cartList" class="cartList"></div>
 
-        <section class="bagDeliveryNote glassCard" aria-label="Tiempos de entrega">
-          <h2>Entrega de tu pedido</h2>
-          <p class="bagDeliveryNoteIntro">Cada prenda muestra su método de entrega en la tarjeta.</p>
-          <div class="bagDeliveryMethods">
-            <div class="bagDeliveryMethod"><strong>P · Pronto</strong><span>24–48 h en Cartagena</span></div>
-            <div class="bagDeliveryMethod"><strong>R · Rápido</strong><span>4–7 días</span></div>
-            <div class="bagDeliveryMethod"><strong>L · Libéralo</strong><span>14–21 días</span></div>
-          </div>
-          <p class="bagDeliveryNoteFoot">Si combinas métodos, tu pedido puede llegar en entregas separadas.</p>
-        </section>
-
         <div class="summaryCard glassCard">
           <div class="summaryLine">
             <span>Subtotal</span>
@@ -1233,6 +1194,15 @@ img{display:block;max-width:100%}
 
         <h2 class="paymentSectionTitle">Información de entrega</h2>
         <section class="deliveryGlass" aria-label="Entrega">
+          <div class="promiseRow">
+            <div class="promiseBadge">P</div>
+            <div aria-live="polite">
+              <div id="promiseName" class="promiseName">Pronto – Cartagena</div>
+              <div id="promiseTime" class="promiseTime">Disponible en 24–48 h</div>
+            </div>
+            <button id="deliveryInfoButton" class="infoButton" type="button" aria-label="Ver tiempos de entrega">i</button>
+          </div>
+          <div class="deliveryDivider"></div>
           <div class="deliveryDetails shippingFields">
             <label><input id="customerFirstName" name="firstName" class="compactInput" autocomplete="given-name" placeholder="Nombre"></label>
             <label><input id="customerLastName" name="lastName" class="compactInput" autocomplete="family-name" placeholder="Apellido"></label>
@@ -2954,6 +2924,8 @@ img{display:block;max-width:100%}
     const motoButton = document.querySelector('[data-delivery="moto"]');
     const nationalButton = document.querySelector('[data-delivery="national"]');
     const isCartagena = normalizeChoice($("deliveryCity").value) === "cartagena";
+    $("promiseName").textContent = isCartagena ? "Pronto – Cartagena" : "Rápido – Colombia";
+    $("promiseTime").textContent = isCartagena ? "Disponible en 24–48 h" : "Entrega nacional · 4–7 días";
     pickupButton.hidden = !isCartagena;
     pickupButton.disabled = !isCartagena;
     pickupButton.setAttribute("aria-disabled", String(!isCartagena));
@@ -2983,6 +2955,7 @@ img{display:block;max-width:100%}
     $(id)?.addEventListener("change", updateStripePayAvailability);
   });
 
+  $("deliveryInfoButton").onclick = () => $("deliveryHelp").classList.add("isOpen");
   $("deliveryHelpClose").onclick = () => $("deliveryHelp").classList.remove("isOpen");
   $("deliveryHelp").onclick = event => { if (event.target === $("deliveryHelp")) $("deliveryHelp").classList.remove("isOpen"); };
   $("copyNequiButton").onclick = async () => {

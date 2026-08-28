@@ -3119,7 +3119,7 @@ async function handleAssistProduct(request, response) {
   const excluded = cleanList(body?.exclude, 5).join(" | ");
   const instruction = kind === "name"
     ? `Analiza todos los ángulos visibles de la prenda en la imagen compuesta. Compárala visualmente con siluetas, cortes y estilos de moda similares que conozcas, sin afirmar una marca o material que no puedas verificar. Crea un nombre comercial original, moderno y fashionable en español para boutique femenina. Devuelve solo el nombre, de 2 a 4 palabras, sin comillas, evita nombres genéricos y no repitas: ${excluded || "ninguno"}.`
-    : `Analiza todos los ángulos visibles de la prenda en la imagen compuesta y compárala visualmente con prendas de silueta, corte y estilo similares que conozcas. Escribe una descripción de producto original en español de 2 oraciones, con lenguaje de moda atractivo para boutique femenina. Describe solo detalles visibles, no inventes marca ni materiales. Nombre actual: ${currentName || "sin nombre"}. No repitas: ${excluded || "ninguna"}. Devuelve solo la descripción.`;
+    : `Analiza todos los ángulos visibles de la prenda en la imagen compuesta. Escribe una descripción original, corta y contundente en español para boutique femenina. Usa una o dos frases breves y un máximo de 30 palabras en total. Describe solo detalles visibles; no inventes marca ni materiales. Nombre actual: ${currentName || "sin nombre"}. No repitas: ${excluded || "ninguna"}. Devuelve solo la descripción.`;
   const openaiResponse = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {"Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json"},
@@ -3137,7 +3137,19 @@ async function handleAssistProduct(request, response) {
   const responseText = result?.output_text || (Array.isArray(result?.output)
     ? result.output.flatMap(item => Array.isArray(item?.content) ? item.content : []).map(item => item?.text || "").join(" ")
     : "");
-  const value = safeText(responseText, kind === "name" ? 80 : 600);
+  const generated = safeText(responseText, kind === "name" ? 80 : 600);
+  const value = kind === "name"
+    ? generated
+    : (generated.match(/[^.!?]+[.!?]?/g) || [])
+        .map(sentence => sentence.trim())
+        .filter(Boolean)
+        .slice(0, 2)
+        .join(" ")
+        .split(/\s+/)
+        .slice(0, 30)
+        .join(" ")
+        .replace(/[,;:]$/, "")
+        .replace(/([^.!?])$/, "$1.");
   if (!value) throw new Error("No recibimos texto para este producto.");
   sendJson(response, 200, {ok:true, value});
 }

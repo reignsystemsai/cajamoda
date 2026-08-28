@@ -3119,7 +3119,7 @@ async function handleAssistProduct(request, response) {
   const excluded = cleanList(body?.exclude, 5).join(" | ");
   const instruction = kind === "name"
     ? `Analiza todos los ángulos visibles de la prenda en la imagen compuesta. Compárala visualmente con siluetas, cortes y estilos de moda similares que conozcas, sin afirmar una marca o material que no puedas verificar. Crea un nombre comercial original, moderno y fashionable en español para boutique femenina. Devuelve solo el nombre, de 2 a 4 palabras, sin comillas, evita nombres genéricos y no repitas: ${excluded || "ninguno"}.`
-    : `Analiza todos los ángulos visibles de la prenda en la imagen compuesta y compárala visualmente con prendas de silueta, corte y estilo similares que conozcas. Escribe una descripción de producto original en español de 2 oraciones, con lenguaje de moda atractivo para boutique femenina. Describe solo detalles visibles, no inventes marca ni materiales. Nombre actual: ${currentName || "sin nombre"}. No repitas: ${excluded || "ninguna"}. Devuelve solo la descripción.`;
+    : `Analiza todos los ángulos visibles de la prenda en la imagen compuesta. Escribe una descripción original, corta y contundente en español para boutique femenina. Usa un máximo de dos frases breves y 30 palabras en total. Describe solo detalles visibles; no inventes marca ni materiales. Nombre actual: ${currentName || "sin nombre"}. No repitas: ${excluded || "ninguna"}. Devuelve solo la descripción.`;
   const openaiResponse = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {"Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json"},
@@ -3137,7 +3137,19 @@ async function handleAssistProduct(request, response) {
   const responseText = result?.output_text || (Array.isArray(result?.output)
     ? result.output.flatMap(item => Array.isArray(item?.content) ? item.content : []).map(item => item?.text || "").join(" ")
     : "");
-  const value = safeText(responseText, kind === "name" ? 80 : 600);
+  const generated = safeText(responseText, kind === "name" ? 80 : 600);
+  const value = kind === "name"
+    ? generated
+    : (generated.match(/[^.!?]+[.!?]?/g) || [])
+        .map(sentence => sentence.trim())
+        .filter(Boolean)
+        .slice(0, 2)
+        .join(" ")
+        .split(/\s+/)
+        .slice(0, 30)
+        .join(" ")
+        .replace(/[,;:]$/, "")
+        .replace(/([^.!?])$/, "$1.");
   if (!value) throw new Error("No recibimos texto para este producto.");
   sendJson(response, 200, {ok:true, value});
 }
@@ -3225,6 +3237,23 @@ async function handleUpdateProduct(request, response, productId) {
   const cost = Math.max(0, Number(body?.cost || 0));
   const price = cost > 0 ? Math.round(cost * 2.56) : Number(body?.price);
   const fulfillmentCode = safeText(body?.fulfillmentCode, 10).toUpperCase();
+  const variantMappings = Array.isArray(body?.variantMappings)
+    ? body.variantMappings.slice(0, 100).map(mapping => ({
+        variantId:safeText(mapping?.variantId, 150),
+        originalSku:safeText(mapping?.originalSku, 160).toUpperCase(),
+        fulfillmentCode:safeText(mapping?.fulfillmentCode, 10).toUpperCase()
+      }))
+    : [];
+  const mappingByVariantId = new Map();
+  for(const mapping of variantMappings){
+    if(!mapping.variantId || !mapping.originalSku || !/^(?:PRL|PR|PL|RL|P|R|L)$/.test(mapping.fulfillmentCode)){
+      return sendError(response, 400, "Revisa el mapeo de cada variante.");
+    }
+    if(mappingByVariantId.has(mapping.variantId)){
+      return sendError(response, 400, "Cada variante debe aparecer una sola vez.");
+    }
+    mappingByVariantId.set(mapping.variantId, mapping);
+  }
   if (!name) return sendError(response, 400, "Agrega el nombre del producto.");
   if (!Number.isFinite(price) || price <= 0) return sendError(response, 400, "Agrega un precio válido.");
 
@@ -3237,27 +3266,42 @@ async function handleUpdateProduct(request, response, productId) {
   const currentVariants = Array.isArray(current?.variantsInfo?.variants)
     ? current.variantsInfo.variants
     : [];
-  const missingStyleCode = fulfillmentCode && currentVariants.some(variant => !safeText(variant?.sku, 100))
+  if(variantMappings.length && variantMappings.length !== currentVariants.length){
+    return sendError(response, 409, "Las variantes de Wix cambiaron. Vuelve a abrir el producto.");
+  }
+  const missingStyleCode = !variantMappings.length && fulfillmentCode && currentVariants.some(variant => !safeText(variant?.sku, 100))
     ? await nextPermanentStyleCode(true)
     : "";
-  const variants = Array.isArray(current?.variantsInfo?.variants)
-    ? current.variantsInfo.variants.map((variant, index) => {
-        const currentSku = safeText(variant?.sku, 100).toUpperCase();
-        const skuTail = currentSku.replace(/^(?:PRL|PR|PL|RL|P|R|L)-?/i, "");
-        const generatedTail = `${missingStyleCode}${currentVariants.length > 1 ? `-${index + 1}` : ""}`;
-        return {
-          ...variant,
-          sku: fulfillmentCode ? `${fulfillmentCode}-${skuTail || generatedTail}` : currentSku,
-          price: {
-            ...(variant.price || {}),
-            actualPrice: { amount: String(Math.round(price)) }
-          },
-          revenueDetails: cost > 0
-            ? { ...(variant.revenueDetails || {}), cost: { amount: String(cost) } }
-            : variant.revenueDetails
-        };
-      })
-    : [];
+  const variants = currentVariants.map((variant, index) => {
+    const variantId = safeText(variant?._id || variant?.id || variant?.variantId, 150);
+    const currentSku = safeText(variant?.sku, 160).toUpperCase();
+    const mapping = mappingByVariantId.get(variantId);
+    let nextSku = currentSku;
+    if(mapping){
+      if(currentSku !== mapping.originalSku){
+        throw new Error("Una variante cambió en Wix. Vuelve a abrir el producto antes de guardar.");
+      }
+      const currentPrefix = currentSku.match(/^(PRL|PR|PL|RL|P|R|L)-/i);
+      const skuTail = currentPrefix ? currentSku.slice(currentPrefix[0].length) : "";
+      if(!skuTail) throw new Error("No pudimos preservar el SKU permanente de una variante.");
+      nextSku = `${mapping.fulfillmentCode}-${skuTail}`;
+    }else if(fulfillmentCode){
+      const skuTail = currentSku.replace(/^(?:PRL|PR|PL|RL|P|R|L)-?/i, "");
+      const generatedTail = `${missingStyleCode}${currentVariants.length > 1 ? `-${index + 1}` : ""}`;
+      nextSku = `${fulfillmentCode}-${skuTail || generatedTail}`;
+    }
+    return {
+      ...variant,
+      sku:nextSku,
+      price: {
+        ...(variant.price || {}),
+        actualPrice: { amount: String(Math.round(price)) }
+      },
+      revenueDetails: cost > 0
+        ? { ...(variant.revenueDetails || {}), cost: { amount: String(cost) } }
+        : variant.revenueDetails
+    };
+  });
 
   const update = {
     revision: current.revision,
@@ -3291,11 +3335,25 @@ async function handleUpdateProduct(request, response, productId) {
   const updated = await wix.productsV3.updateProduct(productId, update, {
     fields: ["PLAIN_DESCRIPTION", "MERCHANT_DATA", "CURRENCY", "MEDIA_ITEMS_INFO", "THUMBNAIL"]
   });
+  let confirmedProduct = updated?.product || updated;
+  if(variantMappings.length){
+    const confirmedResult = await wix.productsV3.getProduct(productId, {
+      fields: ["PLAIN_DESCRIPTION", "MERCHANT_DATA", "CURRENCY", "MEDIA_ITEMS_INFO", "THUMBNAIL"]
+    });
+    confirmedProduct = confirmedResult?.product || confirmedResult;
+    const confirmedVariants = Array.isArray(confirmedProduct?.variantsInfo?.variants) ? confirmedProduct.variantsInfo.variants : [];
+    const confirmedById = new Map(confirmedVariants.map(variant => [safeText(variant?._id || variant?.id || variant?.variantId, 150), safeText(variant?.sku, 160).toUpperCase()]));
+    const verified = variantMappings.every(mapping => {
+      const tail = mapping.originalSku.replace(/^(?:PRL|PR|PL|RL|P|R|L)-/i, "");
+      return tail && confirmedById.get(mapping.variantId) === `${mapping.fulfillmentCode}-${tail}`;
+    });
+    if(!verified) throw new Error("Wix no confirmó el mapeo de todas las variantes.");
+  }
   if (body?.category) await assignProductCategory(productId, safeText(body.category, 30));
   if (body?.showcaseSlot) {
     await applyShowcasePosition(productId, safeText(body.category, 30), Number(body.showcaseSlot));
   }
-  sendJson(response, 200, { ok: true, product: updated?.product || updated });
+  sendJson(response, 200, { ok: true, product: confirmedProduct });
 }
 
 async function handleNextPermanentSku(request, response) {
@@ -3321,8 +3379,12 @@ async function handleGetProduct(request, response, productId) {
       description: safeText(String(product.plainDescription || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " "), 16000),
       visible: product.visible !== false,
       image: getProductImageUrl(product),
-      photos: getProductImageUrls(product)
-      ,cost: Number(product?.variantsInfo?.variants?.[0]?.revenueDetails?.cost?.amount || 0),
+      photos: getProductImageUrls(product),
+      cost: Number(product?.variantsInfo?.variants?.[0]?.revenueDetails?.cost?.amount || 0),
+      variants: (Array.isArray(product?.variantsInfo?.variants) ? product.variantsInfo.variants : []).map(variant => ({
+        variantId:safeText(variant?._id || variant?.id || variant?.variantId, 150),
+        sku:safeText(variant?.sku, 160).toUpperCase()
+      })),
       showcaseSlot: Number(showcaseSlots[String(productId)] || 0) || null
     }
   });

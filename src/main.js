@@ -530,6 +530,24 @@ function getColor(
    NORMALIZE VARIANT
    ============================================================ */
 
+function deliveryModesFromSku(value) {
+  const sku = String(value || "").trim().toUpperCase();
+  const code = sku.match(/^(PRL|PR|RP|PL|LP|RL|LR|P|R|L)(?:-|$)/)?.[1] || "R";
+  return code === "PRL"
+    ? ["pickup", "fast", "ship"]
+    : code === "PR" || code === "RP"
+      ? ["pickup", "fast"]
+      : code === "PL" || code === "LP"
+        ? ["pickup", "ship"]
+        : code === "RL" || code === "LR"
+          ? ["fast", "ship"]
+          : code === "P"
+            ? ["pickup"]
+            : code === "L"
+              ? ["ship"]
+              : ["fast"];
+}
+
 function normalizeVariant(
   productId,
   variant,
@@ -572,6 +590,12 @@ function normalizeVariant(
     variant?.stock?.quantity ??
     null;
 
+  const sku =
+    raw?.sku ||
+    variant?.sku ||
+    "";
+  const deliveryModes = deliveryModesFromSku(sku);
+
   return {
     id,
 
@@ -587,10 +611,12 @@ function normalizeVariant(
         variant
       ),
 
-    sku:
-      raw?.sku ||
-      variant?.sku ||
-      "",
+    sku,
+
+    deliveryMode:
+      deliveryModes[0],
+
+    deliveryModes,
 
     price,
 
@@ -662,26 +688,7 @@ function normalizeProduct(
     product?.sku ||
     ""
   ).trim().toUpperCase();
-
-  const fulfillmentSegments = fulfillmentSku.split("-").filter(Boolean);
-  const fulfillmentCodes = new Set(["P", "R", "L", "PR", "RP", "PL", "LP", "RL", "LR", "PRL"]);
-  const prefixedFulfillmentCode = fulfillmentSku.match(/^(PRL|PR|RP|PL|LP|RL|LR|P|R|L)(?:-|$)/)?.[1];
-  const fulfillmentCode = prefixedFulfillmentCode
-    ? prefixedFulfillmentCode
-    : [...fulfillmentSegments].reverse().find(segment => fulfillmentCodes.has(segment)) || "R";
-  const deliveryModes = fulfillmentCode === "PRL"
-    ? ["pickup", "fast", "ship"]
-    : fulfillmentCode === "PR" || fulfillmentCode === "RP"
-    ? ["pickup", "fast"]
-    : fulfillmentCode === "PL" || fulfillmentCode === "LP"
-      ? ["pickup", "ship"]
-      : fulfillmentCode === "RL" || fulfillmentCode === "LR"
-        ? ["fast", "ship"]
-    : fulfillmentCode === "P"
-      ? ["pickup"]
-      : fulfillmentCode === "L"
-        ? ["ship"]
-        : ["fast"];
+  const deliveryModes = deliveryModesFromSku(fulfillmentSku);
   const deliveryMode = deliveryModes[0];
 
   /*
@@ -1367,6 +1374,12 @@ const unitPrice =
 
           color,
 
+          deliveryMode:
+            variant?.deliveryMode ||
+            localLine?.deliveryMode ||
+            product?.deliveryMode ||
+            "fast",
+
           /* Use Wix's confirmed quantity. Local quantity must never mask a failed sync. */
           quantity:
             Math.max(
@@ -1461,7 +1474,7 @@ function canonicalizeCartForWix(
       image: product.media?.[0] || item.image || "",
       size: variant?.size || item.size || "",
       color: variant?.color || item.color || "",
-      deliveryMode: product.deliveryMode || item.deliveryMode || "fast",
+      deliveryMode: variant?.deliveryMode || item.deliveryMode || product.deliveryMode || "fast",
       quantity: Math.max(1,Math.floor(Number(item.quantity || 1))),
       unitPrice: normalizePrice(variant?.price,product.price),
       price: normalizePrice(variant?.price,product.price)

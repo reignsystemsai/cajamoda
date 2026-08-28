@@ -2419,6 +2419,36 @@ async function getShowcaseSlots() {
   return Object.fromEntries(entries.flat().filter(([id]) => id));
 }
 
+async function getCategoryShowcases() {
+  const categories = await queryRoutedCategories();
+  const entries = await Promise.all(categories.map(async category => {
+    const {orderedIds} = await categoryArrangement(category.vibeId);
+    const productIds = orderedIds.slice(0, showcaseLimit(category.vibeId));
+    const products = await Promise.all(productIds.map(async productId => {
+      try {
+        const result = await wix.productsV3.getProduct(productId, {
+          fields:["MEDIA_ITEMS_INFO","THUMBNAIL"]
+        });
+        return result?.product || result;
+      } catch (error) {
+        console.warn(`[Category showcase] No se pudo cargar ${productId}:`, error?.message || error);
+        return null;
+      }
+    }));
+    return [category.vibeId, productIds.map((productId, index) => {
+      const product = products[index];
+      return {
+        id:String(productId),
+        name:safeText(product?.name, 300),
+        image:getProductImageUrl(product),
+        photos:getProductImageUrls(product),
+        showcaseSlot:index + 1
+      };
+    })];
+  }));
+  return Object.fromEntries(entries);
+}
+
 async function assignFirstOpenShowcaseSlot(productId, categoryKey) {
   const {category, orderedIds} = await categoryArrangement(categoryKey);
   const id = String(productId);

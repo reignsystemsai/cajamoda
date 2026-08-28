@@ -3119,7 +3119,7 @@ async function handleAssistProduct(request, response) {
   const excluded = cleanList(body?.exclude, 5).join(" | ");
   const instruction = kind === "name"
     ? `Analiza todos los ángulos visibles de la prenda en la imagen compuesta. Compárala visualmente con siluetas, cortes y estilos de moda similares que conozcas, sin afirmar una marca o material que no puedas verificar. Crea un nombre comercial original, moderno y fashionable en español para boutique femenina. Devuelve solo el nombre, de 2 a 4 palabras, sin comillas, evita nombres genéricos y no repitas: ${excluded || "ninguno"}.`
-    : `Analiza todos los ángulos visibles de la prenda en la imagen compuesta y compárala visualmente con prendas de silueta, corte y estilo similares que conozcas. Escribe una descripción de producto original en español de 2 oraciones, con lenguaje de moda atractivo para boutique femenina. Describe solo detalles visibles, no inventes marca ni materiales. Nombre actual: ${currentName || "sin nombre"}. No repitas: ${excluded || "ninguna"}. Devuelve solo la descripción.`;
+    : `Analiza todos los ángulos visibles de la prenda en la imagen compuesta. Escribe una descripción original, corta y contundente en español para boutique femenina. Usa una o dos frases breves y un máximo de 30 palabras en total. Describe solo detalles visibles; no inventes marca ni materiales. Nombre actual: ${currentName || "sin nombre"}. No repitas: ${excluded || "ninguna"}. Devuelve solo la descripción.`;
   const openaiResponse = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: {"Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json"},
@@ -3137,7 +3137,19 @@ async function handleAssistProduct(request, response) {
   const responseText = result?.output_text || (Array.isArray(result?.output)
     ? result.output.flatMap(item => Array.isArray(item?.content) ? item.content : []).map(item => item?.text || "").join(" ")
     : "");
-  const value = safeText(responseText, kind === "name" ? 80 : 600);
+  const generated = safeText(responseText, kind === "name" ? 80 : 600);
+  const value = kind === "name"
+    ? generated
+    : (generated.match(/[^.!?]+[.!?]?/g) || [])
+        .map(sentence => sentence.trim())
+        .filter(Boolean)
+        .slice(0, 2)
+        .join(" ")
+        .split(/\s+/)
+        .slice(0, 30)
+        .join(" ")
+        .replace(/[,;:]$/, "")
+        .replace(/([^.!?])$/, "$1.");
   if (!value) throw new Error("No recibimos texto para este producto.");
   sendJson(response, 200, {ok:true, value});
 }
@@ -3185,6 +3197,61 @@ async function handleCreateProduct(
   );
 }
 
+function existingVariantSize(variant){
+  for(const choice of Array.isArray(variant?.choices) ? variant.choices : []){
+    const names = choice?.optionChoiceNames || choice?.choiceNames || choice;
+    const optionName = safeText(names?.optionName || names?.name, 50).toLowerCase();
+    const choiceName = safeText(names?.choiceName || names?.value, 20).toUpperCase();
+    if((optionName === "size" || optionName === "talla") && ["S","M","L","XL"].includes(choiceName)) return choiceName;
+  }
+  const sku = safeText(variant?.sku, 160).toUpperCase();
+  return sku.match(/-(XL|L|M|S)$/)?.[1] || "";
+}
+
+function existingSkuPrefix(sku){
+  return safeText(sku, 160).toUpperCase().match(/^(PRL|PR|PL|RL|P|R|L)-/)?.[1] || "";
+}
+
+function existingSkuTail(sku){
+  return safeText(sku, 160).toUpperCase().replace(/^(?:PRL|PR|PL|RL|P|R|L)-/i, "");
+}
+
+function productVariantDetails(product, inventory){
+  const inventoryByVariant = new Map(
+    inventory
+      .filter(item => String(item.productId) === String(product?._id || product?.id))
+      .map(item => [String(item.variantId), item])
+  );
+  return (Array.isArray(product?.variantsInfo?.variants) ? product.variantsInfo.variants : []).map(variant => {
+    const variantId = safeText(variant?._id || variant?.id || variant?.variantId, 150);
+    const stock = inventoryByVariant.get(variantId);
+    return {
+      variantId,
+      inventoryId:safeText(stock?.id, 150),
+      size:existingVariantSize(variant),
+      sku:safeText(variant?.sku, 160).toUpperCase(),
+      quantity:Math.max(0, Number(stock?.quantity || 0))
+    };
+  });
+}
+
+function normalizedProductDetail(product, inventory, showcaseSlot, category){
+  const variants = productVariantDetails(product, inventory);
+  return {
+    id:product?._id || product?.id,
+    name:safeText(product?.name, 80),
+    description:safeText(String(product?.plainDescription || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " "), 16000),
+    visible:product?.visible !== false,
+    image:getProductImageUrl(product),
+    photos:getProductImageUrls(product),
+    cost:Number(product?.variantsInfo?.variants?.[0]?.revenueDetails?.cost?.amount || 0),
+    price:Number(product?.variantsInfo?.variants?.[0]?.price?.actualPrice?.amount || 0),
+    variants,
+    showcaseSlot:Number(showcaseSlot || 0) || null,
+    category:safeText(category, 30)
+  };
+}
+
 async function handleUpdateProduct(request, response, productId) {
   if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
   if (!wix) return sendError(response, 503, "La tienda todavía no está conectada.");
@@ -3214,88 +3281,217 @@ async function handleUpdateProduct(request, response, productId) {
     const verifiedProduct = verifiedResult?.product || verifiedResult;
     const verifiedSkus = (verifiedProduct?.variantsInfo?.variants || []).map(variant => safeText(variant?.sku, 100).toUpperCase());
     const expectedSkus = variants.map(variant => safeText(variant?.sku, 100).toUpperCase());
-    if (expectedSkus.some(sku => !verifiedSkus.includes(sku))) {
-      throw new Error("Wix no confirmó el nuevo SKU permanente.");
-    }
+    if (expectedSkus.some(sku => !verifiedSkus.includes(sku))) throw new Error("Wix no confirmó el nuevo SKU permanente.");
     sendJson(response, 200, {ok:true, styleCode, skus:verifiedSkus, product:verifiedProduct});
     return;
   }
-  const name = safeText(body?.name, 80);
-  const description = safeText(body?.description, 16000);
-  const cost = Math.max(0, Number(body?.cost || 0));
-  const price = cost > 0 ? Math.round(cost * 2.56) : Number(body?.price);
-  const fulfillmentCode = safeText(body?.fulfillmentCode, 10).toUpperCase();
-  if (!name) return sendError(response, 400, "Agrega el nombre del producto.");
-  if (!Number.isFinite(price) || price <= 0) return sendError(response, 400, "Agrega un precio válido.");
 
   const currentResult = await wix.productsV3.getProduct(productId, {
-    fields: ["PLAIN_DESCRIPTION", "MERCHANT_DATA", "CURRENCY"]
+    fields:["PLAIN_DESCRIPTION","MERCHANT_DATA","CURRENCY","MEDIA_ITEMS_INFO","THUMBNAIL"]
   });
   const current = currentResult?.product || currentResult;
-  if (!current?._id && !current?.id) return sendError(response, 404, "No encontramos el producto.");
+  if(!current?._id && !current?.id) return sendError(response, 404, "No encontramos el producto.");
 
-  const currentVariants = Array.isArray(current?.variantsInfo?.variants)
-    ? current.variantsInfo.variants
-    : [];
-  const missingStyleCode = fulfillmentCode && currentVariants.some(variant => !safeText(variant?.sku, 100))
-    ? await nextPermanentStyleCode(true)
-    : "";
-  const variants = Array.isArray(current?.variantsInfo?.variants)
-    ? current.variantsInfo.variants.map((variant, index) => {
-        const currentSku = safeText(variant?.sku, 100).toUpperCase();
-        const skuTail = currentSku.replace(/^(?:PRL|PR|PL|RL|P|R|L)-?/i, "");
-        const generatedTail = `${missingStyleCode}${currentVariants.length > 1 ? `-${index + 1}` : ""}`;
-        return {
-          ...variant,
-          sku: fulfillmentCode ? `${fulfillmentCode}-${skuTail || generatedTail}` : currentSku,
-          price: {
-            ...(variant.price || {}),
-            actualPrice: { amount: String(Math.round(price)) }
-          },
-          revenueDetails: cost > 0
-            ? { ...(variant.revenueDetails || {}), cost: { amount: String(cost) } }
-            : variant.revenueDetails
-        };
-      })
-    : [];
+  const name = safeText(body?.name, 80) || safeText(current.name, 80);
+  const description = safeText(body?.description, 16000);
+  const cost = Math.max(0, Number(body?.cost || 0));
+  const currentPrice = Number(current?.variantsInfo?.variants?.[0]?.price?.actualPrice?.amount || 0);
+  const price = cost > 0 ? Math.round(cost * 2.56) : Number(body?.price || currentPrice);
+  if(!name) return sendError(response, 400, "El producto necesita conservar su nombre.");
+  if(!Number.isFinite(price) || price <= 0) return sendError(response, 400, "Agrega un precio válido.");
 
-  const update = {
-    revision: current.revision,
-    name,
-    plainDescription: description ? `<p>${escapeHtml(description)}</p>` : "<p></p>",
-    visible: body?.visible !== false
-  };
-  if (variants.length) {
-    update.options = current.options || [];
-    update.variantsInfo = { variants };
+  const requestedVariants = Array.isArray(body?.variantUpdates)
+    ? body.variantUpdates.slice(0, 10).map(item => ({
+        size:safeText(item?.size, 10).toUpperCase(),
+        variantId:safeText(item?.variantId, 150),
+        inventoryId:safeText(item?.inventoryId, 150),
+        originalSku:safeText(item?.originalSku, 160).toUpperCase(),
+        fulfillmentCode:safeText(item?.fulfillmentCode, 10).toUpperCase(),
+        quantity:Number(item?.quantity)
+      }))
+    : [];
+  if(requestedVariants.length){
+    if(requestedVariants.some(item =>
+      !["S","M","L","XL"].includes(item.size) ||
+      !/^(?:PRL|PR|PL|RL|P|R|L)$/.test(item.fulfillmentCode) ||
+      !Number.isInteger(item.quantity) ||
+      item.quantity < 0 ||
+      item.quantity > 100000
+    )) return sendError(response, 400, "Revisa la talla, entrega y cantidad de cada variante.");
+    if(new Set(requestedVariants.map(item => item.size)).size !== requestedVariants.length){
+      return sendError(response, 400, "Cada talla debe aparecer una sola vez.");
+    }
+    if(["S","M","L","XL"].some(size => !requestedVariants.some(item => item.size === size))){
+      return sendError(response, 400, "Las tallas S, M, L y XL deben guardarse juntas.");
+    }
   }
 
-  if (Array.isArray(body?.photos)) {
+  const currentVariants = Array.isArray(current?.variantsInfo?.variants) ? current.variantsInfo.variants : [];
+  if(!currentVariants.length) return sendError(response, 400, "Este producto no tiene una variante base en Wix.");
+  const currentInventory = await getWixInventory();
+  const currentInventoryById = new Map(currentInventory.map(item => [String(item.id), item]));
+  let variants = currentVariants;
+  let options = current.options || [];
+  let shapeChanged = false;
+
+  if(requestedVariants.length){
+    const currentById = new Map(currentVariants.map(variant => [safeText(variant?._id || variant?.id || variant?.variantId, 150), variant]));
+    const currentBySize = new Map(currentVariants.map(variant => [existingVariantSize(variant), variant]).filter(([size]) => size));
+    const defaultVariant = currentVariants.find(variant => !existingVariantSize(variant));
+    const firstWithSku = currentVariants.find(variant => variant?.sku);
+    const firstSku = safeText(firstWithSku?.sku, 160).toUpperCase();
+    let familyTail = existingSkuTail(firstSku);
+    const firstSize = existingVariantSize(firstWithSku);
+    if(firstSize && familyTail.endsWith(`-${firstSize}`)) familyTail = familyTail.slice(0, -(firstSize.length + 1));
+    if(!familyTail) throw new Error("No pudimos preservar el código permanente de este producto.");
+
+    const usedIds = new Set();
+    variants = requestedVariants.map(requested => {
+      let existing = requested.variantId ? currentById.get(requested.variantId) : currentBySize.get(requested.size);
+      const defaultId = safeText(defaultVariant?._id || defaultVariant?.id || defaultVariant?.variantId, 150);
+      if(!existing && requested.size === "S" && defaultVariant && !usedIds.has(defaultId)) existing = defaultVariant;
+      const existingId = safeText(existing?._id || existing?.id || existing?.variantId, 150);
+      if(existingId) usedIds.add(existingId);
+      const currentSku = safeText(existing?.sku, 160).toUpperCase();
+      if(existing && requested.originalSku && currentSku !== requested.originalSku){
+        throw new Error("Una variante cambió en Wix. Vuelve a abrir el producto antes de guardar.");
+      }
+      const tail = existingSkuTail(currentSku);
+      const sku = existing
+        ? `${requested.fulfillmentCode}-${tail}`
+        : `${requested.fulfillmentCode}-${familyTail}-${requested.size}`;
+      const source = existing || currentVariants[0];
+      const next = {
+        ...source,
+        sku,
+        visible:true,
+        choices:buildVariantChoices({size:requested.size,color:""}),
+        price:{...(source?.price || {}),actualPrice:{amount:String(Math.round(price))}},
+        revenueDetails:cost > 0 ? {...(source?.revenueDetails || {}),cost:{amount:String(cost)}} : source?.revenueDetails,
+        inventoryItem:{quantity:requested.quantity}
+      };
+      if(!existing){
+        delete next._id;
+        delete next.id;
+        delete next.variantId;
+        delete next.revision;
+        delete next.inventory;
+      }
+      return next;
+    });
+    if(new Set(variants.map(variant => safeText(variant.sku, 160).toUpperCase())).size !== variants.length){
+      throw new Error("Cada variante necesita un SKU permanente único.");
+    }
+    const requestedSizes = requestedVariants.map(item => item.size);
+    options = buildOptions(requestedSizes, []);
+    shapeChanged =
+      currentVariants.length !== variants.length ||
+      currentVariants.some(variant => !requestedSizes.includes(existingVariantSize(variant)));
+  }
+
+  const update = {
+    revision:current.revision,
+    name,
+    plainDescription:description ? `<p>${escapeHtml(description)}</p>` : "<p></p>",
+    visible:body?.visible !== false
+  };
+  if(requestedVariants.length){
+    update.options = options;
+    update.variantsInfo = {variants};
+  }else if(currentVariants.length){
+    update.options = current.options || [];
+    update.variantsInfo = {
+      variants:currentVariants.map(variant => ({
+        ...variant,
+        price:{...(variant.price || {}),actualPrice:{amount:String(Math.round(price))}},
+        revenueDetails:cost > 0 ? {...(variant.revenueDetails || {}),cost:{amount:String(cost)}} : variant.revenueDetails
+      }))
+    };
+  }
+
+  if(Array.isArray(body?.photos)){
     const photoIds = [];
     const seenPhotoIds = new Set();
-    const photos = body.photos.filter(Boolean).slice(0, 5);
-    for (let index = 0; index < photos.length; index += 1) {
-      const value = String(photos[index] || "");
+    for(const [index, photo] of body.photos.filter(Boolean).slice(0, 5).entries()){
+      const value = String(photo || "");
       const existingId = wixMediaId(value);
       const photoId = existingId || await uploadImage(value, index);
-      if (photoId && !seenPhotoIds.has(photoId)) {
+      if(photoId && !seenPhotoIds.has(photoId)){
         seenPhotoIds.add(photoId);
         photoIds.push(photoId);
       }
     }
     update.media = photoIds.length
-      ? { itemsInfo: { items: photoIds.map(id => ({ id })) } }
-      : { itemsInfo: { items: [] } };
+      ? {itemsInfo:{items:photoIds.map(id => ({id}))}}
+      : {itemsInfo:{items:[]}};
   }
 
-  const updated = await wix.productsV3.updateProduct(productId, update, {
-    fields: ["PLAIN_DESCRIPTION", "MERCHANT_DATA", "CURRENCY", "MEDIA_ITEMS_INFO", "THUMBNAIL"]
-  });
-  if (body?.category) await assignProductCategory(productId, safeText(body.category, 30));
-  if (body?.showcaseSlot) {
-    await applyShowcasePosition(productId, safeText(body.category, 30), Number(body.showcaseSlot));
+  if(shapeChanged){
+    await wix.productsV3.updateProductWithInventory(productId, update, {
+      fields:["PLAIN_DESCRIPTION","MERCHANT_DATA","CURRENCY","MEDIA_ITEMS_INFO","THUMBNAIL"]
+    });
+  }else{
+    await wix.productsV3.updateProduct(productId, update, {
+      fields:["PLAIN_DESCRIPTION","MERCHANT_DATA","CURRENCY","MEDIA_ITEMS_INFO","THUMBNAIL"]
+    });
+    if(requestedVariants.length){
+      const freshInventory = await getWixInventory();
+      const freshById = new Map(freshInventory.map(item => [String(item.id), item]));
+      for(const requested of requestedVariants){
+        const item = freshById.get(requested.inventoryId) || currentInventoryById.get(requested.inventoryId);
+        if(!item || String(item.productId) !== String(productId)){
+          throw new Error("No pudimos identificar el inventario permanente de una variante.");
+        }
+        await wix.inventoryItemsV3.updateInventoryItem(
+          item.id,
+          {id:item.id,revision:item.revision,quantity:requested.quantity},
+          {reason:"MANUAL"}
+        );
+      }
+    }
   }
-  sendJson(response, 200, { ok: true, product: updated?.product || updated });
+
+  if(body?.category) await assignProductCategory(productId, safeText(body.category, 30));
+  if(body?.showcaseSlot) await applyShowcasePosition(productId, safeText(body.category, 30), Number(body.showcaseSlot));
+
+  let confirmedProduct;
+  let confirmedInventory;
+  for(let attempt = 0; attempt < 3; attempt += 1){
+    const confirmedResult = await wix.productsV3.getProduct(productId, {
+      fields:["PLAIN_DESCRIPTION","MERCHANT_DATA","CURRENCY","MEDIA_ITEMS_INFO","THUMBNAIL"]
+    });
+    confirmedProduct = confirmedResult?.product || confirmedResult;
+    confirmedInventory = await getWixInventory();
+    if(!requestedVariants.length) break;
+    const details = productVariantDetails(confirmedProduct, confirmedInventory);
+    const confirmed = requestedVariants.every(expected => {
+      const actual = details.find(item => item.size === expected.size);
+      return actual &&
+        existingSkuPrefix(actual.sku) === expected.fulfillmentCode &&
+        Number(actual.quantity) === expected.quantity;
+    });
+    if(confirmed) break;
+    if(attempt < 2) await new Promise(resolve => setTimeout(resolve, 400));
+  }
+  if(requestedVariants.length){
+    const details = productVariantDetails(confirmedProduct, confirmedInventory);
+    const confirmed = requestedVariants.every(expected => {
+      const actual = details.find(item => item.size === expected.size);
+      return actual &&
+        existingSkuPrefix(actual.sku) === expected.fulfillmentCode &&
+        Number(actual.quantity) === expected.quantity;
+    });
+    if(!confirmed) throw new Error("Wix no confirmó todas las tallas, cantidades y métodos de entrega.");
+  }
+
+  const [showcaseSlots, categoryRoutes] = await Promise.all([
+    getShowcaseSlots().catch(() => ({})),
+    getCategoryRoutes().catch(() => ({}))
+  ]);
+  sendJson(response, 200, {
+    ok:true,
+    product:normalizedProductDetail(confirmedProduct, confirmedInventory, showcaseSlots[String(productId)], categoryRoutes[String(productId)])
+  });
 }
 
 async function handleNextPermanentSku(request, response) {
@@ -3308,23 +3504,18 @@ async function handleGetProduct(request, response, productId) {
   if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
   if (!wix) return sendError(response, 503, "La tienda todavía no está conectada.");
   const result = await wix.productsV3.getProduct(productId, {
-    fields: ["PLAIN_DESCRIPTION", "MERCHANT_DATA", "CURRENCY", "MEDIA_ITEMS_INFO", "THUMBNAIL"]
+    fields:["PLAIN_DESCRIPTION","MERCHANT_DATA","CURRENCY","MEDIA_ITEMS_INFO","THUMBNAIL"]
   });
   const product = result?.product || result;
-  if (!product?._id && !product?.id) return sendError(response, 404, "No encontramos el producto.");
-  const showcaseSlots = await getShowcaseSlots().catch(() => ({}));
+  if(!product?._id && !product?.id) return sendError(response, 404, "No encontramos el producto.");
+  const [inventory, showcaseSlots, categoryRoutes] = await Promise.all([
+    getWixInventory(),
+    getShowcaseSlots().catch(() => ({})),
+    getCategoryRoutes().catch(() => ({}))
+  ]);
   sendJson(response, 200, {
-    ok: true,
-    product: {
-      id: product._id || product.id,
-      name: safeText(product.name, 80),
-      description: safeText(String(product.plainDescription || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " "), 16000),
-      visible: product.visible !== false,
-      image: getProductImageUrl(product),
-      photos: getProductImageUrls(product)
-      ,cost: Number(product?.variantsInfo?.variants?.[0]?.revenueDetails?.cost?.amount || 0),
-      showcaseSlot: Number(showcaseSlots[String(productId)] || 0) || null
-    }
+    ok:true,
+    product:normalizedProductDetail(product, inventory, showcaseSlots[String(productId)], categoryRoutes[String(productId)])
   });
 }
 

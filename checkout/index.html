@@ -1138,6 +1138,24 @@ img{display:block;max-width:100%}
 
         <div id="cartList" class="cartList"></div>
 
+        <section class="summaryCard glassCard" aria-label="Métodos de entrega">
+          <div class="summaryTotalLabel">Entrega de tu pedido</div>
+          <div class="summaryLine">
+            <span>Pronto</span>
+            <span class="summaryValue">24–48 h en Cartagena</span>
+          </div>
+          <div class="summaryLine">
+            <span>Rápido</span>
+            <span class="summaryValue">4–7 días</span>
+          </div>
+          <div class="summaryLine">
+            <span>Libéralo</span>
+            <span class="summaryValue">14–21 días</span>
+          </div>
+          <div class="summaryDivider"></div>
+          <div class="emptyCartText">Cada prenda puede tener un método diferente. Si combinas métodos, tu pedido puede llegar en entregas separadas.</div>
+        </section>
+
         <div class="summaryCard glassCard">
           <div class="summaryLine">
             <span>Subtotal</span>
@@ -1194,7 +1212,7 @@ img{display:block;max-width:100%}
 
         <h2 class="paymentSectionTitle">Información de entrega</h2>
         <section class="deliveryGlass" aria-label="Entrega">
-          <div class="promiseRow">
+          <div class="promiseRow" hidden>
             <div class="promiseBadge">P</div>
             <div aria-live="polite">
               <div id="promiseName" class="promiseName">Pronto – Cartagena</div>
@@ -1202,7 +1220,7 @@ img{display:block;max-width:100%}
             </div>
             <button id="deliveryInfoButton" class="infoButton" type="button" aria-label="Ver tiempos de entrega">i</button>
           </div>
-          <div class="deliveryDivider"></div>
+          <div class="deliveryDivider" hidden></div>
           <div class="deliveryDetails shippingFields">
             <label><input id="customerFirstName" name="firstName" class="compactInput" autocomplete="given-name" placeholder="Nombre"></label>
             <label><input id="customerLastName" name="lastName" class="compactInput" autocomplete="family-name" placeholder="Apellido"></label>

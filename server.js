@@ -586,6 +586,13 @@ function stripeCaptureMethod(lines) {
     : "automatic";
 }
 
+function selectedDeliveryLabel(value) {
+  const mode = safeText(value, 20).toLowerCase();
+  if (mode === "pickup") return "Pronto";
+  if (mode === "ship") return "Libéralo";
+  return "Rápido";
+}
+
 async function handleCreateStripeCheckout(request, response) {
   if (!stripe) {
     sendError(response, 503, "Stripe todavía no está configurado en el servidor.");
@@ -740,7 +747,9 @@ async function getStripePurchasedLines(session) {
       variantId,
       quantity,
       amount,
-      name: safeText(line?.description || stripeProduct?.name, 300) || "Producto CajaModa"
+      name: safeText(line?.description || stripeProduct?.name, 300) || "Producto CajaModa",
+      fulfillmentCode: safeText(stripeProduct?.metadata?.fulfillmentCode, 10).toUpperCase(),
+      selectedDeliveryMode: safeText(stripeProduct?.metadata?.selectedDeliveryMode, 20).toLowerCase()
     };
   });
 }
@@ -812,6 +821,10 @@ async function importStripeOrderIntoWix(session, lines) {
     },
     lineItems: lines.map(line => ({
       productName: { original: line.name },
+      descriptionLines: [{
+        name: { original: "Entrega" },
+        plainText: { original: selectedDeliveryLabel(line.selectedDeliveryMode) }
+      }],
       quantity: line.quantity,
       price: { amount: String(line.amount) },
       itemType: { preset: "PHYSICAL" },
@@ -885,7 +898,8 @@ function stripeIntentMetadata(lines, body, delivery) {
       q: line.quantity,
       a: line.amount,
       n: safeText(line.name, 180),
-      f: safeText(line.fulfillmentCode, 10).toUpperCase()
+      f: safeText(line.fulfillmentCode, 10).toUpperCase(),
+      d: safeText(line.selectedDeliveryMode, 20).toLowerCase()
     })).toString("base64url");
   });
   return metadata;
@@ -902,7 +916,8 @@ function stripeIntentLines(intent) {
       quantity: Math.max(1, Math.floor(Number(item.q || 1))),
       amount: Number(item.a || 0),
       name: safeText(item.n, 300) || "Producto CajaModa",
-      fulfillmentCode: safeText(item.f, 10).toUpperCase()
+      fulfillmentCode: safeText(item.f, 10).toUpperCase(),
+      selectedDeliveryMode: safeText(item.d, 20).toLowerCase()
     };
   }).filter(line => line.productId && line.variantId && Number.isFinite(line.amount) && line.amount >= 1);
 }
@@ -1358,7 +1373,9 @@ async function verifiedCheckoutLines(items) {
     quantity: line.quantity,
     amount: Number(line.price_data.unit_amount) / 100,
     name: line.price_data.product_data.name,
-    description: line.price_data.product_data.description || ""
+    description: line.price_data.product_data.description || "",
+    fulfillmentCode: safeText(line.fulfillmentCode, 10).toUpperCase(),
+    selectedDeliveryMode: safeText(line.selectedDeliveryMode, 20).toLowerCase()
   }));
 }
 
@@ -1444,6 +1461,10 @@ async function handleCreateNequiOrder(request, response) {
     },
     lineItems: lines.map(line => ({
       productName: { original: line.name },
+      descriptionLines: [{
+        name: { original: "Entrega" },
+        plainText: { original: selectedDeliveryLabel(line.selectedDeliveryMode) }
+      }],
       quantity: line.quantity,
       price: { amount: String(line.amount) },
       itemType: { preset: "PHYSICAL" },

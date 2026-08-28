@@ -4691,7 +4691,7 @@ if(
       const input = qsa("[data-size]").find(candidate => candidate.value === size);
       if(input) input.checked = true;
       const sku = String(item.sku || "").toUpperCase();
-      const code = sku.split("-").pop() || "P";
+      const code = sku.match(/^(PRL|PR|PL|RL|P|R|L)(?:-|$)/)?.[1] || "P";
       variantDrafts.set(size || "unique", {size, color:"", methods:["P","R","L"].filter(method => code.includes(method)), sku, persistedSku:true, quantity:Math.max(0, Number(item.quantity || 0)), enabled:true});
       editedVariantQuantities.add(size || "unique");
     });

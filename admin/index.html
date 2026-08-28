@@ -4353,7 +4353,7 @@ if(
       $("productCategory")
         .value;
 
-    const styleCode = $("productStyleCode").value.trim().replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+    let styleCode = $("productStyleCode").value.trim().replace(/[^A-Za-z0-9]/g, "").toUpperCase();
 
     const sizes =
       collectSizes();
@@ -4365,9 +4365,9 @@ if(
       uploadedPhotos
         .filter(Boolean);
 
-    const variantOverrides = collectVariantOverrides();
-    const quantity = variantOverrides.reduce((total, variant) => total + Number(variant.quantity || 0), 0);
-    const fulfillmentCode = variantOverrides[0]?.fulfillmentCode || "P";
+    let variantOverrides = collectVariantOverrides();
+    let quantity = variantOverrides.reduce((total, variant) => total + Number(variant.quantity || 0), 0);
+    let fulfillmentCode = variantOverrides[0]?.fulfillmentCode || "P";
 
     if(
       !name
@@ -4405,8 +4405,15 @@ if(
     }
 
     if(!styleCode){
-      $("productName").focus();
-      showToast("Agrega un nombre para generar el código del producto.");
+      await loadNextSkuPreview();
+      styleCode = $("productStyleCode").value.trim().replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+      variantOverrides = collectVariantOverrides();
+      quantity = variantOverrides.reduce((total, variant) => total + Number(variant.quantity || 0), 0);
+      fulfillmentCode = variantOverrides[0]?.fulfillmentCode || "P";
+    }
+
+    if(!styleCode){
+      showToast("No pudimos generar el SKU. Intenta nuevamente.");
       return;
     }
 

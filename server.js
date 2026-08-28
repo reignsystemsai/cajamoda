@@ -3543,6 +3543,11 @@ async function handleUpdateProduct(request, response, productId) {
         needsAnotherRead = true;
         continue;
       }
+      if(expected.inventoryId && String(actual.inventoryId) !== String(expected.inventoryId)){
+        confirmationFailure = `Wix cambió el inventario permanente de la talla ${expected.size}.`;
+        needsAnotherRead = true;
+        continue;
+      }
       if(Number(actual.quantity) !== expected.quantity){
         const inventoryItem = confirmedInventory.find(item => String(item.id) === String(actual.inventoryId));
         if(inventoryItem && !adjustedInventoryIds.has(inventoryItem.id)){
@@ -3569,13 +3574,16 @@ async function handleUpdateProduct(request, response, productId) {
     throw new Error(confirmationFailure || "Wix no confirmó todas las tallas, cantidades y métodos de entrega.");
   }
 
-  const [showcaseSlots, categoryRoutes] = await Promise.all([
-    getShowcaseSlots().catch(() => ({})),
+  const [showcases, categoryRoutes] = await Promise.all([
+    getCategoryShowcases().catch(() => ({})),
     getCategoryRoutes().catch(() => ({}))
   ]);
+  const confirmedCategory = safeText(categoryRoutes[String(productId)], 30);
+  const confirmedShowcase = (showcases[confirmedCategory] || [])
+    .find(item => String(item.id) === String(productId));
   sendJson(response, 200, {
     ok:true,
-    product:normalizedProductDetail(confirmedProduct, confirmedInventory, showcaseSlots[String(productId)], categoryRoutes[String(productId)])
+    product:normalizedProductDetail(confirmedProduct, confirmedInventory, confirmedShowcase?.showcaseSlot, confirmedCategory)
   });
 }
 
@@ -3593,14 +3601,17 @@ async function handleGetProduct(request, response, productId) {
   });
   const product = result?.product || result;
   if(!product?._id && !product?.id) return sendError(response, 404, "No encontramos el producto.");
-  const [inventory, showcaseSlots, categoryRoutes] = await Promise.all([
+  const [inventory, showcases, categoryRoutes] = await Promise.all([
     getWixInventory(),
-    getShowcaseSlots().catch(() => ({})),
+    getCategoryShowcases().catch(() => ({})),
     getCategoryRoutes().catch(() => ({}))
   ]);
+  const category = safeText(categoryRoutes[String(productId)], 30);
+  const showcase = (showcases[category] || [])
+    .find(item => String(item.id) === String(productId));
   sendJson(response, 200, {
     ok:true,
-    product:normalizedProductDetail(product, inventory, showcaseSlots[String(productId)], categoryRoutes[String(productId)])
+    product:normalizedProductDetail(product, inventory, showcase?.showcaseSlot, category)
   });
 }
 

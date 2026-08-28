@@ -540,10 +540,33 @@ async function stripeLineItemFromCartItem(item) {
   const normalizedFulfillmentCode = ["P", "PR", "RP", "R", "L", "PL", "LP", "RL", "LR", "PRL"].includes(fulfillmentCode)
     ? fulfillmentCode
     : "R";
+  const allowedDeliveryModes = normalizedFulfillmentCode === "PRL"
+    ? ["pickup", "fast", "ship"]
+    : ["PR", "RP"].includes(normalizedFulfillmentCode)
+      ? ["pickup", "fast"]
+      : ["PL", "LP"].includes(normalizedFulfillmentCode)
+        ? ["pickup", "ship"]
+        : ["RL", "LR"].includes(normalizedFulfillmentCode)
+          ? ["fast", "ship"]
+          : normalizedFulfillmentCode === "P"
+            ? ["pickup"]
+            : normalizedFulfillmentCode === "L"
+              ? ["ship"]
+              : ["fast"];
+  const requestedMode = safeText(item?.selectedDeliveryMode, 20).toLowerCase();
+  const selectedDeliveryMode = requestedMode && allowedDeliveryModes.includes(requestedMode)
+    ? requestedMode
+    : allowedDeliveryModes.length === 1
+      ? allowedDeliveryModes[0]
+      : "";
+  if (!selectedDeliveryMode) {
+    throw new Error(`Selecciona un método de entrega válido para ${safeText(product?.name, 80)}.`);
+  }
 
   return {
     quantity,
     fulfillmentCode: normalizedFulfillmentCode,
+    selectedDeliveryMode,
     price_data: {
       currency: "cop",
       // Stripe treats COP as a two-decimal currency in API requests.
@@ -551,14 +574,14 @@ async function stripeLineItemFromCartItem(item) {
       product_data: {
         name: safeText(product?.name, 80) || "Producto CajaModa",
         description: stripeChoiceText(item) || undefined,
-        metadata: { productId, variantId, fulfillmentCode: normalizedFulfillmentCode }
+        metadata: { productId, variantId, fulfillmentCode: normalizedFulfillmentCode, selectedDeliveryMode }
       }
     }
   };
 }
 
 function stripeCaptureMethod(lines) {
-  return lines.some(line => safeText(line?.fulfillmentCode, 10).toUpperCase().includes("L"))
+  return lines.some(line => safeText(line?.selectedDeliveryMode, 20).toLowerCase() === "ship")
     ? "manual"
     : "automatic";
 }
@@ -577,7 +600,7 @@ async function handleCreateStripeCheckout(request, response) {
   const catalogLines = await Promise.all(items.map(stripeLineItemFromCartItem));
   // Keep CajaModa fulfillment data server-side. Stripe only accepts documented
   // line item properties, so never forward fulfillmentCode at this level.
-  const lineItems = catalogLines.map(({ fulfillmentCode, ...line }) => line);
+  const lineItems = catalogLines.map(({ fulfillmentCode, selectedDeliveryMode, ...line }) => line);
   const customerEmail = safeText(body?.customer?.email, 250);
   const requestedDelivery = safeText(body?.delivery?.method, 20).toLowerCase();
   const deliveryMethod = ["moto", "national"].includes(requestedDelivery)
@@ -595,7 +618,8 @@ async function handleCreateStripeCheckout(request, response) {
     quantity: Math.max(1, Math.floor(Number(line?.quantity || 1))),
     amount: Number(line?.price_data?.unit_amount || 0) / 100,
     name: safeText(line?.price_data?.product_data?.name, 300) || "Producto CajaModa",
-    fulfillmentCode: safeText(line?.fulfillmentCode, 10).toUpperCase()
+    fulfillmentCode: safeText(line?.fulfillmentCode, 10).toUpperCase(),
+    selectedDeliveryMode: safeText(line?.selectedDeliveryMode, 20).toLowerCase()
   }));
   const captureMethod = stripeCaptureMethod(intentLines);
   const intentMetadata = stripeIntentMetadata(intentLines, body, delivery);
@@ -895,7 +919,8 @@ async function handleCreateStripePaymentIntent(request, response) {
     quantity: Math.max(1, Math.floor(Number(line.quantity || 1))),
     amount: Number(line?.price_data?.unit_amount || 0) / 100,
     name: safeText(line?.price_data?.product_data?.name, 300) || "Producto CajaModa",
-    fulfillmentCode: safeText(line?.fulfillmentCode, 10).toUpperCase()
+    fulfillmentCode: safeText(line?.fulfillmentCode, 10).toUpperCase(),
+    selectedDeliveryMode: safeText(line?.selectedDeliveryMode, 20).toLowerCase()
   }));
   const captureMethod = stripeCaptureMethod(lines);
   const delivery = await checkoutDelivery(body);

@@ -3641,7 +3641,22 @@ async function applyShowcasePosition(productId, category, targetSlot) {
     orderedIds.splice(targetIndex, 0, id);
   }
   await saveCategoryArrangement(wixCategory.id, orderedIds);
-  return {from:currentIndex + 1, to:targetSlot, swappedProductId:occupantId};
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const confirmed = await categoryArrangement(category);
+    const orderConfirmed = confirmed.orderedIds.length === orderedIds.length &&
+      orderedIds.every((productId, index) => confirmed.orderedIds[index] === productId);
+    if (orderConfirmed) {
+      return {
+        from:currentIndex + 1,
+        to:confirmed.orderedIds.indexOf(id) + 1,
+        swappedProductId:occupantId,
+        category,
+        orderedProductIds:confirmed.orderedIds.slice(0, limit)
+      };
+    }
+    if (attempt < 7) await new Promise(resolve => setTimeout(resolve, 750));
+  }
+  throw new Error("Wix no confirmó el nuevo orden de la vitrina.");
 }
 
 async function handleShowcasePosition(request, response, productId) {

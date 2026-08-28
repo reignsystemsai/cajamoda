@@ -4594,6 +4594,12 @@ function normalizeInventoryItem(
         150
       ),
 
+    locationId:
+      safeText(
+        item?.locationId,
+        150
+      ),
+
     productName:
       safeText(
         item

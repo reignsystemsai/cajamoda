@@ -1917,6 +1917,13 @@ img{display:block;max-width:100%}
     </div>`;
   }
 
+  function deliverySelectionsComplete(cart=readCart()){
+    return cart.items.every(item=>{
+      const selected=normalizeDeliveryMode(item.selectedDeliveryMode);
+      return Boolean(selected&&allowedDeliveryModes(item).includes(selected));
+    });
+  }
+
   function cartItemDetails(item){
     const details=[];
     if(item.size){details.push(`<span class="cartOptionLine">Talla: ${escapeHtml(item.size)}</span>`)}
@@ -2050,7 +2057,7 @@ img{display:block;max-width:100%}
     });
 
     $("toDeliveryButton").disabled =
-      cart.items.length === 0;
+      cart.items.length === 0 || !deliverySelectionsComplete(cart);
 
     updateNequiConfirmAvailability();
 
@@ -2524,6 +2531,10 @@ img{display:block;max-width:100%}
   }
 
   function goToStep(step, options = {}) {
+    if(step==="payment"&&!deliverySelectionsComplete()){
+      showToast("Selecciona la entrega de cada producto.");
+      return;
+    }
     const index = STEPS.indexOf(step);
 
     if (index < 0) {
@@ -2603,6 +2614,11 @@ img{display:block;max-width:100%}
   }
 
   function validatePaymentDetails() {
+    if(!deliverySelectionsComplete()){
+      goToStep("bag");
+      showToast("Selecciona la entrega de cada producto.");
+      return false;
+    }
     if (!validateContact()) return false;
     const firstName = $("customerFirstName")?.value.trim();
     const lastName = $("customerLastName")?.value.trim();
@@ -2645,7 +2661,8 @@ img{display:block;max-width:100%}
   function updateNequiConfirmAvailability() {
     const button = $("confirmNequiButton");
     if (!button) return;
-    button.disabled = readCart().items.length === 0 || !$("nequiReference")?.value.trim();
+    const cart=readCart();
+    button.disabled = cart.items.length === 0 || !deliverySelectionsComplete(cart) || !$("nequiReference")?.value.trim();
   }
 
   function checkoutPayload() {
@@ -2736,6 +2753,7 @@ img{display:block;max-width:100%}
   }
 
   function cardCheckoutDetailsReady() {
+    if(!deliverySelectionsComplete()){return false}
     if (!$("customerFirstName")?.value.trim() ||
         !$("customerLastName")?.value.trim() ||
         !$("customerPhone")?.value.trim() ||

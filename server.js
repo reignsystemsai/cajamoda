@@ -2411,8 +2411,10 @@ async function saveCategoryArrangement(categoryId, orderedIds) {
 async function getShowcaseSlots() {
   const categories = await queryRoutedCategories();
   const entries = await Promise.all(categories.map(async category => {
-    const arranged = await wix.categoriesV3.getArrangedItems(category.id, STORE_CATEGORY_TREE);
-    return (arranged?.items || []).map((item, index) => [String(item?.catalogItemId || ""), index + 1]);
+    const {orderedIds} = await categoryArrangement(category.vibeId);
+    return orderedIds
+      .slice(0, showcaseLimit(category.vibeId))
+      .map((productId, index) => [String(productId), index + 1]);
   }));
   return Object.fromEntries(entries.flat().filter(([id]) => id));
 }
@@ -3456,32 +3458,62 @@ async function handleUpdateProduct(request, response, productId) {
 
   let confirmedProduct;
   let confirmedInventory;
-  for(let attempt = 0; attempt < 3; attempt += 1){
+  let variantsConfirmed = !requestedVariants.length;
+  let confirmationFailure = "";
+  const adjustedInventoryIds = new Set();
+
+  for(let attempt = 0; attempt < 8; attempt += 1){
     const confirmedResult = await wix.productsV3.getProduct(productId, {
       fields:["PLAIN_DESCRIPTION","MERCHANT_DATA","CURRENCY","MEDIA_ITEMS_INFO","THUMBNAIL"]
     });
     confirmedProduct = confirmedResult?.product || confirmedResult;
     confirmedInventory = await getWixInventory();
     if(!requestedVariants.length) break;
+
     const details = productVariantDetails(confirmedProduct, confirmedInventory);
-    const confirmed = requestedVariants.every(expected => {
+    confirmationFailure = "";
+    let needsAnotherRead = false;
+
+    for(const expected of requestedVariants){
       const actual = details.find(item => item.size === expected.size);
-      return actual &&
-        existingSkuPrefix(actual.sku) === expected.fulfillmentCode &&
-        Number(actual.quantity) === expected.quantity;
-    });
-    if(confirmed) break;
-    if(attempt < 2) await new Promise(resolve => setTimeout(resolve, 400));
+      if(!actual){
+        confirmationFailure = `Wix todavía no devolvió la talla ${expected.size}.`;
+        needsAnotherRead = true;
+        continue;
+      }
+      if(existingSkuPrefix(actual.sku) !== expected.fulfillmentCode){
+        confirmationFailure = `Wix todavía no devolvió la entrega de la talla ${expected.size}.`;
+        needsAnotherRead = true;
+      }
+      if(!actual.inventoryId){
+        confirmationFailure = `Wix todavía no devolvió el inventario de la talla ${expected.size}.`;
+        needsAnotherRead = true;
+        continue;
+      }
+      if(Number(actual.quantity) !== expected.quantity){
+        const inventoryItem = confirmedInventory.find(item => String(item.id) === String(actual.inventoryId));
+        if(inventoryItem && !adjustedInventoryIds.has(inventoryItem.id)){
+          await wix.inventoryItemsV3.updateInventoryItem(
+            inventoryItem.id,
+            {id:inventoryItem.id, revision:inventoryItem.revision, quantity:expected.quantity},
+            {reason:"MANUAL"}
+          );
+          adjustedInventoryIds.add(inventoryItem.id);
+        }
+        confirmationFailure = `Wix todavía no devolvió la cantidad de la talla ${expected.size}.`;
+        needsAnotherRead = true;
+      }
+    }
+
+    if(!needsAnotherRead){
+      variantsConfirmed = true;
+      break;
+    }
+    if(attempt < 7) await new Promise(resolve => setTimeout(resolve, 750));
   }
-  if(requestedVariants.length){
-    const details = productVariantDetails(confirmedProduct, confirmedInventory);
-    const confirmed = requestedVariants.every(expected => {
-      const actual = details.find(item => item.size === expected.size);
-      return actual &&
-        existingSkuPrefix(actual.sku) === expected.fulfillmentCode &&
-        Number(actual.quantity) === expected.quantity;
-    });
-    if(!confirmed) throw new Error("Wix no confirmó todas las tallas, cantidades y métodos de entrega.");
+
+  if(requestedVariants.length && !variantsConfirmed){
+    throw new Error(confirmationFailure || "Wix no confirmó todas las tallas, cantidades y métodos de entrega.");
   }
 
   const [showcaseSlots, categoryRoutes] = await Promise.all([

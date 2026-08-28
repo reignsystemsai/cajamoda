@@ -548,6 +548,17 @@ function deliveryModesFromSku(value) {
               : ["fast"];
 }
 
+function normalizeDeliveryModes(values) {
+  const source = Array.isArray(values) ? values : [];
+  return [...new Set(source.map(value => {
+    const mode = String(value || "").trim().toLowerCase();
+    if (["pickup", "pronto", "pick", "p"].includes(mode)) return "pickup";
+    if (["ship", "liberalo", "liberala", "release", "global", "l"].includes(mode)) return "ship";
+    if (["fast", "rapido", "rápido", "r"].includes(mode)) return "fast";
+    return "";
+  }).filter(Boolean))];
+}
+
 function normalizeVariant(
   productId,
   variant,
@@ -981,6 +992,22 @@ function normalizeLocalCart(
           item.deliveryMode ||
           "fast",
 
+        allowedDeliveryModes: (() => {
+          const allowed = normalizeDeliveryModes(item.allowedDeliveryModes || item.deliveryModes);
+          return allowed.length ? allowed : normalizeDeliveryModes([item.deliveryMode || "fast"]);
+        })(),
+
+        selectedDeliveryMode: (() => {
+          const allowed = normalizeDeliveryModes(item.allowedDeliveryModes || item.deliveryModes);
+          const selected = normalizeDeliveryModes([item.selectedDeliveryMode])[0] || "";
+          const effectiveAllowed = allowed.length ? allowed : normalizeDeliveryModes([item.deliveryMode || "fast"]);
+          return selected && effectiveAllowed.includes(selected)
+            ? selected
+            : effectiveAllowed.length === 1
+              ? effectiveAllowed[0]
+              : "";
+        })(),
+
         quantity:
           Math.max(
             1,
@@ -1380,6 +1407,12 @@ const unitPrice =
             product?.deliveryMode ||
             "fast",
 
+          allowedDeliveryModes: normalizeDeliveryModes(
+            variant?.deliveryModes || product?.deliveryModes || localLine?.allowedDeliveryModes
+          ),
+
+          selectedDeliveryMode: localLine?.selectedDeliveryMode || "",
+
           /* Use Wix's confirmed quantity. Local quantity must never mask a failed sync. */
           quantity:
             Math.max(
@@ -1475,6 +1508,10 @@ function canonicalizeCartForWix(
       size: variant?.size || item.size || "",
       color: variant?.color || item.color || "",
       deliveryMode: variant?.deliveryMode || item.deliveryMode || product.deliveryMode || "fast",
+      allowedDeliveryModes: normalizeDeliveryModes(
+        variant?.deliveryModes || product.deliveryModes || item.allowedDeliveryModes
+      ),
+      selectedDeliveryMode: item.selectedDeliveryMode || "",
       quantity: Math.max(1,Math.floor(Number(item.quantity || 1))),
       unitPrice: normalizePrice(variant?.price,product.price),
       price: normalizePrice(variant?.price,product.price)

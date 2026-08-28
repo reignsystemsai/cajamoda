@@ -2723,7 +2723,6 @@ let lastReservedStyleNumber = 0;
 async function nextPermanentStyleCode(reserve = false) {
   const result = await wix.inventoryItemsV3
     .queryInventoryItems()
-    .ne("_id", "00000000-0000-0000-0000-000000000000")
     .limit(1000)
     .find();
   const items = Array.isArray(result?.items) ? result.items : [];

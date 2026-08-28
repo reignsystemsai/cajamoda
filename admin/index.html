@@ -2546,6 +2546,322 @@ img{
   }
 }
 
+
+
+/* Build 159 — Quick Editor clear frost facelift (presentation only) */
+.productQuickView{
+  padding:clamp(14px,2.2vw,30px);
+  background:
+    radial-gradient(circle at 16% 12%,rgba(255,255,255,.78),transparent 34%),
+    radial-gradient(circle at 88% 88%,rgba(239,226,211,.54),transparent 38%),
+    rgba(35,29,24,.24);
+  backdrop-filter:blur(18px) saturate(118%);
+  -webkit-backdrop-filter:blur(18px) saturate(118%)
+}
+.productQuickView .productQuickCard{
+  width:min(1220px,97vw);
+  max-height:94vh;
+  padding:clamp(20px,2.4vw,34px);
+  border:1px solid rgba(255,255,255,.82);
+  border-radius:32px;
+  background:
+    linear-gradient(145deg,rgba(255,255,255,.91),rgba(250,246,239,.82)),
+    rgba(255,255,255,.78);
+  box-shadow:
+    0 35px 100px rgba(42,31,19,.22),
+    inset 0 1px 0 rgba(255,255,255,.96);
+  backdrop-filter:blur(36px) saturate(126%);
+  -webkit-backdrop-filter:blur(36px) saturate(126%);
+  scrollbar-width:thin;
+  scrollbar-color:rgba(126,106,84,.42) transparent
+}
+.productQuickView .productQuickCard::-webkit-scrollbar{width:7px}
+.productQuickView .productQuickCard::-webkit-scrollbar-track{background:transparent}
+.productQuickView .productQuickCard::-webkit-scrollbar-thumb{
+  border:2px solid transparent;
+  border-radius:999px;
+  background:rgba(126,106,84,.38);
+  background-clip:padding-box
+}
+.productQuickView .productQuickHeader{
+  align-items:center;
+  padding:0 2px 16px;
+  border-bottom:1px solid rgba(115,92,69,.10)
+}
+.productQuickView .productQuickHeader h2{
+  margin:0;
+  font-family:"Cormorant Garamond",Georgia,serif;
+  font-size:clamp(30px,3vw,42px);
+  font-weight:600;
+  line-height:.96;
+  letter-spacing:-1.25px
+}
+.productQuickView .productQuickHeader .formSectionHelp{
+  margin:7px 0 0;
+  color:#8d8175;
+  font-size:10px;
+  letter-spacing:.02em
+}
+.productQuickView .productQuickClose{
+  display:grid;
+  place-items:center;
+  width:44px;
+  height:44px;
+  border:1px solid rgba(102,80,59,.12);
+  border-radius:50%;
+  background:rgba(255,255,255,.66);
+  box-shadow:0 8px 24px rgba(67,48,29,.08);
+  color:#201c18;
+  font-size:28px;
+  line-height:1;
+  transition:transform .18s ease,background .18s ease,box-shadow .18s ease
+}
+.productQuickView .productQuickClose:hover{
+  transform:rotate(4deg) scale(1.04);
+  background:#fff;
+  box-shadow:0 11px 28px rgba(67,48,29,.12)
+}
+.productQuickView .productQuickGrid{
+  grid-template-columns:minmax(290px,340px) minmax(0,1fr);
+  gap:clamp(22px,2.8vw,38px);
+  margin-top:24px
+}
+.productQuickView .quickMediaPanel{
+  align-self:start;
+  padding:12px;
+  border:1px solid rgba(119,94,69,.10);
+  border-radius:26px;
+  background:rgba(255,255,255,.46);
+  box-shadow:0 18px 48px rgba(79,57,35,.08);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px)
+}
+.productQuickView .productQuickImage{
+  border:1px solid rgba(255,255,255,.88);
+  border-radius:22px;
+  background:#f4efe7;
+  box-shadow:0 18px 42px rgba(68,48,29,.13)
+}
+.productQuickView .quickPhotoGrid{gap:8px;margin-top:12px}
+.productQuickView .quickPhotoSlot{
+  border:1px solid rgba(115,91,66,.13);
+  border-radius:12px;
+  background:rgba(250,246,239,.9);
+  box-shadow:0 6px 18px rgba(72,52,31,.06);
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease
+}
+.productQuickView .quickPhotoSlot:hover{
+  transform:translateY(-2px);
+  border-color:rgba(82,62,43,.34);
+  box-shadow:0 10px 22px rgba(72,52,31,.10)
+}
+.productQuickView .quickPhotoActions{gap:10px}
+.productQuickView .quickPhotoRemove{
+  min-height:34px;
+  margin-top:10px;
+  padding:0 10px;
+  border:1px solid rgba(151,91,75,.12);
+  border-radius:999px;
+  background:rgba(255,250,247,.7);
+  color:#a25547;
+  font-size:9px;
+  font-weight:650
+}
+.productQuickView .quickPhotoUndo{
+  border-color:rgba(93,77,60,.12);
+  background:rgba(255,255,255,.62);
+  color:#65594d
+}
+.productQuickView .quickEditForm{gap:16px}
+.productQuickView .quickEditForm>div>strong,
+.productQuickView .quickShowcaseHead strong{
+  font-family:"Cormorant Garamond",Georgia,serif;
+  font-size:22px;
+  font-weight:600;
+  letter-spacing:-.35px
+}
+.productQuickView .quickEditForm label{
+  gap:7px;
+  color:#5c5146;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.015em
+}
+.productQuickView .quickEditForm input,
+.productQuickView .quickEditForm textarea,
+.productQuickView .quickEditForm select{
+  min-height:48px;
+  padding:12px 14px;
+  border:1px solid rgba(105,82,59,.13);
+  border-radius:15px;
+  background:rgba(255,255,255,.72);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.88),0 7px 22px rgba(79,57,35,.045);
+  color:#211d19;
+  transition:border-color .18s ease,box-shadow .18s ease,background .18s ease
+}
+.productQuickView .quickEditForm textarea{min-height:102px;line-height:1.5}
+.productQuickView .quickEditForm input:focus,
+.productQuickView .quickEditForm textarea:focus,
+.productQuickView .quickEditForm select:focus{
+  border-color:rgba(154,113,83,.46);
+  background:rgba(255,255,255,.94);
+  box-shadow:0 0 0 4px rgba(202,172,145,.13),0 10px 28px rgba(79,57,35,.07)
+}
+.productQuickView .quickCalculatedPrice{
+  background:rgba(246,240,231,.76)!important;
+  color:#6f6255
+}
+.productQuickView .quickAssistButton,
+.productQuickView .quickShowcaseAction button{
+  min-height:48px;
+  border:1px solid rgba(108,84,61,.13);
+  border-radius:15px;
+  background:linear-gradient(145deg,rgba(255,255,255,.88),rgba(245,237,226,.76));
+  box-shadow:0 9px 25px rgba(80,57,35,.06);
+  color:#3c332b;
+  font-weight:750
+}
+.productQuickView .quickAssistButton:hover,
+.productQuickView .quickShowcaseAction button:hover{
+  border-color:rgba(108,84,61,.28);
+  background:#fff
+}
+.productQuickView .quickShowcase{
+  gap:12px;
+  padding:16px;
+  border:1px solid rgba(111,86,62,.10);
+  border-radius:22px;
+  background:linear-gradient(145deg,rgba(255,255,255,.58),rgba(248,241,232,.48));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.84),0 14px 36px rgba(75,52,31,.05)
+}
+.productQuickView .quickShowcaseHead small{
+  color:#8b7e71;
+  font-size:10px
+}
+.productQuickView .quickSlotGrid{gap:8px}
+.productQuickView .quickSlot{
+  border:1px solid rgba(102,79,56,.15);
+  border-radius:14px;
+  background:rgba(255,255,255,.76);
+  box-shadow:0 7px 18px rgba(68,47,27,.06);
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease
+}
+.productQuickView .quickSlot:hover{
+  transform:translateY(-3px);
+  border-color:rgba(102,79,56,.34);
+  box-shadow:0 12px 24px rgba(68,47,27,.11)
+}
+.productQuickView .quickSlot.current{
+  border:3px solid #27211c;
+  background:#fff;
+  box-shadow:0 10px 26px rgba(38,30,22,.16)
+}
+.productQuickView .quickSlot.selected,
+.productQuickView .quickSlot.dragOver{
+  outline:2px solid #b69a7d;
+  outline-offset:3px;
+  transform:translateY(-3px)
+}
+.productQuickView .quickSlot.empty{
+  border-style:dashed;
+  background:rgba(255,255,255,.34)
+}
+.productQuickView .quickSlotNumber{
+  right:6px;
+  bottom:6px;
+  min-width:24px;
+  height:24px;
+  border:1px solid rgba(255,255,255,.48);
+  border-radius:50%;
+  background:rgba(39,33,28,.84);
+  box-shadow:0 5px 12px rgba(0,0,0,.15);
+  font-size:9px;
+  backdrop-filter:blur(8px)
+}
+.productQuickView .quickShowcaseAction small{
+  color:#827568;
+  font-size:10px
+}
+.productQuickView .quickVariantList{
+  margin-top:10px;
+  border:1px solid rgba(108,83,59,.10);
+  border-radius:20px;
+  background:rgba(255,255,255,.48);
+  box-shadow:0 14px 36px rgba(75,52,31,.05)
+}
+.productQuickView .quickVariantHead{
+  padding:11px 14px;
+  background:rgba(239,229,216,.54);
+  color:#786b5f;
+  font-size:8px;
+  letter-spacing:.055em
+}
+.productQuickView .quickVariantRow{
+  min-height:64px;
+  padding:10px 14px;
+  border-top:1px solid rgba(108,83,59,.08);
+  background:rgba(255,255,255,.54)
+}
+.productQuickView .quickVariantRow:nth-child(odd){background:rgba(252,248,242,.62)}
+.productQuickView .quickVariantRow>span{
+  color:#302821;
+  font-family:"Cormorant Garamond",Georgia,serif;
+  font-size:20px;
+  font-weight:600
+}
+.productQuickView .quickVariantRow small{color:#8a7d70}
+.productQuickView .deliveryChoice{
+  border-color:rgba(94,76,58,.15);
+  background:rgba(255,255,255,.72);
+  box-shadow:0 4px 12px rgba(68,47,27,.04)
+}
+.productQuickView .deliveryChoice.selected{
+  border-color:#6f9557;
+  background:#6f9557;
+  box-shadow:0 7px 16px rgba(75,111,57,.16)
+}
+.productQuickView .quickVisibility{
+  border-color:rgba(107,83,59,.10);
+  border-radius:18px;
+  background:rgba(255,255,255,.52)
+}
+.productQuickView .quickEditFooter{
+  position:sticky;
+  z-index:3;
+  bottom:-34px;
+  margin:2px -8px -18px;
+  padding:16px 8px 18px;
+  border-top:1px solid rgba(111,86,62,.08);
+  background:linear-gradient(to top,rgba(249,245,238,.98) 70%,rgba(249,245,238,0));
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px)
+}
+.productQuickView .quickMoreWrap summary,
+.productQuickView .quickEditActions .secondaryButton{
+  border:1px solid rgba(103,80,58,.14);
+  border-radius:14px;
+  background:rgba(255,255,255,.72);
+  box-shadow:0 8px 22px rgba(68,47,27,.05)
+}
+.productQuickView .quickEditActions .primaryButton{
+  border-radius:14px!important;
+  background:linear-gradient(145deg,#251f1a,#080706)!important;
+  box-shadow:0 12px 28px rgba(29,22,17,.18)!important
+}
+@media(max-width:900px){
+  .productQuickView .productQuickGrid{grid-template-columns:1fr}
+  .productQuickView .quickMediaPanel{position:relative;top:auto}
+}
+@media(max-width:760px){
+  .productQuickView{padding:8px}
+  .productQuickView .productQuickCard{padding:18px;border-radius:24px}
+  .productQuickView .quickEditColumns{grid-template-columns:1fr 1fr}
+  .productQuickView .quickSlotGrid{gap:5px}
+  .productQuickView .quickSlot{border-radius:9px}
+  .productQuickView .quickEditActions{display:grid;grid-template-columns:1fr 1fr;width:100%}
+  .productQuickView .quickEditActions button{min-width:0}
+  .productQuickView .quickEditActions .primaryButton{grid-column:1/-1}
+}
 </style>
 
 </head>

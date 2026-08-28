@@ -4107,6 +4107,16 @@ if(
     return ["P","R","L"].filter(code => methods.includes(code)).join("") || "P";
   }
 
+  function skuFulfillmentCode(sku){
+    return String(sku || "").toUpperCase().match(/^(PRL|PR|PL|RL|P|R|L)(?:-|$)/)?.[1] || "";
+  }
+
+  function replaceSkuFulfillment(sku, code){
+    const currentSku = String(sku || "").trim().toUpperCase();
+    const tail = currentSku.replace(/^(?:PRL|PR|PL|RL|P|R|L)-?/i, "");
+    return tail ? `${code}-${tail}` : currentSku;
+  }
+
   function renderVariantPreview(){
     const styleCode = $("productStyleCode").value || "";
     const sizes = collectSizes();
@@ -4125,8 +4135,10 @@ if(
           : "Cargando SKU…";
         const defaultQuantity = baseQuantity + (remainder-- > 0 ? 1 : 0);
         const quantity = editedVariantQuantities.has(key) ? existing.quantity : defaultQuantity;
-        const finalSku = existing.persistedSku ? existing.sku : generatedSku;
-        variantDrafts.set(key, {size:combination.size, color:"", methods, sku:finalSku, persistedSku:Boolean(existing.persistedSku), quantity, enabled:existing.enabled !== false});
+        const finalSku = existing.persistedSku
+          ? replaceSkuFulfillment(existing.originalSku || existing.sku, fulfillmentCode(methods))
+          : generatedSku;
+        variantDrafts.set(key, {...existing, size:combination.size, color:"", methods, sku:finalSku, persistedSku:Boolean(existing.persistedSku), quantity, enabled:existing.enabled !== false});
         const delivery = ["P","R","L"].map(code => `<button class="deliveryChoice ${methods.includes(code) ? "selected" : ""}" type="button" data-delivery="${code}" data-variant-key="${escapeHtml(key)}" aria-label="${code === "P" ? "Pronto" : code === "R" ? "Rápido" : "Libéralo"}">${code}</button>`).join("");
         return `<div class="variantRow" data-variant-row="${escapeHtml(key)}"><input class="variantUse" data-variant-use="${escapeHtml(key)}" type="checkbox" ${existing.enabled === false ? "" : "checked"}><span class="variantLabel">${escapeHtml(combination.size || "Única")}</span><input class="variantQuantity" data-variant-quantity="${escapeHtml(key)}" type="number" min="0" step="1" value="${quantity}"><div class="deliveryChoices">${delivery}</div><input class="variantSku" data-variant-sku="${escapeHtml(key)}" value="${escapeHtml(finalSku)}" readonly></div>`;
       }).join("")}`;
@@ -4138,7 +4150,8 @@ if(
       const next = new Set(draft.methods || []);
       if(next.has(button.dataset.delivery) && next.size > 1) next.delete(button.dataset.delivery); else next.add(button.dataset.delivery);
       draft.methods = ["P","R","L"].filter(code => next.has(code));
-      draft.sku = "";
+      if(draft.persistedSku) draft.sku = replaceSkuFulfillment(draft.originalSku || draft.sku, fulfillmentCode(draft.methods));
+      else draft.sku = "";
       renderVariantPreview();
     });
     qsa("[data-variant-quantity]").forEach(input => input.oninput = () => {
@@ -4153,7 +4166,7 @@ if(
       const key = row.dataset.variantRow;
       const draft = variantDrafts.get(key);
       if(!draft?.enabled) return null;
-      return {size:draft.size || "", color:draft.color || "", fulfillmentCode:fulfillmentCode(draft.methods || []), sku:row.querySelector("[data-variant-sku]").value.trim().toUpperCase(), quantity:Number(row.querySelector("[data-variant-quantity]").value || 0)};
+      return {size:draft.size || "", color:draft.color || "", fulfillmentCode:fulfillmentCode(draft.methods || []), sku:row.querySelector("[data-variant-sku]").value.trim().toUpperCase(), originalSku:draft.originalSku || "", variantId:draft.variantId || "", inventoryId:draft.inventoryId || "", quantity:Number(row.querySelector("[data-variant-quantity]").value || 0)};
     }).filter(Boolean);
   }
 
@@ -4226,7 +4239,7 @@ if(
     if(requestId === skuPreviewRequest && !editingProductId) $("liveSkuCounter").textContent = "No disponible";
   }
 
-  function resetProductForm(){
+  function resetProductForm(options = {}){
 
     editingProductId = "";
     $("panel-add").querySelector(".pageTitle").textContent = "Nuevo producto";
@@ -4295,7 +4308,7 @@ if(
 
     renderPhotoInputs();
     renderVariantPreview();
-    loadNextSkuPreview();
+    if(options.loadSku !== false) loadNextSkuPreview();
 
   }
 
@@ -4404,7 +4417,7 @@ if(
       return;
     }
 
-    if(!styleCode){
+    if(!styleCode && !editingProductId){
       await loadNextSkuPreview();
       styleCode = $("productStyleCode").value.trim().replace(/[^A-Za-z0-9]/g, "").toUpperCase();
       variantOverrides = collectVariantOverrides();
@@ -4412,7 +4425,7 @@ if(
       fulfillmentCode = variantOverrides[0]?.fulfillmentCode || "P";
     }
 
-    if(!styleCode){
+    if(!styleCode && !editingProductId){
       showToast("No pudimos generar el SKU. Intenta nuevamente.");
       return;
     }
@@ -4454,16 +4467,17 @@ if(
 
       if(editingProductId){
         const currentId = editingProductId;
-        await apiRequest(`/api/products/${encodeURIComponent(currentId)}`, {
-          method:"PATCH",
-          body:{name, description, cost, price, photos, visible:true}
+        await saveExistingProductChanges({
+          productId: currentId,
+          fields: {name, description, cost, price, photos, visible:true},
+          variants: variantOverrides.map(variant => ({
+            variantId: variant.variantId,
+            inventoryId: variant.inventoryId,
+            originalSku: variant.originalSku,
+            fulfillmentCode: variant.fulfillmentCode,
+            quantity: stockStatus === "OUT_OF_STOCK" ? 0 : variant.quantity
+          }))
         });
-        const quantityBySku = new Map(variantOverrides.map(variant => [variant.sku, stockStatus === "OUT_OF_STOCK" ? 0 : variant.quantity]));
-        const changes = inventory
-          .filter(item => String(item.productId) === currentId && quantityBySku.has(String(item.sku || "").toUpperCase()))
-          .map(item => ({id:item.id, quantity:quantityBySku.get(String(item.sku || "").toUpperCase())}));
-        if(changes.length) await apiRequest("/api/inventory", {method:"PATCH", body:{changes}});
-        await loadRealInventory(true);
         resetProductForm();
         showPanel("products");
         renderProducts();
@@ -4678,28 +4692,63 @@ if(
   const selectedProductIds = new Set();
   let editingProductId = "";
 
+  async function saveExistingProductChanges({productId, fields, variants}){
+    const normalizedVariants = variants.map(variant => ({
+      variantId: String(variant.variantId || ""),
+      inventoryId: String(variant.inventoryId || ""),
+      originalSku: String(variant.originalSku || "").toUpperCase(),
+      fulfillmentCode: fulfillmentCode(["P","R","L"].filter(code => String(variant.fulfillmentCode || "").includes(code))),
+      quantity: Number(variant.quantity)
+    }));
+    if(normalizedVariants.some(variant => !variant.variantId || !variant.inventoryId || !variant.originalSku || !Number.isInteger(variant.quantity) || variant.quantity < 0)){
+      throw new Error("No pudimos identificar todas las variantes existentes en Wix.");
+    }
+    await apiRequest(`/api/products/${encodeURIComponent(productId)}`, {
+      method:"PATCH",
+      body:{...fields, variantMappings:normalizedVariants.map(({variantId, originalSku, fulfillmentCode}) => ({variantId, originalSku, fulfillmentCode}))}
+    });
+    await apiRequest("/api/inventory", {
+      method:"PATCH",
+      body:{changes:normalizedVariants.map(({inventoryId, quantity}) => ({id:inventoryId, quantity}))}
+    });
+    await loadRealInventory(true);
+    const savedInventory = inventory.filter(item => String(item.productId) === String(productId));
+    const verified = normalizedVariants.every(expected => {
+      const actual = savedInventory.find(item => String(item.id) === expected.inventoryId);
+      return actual &&
+        Number(actual.quantity) === expected.quantity &&
+        skuFulfillmentCode(actual.sku) === expected.fulfillmentCode &&
+        replaceSkuFulfillment(expected.originalSku, expected.fulfillmentCode) === String(actual.sku || "").toUpperCase();
+    });
+    if(!verified) throw new Error("Wix no confirmó todas las variantes y cantidades.");
+  }
+
   async function openFullProductEditor(product){
-    resetProductForm();
+    resetProductForm({loadSku:false});
     editingProductId = String(product.id || "");
-    const detailResult = await apiRequest(`/api/products/${encodeURIComponent(product.id)}`);
-    const detail = detailResult?.product || product;
-    $("productName").value = detail.name || product.name || "";
-    $("productDescription").value = detail.description || product.description || "";
-    const existingPrice = Math.round(Number(product.price || 0));
+    await loadRealInventory(true);
+    const currentProduct = products.find(item => String(item.id) === editingProductId) || product;
+    const detailResult = await apiRequest(`/api/products/${encodeURIComponent(editingProductId)}`);
+    const detail = detailResult?.product || currentProduct;
+    $("productName").value = detail.name || currentProduct.name || "";
+    $("productDescription").value = detail.description || currentProduct.description || "";
+    const existingPrice = Math.round(Number(currentProduct.price || 0));
     const existingCost = Math.max(0, Number(detail.cost || 0));
     $("productCost").value = existingCost || Math.max(0, Math.round(existingPrice / 2.56));
     updateCalculatedPrice();
-    $("productQuantity").value = Math.max(0, Math.trunc(Number(product.quantity || 0)));
-    $("productStockStatus").value = Number(product.quantity || 0) > 0 ? "IN_STOCK" : "OUT_OF_STOCK";
     const existingVariants = inventory.filter(item => String(item.productId) === editingProductId);
+    const existingQuantity = existingVariants.reduce((sum, item) => sum + Math.max(0, Number(item.quantity || 0)), 0);
+    $("productQuantity").value = Math.trunc(existingQuantity);
+    $("productStockStatus").value = existingQuantity > 0 ? "IN_STOCK" : "OUT_OF_STOCK";
+    qsa("[data-size]").forEach(input => input.checked = false);
     existingVariants.forEach(item => {
       const label = String(item.variantName || "").toUpperCase();
       const size = ["XL","L","M","S"].find(value => new RegExp(`(^|[^A-Z])${value}([^A-Z]|$)`).test(label)) || "";
       const input = qsa("[data-size]").find(candidate => candidate.value === size);
       if(input) input.checked = true;
       const sku = String(item.sku || "").toUpperCase();
-      const code = sku.match(/^(PRL|PR|PL|RL|P|R|L)(?:-|$)/)?.[1] || "P";
-      variantDrafts.set(size || "unique", {size, color:"", methods:["P","R","L"].filter(method => code.includes(method)), sku, persistedSku:true, quantity:Math.max(0, Number(item.quantity || 0)), enabled:true});
+      const code = skuFulfillmentCode(sku) || "P";
+      variantDrafts.set(size || "unique", {size, color:"", methods:["P","R","L"].filter(method => code.includes(method)), sku, originalSku:sku, variantId:String(item.variantId || ""), inventoryId:String(item.id || ""), persistedSku:true, quantity:Math.max(0, Number(item.quantity || 0)), enabled:true});
       editedVariantQuantities.add(size || "unique");
     });
     uploadedPhotos = (Array.isArray(detail.photos) && detail.photos.length
@@ -4727,9 +4776,22 @@ if(
     modal.classList.add("open");
     modal.setAttribute("aria-hidden", "false");
     try{
+      await loadRealInventory(true);
+      product = products.find(item => String(item.id) === String(product.id)) || product;
       const detailResult = await apiRequest(`/api/products/${encodeURIComponent(product.id)}`);
       const detail = detailResult?.product || product;
       const productVariants = inventory.filter(item => String(item.productId) === String(product.id));
+      const quickVariantDrafts = new Map(productVariants.map(item => {
+        const sku = String(item.sku || "").toUpperCase();
+        const code = skuFulfillmentCode(sku) || "P";
+        return [String(item.id), {
+          inventoryId:String(item.id || ""),
+          variantId:String(item.variantId || ""),
+          originalSku:sku,
+          sku,
+          methods:["P","R","L"].filter(method => code.includes(method))
+        }];
+      }));
       const quickDeliveryMethods = sku => {
         const code = String(sku || "").toUpperCase().match(/^(PRL|PR|PL|RL|P|R|L)(?:-|$)/)?.[1] || "R";
         return [["P","Pronto"],["R","Rápido"],["L","Libéralo"]]
@@ -4762,9 +4824,12 @@ if(
             <label>Estado<select id="quickProductStatus"><option value="in" ${Number(product.quantity || 0) > 0 ? "selected" : ""}>En stock</option><option value="out" ${Number(product.quantity || 0) <= 0 ? "selected" : ""}>Agotado</option></select></label>
           </div>
           <div class="quickAssistField"><label>Descripción<textarea id="quickProductDescription" maxlength="16000">${escapeHtml(detail.description || "")}</textarea></label><button id="quickDescribeProduct" class="secondaryButton quickAssistButton" type="button">Descríbelo</button></div>
-          <div><strong>Métodos de entrega</strong><div class="quickDeliveryChoices">${[["P","Pronto"],["R","Rápido"],["L","Libéralo"]].map(([code,label]) => `<label class="quickDeliveryChoice"><input data-quick-delivery="${code}" type="checkbox" ${quickFulfillment.includes(code) ? "checked" : ""}><span>${code} · ${label}</span></label>`).join("")}</div></div>
           <div class="quickShowcase"><div class="quickShowcaseHead"><strong>Posición en vitrina</strong><small id="quickShowcaseCategory"></small></div><div id="quickSlotGrid" class="quickSlotGrid"></div><div class="quickShowcaseAction"><small id="quickShowcaseMessage">Arrastra el cuadro negro a otra posición.</small><button id="quickShowcaseMove" class="secondaryButton" type="button" disabled>Cambiar posición</button></div></div>
-          <div><strong>Variantes e inventario</strong><div class="quickVariantList"><div class="quickVariantHead"><span>Talla</span><span>Cantidad</span><span>Entrega</span><span>SKU permanente</span><span>Acción</span></div>${productVariants.length ? productVariants.map((item,index) => `<label class="quickVariantRow"><span>${escapeHtml(item.variantName || "Única")}</span><input data-quick-inventory-id="${escapeHtml(item.id)}" type="number" min="0" step="1" value="${Math.max(0, Math.trunc(Number(item.quantity || 0)))}" aria-label="Cantidad ${escapeHtml(item.variantName || item.sku || "variante")}"><small>${escapeHtml(quickDeliveryMethods(item.sku))}</small><small>${escapeHtml(item.sku || "Sin SKU")}</small>${index===0?`<button data-quick-generate-sku class="quickSkuRepair" type="button">Generar / reparar SKU</button>`:`<span></span>`}</label>`).join("") : `<div class="emptyStateText">Este producto no tiene variantes editables.</div>`}</div></div>
+          <div><strong>Variantes e inventario</strong><div class="quickVariantList"><div class="quickVariantHead"><span>Talla</span><span>Cantidad</span><span>Entrega</span><span>SKU permanente</span><span></span></div>${productVariants.length ? productVariants.map(item => {
+            const draft = quickVariantDrafts.get(String(item.id));
+            const delivery = ["P","R","L"].map(code => `<button class="deliveryChoice ${draft.methods.includes(code) ? "selected" : ""}" data-quick-variant-delivery="${code}" data-quick-variant-id="${escapeHtml(item.id)}" type="button">${code}</button>`).join("");
+            return `<div class="quickVariantRow"><span>${escapeHtml(item.variantName || "Única")}</span><input data-quick-inventory-id="${escapeHtml(item.id)}" type="number" min="0" step="1" value="${Math.max(0, Math.trunc(Number(item.quantity || 0)))}" aria-label="Cantidad ${escapeHtml(item.variantName || item.sku || "variante")}"><div class="deliveryChoices">${delivery}</div><small data-quick-variant-sku="${escapeHtml(item.id)}">${escapeHtml(draft.sku || "Sin SKU")}</small><span></span></div>`;
+          }).join("") : `<div class="emptyStateText">Este producto no tiene variantes editables.</div>`}</div></div>
           <label class="switchRow quickVisibility"><span><strong>Visible en la tienda</strong></span><input id="quickProductVisible" type="checkbox" ${detail.visible !== false ? "checked" : ""}></label>
           <div class="quickEditFooter"><details class="quickMoreWrap"><summary>Más acciones ▾</summary><div class="quickMoreMenu"><button id="quickDeleteProduct" type="button">Eliminar producto</button></div></details><div class="quickEditActions"><button id="quickEditCancel" class="secondaryButton" type="button">Cancelar</button><button id="quickEditSaveNext" class="secondaryButton" type="button">Guardar y siguiente</button><button id="quickEditSave" class="primaryButton" type="submit">Guardar cambios</button></div></div>
         </form>
@@ -4785,6 +4850,21 @@ if(
         });
       }
       renderQuickPhotos();
+      qsa("[data-quick-variant-delivery]").forEach(button => {
+        button.onclick = () => {
+          const inventoryId = String(button.dataset.quickVariantId || "");
+          const draft = quickVariantDrafts.get(inventoryId);
+          if(!draft) return;
+          const next = new Set(draft.methods);
+          if(next.has(button.dataset.quickVariantDelivery) && next.size > 1) next.delete(button.dataset.quickVariantDelivery);
+          else next.add(button.dataset.quickVariantDelivery);
+          draft.methods = ["P","R","L"].filter(code => next.has(code));
+          draft.sku = replaceSkuFulfillment(draft.originalSku, fulfillmentCode(draft.methods));
+          qsa(`[data-quick-variant-delivery][data-quick-variant-id="${CSS.escape(inventoryId)}"]`).forEach(choice => choice.classList.toggle("selected", draft.methods.includes(choice.dataset.quickVariantDelivery)));
+          const skuLabel = document.querySelector(`[data-quick-variant-sku="${CSS.escape(inventoryId)}"]`);
+          if(skuLabel) skuLabel.textContent = draft.sku;
+        };
+      });
       function renderQuickShowcase(){
         const category = $("quickProductCategory").value;
         const limit = category === "sun" ? 4 : 10;
@@ -4823,8 +4903,7 @@ if(
       $("quickShowcaseMove").onclick=async()=>{
         const button=$("quickShowcaseMove");button.disabled=true;button.textContent="Moviendo…";
         try{
-          const fulfillmentCode=qsa("[data-quick-delivery]:checked").map(input=>input.dataset.quickDelivery).join("");
-          await apiRequest(`/api/products/${encodeURIComponent(product.id)}`,{method:"PATCH",body:{name:$("quickProductName").value.trim(),description:$("quickProductDescription").value.trim(),cost:Number($("quickProductCost").value),price:Number(product.price||0),category:$("quickProductCategory").value,fulfillmentCode,photos:quickPhotoValues.filter(Boolean),visible:$("quickProductVisible").checked,showcaseSlot:quickTargetSlot}});
+          await apiRequest(`/api/products/${encodeURIComponent(product.id)}`,{method:"PATCH",body:{name:$("quickProductName").value.trim(),description:$("quickProductDescription").value.trim(),cost:Number($("quickProductCost").value),price:Number(product.price||0),category:$("quickProductCategory").value,photos:quickPhotoValues.filter(Boolean),visible:$("quickProductVisible").checked,showcaseSlot:quickTargetSlot}});
           quickCurrentSlot=quickTargetSlot;
           await loadRealInventory(true);renderProducts();renderQuickShowcase();showToast("Posición actualizada en Wix.");
         }catch(error){showToast(error?.message||"No pudimos cambiar la posición.");renderQuickShowcase();}
@@ -4856,28 +4935,6 @@ if(
         const cost = Math.max(0, Number($("quickProductCost").value || 0));
         $("quickProductPrice").value = cost > 0 ? Math.round(cost * 2.56) : "";
       };
-      const quickSkuButton = qsa("[data-quick-generate-sku]")[0];
-      if (quickSkuButton) quickSkuButton.onclick = async () => {
-        if(!confirm("Esto reemplazará el SKU permanente de todas las variantes de este producto. ¿Continuar?")) return;
-        const adminCode = prompt("Ingresa el código administrativo de 4 dígitos:", "") || "";
-        if(!/^\d{4}$/.test(adminCode)) return showToast("Ingresa el código administrativo de cuatro dígitos.");
-        const fulfillmentCode = qsa("[data-quick-delivery]:checked").map(input => input.dataset.quickDelivery).join("");
-        quickSkuButton.disabled = true;
-        quickSkuButton.textContent = "Generando…";
-        try{
-          const result = await apiRequest(`/api/products/${encodeURIComponent(product.id)}`, {method:"PATCH", body:{action:"REGENERATE_PERMANENT_SKU", adminCode, fulfillmentCode}});
-          await loadRealInventory(true);
-          renderProducts();
-          showToast(`SKU ${result.styleCode} confirmado en Wix.`);
-          closeProductQuickView();
-          const refreshed = products.find(item => String(item.id) === String(product.id));
-          if(refreshed) openProductQuickView(refreshed);
-        }catch(error){
-          showToast(error?.message || "No pudimos generar el SKU.");
-          quickSkuButton.disabled = false;
-          quickSkuButton.textContent = "Generar / reparar SKU";
-        }
-      };
       $("quickDeleteProduct").onclick = async () => {
         if(!confirm(`¿Eliminar "${detail.name || product.name || "este producto"}" de Wix, el inventario y la tienda? Esta acción no se puede deshacer.`)) return;
         try{
@@ -4908,16 +4965,25 @@ if(
       $("quickEditForm").onsubmit = async event => {
         event.preventDefault();
         const button = $("quickEditSave");
-        const changes = qsa("[data-quick-inventory-id]").map(input => ({id: input.dataset.quickInventoryId, quantity: Number(input.value)}));
-        if(changes.some(change => !Number.isInteger(change.quantity) || change.quantity < 0)) return showToast("Revisa la cantidad de cada variante.");
+        const variants = qsa("[data-quick-inventory-id]").map(input => {
+          const draft = quickVariantDrafts.get(String(input.dataset.quickInventoryId));
+          return {
+            variantId:draft?.variantId || "",
+            inventoryId:String(input.dataset.quickInventoryId || ""),
+            originalSku:draft?.originalSku || "",
+            fulfillmentCode:fulfillmentCode(draft?.methods || []),
+            quantity:Number(input.value)
+          };
+        });
+        if(variants.some(variant => !Number.isInteger(variant.quantity) || variant.quantity < 0)) return showToast("Revisa la cantidad de cada variante.");
         button.disabled = true;
         button.textContent = "Guardando…";
         try{
-          const fulfillmentCode = qsa("[data-quick-delivery]:checked").map(input => input.dataset.quickDelivery).join("");
-          if(!fulfillmentCode) throw new Error("Selecciona al menos un método de entrega.");
-          await apiRequest(`/api/products/${encodeURIComponent(product.id)}`, {method:"PATCH", body:{name:$("quickProductName").value.trim(), description:$("quickProductDescription").value.trim(), cost:Number($("quickProductCost").value), price:Number(product.price || 0), category:$("quickProductCategory").value, fulfillmentCode, photos:quickPhotoValues.filter(Boolean), visible:$("quickProductVisible").checked}});
-          if(changes.length) await apiRequest("/api/inventory", {method:"PATCH", body:{changes}});
-          await loadRealInventory(true);
+          await saveExistingProductChanges({
+            productId:product.id,
+            fields:{name:$("quickProductName").value.trim(), description:$("quickProductDescription").value.trim(), cost:Number($("quickProductCost").value), price:Number(product.price || 0), category:$("quickProductCategory").value, photos:quickPhotoValues.filter(Boolean), visible:$("quickProductVisible").checked},
+            variants
+          });
           renderProducts();
           showToast("Producto actualizado.");
           if(saveAndNext){

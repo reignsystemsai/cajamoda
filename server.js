@@ -3343,7 +3343,8 @@ async function handleUpdateProduct(request, response, productId) {
         inventoryId:safeText(item?.inventoryId, 150),
         originalSku:safeText(item?.originalSku, 160).toUpperCase(),
         fulfillmentCode:safeText(item?.fulfillmentCode, 10).toUpperCase(),
-        quantity:Number(item?.quantity)
+        quantity:item?.enabled === false ? 0 : Number(item?.quantity),
+        enabled:item?.enabled !== false
       }))
     : [];
   if(requestedVariants.length){
@@ -3399,11 +3400,11 @@ async function handleUpdateProduct(request, response, productId) {
       const next = {
         ...source,
         sku,
-        visible:true,
+        visible:requested.enabled,
         choices:buildVariantChoices({size:requested.size,color:""}),
         price:{...(source?.price || {}),actualPrice:{amount:String(Math.round(price))}},
         revenueDetails:cost > 0 ? {...(source?.revenueDetails || {}),cost:{amount:String(cost)}} : source?.revenueDetails,
-        inventoryItem:{quantity:requested.quantity}
+        inventoryItem:{quantity:requested.enabled ? requested.quantity : 0}
       };
       if(!existing){
         delete next._id;
@@ -3476,17 +3477,15 @@ async function handleUpdateProduct(request, response, productId) {
       fields:["PLAIN_DESCRIPTION","MERCHANT_DATA","CURRENCY","MEDIA_ITEMS_INFO","THUMBNAIL"]
     });
     const savedProduct = savedResult?.product || savedResult;
-    const savedVariants = Array.isArray(savedProduct?.variantsInfo?.variants)
-      ? savedProduct.variantsInfo.variants
-      : [];
     const freshInventory = await getWixInventory();
+    const savedDetails = productVariantDetails(savedProduct, freshInventory);
     const locationId = freshInventory.find(item =>
       String(item.productId) === String(productId) && item.locationId
     )?.locationId || currentInventory.find(item => item.locationId)?.locationId;
 
     for(const requested of requestedVariants){
-      const savedVariant = savedVariants.find(variant => existingVariantSize(variant) === requested.size);
-      const savedVariantId = safeText(savedVariant?._id || savedVariant?.id || savedVariant?.variantId, 150);
+      const savedVariant = savedDetails.find(variant => variant.size === requested.size);
+      const savedVariantId = safeText(savedVariant?.variantId, 150);
       if(!savedVariantId) throw new Error(`Wix todavía no devolvió la talla ${requested.size}.`);
       const item = freshInventory.find(candidate =>
         String(candidate.productId) === String(productId) &&
@@ -3495,7 +3494,7 @@ async function handleUpdateProduct(request, response, productId) {
       if(item){
         await wix.inventoryItemsV3.updateInventoryItem(
           item.id,
-          {id:item.id,revision:item.revision,quantity:requested.quantity},
+          {id:item.id,revision:item.revision,quantity:requested.enabled ? requested.quantity : 0},
           {reason:"MANUAL"}
         );
       }else{
@@ -3504,7 +3503,7 @@ async function handleUpdateProduct(request, response, productId) {
           productId:String(productId),
           variantId:savedVariantId,
           locationId,
-          quantity:requested.quantity
+          quantity:requested.enabled ? requested.quantity : 0
         });
       }
     }
@@ -3540,6 +3539,10 @@ async function handleUpdateProduct(request, response, productId) {
       }
       if(existingSkuPrefix(actual.sku) !== expected.fulfillmentCode){
         confirmationFailure = `Wix todavía no devolvió la entrega de la talla ${expected.size}.`;
+        needsAnotherRead = true;
+      }
+      if(actual.enabled !== expected.enabled){
+        confirmationFailure = `Wix todavía no devolvió el estado de la talla ${expected.size}.`;
         needsAnotherRead = true;
       }
       if(!actual.inventoryId){

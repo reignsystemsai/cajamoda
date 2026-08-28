@@ -3254,15 +3254,19 @@ function productVariantDetails(product, inventory){
       .filter(item => String(item.productId) === String(product?._id || product?.id))
       .map(item => [String(item.variantId), item])
   );
-  return (Array.isArray(product?.variantsInfo?.variants) ? product.variantsInfo.variants : []).map(variant => {
+  const productVariants = Array.isArray(product?.variantsInfo?.variants) ? product.variantsInfo.variants : [];
+  const hasExplicitSmall = productVariants.some(variant => existingVariantSize(variant) === "S");
+  const legacySmall = hasExplicitSmall ? null : productVariants.find(variant => !existingVariantSize(variant));
+  return productVariants.map(variant => {
     const variantId = safeText(variant?._id || variant?.id || variant?.variantId, 150);
     const stock = inventoryByVariant.get(variantId);
     return {
       variantId,
       inventoryId:safeText(stock?.id, 150),
-      size:existingVariantSize(variant),
+      size:existingVariantSize(variant) || (variant === legacySmall ? "S" : ""),
       sku:safeText(variant?.sku, 160).toUpperCase(),
-      quantity:Math.max(0, Number(stock?.quantity || 0))
+      quantity:Math.max(0, Number(stock?.quantity || 0)),
+      enabled:variant?.visible !== false
     };
   });
 }

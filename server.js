@@ -2419,6 +2419,36 @@ async function getShowcaseSlots() {
   return Object.fromEntries(entries.flat().filter(([id]) => id));
 }
 
+async function getCategoryShowcases() {
+  const categories = await queryRoutedCategories();
+  const entries = await Promise.all(categories.map(async category => {
+    const {orderedIds} = await categoryArrangement(category.vibeId);
+    const productIds = orderedIds.slice(0, showcaseLimit(category.vibeId));
+    const products = await Promise.all(productIds.map(async productId => {
+      try {
+        const result = await wix.productsV3.getProduct(productId, {
+          fields:["MEDIA_ITEMS_INFO","THUMBNAIL"]
+        });
+        return result?.product || result;
+      } catch (error) {
+        console.warn(`[Category showcase] No se pudo cargar ${productId}:`, error?.message || error);
+        return null;
+      }
+    }));
+    return [category.vibeId, productIds.map((productId, index) => {
+      const product = products[index];
+      return {
+        id:String(productId),
+        name:safeText(product?.name, 300),
+        image:getProductImageUrl(product),
+        photos:getProductImageUrls(product),
+        showcaseSlot:index + 1
+      };
+    })];
+  }));
+  return Object.fromEntries(entries);
+}
+
 async function assignFirstOpenShowcaseSlot(productId, categoryKey) {
   const {category, orderedIds} = await categoryArrangement(categoryKey);
   const id = String(productId);
@@ -3331,7 +3361,6 @@ async function handleUpdateProduct(request, response, productId) {
   const currentVariants = Array.isArray(current?.variantsInfo?.variants) ? current.variantsInfo.variants : [];
   if(!currentVariants.length) return sendError(response, 400, "Este producto no tiene una variante base en Wix.");
   const currentInventory = await getWixInventory();
-  const currentInventoryById = new Map(currentInventory.map(item => [String(item.id), item]));
   let variants = currentVariants;
   let options = current.options || [];
   let shapeChanged = false;
@@ -3436,19 +3465,43 @@ async function handleUpdateProduct(request, response, productId) {
     await wix.productsV3.updateProduct(productId, update, {
       fields:["PLAIN_DESCRIPTION","MERCHANT_DATA","CURRENCY","MEDIA_ITEMS_INFO","THUMBNAIL"]
     });
-    if(requestedVariants.length){
-      const freshInventory = await getWixInventory();
-      const freshById = new Map(freshInventory.map(item => [String(item.id), item]));
-      for(const requested of requestedVariants){
-        const item = freshById.get(requested.inventoryId) || currentInventoryById.get(requested.inventoryId);
-        if(!item || String(item.productId) !== String(productId)){
-          throw new Error("No pudimos identificar el inventario permanente de una variante.");
-        }
+  }
+
+  if(requestedVariants.length){
+    const savedResult = await wix.productsV3.getProduct(productId, {
+      fields:["PLAIN_DESCRIPTION","MERCHANT_DATA","CURRENCY","MEDIA_ITEMS_INFO","THUMBNAIL"]
+    });
+    const savedProduct = savedResult?.product || savedResult;
+    const savedVariants = Array.isArray(savedProduct?.variantsInfo?.variants)
+      ? savedProduct.variantsInfo.variants
+      : [];
+    const freshInventory = await getWixInventory();
+    const locationId = freshInventory.find(item =>
+      String(item.productId) === String(productId) && item.locationId
+    )?.locationId || currentInventory.find(item => item.locationId)?.locationId;
+
+    for(const requested of requestedVariants){
+      const savedVariant = savedVariants.find(variant => existingVariantSize(variant) === requested.size);
+      const savedVariantId = safeText(savedVariant?._id || savedVariant?.id || savedVariant?.variantId, 150);
+      if(!savedVariantId) throw new Error(`Wix todavía no devolvió la talla ${requested.size}.`);
+      const item = freshInventory.find(candidate =>
+        String(candidate.productId) === String(productId) &&
+        String(candidate.variantId) === String(savedVariantId)
+      );
+      if(item){
         await wix.inventoryItemsV3.updateInventoryItem(
           item.id,
           {id:item.id,revision:item.revision,quantity:requested.quantity},
           {reason:"MANUAL"}
         );
+      }else{
+        if(!locationId) throw new Error(`Wix todavía no devolvió el inventario de la talla ${requested.size}.`);
+        await wix.inventoryItemsV3.createInventoryItem({
+          productId:String(productId),
+          variantId:savedVariantId,
+          locationId,
+          quantity:requested.quantity
+        });
       }
     }
   }
@@ -3490,6 +3543,11 @@ async function handleUpdateProduct(request, response, productId) {
         needsAnotherRead = true;
         continue;
       }
+      if(expected.inventoryId && String(actual.inventoryId) !== String(expected.inventoryId)){
+        confirmationFailure = `Wix cambió el inventario permanente de la talla ${expected.size}.`;
+        needsAnotherRead = true;
+        continue;
+      }
       if(Number(actual.quantity) !== expected.quantity){
         const inventoryItem = confirmedInventory.find(item => String(item.id) === String(actual.inventoryId));
         if(inventoryItem && !adjustedInventoryIds.has(inventoryItem.id)){
@@ -3516,13 +3574,16 @@ async function handleUpdateProduct(request, response, productId) {
     throw new Error(confirmationFailure || "Wix no confirmó todas las tallas, cantidades y métodos de entrega.");
   }
 
-  const [showcaseSlots, categoryRoutes] = await Promise.all([
-    getShowcaseSlots().catch(() => ({})),
+  const [showcases, categoryRoutes] = await Promise.all([
+    getCategoryShowcases().catch(() => ({})),
     getCategoryRoutes().catch(() => ({}))
   ]);
+  const confirmedCategory = safeText(categoryRoutes[String(productId)], 30);
+  const confirmedShowcase = (showcases[confirmedCategory] || [])
+    .find(item => String(item.id) === String(productId));
   sendJson(response, 200, {
     ok:true,
-    product:normalizedProductDetail(confirmedProduct, confirmedInventory, showcaseSlots[String(productId)], categoryRoutes[String(productId)])
+    product:normalizedProductDetail(confirmedProduct, confirmedInventory, confirmedShowcase?.showcaseSlot, confirmedCategory)
   });
 }
 
@@ -3540,14 +3601,17 @@ async function handleGetProduct(request, response, productId) {
   });
   const product = result?.product || result;
   if(!product?._id && !product?.id) return sendError(response, 404, "No encontramos el producto.");
-  const [inventory, showcaseSlots, categoryRoutes] = await Promise.all([
+  const [inventory, showcases, categoryRoutes] = await Promise.all([
     getWixInventory(),
-    getShowcaseSlots().catch(() => ({})),
+    getCategoryShowcases().catch(() => ({})),
     getCategoryRoutes().catch(() => ({}))
   ]);
+  const category = safeText(categoryRoutes[String(productId)], 30);
+  const showcase = (showcases[category] || [])
+    .find(item => String(item.id) === String(productId));
   sendJson(response, 200, {
     ok:true,
-    product:normalizedProductDetail(product, inventory, showcaseSlots[String(productId)], categoryRoutes[String(productId)])
+    product:normalizedProductDetail(product, inventory, showcase?.showcaseSlot, category)
   });
 }
 
@@ -4564,6 +4628,12 @@ function normalizeInventoryItem(
         150
       ),
 
+    locationId:
+      safeText(
+        item?.locationId,
+        150
+      ),
+
     productName:
       safeText(
         item
@@ -4806,8 +4876,11 @@ async function handleGetInventory(
     return;
   }
 
-  const inventory =
-    await getWixInventory();
+  const [inventory, showcases] =
+    await Promise.all([
+      getWixInventory(),
+      getCategoryShowcases()
+    ]);
 
   sendJson(
     response,
@@ -4817,7 +4890,8 @@ async function handleGetInventory(
       ok:
         true,
 
-      inventory
+      inventory,
+      showcases
     }
   );
 }

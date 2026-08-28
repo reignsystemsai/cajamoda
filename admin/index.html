@@ -3593,6 +3593,7 @@ await loadOwnerWorkspace();
     );
 const deletedProductIds = new Set(readJson("store-loader-deleted-products", []));
 let inventory = [];
+let showcasesByCategory = {};
 
 async function loadOwnerWorkspace(){
   if(!authToken){return;}
@@ -3645,6 +3646,17 @@ async function loadRealInventory(
             image: fullResolutionWixImageUrl(item.image)
           }))
         : [];
+
+    showcasesByCategory = Object.fromEntries(
+      Object.entries(result?.showcases || {}).map(([category, items]) => [
+        category,
+        (Array.isArray(items) ? items : []).map(item => ({
+          ...item,
+          image:fullResolutionWixImageUrl(item.image),
+          photos:(Array.isArray(item.photos) ? item.photos : []).map(fullResolutionWixImageUrl)
+        }))
+      ])
+    );
 
     const receivedProductIds = new Set(receivedInventory.map(item => String(item.productId || item.id)));
     let deletedIdsChanged = false;
@@ -4801,7 +4813,9 @@ if(
       while(quickPhotoValues.length < 5) quickPhotoValues.push("");
       let quickSelectedPhoto = 0;
       const quickCategory = detail.category || product.category || "quick";
-      let quickCurrentSlot = Number(detail.showcaseSlot || product.showcaseSlot || 0) || null;
+      const quickCategoryProduct = (showcasesByCategory[quickCategory] || [])
+        .find(item => String(item.id) === String(product.id));
+      let quickCurrentSlot = Number(quickCategoryProduct?.showcaseSlot || detail.showcaseSlot || product.showcaseSlot || 0) || null;
       let quickTargetSlot = quickCurrentSlot;
       const totalQuantity = quickVariants.reduce((sum,row) => sum + row.quantity, 0);
       $("productQuickTitle").textContent = detail.name || product.name || "Producto";
@@ -4886,7 +4900,9 @@ if(
         if(quickTargetSlot && quickTargetSlot > limit) quickTargetSlot = null;
         const names = {late:"Noches Largas",chill:"Días Tranquilos",quick:"Rápido y Fácil",sun:"Baño de Sol"};
         $("quickShowcaseCategory").textContent = `${names[category]} · ${limit} espacios`;
-        const categoryProducts = products.filter(item => item.category === category);
+        const categoryProducts = Array.isArray(showcasesByCategory[category])
+          ? showcasesByCategory[category]
+          : [];
         $("quickSlotGrid").style.gridTemplateColumns = `repeat(${limit},minmax(0,1fr))`;
         $("quickSlotGrid").innerHTML = Array.from({length:limit},(_,index)=>{
           const slot=index+1;

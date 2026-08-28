@@ -5202,13 +5202,10 @@ if(
       row.onkeydown = event => { if(event.key === "Enter" || event.key === " "){ event.preventDefault(); open(); } };
     });
     qsa("[data-full-edit]").forEach(button => {
-      button.onclick = async event => {
+      button.onclick = event => {
         event.stopPropagation();
         const product = products.find(item => String(item.id) === button.dataset.fullEdit);
-        if(!product) return;
-        button.disabled = true;
-        try{ await openFullProductEditor(product); }
-        catch(error){ showToast(error?.message || "No pudimos abrir la edición completa."); button.disabled = false; }
+        if(product) openFullProductEditor(product);
       };
     });
     qsa("[data-delete-product]").forEach(button => {

@@ -3235,7 +3235,7 @@ function productVariantDetails(product, inventory){
   });
 }
 
-function normalizedProductDetail(product, inventory, showcaseSlot){
+function normalizedProductDetail(product, inventory, showcaseSlot, category){
   const variants = productVariantDetails(product, inventory);
   return {
     id:product?._id || product?.id,
@@ -3247,7 +3247,8 @@ function normalizedProductDetail(product, inventory, showcaseSlot){
     cost:Number(product?.variantsInfo?.variants?.[0]?.revenueDetails?.cost?.amount || 0),
     price:Number(product?.variantsInfo?.variants?.[0]?.price?.actualPrice?.amount || 0),
     variants,
-    showcaseSlot:Number(showcaseSlot || 0) || null
+    showcaseSlot:Number(showcaseSlot || 0) || null,
+    category:safeText(category, 30)
   };
 }
 
@@ -3483,10 +3484,13 @@ async function handleUpdateProduct(request, response, productId) {
     if(!confirmed) throw new Error("Wix no confirmó todas las tallas, cantidades y métodos de entrega.");
   }
 
-  const showcaseSlots = await getShowcaseSlots().catch(() => ({}));
+  const [showcaseSlots, categoryRoutes] = await Promise.all([
+    getShowcaseSlots().catch(() => ({})),
+    getCategoryRoutes().catch(() => ({}))
+  ]);
   sendJson(response, 200, {
     ok:true,
-    product:normalizedProductDetail(confirmedProduct, confirmedInventory, showcaseSlots[String(productId)])
+    product:normalizedProductDetail(confirmedProduct, confirmedInventory, showcaseSlots[String(productId)], categoryRoutes[String(productId)])
   });
 }
 
@@ -3504,13 +3508,14 @@ async function handleGetProduct(request, response, productId) {
   });
   const product = result?.product || result;
   if(!product?._id && !product?.id) return sendError(response, 404, "No encontramos el producto.");
-  const [inventory, showcaseSlots] = await Promise.all([
+  const [inventory, showcaseSlots, categoryRoutes] = await Promise.all([
     getWixInventory(),
-    getShowcaseSlots().catch(() => ({}))
+    getShowcaseSlots().catch(() => ({})),
+    getCategoryRoutes().catch(() => ({}))
   ]);
   sendJson(response, 200, {
     ok:true,
-    product:normalizedProductDetail(product, inventory, showcaseSlots[String(productId)])
+    product:normalizedProductDetail(product, inventory, showcaseSlots[String(productId)], categoryRoutes[String(productId)])
   });
 }
 

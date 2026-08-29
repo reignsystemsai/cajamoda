@@ -2215,7 +2215,7 @@ img{display:block;max-width:100%}
     });
 
     $("toDeliveryButton").disabled =
-      cart.items.length === 0 || !deliverySelectionsComplete(cart);
+      cart.items.length === 0 || !$("deliveryCity")?.value.trim() || !deliverySelectionsComplete(cart);
 
     updateNequiConfirmAvailability();
 
@@ -2742,6 +2742,11 @@ img{display:block;max-width:100%}
   }
 
   function goToStep(step, options = {}) {
+    if(step==="payment"&&!$("deliveryCity")?.value.trim()){
+      $("deliveryCity")?.focus();
+      showToast("Selecciona tu ciudad de entrega.");
+      return;
+    }
     if(step==="payment"&&!deliverySelectionsComplete()){
       showToast("Selecciona la entrega de cada producto.");
       return;

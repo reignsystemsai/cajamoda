@@ -3522,6 +3522,7 @@ async function handleUpdateProduct(request, response, productId) {
         variantId:safeText(item?.variantId, 150),
         inventoryId:safeText(item?.inventoryId, 150),
         originalSku:safeText(item?.originalSku, 160).toUpperCase(),
+        sku:safeText(item?.sku, 160).toUpperCase(),
         fulfillmentCode:safeText(item?.fulfillmentCode, 10).toUpperCase(),
         quantity:item?.enabled === false ? 0 : Number(item?.quantity),
         enabled:item?.enabled !== false
@@ -3530,6 +3531,7 @@ async function handleUpdateProduct(request, response, productId) {
   if(requestedVariants.length){
     if(requestedVariants.some(item =>
       !["S","M","L","XL"].includes(item.size) ||
+      !/^[A-Z0-9]+(?:-[A-Z0-9]+)+$/.test(item.sku) ||
       !/^(?:PRL|PR|PL|RL|P|R|L)$/.test(item.fulfillmentCode) ||
       !Number.isInteger(item.quantity) ||
       item.quantity < 0 ||
@@ -3537,6 +3539,9 @@ async function handleUpdateProduct(request, response, productId) {
     )) return sendError(response, 400, "Revisa la talla, entrega y cantidad de cada variante.");
     if(new Set(requestedVariants.map(item => item.size)).size !== requestedVariants.length){
       return sendError(response, 400, "Cada talla debe aparecer una sola vez.");
+    }
+    if(new Set(requestedVariants.map(item => item.sku)).size !== requestedVariants.length){
+      return sendError(response, 400, "Cada variante necesita un SKU permanente único.");
     }
     if(["S","M","L","XL"].some(size => !requestedVariants.some(item => item.size === size))){
       return sendError(response, 400, "Las tallas S, M, L y XL deben guardarse juntas.");
@@ -3573,9 +3578,13 @@ async function handleUpdateProduct(request, response, productId) {
         throw new Error("Una variante cambió en Wix. Vuelve a abrir el producto antes de guardar.");
       }
       const tail = existingSkuTail(currentSku);
-      const sku = existing
+      const expectedSku = existing
         ? `${requested.fulfillmentCode}-${tail}`
         : `${requested.fulfillmentCode}-${familyTail}-${requested.size}`;
+      if(requested.sku !== expectedSku){
+        throw new Error(`El SKU permanente de la talla ${requested.size} cambió. Vuelve a abrir el producto antes de guardar.`);
+      }
+      const sku = requested.sku;
       const source = existing || currentVariants[0];
       const next = {
         ...source,
@@ -3717,8 +3726,8 @@ async function handleUpdateProduct(request, response, productId) {
         needsAnotherRead = true;
         continue;
       }
-      if(existingSkuPrefix(actual.sku) !== expected.fulfillmentCode){
-        confirmationFailure = `Wix todavía no devolvió la entrega de la talla ${expected.size}.`;
+      if(actual.sku !== expected.sku){
+        confirmationFailure = `Wix todavía no confirmó el SKU de la talla ${expected.size}.`;
         needsAnotherRead = true;
       }
       if(actual.enabled !== expected.enabled){

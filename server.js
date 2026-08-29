@@ -3082,7 +3082,7 @@ async function createWixProduct(
     fields: ["CURRENCY", "MEDIA_ITEMS_INFO", "THUMBNAIL"]
   });
 
-  const created = result?.product;
+  let created = result?.product;
 
   if (
     !created
@@ -3104,8 +3104,58 @@ async function createWixProduct(
     throw new Error("Wix no creó el inventario del producto. No se guardó una copia incompleta.");
   }
 
+  const createdProductId = created._id || created.id;
   try {
-    await assignProductCategory(created._id || created.id, category);
+    const expectedSkuBySize = new Map(
+      variants.map(variant => [
+        existingVariantSize(variant),
+        safeText(variant?.sku, 160).toUpperCase()
+      ])
+    );
+    const createdVariants = Array.isArray(created?.variantsInfo?.variants)
+      ? created.variantsInfo.variants
+      : [];
+    if (createdVariants.length !== variants.length) {
+      throw new Error("Wix no devolvió todas las variantes para guardar sus SKU.");
+    }
+    const variantsWithSkus = createdVariants.map(variant => {
+      const size = existingVariantSize(variant);
+      const sku = expectedSkuBySize.get(size);
+      if (!sku) throw new Error(`Wix no devolvió la talla ${size || "única"} para guardar su SKU.`);
+      return {...variant, sku};
+    });
+    await wix.productsV3.updateProduct(
+      createdProductId,
+      {
+        revision:created.revision,
+        options:created.options || options,
+        variantsInfo:{variants:variantsWithSkus}
+      },
+      {fields:["CURRENCY","MEDIA_ITEMS_INFO","THUMBNAIL"]}
+    );
+    const confirmedResult = await wix.productsV3.getProduct(createdProductId, {
+      fields:["CURRENCY","MEDIA_ITEMS_INFO","THUMBNAIL"]
+    });
+    const confirmedProduct = confirmedResult?.product || confirmedResult;
+    const confirmedSkuBySize = new Map(
+      (confirmedProduct?.variantsInfo?.variants || []).map(variant => [
+        existingVariantSize(variant),
+        safeText(variant?.sku, 160).toUpperCase()
+      ])
+    );
+    for (const [size, expectedSku] of expectedSkuBySize) {
+      if (confirmedSkuBySize.get(size) !== expectedSku) {
+        throw new Error(`Wix no confirmó el SKU de la talla ${size || "única"}.`);
+      }
+    }
+    created = confirmedProduct;
+  } catch (error) {
+    await wix.productsV3.deleteProduct(createdProductId);
+    throw error;
+  }
+
+  try {
+    await assignProductCategory(createdProductId, category);
     await assignFirstOpenShowcaseSlot(created._id || created.id, category);
   } catch (error) {
     await wix.productsV3.deleteProduct(created._id || created.id);
@@ -3472,6 +3522,7 @@ async function handleUpdateProduct(request, response, productId) {
         variantId:safeText(item?.variantId, 150),
         inventoryId:safeText(item?.inventoryId, 150),
         originalSku:safeText(item?.originalSku, 160).toUpperCase(),
+        sku:safeText(item?.sku, 160).toUpperCase(),
         fulfillmentCode:safeText(item?.fulfillmentCode, 10).toUpperCase(),
         quantity:item?.enabled === false ? 0 : Number(item?.quantity),
         enabled:item?.enabled !== false
@@ -3480,6 +3531,7 @@ async function handleUpdateProduct(request, response, productId) {
   if(requestedVariants.length){
     if(requestedVariants.some(item =>
       !["S","M","L","XL"].includes(item.size) ||
+      !/^[A-Z0-9]+(?:-[A-Z0-9]+)+$/.test(item.sku) ||
       !/^(?:PRL|PR|PL|RL|P|R|L)$/.test(item.fulfillmentCode) ||
       !Number.isInteger(item.quantity) ||
       item.quantity < 0 ||
@@ -3487,6 +3539,9 @@ async function handleUpdateProduct(request, response, productId) {
     )) return sendError(response, 400, "Revisa la talla, entrega y cantidad de cada variante.");
     if(new Set(requestedVariants.map(item => item.size)).size !== requestedVariants.length){
       return sendError(response, 400, "Cada talla debe aparecer una sola vez.");
+    }
+    if(new Set(requestedVariants.map(item => item.sku)).size !== requestedVariants.length){
+      return sendError(response, 400, "Cada variante necesita un SKU permanente único.");
     }
     if(["S","M","L","XL"].some(size => !requestedVariants.some(item => item.size === size))){
       return sendError(response, 400, "Las tallas S, M, L y XL deben guardarse juntas.");
@@ -3523,9 +3578,13 @@ async function handleUpdateProduct(request, response, productId) {
         throw new Error("Una variante cambió en Wix. Vuelve a abrir el producto antes de guardar.");
       }
       const tail = existingSkuTail(currentSku);
-      const sku = existing
+      const expectedSku = existing
         ? `${requested.fulfillmentCode}-${tail}`
         : `${requested.fulfillmentCode}-${familyTail}-${requested.size}`;
+      if(requested.sku !== expectedSku){
+        throw new Error(`El SKU permanente de la talla ${requested.size} cambió. Vuelve a abrir el producto antes de guardar.`);
+      }
+      const sku = requested.sku;
       const source = existing || currentVariants[0];
       const next = {
         ...source,
@@ -3667,8 +3726,8 @@ async function handleUpdateProduct(request, response, productId) {
         needsAnotherRead = true;
         continue;
       }
-      if(existingSkuPrefix(actual.sku) !== expected.fulfillmentCode){
-        confirmationFailure = `Wix todavía no devolvió la entrega de la talla ${expected.size}.`;
+      if(actual.sku !== expected.sku){
+        confirmationFailure = `Wix todavía no confirmó el SKU de la talla ${expected.size}.`;
         needsAnotherRead = true;
       }
       if(actual.enabled !== expected.enabled){

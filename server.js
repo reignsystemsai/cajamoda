@@ -3082,7 +3082,7 @@ async function createWixProduct(
     fields: ["CURRENCY", "MEDIA_ITEMS_INFO", "THUMBNAIL"]
   });
 
-  const created = result?.product;
+  let created = result?.product;
 
   if (
     !created
@@ -3104,8 +3104,66 @@ async function createWixProduct(
     throw new Error("Wix no creó el inventario del producto. No se guardó una copia incompleta.");
   }
 
+  const createdId = created._id || created.id;
+  const expectedCreatedSkus = variants.map(variant => safeText(variant?.sku, 160).toUpperCase());
+  const createdSkusConfirmed = product => {
+    const savedVariants = Array.isArray(product?.variantsInfo?.variants)
+      ? product.variantsInfo.variants
+      : [];
+    if(savedVariants.length !== variants.length) return false;
+    return variants.every((expected, index) => {
+      const size = existingVariantSize(expected);
+      const saved = size
+        ? savedVariants.find(variant => existingVariantSize(variant) === size)
+        : savedVariants[index];
+      return safeText(saved?.sku, 160).toUpperCase() === expectedCreatedSkus[index];
+    });
+  };
+
   try {
-    await assignProductCategory(created._id || created.id, category);
+    let confirmedResult = await wix.productsV3.getProduct(createdId, {
+      fields:["CURRENCY","MERCHANT_DATA","MEDIA_ITEMS_INFO","THUMBNAIL"]
+    });
+    let confirmedCreated = confirmedResult?.product || confirmedResult;
+
+    if(!createdSkusConfirmed(confirmedCreated)){
+      const savedVariants = Array.isArray(confirmedCreated?.variantsInfo?.variants)
+        ? confirmedCreated.variantsInfo.variants
+        : [];
+      if(savedVariants.length !== variants.length){
+        throw new Error("Wix no confirmó todas las variantes creadas.");
+      }
+      const repairedVariants = savedVariants.map((variant, index) => {
+        const size = existingVariantSize(variant);
+        const expected = size
+          ? variants.find(item => existingVariantSize(item) === size)
+          : variants[index];
+        return {...variant, sku:safeText(expected?.sku, 160).toUpperCase()};
+      });
+      await wix.productsV3.updateProduct(createdId, {
+        revision:confirmedCreated.revision,
+        options:confirmedCreated.options || options,
+        variantsInfo:{variants:repairedVariants}
+      }, {
+        fields:["CURRENCY","MERCHANT_DATA","MEDIA_ITEMS_INFO","THUMBNAIL"]
+      });
+      confirmedResult = await wix.productsV3.getProduct(createdId, {
+        fields:["CURRENCY","MERCHANT_DATA","MEDIA_ITEMS_INFO","THUMBNAIL"]
+      });
+      confirmedCreated = confirmedResult?.product || confirmedResult;
+    }
+
+    if(!createdSkusConfirmed(confirmedCreated)){
+      throw new Error("Wix no confirmó los SKU permanentes de las variantes.");
+    }
+    created = confirmedCreated;
+  } catch (error) {
+    await wix.productsV3.deleteProduct(createdId);
+    throw error;
+  }
+
+  try {
+    await assignProductCategory(createdId, category);
     await assignFirstOpenShowcaseSlot(created._id || created.id, category);
   } catch (error) {
     await wix.productsV3.deleteProduct(created._id || created.id);
@@ -3499,6 +3557,7 @@ async function handleUpdateProduct(request, response, productId) {
   let variants = currentVariants;
   let options = current.options || [];
   let shapeChanged = false;
+  let expectedSkuBySize = new Map();
 
   if(requestedVariants.length){
     const currentById = new Map(currentVariants.map(variant => [safeText(variant?._id || variant?.id || variant?.variantId, 150), variant]));
@@ -3548,6 +3607,12 @@ async function handleUpdateProduct(request, response, productId) {
     if(new Set(variants.map(variant => safeText(variant.sku, 160).toUpperCase())).size !== variants.length){
       throw new Error("Cada variante necesita un SKU permanente único.");
     }
+    expectedSkuBySize = new Map(
+      variants.map(variant => [
+        existingVariantSize(variant),
+        safeText(variant?.sku, 160).toUpperCase()
+      ])
+    );
     const requestedSizes = requestedVariants.map(item => item.size);
     options = buildOptions(requestedSizes, []);
     shapeChanged =
@@ -3667,8 +3732,9 @@ async function handleUpdateProduct(request, response, productId) {
         needsAnotherRead = true;
         continue;
       }
-      if(existingSkuPrefix(actual.sku) !== expected.fulfillmentCode){
-        confirmationFailure = `Wix todavía no devolvió la entrega de la talla ${expected.size}.`;
+      const expectedSku = expectedSkuBySize.get(expected.size);
+      if(!expectedSku || safeText(actual.sku, 160).toUpperCase() !== expectedSku){
+        confirmationFailure = `Wix todavía no devolvió el SKU permanente de la talla ${expected.size}.`;
         needsAnotherRead = true;
       }
       if(actual.enabled !== expected.enabled){

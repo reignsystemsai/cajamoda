@@ -666,7 +666,7 @@ function selectedDeliveryLabel(value) {
   const mode = safeText(value, 20).toLowerCase();
   if (mode === "pickup") return "Pronto";
   if (mode === "ship") return "Libéralo";
-  return "Rápido";
+  return "Rápido Nacional";
 }
 
 async function handleCreateStripeCheckout(request, response) {
@@ -685,16 +685,9 @@ async function handleCreateStripeCheckout(request, response) {
   // line item properties, so never forward fulfillmentCode at this level.
   const lineItems = catalogLines.map(({ fulfillmentCode, selectedDeliveryMode, ...line }) => line);
   const customerEmail = safeText(body?.customer?.email, 250);
-  const requestedDelivery = safeText(body?.delivery?.method, 20).toLowerCase();
-  const deliveryMethod = ["moto", "national"].includes(requestedDelivery)
-    ? requestedDelivery
-    : "pickup";
-  const delivery = await checkoutDelivery(body);
-  const deliveryLabel = deliveryMethod === "pickup"
-    ? "Recoger en punto · Cartagena"
-    : deliveryMethod === "moto"
-      ? `Moto Cartagena · ${delivery.quote.distanceKm} km`
-      : `${delivery.quote.carrier || "Envia"} · ${delivery.quote.service || "Envío nacional"}`;
+  const delivery = await checkoutDelivery(body, catalogLines);
+  const deliveryMethod = delivery.method;
+  const deliveryLabel = delivery.title;
   const intentLines = catalogLines.map(line => ({
     productId: safeText(line?.price_data?.product_data?.metadata?.productId, 80),
     variantId: safeText(line?.price_data?.product_data?.metadata?.variantId, 80),
@@ -727,7 +720,7 @@ async function handleCreateStripeCheckout(request, response) {
         display_name: deliveryLabel,
         delivery_estimate: {
           minimum: { unit: "business_day", value: 1 },
-          maximum: { unit: "business_day", value: deliveryMethod === "national" ? 7 : 2 }
+          maximum: { unit: "business_day", value: delivery.maxBusinessDays }
         }
           }
     }],
@@ -736,6 +729,7 @@ async function handleCreateStripeCheckout(request, response) {
     metadata: {
       source: "cajamoda-storefront",
       deliveryMethod,
+      deliverySummary: safeText(delivery.title, 300),
       deliveryPromise: safeText(body?.delivery?.promise, 40) || "pronto",
       customerName: safeText(body?.customer?.customerName, 160),
       customerPhone: safeText(body?.customer?.customerPhone, 80),
@@ -877,11 +871,7 @@ async function importStripeOrderIntoWix(session, lines) {
       address
     },
     shippingInfo: {
-      title: session?.metadata?.deliveryMethod === "pickup"
-        ? "Stripe – Pronto – Recoger"
-        : session?.metadata?.deliveryMethod === "national"
-          ? "Stripe – Rápido – Envío nacional 4–7 días"
-          : "Stripe – Pronto – Moto",
+      title: `Stripe – ${safeText(session?.metadata?.deliverySummary, 300) || selectedDeliveryLabel(lines[0]?.selectedDeliveryMode)}`,
       cost: { amount: String(Math.max(0, total - subtotal)) },
       logistics: {
         shippingDestination: {
@@ -956,7 +946,8 @@ function stripeIntentMetadata(lines, body, delivery) {
     source: "cajamoda-custom-card",
     storeId: STORE_ID,
     itemCount: String(lines.length),
-    deliveryMethod: safeText(body?.delivery?.method, 20),
+    deliveryMethod: safeText(delivery.method, 20),
+    deliverySummary: safeText(delivery.title, 300),
     deliveryPromise: safeText(body?.delivery?.promise, 40) || "pronto",
     customerName: safeText(body?.customer?.customerName, 160),
     customerPhone: safeText(body?.customer?.customerPhone, 80),
@@ -1014,7 +1005,7 @@ async function handleCreateStripePaymentIntent(request, response) {
     selectedDeliveryMode: safeText(line?.selectedDeliveryMode, 20).toLowerCase()
   }));
   const captureMethod = stripeCaptureMethod(lines);
-  const delivery = await checkoutDelivery(body);
+  const delivery = await checkoutDelivery(body, lines);
   const subtotalCents = lines.reduce((sum, line) => sum + Math.round(line.amount * 100) * line.quantity, 0);
   const totalCents = subtotalCents + Math.round(Math.max(0, Number(delivery.fee || 0)) * 100);
   const customerName = safeText(body?.customer?.customerName, 160) || "Cliente CajaModa";
@@ -1098,11 +1089,7 @@ async function importStripeIntentIntoWix(intent, lines) {
       address
     },
     shippingInfo: {
-      title: deliveryMethod === "pickup"
-        ? "Stripe – Pronto – Recoger"
-        : deliveryMethod === "national"
-          ? "Stripe – Rápido – Envío nacional 4–7 días"
-          : "Stripe – Pronto – Moto",
+      title: `Stripe – ${safeText(intent.metadata.deliverySummary, 300) || selectedDeliveryLabel(lines[0]?.selectedDeliveryMode)}`,
       cost: { amount: String(Math.max(0, total - subtotal)) },
       logistics: { shippingDestination: { address, contactDetails: {
         firstName: name.firstName, lastName: name.lastName,
@@ -1157,11 +1144,12 @@ async function handleStripeIntentConfirmation(request, response, url) {
   const intent = await stripe.paymentIntents.retrieve(intentId, { expand: ["payment_method"] });
   if (intent.status === "succeeded") await syncSucceededStripeIntent(intent);
   const authorized = intent.status === "requires_capture";
-  const deliveryTitle = intent.metadata.deliveryMethod === "pickup"
-    ? "Pronto – Recoger en punto"
-    : intent.metadata.deliveryMethod === "national"
-      ? "Rápido – Envío nacional 4–7 días"
-      : "Pronto – Moto Cartagena";
+  const deliveryTitle = safeText(intent.metadata.deliverySummary, 300) ||
+    (intent.metadata.deliveryMethod === "pickup"
+      ? "Pronto – Recoger en punto"
+      : intent.metadata.deliveryMethod === "national"
+        ? "Rápido Nacional – Envío nacional 4–7 días"
+        : "Pronto – Moto Cartagena");
   sendJson(response, 200, {
     ok: true,
     order: {
@@ -1366,12 +1354,62 @@ async function quoteNationalDelivery(delivery, customer, declaredValue) {
   };
 }
 
-async function calculateDeliveryQuote(body) {
-  const method = safeText(body?.delivery?.method, 20).toLowerCase();
-  if (method === "pickup") return { method, fee: PICKUP_FEE_COP, carrier: "CajaModa", service: "Recoger", estimate: "24–48 horas" };
-  if (method === "moto") return quoteMotoDelivery(body?.delivery || {});
-  if (method === "national") return quoteNationalDelivery(body?.delivery || {}, body?.customer || {}, body?.cart?.total);
-  throw new Error("Selecciona un método de entrega válido.");
+function checkoutLineDeliveryMode(line) {
+  return safeText(
+    line?.selectedDeliveryMode || line?.price_data?.product_data?.metadata?.selectedDeliveryMode,
+    20
+  ).toLowerCase();
+}
+
+function checkoutFulfillmentProfile(body, lines = []) {
+  const source = lines.length ? lines : Array.isArray(body?.cart?.items) ? body.cart.items : [];
+  const modes = source.map(checkoutLineDeliveryMode).filter(Boolean);
+  const hasPronto = modes.includes("pickup");
+  const hasFast = modes.includes("fast");
+  const hasShip = modes.includes("ship");
+  const hasNational = hasFast || hasShip;
+  const city = safeText(body?.delivery?.city || body?.customer?.deliveryDestinationCity, 100);
+  const isCartagena = city.toLocaleLowerCase("es-CO").normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes("cartagena");
+  const requestedProntoMethod = safeText(body?.delivery?.prontoMethod || body?.delivery?.method, 20).toLowerCase();
+  const prontoMethod = hasPronto ? requestedProntoMethod : "";
+  if (!hasPronto && !hasNational) throw new Error("Selecciona la entrega de cada producto.");
+  if (hasPronto && !isCartagena) throw new Error("Pronto solo está disponible en Cartagena.");
+  if (hasPronto && !["pickup", "moto"].includes(prontoMethod)) {
+    throw new Error("Elige cómo recibir tu pedido Pronto en Cartagena.");
+  }
+  return { hasPronto, hasFast, hasShip, hasNational, prontoMethod, city };
+}
+
+async function calculateDeliveryQuote(body, lines = []) {
+  const profile = checkoutFulfillmentProfile(body, lines);
+  const groups = [];
+  if (profile.hasPronto) {
+    const prontoQuote = profile.prontoMethod === "moto"
+      ? await quoteMotoDelivery(body?.delivery || {})
+      : { method: "pickup", fee: PICKUP_FEE_COP, carrier: "CajaModa", service: "Recoger", estimate: "24–48 horas" };
+    groups.push({ ...prontoQuote, fulfillment: "pronto" });
+  }
+  if (profile.hasNational) {
+    const nationalQuote = await quoteNationalDelivery(body?.delivery || {}, body?.customer || {}, body?.cart?.total);
+    groups.push({ ...nationalQuote, fulfillment: profile.hasFast && profile.hasShip ? "rapido-nacional+liberalo" : profile.hasShip ? "liberalo" : "rapido-nacional" });
+  }
+  const method = profile.hasPronto && profile.hasNational
+    ? "mixed"
+    : profile.hasPronto
+      ? profile.prontoMethod
+      : "national";
+  const labels = [];
+  if (profile.hasPronto) labels.push(profile.prontoMethod === "moto" ? "Pronto · Moto Cartagena" : "Pronto · Recoger Cartagena");
+  if (profile.hasFast) labels.push("Rápido Nacional · 4–7 días");
+  if (profile.hasShip) labels.push("Libéralo · 14–21 días");
+  return {
+    method,
+    prontoMethod: profile.prontoMethod,
+    fee: groups.reduce((sum, group) => sum + Math.max(0, Number(group.fee || 0)), 0),
+    groups,
+    title: labels.join(" + "),
+    maxBusinessDays: profile.hasShip ? 21 : profile.hasNational ? 7 : 2
+  };
 }
 
 async function handleDeliveryQuote(request, response) {
@@ -1422,21 +1460,28 @@ function checkoutCustomer(body) {
   };
 }
 
-async function checkoutDelivery(body) {
-  const requested = safeText(body?.delivery?.method, 20).toLowerCase();
-  const method = ["moto", "national"].includes(requested) ? requested : "pickup";
-  const addressLine = method !== "pickup"
-    ? safeText(body?.delivery?.address || body?.customer?.deliveryAddress, 250)
-    : CARTAGENA_PICKUP_ADDRESS;
-  const city = method === "national"
-    ? safeText(body?.delivery?.city || body?.customer?.deliveryDestinationCity, 100)
-    : "Cartagena";
-  const quote = await calculateDeliveryQuote(body);
+async function checkoutDelivery(body, lines = []) {
+  const profile = checkoutFulfillmentProfile(body, lines);
+  const quote = await calculateDeliveryQuote(body, lines);
+  const method = quote.method;
+  const addressLine = method === "pickup"
+    ? CARTAGENA_PICKUP_ADDRESS
+    : safeText(body?.delivery?.address || body?.customer?.deliveryAddress, 250);
+  const city = method === "pickup" ? "Cartagena" : profile.city;
+  if (method !== "pickup" && !addressLine) throw new Error("Ingresa la dirección de entrega.");
+  if (profile.hasNational && !safeText(body?.delivery?.state, 5)) {
+    throw new Error("Selecciona el departamento de entrega.");
+  }
   return {
-    method, addressLine, city,
+    method,
+    prontoMethod: profile.prontoMethod,
+    addressLine,
+    city,
     state: safeText(body?.delivery?.state, 5),
     postalCode: safeText(body?.delivery?.postalCode, 20),
     fee: quote.fee,
+    title: quote.title,
+    maxBusinessDays: quote.maxBusinessDays,
     quote
   };
 }
@@ -1506,12 +1551,8 @@ async function handleCreateNequiOrder(request, response) {
   const lines = await verifiedCheckoutLines(items);
   const subtotal = lines.reduce((sum, line) => sum + line.amount * line.quantity, 0);
   const customer = checkoutCustomer(body);
-  const delivery = await checkoutDelivery(body);
-  const deliveryTitle = delivery.method === "moto"
-    ? "Pronto – Moto Cartagena"
-    : delivery.method === "national"
-      ? `Rápido – Envío nacional 4–7 días – ${delivery.city}`
-      : "Pronto – Recoger Cartagena";
+  const delivery = await checkoutDelivery(body, lines);
+  const deliveryTitle = delivery.title;
   const title = `${deliveryTitle} · Ref ${reference}`;
   const address = {
     country: "CO",
@@ -4394,11 +4435,13 @@ function normalizeStripeAuthorization(intent) {
     source: "stripeAuthorization",
     canCapturePayment: intent.status === "requires_capture",
     canCancelPayment: intent.status === "requires_capture",
-    delivery: deliveryMethod === "pickup"
-      ? "Stripe – Pronto – Recoger"
-      : deliveryMethod === "national"
-        ? "Stripe – Rápido – Envío nacional 4–7 días"
-        : "Stripe – Pronto – Moto"
+    delivery: safeText(intent?.metadata?.deliverySummary, 300)
+      ? `Stripe – ${safeText(intent.metadata.deliverySummary, 300)}`
+      : deliveryMethod === "pickup"
+        ? "Stripe – Pronto – Recoger"
+        : deliveryMethod === "national"
+          ? "Stripe – Rápido Nacional – Envío nacional 4–7 días"
+          : "Stripe – Pronto – Moto"
   };
 }
 

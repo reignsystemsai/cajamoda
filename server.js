@@ -3099,12 +3099,24 @@ async function createWixProduct(
     ? result.inventoryResults.results
     : [];
 
-  if (trackInventory && !inventoryResults.length) {
+  const inventoryFailures = inventoryResults.filter(item => item?.itemMetadata?.success === false);
+  const reportedInventoryFailures = Number(result?.inventoryResults?.bulkActionMetadata?.totalFailures || 0);
+
+  if (
+    trackInventory &&
+    (
+      inventoryResults.length !== variants.length ||
+      inventoryFailures.length ||
+      reportedInventoryFailures > 0 ||
+      result?.inventoryResults?.error
+    )
+  ) {
     await wix.productsV3.deleteProduct(created._id || created.id);
-    throw new Error("Wix no creó el inventario del producto. No se guardó una copia incompleta.");
+    throw new Error("Wix no creó correctamente el inventario de todas las variantes. No se guardó una copia incompleta.");
   }
 
   const createdProductId = created._id || created.id;
+  let confirmedCreatedVariants = [];
   try {
     const expectedSkuBySize = new Map(
       variants.map(variant => [
@@ -3133,22 +3145,57 @@ async function createWixProduct(
       },
       {fields:["CURRENCY","MEDIA_ITEMS_INFO","THUMBNAIL"]}
     );
-    const confirmedResult = await wix.productsV3.getProduct(createdProductId, {
-      fields:["CURRENCY","MEDIA_ITEMS_INFO","THUMBNAIL"]
-    });
-    const confirmedProduct = confirmedResult?.product || confirmedResult;
-    const confirmedSkuBySize = new Map(
-      (confirmedProduct?.variantsInfo?.variants || []).map(variant => [
+    const expectedBySize = new Map(
+      variants.map(variant => [
         existingVariantSize(variant),
-        safeText(variant?.sku, 160).toUpperCase()
+        {
+          sku:safeText(variant?.sku, 160).toUpperCase(),
+          quantity:Number(variant?.inventoryItem?.quantity || 0)
+        }
       ])
     );
-    for (const [size, expectedSku] of expectedSkuBySize) {
-      if (confirmedSkuBySize.get(size) !== expectedSku) {
-        throw new Error(`Wix no confirmó el SKU de la talla ${size || "única"}.`);
+    let confirmationFailure = "";
+
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const confirmedResult = await wix.productsV3.getProduct(createdProductId, {
+        fields:["CURRENCY","MEDIA_ITEMS_INFO","THUMBNAIL"]
+      });
+      const confirmedProduct = confirmedResult?.product || confirmedResult;
+      const confirmedInventory = await getWixInventory();
+      const confirmedDetails = productVariantDetails(confirmedProduct, confirmedInventory);
+      confirmationFailure = "";
+
+      for (const [size, expected] of expectedBySize) {
+        const actual = confirmedDetails.find(variant => variant.size === size);
+        if (!actual?.variantId) {
+          confirmationFailure = `Wix todavía no devolvió la variante de la talla ${size || "única"}.`;
+          break;
+        }
+        if (actual.sku !== expected.sku) {
+          confirmationFailure = `Wix todavía no confirmó el SKU de la talla ${size || "única"}.`;
+          break;
+        }
+        if (trackInventory && !actual.inventoryId) {
+          confirmationFailure = `Wix todavía no devolvió el inventario de la talla ${size || "única"}.`;
+          break;
+        }
+        if (trackInventory && Number(actual.quantity) !== expected.quantity) {
+          confirmationFailure = `Wix todavía no confirmó la cantidad de la talla ${size || "única"}.`;
+          break;
+        }
       }
+
+      if (!confirmationFailure) {
+        created = confirmedProduct;
+        confirmedCreatedVariants = confirmedDetails;
+        break;
+      }
+      if (attempt < 7) await new Promise(resolve => setTimeout(resolve, 750));
     }
-    created = confirmedProduct;
+
+    if (!confirmedCreatedVariants.length) {
+      throw new Error(confirmationFailure || "Wix no confirmó todos los SKU y cantidades.");
+    }
   } catch (error) {
     await wix.productsV3.deleteProduct(createdProductId);
     throw error;
@@ -3182,7 +3229,9 @@ async function createWixProduct(
 
     price,
 
-    quantity,
+    quantity:confirmedCreatedVariants.reduce((total, variant) => total + Number(variant.quantity || 0), 0),
+
+    variants:confirmedCreatedVariants,
 
     category,
 
@@ -5058,6 +5107,8 @@ const inventoryItems =
     return {
       ...item,
       productName: item.productName || safeText(product?.name, 300),
+      variantName: existingVariantSize(variant) || item.variantName,
+      sku: safeText(variant?.sku, 160).toUpperCase() || item.sku,
       image: getProductImageUrl(product),
       category: safeText(categoryRoutes[item.productId], 30),
       price: wixVariantPrice(variant) ?? wixVariantPrice(product),

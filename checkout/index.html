@@ -1011,6 +1011,13 @@ img{display:block;max-width:100%}
 .deliveryChoice.isSelected{background:#080808;color:#fff;border-color:#080808}
 .deliveryChoice[data-delivery="national"]:not([hidden]){grid-column:1/-1}
 .deliveryNote{margin:12px 2px 0;color:#737373;font-size:8px}
+.bagCityCard{margin:0 0 20px;padding:15px 16px}
+.bagCityTitle{margin-bottom:9px;font-size:10px;font-weight:700}
+.bagCityCard .compactInput{width:100%}
+.paymentDeliveryReminder{margin-bottom:16px;padding:13px 15px;border:1px solid rgba(0,0,0,.09);border-radius:14px;background:rgba(255,255,255,.58)}
+.paymentDeliveryReminderTitle{margin-bottom:7px;font-size:9px;font-weight:750}
+.paymentDeliveryReminderLines{display:grid;gap:5px;color:#555;font-size:8.5px;line-height:1.4}
+.paymentDeliveryReminderLine{display:block}
 .pickupAddress{margin:10px 2px 0;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.58);border:1px solid rgba(0,0,0,.07);font-size:8px;line-height:1.5;color:#555}
 .deliveryDetails{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
 .deliveryDetails label{min-width:0}.deliveryDetails .wide{grid-column:1/-1}
@@ -1143,6 +1150,14 @@ img{display:block;max-width:100%}
           <div id="cartItemCount" class="panelMeta">0 productos</div>
         </div>
 
+        <section class="summaryCard glassCard bagCityCard" aria-label="Ciudad de entrega">
+          <div class="bagCityTitle">Ciudad de entrega</div>
+            <label><input id="deliveryCity" name="city" class="compactInput cityInput" autocomplete="address-level2" list="colombiaCities" aria-label="Ciudad de entrega" placeholder="Ciudad"></label>
+            <datalist id="colombiaCities">
+              <option value="Cartagena"><option value="Bogotá"><option value="Medellín"><option value="Cali"><option value="Barranquilla"><option value="Santa Marta"><option value="Bucaramanga"><option value="Pereira"><option value="Manizales"><option value="Armenia"><option value="Cúcuta"><option value="Ibagué"><option value="Villavicencio"><option value="Montería"><option value="Sincelejo"><option value="Valledupar"><option value="Riohacha"><option value="Tunja"><option value="Popayán"><option value="Pasto"><option value="Neiva"><option value="Florencia"><option value="Quibdó"><option value="Yopal"><option value="Arauca"><option value="Leticia"><option value="San Andrés"><option value="Buenaventura"><option value="Palmira"><option value="Soacha"><option value="Envigado"><option value="Bello"><option value="Rionegro"><option value="Itagüí"><option value="Girardot"><option value="Zipaquirá"><option value="Sogamoso"><option value="Duitama"><option value="Magangué"><option value="Turbo"><option value="Apartadó"><option value="Tuluá"><option value="Buga"><option value="Cartago"><option value="Ipiales"><option value="Ocaña"><option value="Barrancabermeja"><option value="Maicao"><option value="Ciénaga"><option value="Lorica">
+            </datalist>
+        </section>
+
         <div id="cartList" class="cartList"></div>
 
         <section class="summaryCard glassCard" aria-label="Métodos de entrega">
@@ -1239,10 +1254,6 @@ img{display:block;max-width:100%}
               <input id="customerPhone" name="phone" class="compactInput" autocomplete="tel-national" inputmode="tel" placeholder="Número de teléfono">
             </div>
             <label><select id="deliveryDepartment" class="compactInput" autocomplete="address-level1"><option value="">Departamento</option></select></label>
-            <label><input id="deliveryCity" name="city" class="compactInput cityInput" autocomplete="address-level2" list="colombiaCities" aria-label="Ciudad de entrega" placeholder="Ciudad" value="Cartagena"></label>
-            <datalist id="colombiaCities">
-              <option value="Cartagena"><option value="Bogotá"><option value="Medellín"><option value="Cali"><option value="Barranquilla"><option value="Santa Marta"><option value="Bucaramanga"><option value="Pereira"><option value="Manizales"><option value="Armenia"><option value="Cúcuta"><option value="Ibagué"><option value="Villavicencio"><option value="Montería"><option value="Sincelejo"><option value="Valledupar"><option value="Riohacha"><option value="Tunja"><option value="Popayán"><option value="Pasto"><option value="Neiva"><option value="Florencia"><option value="Quibdó"><option value="Yopal"><option value="Arauca"><option value="Leticia"><option value="San Andrés"><option value="Buenaventura"><option value="Palmira"><option value="Soacha"><option value="Envigado"><option value="Bello"><option value="Rionegro"><option value="Itagüí"><option value="Girardot"><option value="Zipaquirá"><option value="Sogamoso"><option value="Duitama"><option value="Magangué"><option value="Turbo"><option value="Apartadó"><option value="Tuluá"><option value="Buga"><option value="Cartago"><option value="Ipiales"><option value="Ocaña"><option value="Barrancabermeja"><option value="Maicao"><option value="Ciénaga"><option value="Lorica">
-            </datalist>
             <label class="wide"><input id="deliveryAddress" class="compactInput" autocomplete="street-address" placeholder="Dirección"></label>
             <label class="wide"><input id="deliveryPostalCode" class="compactInput" autocomplete="postal-code" inputmode="numeric" placeholder="Código postal (opcional)"></label>
           </div>
@@ -1267,6 +1278,10 @@ img{display:block;max-width:100%}
         <h2 class="paymentSectionTitle">Finaliza tu pago</h2>
         <section id="paymentGlass" class="paymentGlass">
           <div id="nequiPane" class="nequiPane">
+            <div class="paymentDeliveryReminder">
+              <div class="paymentDeliveryReminderTitle">Entrega de tu pedido</div>
+              <div id="nequiDeliveryReminder" class="paymentDeliveryReminderLines"></div>
+            </div>
             <div class="nequiSteps">
               <div class="nequiStepsTitle">Paga con Nequi en 3 pasos</div>
               <ol>
@@ -1277,9 +1292,9 @@ img{display:block;max-width:100%}
             </div>
             <div class="nequiPriceBreakdown" aria-label="Desglose del precio final">
               <div class="nequiPriceLine"><span>Precio de los artículos</span><span id="nequiSubtotal">$0</span></div>
-              <div class="nequiPriceLine"><span id="nequiDeliveryLabel">Recogida en punto</span><span id="nequiDeliveryFee">$0</span></div>
+              <div class="nequiPriceLine"><span>Entrega</span><span id="nequiDeliveryFee">$0</span></div>
               <div class="nequiPriceLine nequiFinalLine">
-                <div><span class="nequiFinalLabel">Precio final</span><small id="nequiFinalNote" class="nequiFinalNote">Incluye recogida en punto</small></div>
+                <div><span class="nequiFinalLabel">Precio final</span></div>
                 <span id="nequiAmount" class="paymentAmount">$0 COP</span>
               </div>
             </div>
@@ -1299,6 +1314,10 @@ img{display:block;max-width:100%}
           </div>
 
           <div id="stripePane" class="stripePane" hidden>
+            <div class="paymentDeliveryReminder">
+              <div class="paymentDeliveryReminderTitle">Entrega de tu pedido</div>
+              <div id="stripeDeliveryReminder" class="paymentDeliveryReminderLines"></div>
+            </div>
             <div class="stripeTop">
               <div class="stripeTitle">Tarjeta</div>
               <div class="stripeSecure"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Pago seguro</div>
@@ -1336,16 +1355,16 @@ img{display:block;max-width:100%}
             </div>
             <div class="paymentSummary">
               <div class="summaryLine">
-                <span>Subtotal</span>
+                <span>Precio de los artículos</span>
                 <span id="subtotalValue" class="summaryValue">$0</span>
               </div>
               <div class="summaryLine">
                 <span>Entrega</span>
-                <span id="deliverySummary" class="summaryValue">Pronto · Por calcular</span>
+                <span id="deliverySummary" class="summaryValue">Por calcular</span>
               </div>
               <div class="summaryDivider"></div>
               <div class="summaryTotal">
-                <span class="summaryTotalLabel">Total</span>
+                <span class="summaryTotalLabel">Precio final</span>
                 <span id="totalValue" class="summaryTotalValue">$0</span>
               </div>
             </div>
@@ -1484,13 +1503,26 @@ img{display:block;max-width:100%}
     return "national";
   }
 
-  function deliverySummaryLabel(cart = readCart()) {
+  function deliveryReminderLabels(cart = readCart()) {
     const profile = checkoutFulfillmentProfile(cart);
     const labels = [];
     if (profile.hasPronto) labels.push(selectedDelivery === "moto" ? "Pronto · Moto Cartagena" : "Pronto · Recoger Cartagena");
     if (profile.hasFast) labels.push("Rápido Nacional · 4–7 días");
     if (profile.hasShip) labels.push("Libéralo · 14–21 días");
-    return labels.join(" + ") || "Entrega";
+    return labels;
+  }
+
+  function deliverySummaryLabel(cart = readCart()) {
+    return deliveryReminderLabels(cart).join(" + ") || "Entrega";
+  }
+
+  function renderDeliveryReminders(cart = readCart()) {
+    const html = deliveryReminderLabels(cart)
+      .map(label => `<span class="paymentDeliveryReminderLine">${escapeHtml(label)}</span>`)
+      .join("");
+    ["nequiDeliveryReminder", "stripeDeliveryReminder"].forEach(id => {
+      if ($(id)) $(id).innerHTML = html;
+    });
   }
 
   function deliveryQuoteMatchesCart(cart = readCart()) {
@@ -1516,20 +1548,14 @@ img{display:block;max-width:100%}
     const deliveryFee = checkoutDeliveryFee();
     const total = subtotal + deliveryFee;
     const quoteReady = deliveryQuoteMatchesCart(cart);
-    const deliveryLabel = deliverySummaryLabel(cart);
     if ($("subtotalValue")) $("subtotalValue").textContent = money(subtotal);
     if ($("totalValue")) $("totalValue").textContent = money(total);
     if ($("nequiAmount")) $("nequiAmount").textContent = `${money(total)} COP`;
     if ($("nequiSubtotal")) $("nequiSubtotal").textContent = money(subtotal);
     if ($("nequiDeliveryFee")) $("nequiDeliveryFee").textContent = quoteReady ? money(deliveryFee) : "Por calcular";
-    if ($("nequiDeliveryLabel")) $("nequiDeliveryLabel").textContent = deliveryLabel;
-    if ($("nequiFinalNote")) $("nequiFinalNote").textContent = `Incluye ${deliveryLabel.toLocaleLowerCase("es-CO")}`;
     if ($("stripePayButton")) $("stripePayButton").textContent = `Pagar ${money(total)} COP`;
-    if ($("deliverySummary")) {
-      $("deliverySummary").textContent = quoteReady
-        ? `${deliveryLabel} · ${money(deliveryFee)}`
-        : `${deliveryLabel} · Por calcular`;
-    }
+    if ($("deliverySummary")) $("deliverySummary").textContent = quoteReady ? money(deliveryFee) : "Por calcular";
+    renderDeliveryReminders(cart);
   }
 
   let activeStep = "bag";
@@ -1952,6 +1978,32 @@ img{display:block;max-width:100%}
     return modes.length?modes:[normalizeDeliveryMode(item.deliveryMode)||"fast"];
   }
 
+  function isCartagenaDeliveryCity(){
+    return normalizeChoice($("deliveryCity")?.value)==="cartagena";
+  }
+
+  function eligibleDeliveryModes(item){
+    return allowedDeliveryModes(item).filter(mode=>mode!=="pickup"||isCartagenaDeliveryCity());
+  }
+
+  function reconcileDeliverySelectionsForCity(){
+    const cart=readCart();
+    let changed=false;
+    cart.items.forEach(item=>{
+      const eligible=eligibleDeliveryModes(item);
+      const current=normalizeDeliveryMode(item.selectedDeliveryMode);
+      const next=eligible.length===1?eligible[0]:eligible.includes(current)?current:"";
+      if(next!==current){
+        item.selectedDeliveryMode=next;
+        item.deliveryMode=next;
+        changed=true;
+      }
+    });
+    if(changed) saveCart(cart);
+    else renderCart();
+    return changed;
+  }
+
   function itemInventoryLimit(item) {
     const variant = selectedVariant(item);
     const product = catalogProduct(item.productId);
@@ -2004,21 +2056,24 @@ img{display:block;max-width:100%}
   }
 
   function deliveryChoices(item){
-    const allowed=allowedDeliveryModes(item);
+    const eligible=eligibleDeliveryModes(item);
     const selected=normalizeDeliveryMode(item.selectedDeliveryMode);
-    if(allowed.length===1){return ""}
+    if(!eligible.length){
+      return `<div class="cartDeliveryChoices"><span class="cartDeliveryLabel">Pronto disponible solo en Cartagena.</span></div>`;
+    }
+    if(eligible.length===1){return ""}
     const short={pickup:"P",fast:"R",ship:"L"};
     const label={pickup:"Pronto",fast:"Rápido Nacional",ship:"Libéralo"};
     return `<div class="cartDeliveryChoices" aria-label="Método de entrega">
-      <span class="cartDeliveryLabel">Entrega:</span>
-      ${allowed.map(mode=>`<button class="cartDeliveryChoice ${selected===mode?"selected":""}" type="button" data-cart-delivery="${mode}" data-item-id="${escapeHtml(item.id)}" aria-label="${label[mode]}">${short[mode]}</button>`).join("")}
+      <span class="cartDeliveryLabel">Selecciona tu entrega</span>
+      ${eligible.map(mode=>`<button class="cartDeliveryChoice ${selected===mode?"selected":""}" type="button" data-cart-delivery="${mode}" data-item-id="${escapeHtml(item.id)}" aria-label="${label[mode]}">${short[mode]}</button>`).join("")}
     </div>`;
   }
 
   function deliverySelectionsComplete(cart=readCart()){
     return cart.items.every(item=>{
       const selected=normalizeDeliveryMode(item.selectedDeliveryMode);
-      return Boolean(selected&&allowedDeliveryModes(item).includes(selected));
+      return Boolean(selected&&eligibleDeliveryModes(item).includes(selected));
     });
   }
 
@@ -2027,9 +2082,14 @@ img{display:block;max-width:100%}
     if(item.size){details.push(`<span class="cartOptionLine">Talla: ${escapeHtml(item.size)}</span>`)}
     const color=visibleColor(item);
     if(color){details.push(`<span class="cartOptionLine">Color: ${escapeHtml(color)}</span>`)}
-    const allowed=allowedDeliveryModes(item);
+    const eligible=eligibleDeliveryModes(item);
     const selected=normalizeDeliveryMode(item.selectedDeliveryMode);
-    details.push(`<span class="cartOptionLine cartPromise">${escapeHtml(allowed.length>1&&!selected?"Selecciona la entrega":deliveryModeLabel({...item,selectedDeliveryMode:selected||allowed[0]}))}</span>`);
+    const promise=!eligible.length
+      ?"Pronto disponible solo en Cartagena"
+      :eligible.length>1&&!selected
+        ?""
+        :deliveryModeLabel({...item,selectedDeliveryMode:selected||eligible[0]});
+    if(promise) details.push(`<span class="cartOptionLine cartPromise">${escapeHtml(promise)}</span>`);
     return `<div class="cartOptions">${details.join("")}</div>`;
   }
 
@@ -2496,7 +2556,7 @@ img{display:block;max-width:100%}
     const cart=readCart();
     const item=cart.items.find(candidate=>String(candidate.id)===String(itemId));
     const normalized=normalizeDeliveryMode(mode);
-    if(!item||!allowedDeliveryModes(item).includes(normalized)){return}
+    if(!item||!eligibleDeliveryModes(item).includes(normalized)){return}
     item.allowedDeliveryModes=allowedDeliveryModes(item);
     item.selectedDeliveryMode=normalized;
     item.deliveryMode=normalized;
@@ -2586,6 +2646,7 @@ img{display:block;max-width:100%}
     }
 
     updateReviewCustomer();
+    reconcileDeliverySelectionsForCity();
     syncDeliveryControls();
   }
 
@@ -3276,11 +3337,14 @@ img{display:block;max-width:100%}
     };
   });
 
-  $("deliveryCity").onchange = () => {
+  const handleDeliveryCitySelection = () => {
+    reconcileDeliverySelectionsForCity();
     syncDeliveryControls();
     updateStripePayAvailability();
     syncPanelHeight();
   };
+  $("deliveryCity").oninput = handleDeliveryCitySelection;
+  $("deliveryCity").onchange = handleDeliveryCitySelection;
   ["deliveryAddress", "deliveryCity", "deliveryPostalCode"].forEach(id => {
     $(id)?.addEventListener("change", scheduleDeliveryQuote);
   });

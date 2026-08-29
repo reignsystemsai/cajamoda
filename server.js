@@ -709,7 +709,7 @@ async function handleCreateStripeCheckout(request, response) {
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     ui_mode: "elements",
-    payment_method_types: ["card, link"],
+    payment_method_types: ["card", "link"],
     payment_intent_data: {
       capture_method: captureMethod,
       receipt_email: customerEmail || undefined,

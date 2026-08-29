@@ -5085,71 +5085,32 @@ if(
         );
       }
 
-      /*
-        The permanent product now lives in Wix.
+      await loadRealInventory(true);
 
-        Store Loader keeps only lightweight local metadata
-        for this prototype dashboard. We intentionally do
-        not save large base64 photos into localStorage.
-      */
-
-      const product = {
-
-        id:
-          created.id,
-
-        wixProductId:
-          created.id,
-
-        source:
-          "wix",
-
-        storeId:
-          store.id,
-
-        name,
-
-        description,
-
-        price,
-
-        quantity:
-          variantOverrides.reduce((sum, variant) => sum + variant.quantity, 0),
-
-        category,
-
-        sizes,
-
-        colors,
-
-        photos:
-          Array.isArray(created.photos)
-            ? created.photos.map(fullResolutionWixImageUrl).filter(Boolean)
-            : [],
-
-        wixMediaIds:
-          Array.isArray(
-            created.photos
-          )
-            ? created.photos
-            : [],
-
-        status:
-          "published",
-
-        createdAt:
-          new Date()
-            .toISOString()
-      };
-
-      products.unshift(
-        product
+      const confirmedProduct = products.find(
+        product => String(product.id) === String(created.id)
+      );
+      const confirmedVariants = Array.isArray(created.variants)
+        ? created.variants
+        : [];
+      const expectedSkus = confirmedVariants
+        .map(variant => String(variant.sku || "").toUpperCase())
+        .filter(Boolean);
+      const confirmedSkus = new Set(
+        Array.isArray(confirmedProduct?.skus)
+          ? confirmedProduct.skus.map(sku => String(sku || "").toUpperCase())
+          : []
       );
 
-      saveJson(
-        "store-loader-products",
-        products
-      );
+      if (!confirmedProduct) {
+        throw new Error("Wix todavía no devolvió el producto publicado.");
+      }
+      if (Number(confirmedProduct.quantity || 0) !== Number(created.quantity || 0)) {
+        throw new Error("Wix todavía no confirmó todas las cantidades.");
+      }
+      if (expectedSkus.some(sku => !confirmedSkus.has(sku))) {
+        throw new Error("Wix todavía no confirmó todos los SKU.");
+      }
 
       resetProductForm();
 

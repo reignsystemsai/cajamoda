@@ -3118,10 +3118,14 @@ async function createWixProduct(
   const createdProductId = created._id || created.id;
   let confirmedCreatedVariants = [];
   try {
-    const expectedSkuBySize = new Map(
+    const expectedBySize = new Map(
       variants.map(variant => [
         existingVariantSize(variant),
-        safeText(variant?.sku, 160).toUpperCase()
+        {
+          sku:safeText(variant?.sku, 160).toUpperCase(),
+          quantity:Number(variant?.inventoryItem?.quantity || 0),
+          inStock:variant?.inventoryItem?.inStock !== false
+        }
       ])
     );
     const createdVariants = Array.isArray(created?.variantsInfo?.variants)
@@ -3130,30 +3134,66 @@ async function createWixProduct(
     if (createdVariants.length !== variants.length) {
       throw new Error("Wix no devolvió todas las variantes para guardar sus SKU.");
     }
-    const variantsWithSkus = createdVariants.map(variant => {
+
+    let createdInventory = [];
+    for(let attempt = 0; attempt < 8; attempt += 1){
+      createdInventory = (await getWixInventory()).filter(
+        item => String(item.productId) === String(createdProductId)
+      );
+      if(!trackInventory || createdInventory.length === createdVariants.length) break;
+      if(attempt < 7) await new Promise(resolve => setTimeout(resolve, 750));
+    }
+    if(trackInventory && createdInventory.length !== createdVariants.length){
+      throw new Error("Wix no devolvió todos los inventarios permanentes del producto.");
+    }
+
+    const inventoryByVariant = new Map(
+      createdInventory.map(item => [String(item.variantId), item])
+    );
+    const variantsWithInventory = createdVariants.map(variant => {
       const size = existingVariantSize(variant);
-      const sku = expectedSkuBySize.get(size);
-      if (!sku) throw new Error(`Wix no devolvió la talla ${size || "única"} para guardar su SKU.`);
-      return {...variant, sku};
+      const expected = expectedBySize.get(size);
+      const variantId = safeText(variant?._id || variant?.id || variant?.variantId, 150);
+      const inventoryItem = inventoryByVariant.get(variantId);
+      if(!expected) throw new Error(`Wix no devolvió la talla ${size || "única"} para guardar su SKU.`);
+      if(trackInventory && !inventoryItem){
+        throw new Error(`Wix no devolvió el inventario permanente de la talla ${size || "única"}.`);
+      }
+      return {
+        ...variant,
+        sku:expected.sku,
+        inventoryItem:trackInventory
+          ? {
+              _id:inventoryItem.id,
+              revision:inventoryItem.revision,
+              quantity:expected.quantity
+            }
+          : {inStock:expected.inStock}
+      };
     });
-    await wix.productsV3.updateProduct(
+    const atomicResult = await wix.productsV3.updateProductWithInventory(
       createdProductId,
       {
         revision:created.revision,
         options:created.options || options,
-        variantsInfo:{variants:variantsWithSkus}
+        variantsInfo:{variants:variantsWithInventory}
       },
-      {fields:["CURRENCY","MEDIA_ITEMS_INFO","THUMBNAIL"]}
+      {
+        returnEntity:true,
+        fields:["CURRENCY","MEDIA_ITEMS_INFO","THUMBNAIL"]
+      }
     );
-    const expectedBySize = new Map(
-      variants.map(variant => [
-        existingVariantSize(variant),
-        {
-          sku:safeText(variant?.sku, 160).toUpperCase(),
-          quantity:Number(variant?.inventoryItem?.quantity || 0)
-        }
-      ])
-    );
+    const atomicFailures = Array.isArray(atomicResult?.inventoryResults?.results)
+      ? atomicResult.inventoryResults.results.filter(item => item?.itemMetadata?.success === false)
+      : [];
+    if(
+      atomicFailures.length ||
+      Number(atomicResult?.inventoryResults?.bulkActionMetadata?.totalFailures || 0) > 0 ||
+      atomicResult?.inventoryResults?.error
+    ){
+      throw new Error("Wix rechazó el SKU o la cantidad de una variante.");
+    }
+    created = atomicResult?.product || created;
     let confirmationFailure = "";
 
     for (let attempt = 0; attempt < 8; attempt += 1) {

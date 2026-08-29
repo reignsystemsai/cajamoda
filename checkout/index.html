@@ -1039,6 +1039,9 @@ img{display:block;max-width:100%}
 .cityInput{padding-right:38px}
 .cityInput::-webkit-calendar-picker-indicator{margin-right:10px}
 .phoneInputGroup{display:grid;grid-template-columns:110px 1fr;gap:10px}.phoneInputGroup .compactInput{min-width:0}
+.cartItem.isUnavailable{border-color:rgba(163,25,25,.28);background:rgba(255,246,244,.76)}
+.cartUnavailableNotice{margin-top:10px;padding:11px 12px;border:1px solid rgba(163,25,25,.18);border-radius:12px;background:#fff5f3;color:#8e211b;font-size:8.5px;line-height:1.45}
+.cartUnavailableRemove{margin-top:9px;padding:9px 12px;border:1px solid #8e211b;border-radius:10px;background:#fff;color:#8e211b;font-size:8px;font-weight:750}
 </style>
 </head>
 
@@ -1458,7 +1461,10 @@ img{display:block;max-width:100%}
   let stripeCanConfirm = false;
   let deliveryQuote = { method: "pickup", fee: 10000 };
   let quoteTimer = null;
+  let unavailableProductIds = new Set();
   const PICKUP_FEE_COP = 10000;
+  const CART_ITEM_UNAVAILABLE_CODE = "CART_ITEM_UNAVAILABLE";
+  const PAYMENT_PREPARATION_ERROR = "No pudimos preparar el pago. Inténtalo nuevamente.";
 
   function checkoutDeliveryFee() {
     return deliveryQuote?.method === selectedDelivery ? Number(deliveryQuote.fee || 0) : 0;
@@ -1519,6 +1525,30 @@ img{display:block;max-width:100%}
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#039;");
+  }
+
+  function isUnavailableItem(item) {
+    return unavailableProductIds.has(String(item?.productId || ""));
+  }
+
+  function unavailableItemNotice(item) {
+    if (!isUnavailableItem(item)) return "";
+    return `<div class="cartUnavailableNotice" role="alert">
+      <strong>Este producto ya no está disponible. Retíralo para continuar.</strong>
+      <button class="cartUnavailableRemove" type="button" data-remove-unavailable="${escapeHtml(item.id)}">Retirar de la bolsa</button>
+    </div>`;
+  }
+
+  function paymentPreparationFailure(result) {
+    const error = new Error(PAYMENT_PREPARATION_ERROR);
+    if (result?.code === CART_ITEM_UNAVAILABLE_CODE && Array.isArray(result?.productIds)) {
+      unavailableProductIds = new Set(result.productIds.map(String).filter(Boolean));
+      renderCart();
+      error.code = CART_ITEM_UNAVAILABLE_CODE;
+    } else {
+      error.code = "PAYMENT_PREPARATION_FAILED";
+    }
+    return error;
   }
 
   function money(amount) {
@@ -2107,7 +2137,7 @@ img{display:block;max-width:100%}
 
     $("cartList").innerHTML = cart.items.map(item => `
       <article
-        class="cartItem"
+        class="cartItem ${isUnavailableItem(item) ? "isUnavailable" : ""}"
         data-cart-item="${escapeHtml(item.id)}"
       >
         ${productImage(item)}
@@ -2142,6 +2172,8 @@ img{display:block;max-width:100%}
           </div>
 
           ${cartItemDetails(item)}
+
+          ${unavailableItemNotice(item)}
 
           <div class="cartOptionControls">
             ${deliveryChoices(item)}
@@ -2184,7 +2216,7 @@ img{display:block;max-width:100%}
     `).join("");
 
     $("reviewList").innerHTML = cart.items.map(item => `
-      <article class="cartItem finalCheckoutItem" data-cart-item="${escapeHtml(item.id)}">
+      <article class="cartItem finalCheckoutItem ${isUnavailableItem(item) ? "isUnavailable" : ""}" data-cart-item="${escapeHtml(item.id)}">
         ${productImage(item)}
 
         <div class="cartInfo">
@@ -2206,6 +2238,8 @@ img{display:block;max-width:100%}
           </div>
 
           ${cartItemDetails(item)}
+
+          ${unavailableItemNotice(item)}
 
           <div class="cartOptionControls">
             ${colorChoices(item)}
@@ -2230,6 +2264,12 @@ img{display:block;max-width:100%}
         button.onclick = () => {
           removeItem(button.dataset.remove);
         };
+      });
+
+    document
+      .querySelectorAll("[data-remove-unavailable]")
+      .forEach(button => {
+        button.onclick = () => removeUnavailableItem(button.dataset.removeUnavailable);
       });
 
     document
@@ -2397,13 +2437,53 @@ img{display:block;max-width:100%}
   function removeItem(itemId) {
     const cart = readCart();
 
+    const removedItem = cart.items.find(item => String(item.id) === String(itemId));
+
     cart.items = cart.items.filter(
       item =>
         String(item.id) !== String(itemId)
     );
 
+    if (removedItem && !cart.items.some(item => String(item.productId) === String(removedItem.productId))) {
+      unavailableProductIds.delete(String(removedItem.productId));
+    }
+
     saveCart(cart);
     showToast("Producto eliminado.");
+  }
+
+  async function removeUnavailableItem(itemId) {
+    const cart = readCart();
+    const removedItem = cart.items.find(item => String(item.id) === String(itemId));
+    if (!removedItem) return;
+
+    cart.items = cart.items.filter(item => String(item.id) !== String(itemId));
+    if (!cart.items.some(item => String(item.productId) === String(removedItem.productId))) {
+      unavailableProductIds.delete(String(removedItem.productId));
+    }
+    const correctedCart = saveCart(cart);
+    if (!correctedCart.items.length) {
+      unavailableProductIds.clear();
+      resetStripePaymentSession();
+      goToStep("bag");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${STORE_API_URL}/api/checkout/validate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(checkoutPayload())
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result?.ok !== true) throw paymentPreparationFailure(result);
+      unavailableProductIds.clear();
+      renderCart();
+      if (selectedPayment === "stripe") await rebuildStripePaymentForDelivery();
+      updateNequiConfirmAvailability();
+    } catch (error) {
+      if (error?.code !== CART_ITEM_UNAVAILABLE_CODE) showToast(PAYMENT_PREPARATION_ERROR);
+    }
   }
 
   const customerFields = ["email", "customerFirstName", "customerLastName", "phoneCountryCode", "customerPhone", "deliveryCity", "deliveryDepartment", "deliveryPostalCode", "deliveryAddress"];
@@ -2843,8 +2923,9 @@ img{display:block;max-width:100%}
       const result = await response.json().catch(() => ({}));
       if (generation !== stripeSessionGeneration) return;
       if (!response.ok || !result?.clientSecret || !result?.sessionId) {
-        throw new Error(result?.error || "No pudimos preparar el pago.");
+        throw paymentPreparationFailure(result);
       }
+      unavailableProductIds.clear();
       saveJson("cajamoda-pending-checkout", payload);
       saveJson("cajamoda-pending-stripe-session", result.sessionId);
       stripeSessionId = result.sessionId;
@@ -2885,7 +2966,7 @@ img{display:block;max-width:100%}
       paymentElement = null;
       console.error("[CajaModa] Stripe Payment Element error:", error);
       status.hidden = true;
-      errorBox.textContent = error?.message || "No pudimos cargar el pago seguro.";
+      errorBox.textContent = error?.code === CART_ITEM_UNAVAILABLE_CODE ? "" : PAYMENT_PREPARATION_ERROR;
     }
   }
 
@@ -2939,15 +3020,18 @@ img{display:block;max-width:100%}
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok || !result?.orderNumber) {
-        throw new Error(result?.error || "No pudimos registrar el pedido.");
+        throw paymentPreparationFailure(result);
       }
+      unavailableProductIds.clear();
       saveJson("cajamoda-pending-nequi-order", result);
       location.href = `/order-confirmation/?nequiOrder=${encodeURIComponent(result.orderNumber)}`;
     } catch (error) {
       console.error("[CajaModa] Nequi order error:", error);
       button.disabled = false;
       button.textContent = "Confirmar que ya pagué";
-      showToast(error?.message || "No pudimos registrar el pedido.");
+      if (error?.code !== CART_ITEM_UNAVAILABLE_CODE) {
+        showToast(error?.code === "PAYMENT_PREPARATION_FAILED" ? PAYMENT_PREPARATION_ERROR : error?.message || PAYMENT_PREPARATION_ERROR);
+      }
     }
   }
 

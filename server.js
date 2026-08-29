@@ -509,6 +509,76 @@ function wixVariantPrice(variant) {
   return null;
 }
 
+const CHECKOUT_ITEM_UNAVAILABLE_CODE = "CART_ITEM_UNAVAILABLE";
+const CHECKOUT_ITEM_UNAVAILABLE_MESSAGE = "Uno de los productos de tu bolsa ya no está disponible.";
+const CHECKOUT_SAFE_ERROR_MESSAGE = "No pudimos preparar el pago. Inténtalo nuevamente.";
+
+class CartItemUnavailableError extends Error {
+  constructor(productIds) {
+    super(CHECKOUT_ITEM_UNAVAILABLE_MESSAGE);
+    this.name = "CartItemUnavailableError";
+    this.code = CHECKOUT_ITEM_UNAVAILABLE_CODE;
+    this.productIds = [...new Set((productIds || []).map(value => safeText(value, 80)).filter(Boolean))];
+  }
+}
+
+function wixApplicationErrorCode(error) {
+  let details = error?.details;
+  if (typeof details === "string") {
+    try {
+      details = JSON.parse(details);
+    } catch {
+      details = null;
+    }
+  }
+  return safeText(
+    error?.code ||
+    error?.applicationError?.code ||
+    details?.applicationError?.code ||
+    details?.code,
+    80
+  ).toUpperCase();
+}
+
+function isWixNotFoundError(error) {
+  return wixApplicationErrorCode(error) === "NOT_FOUND";
+}
+
+async function verifiedCheckoutCatalogItems(items) {
+  const results = await Promise.allSettled(items.map(stripeLineItemFromCartItem));
+  const unavailableProductIds = results.flatMap(result =>
+    result.status === "rejected" && result.reason instanceof CartItemUnavailableError
+      ? result.reason.productIds
+      : []
+  );
+  if (unavailableProductIds.length) {
+    throw new CartItemUnavailableError(unavailableProductIds);
+  }
+  const failed = results.find(result => result.status === "rejected");
+  if (failed) throw failed.reason;
+  return results.map(result => result.value);
+}
+
+async function protectCheckoutOperation(response, label, operation) {
+  try {
+    await operation();
+  } catch (error) {
+    console.error(`[Checkout ${label}]`, error);
+    if (error instanceof CartItemUnavailableError) {
+      sendJson(response, 409, {
+        code: CHECKOUT_ITEM_UNAVAILABLE_CODE,
+        message: CHECKOUT_ITEM_UNAVAILABLE_MESSAGE,
+        productIds: error.productIds
+      });
+      return;
+    }
+    sendJson(response, 500, {
+      code: "PAYMENT_PREPARATION_FAILED",
+      message: CHECKOUT_SAFE_ERROR_MESSAGE
+    });
+  }
+}
+
 async function stripeLineItemFromCartItem(item) {
   const productId = safeText(item?.productId, 80);
   const variantId = safeText(item?.variantId, 80);
@@ -516,15 +586,21 @@ async function stripeLineItemFromCartItem(item) {
   if (!productId) throw new Error("Uno de los productos no tiene un ID válido.");
   if (!wix) throw new Error("Wix no está configurado para verificar precios.");
 
-  const product = await wix.productsV3.getProduct(productId);
-  if (!product || product.visible === false) throw new Error("Uno de los productos ya no está disponible.");
+  let product;
+  try {
+    product = await wix.productsV3.getProduct(productId);
+  } catch (error) {
+    if (isWixNotFoundError(error)) throw new CartItemUnavailableError([productId]);
+    throw error;
+  }
+  if (!product || product.visible === false) throw new CartItemUnavailableError([productId]);
   const variants = product?.variantsInfo?.variants || product?.variants || [];
   const variant = variantId
     ? variants.find(candidate => String(candidate?._id || candidate?.id || candidate?.variantId) === variantId)
     : variants[0];
-  if (!variant) throw new Error(`La variante seleccionada de ${safeText(product?.name, 80)} ya no está disponible.`);
+  if (!variant) throw new CartItemUnavailableError([productId]);
   if (variant.visible === false || String(variant.inventoryStatus || "").toUpperCase() === "OUT_OF_STOCK") {
-    throw new Error(`${safeText(product?.name, 80)} está agotado.`);
+    throw new CartItemUnavailableError([productId]);
   }
 
   const unitAmount = wixVariantPrice(variant);
@@ -604,7 +680,7 @@ async function handleCreateStripeCheckout(request, response) {
     sendError(response, 400, "Tu bolsa está vacía.");
     return;
   }
-  const catalogLines = await Promise.all(items.map(stripeLineItemFromCartItem));
+  const catalogLines = await verifiedCheckoutCatalogItems(items);
   // Keep CajaModa fulfillment data server-side. Stripe only accepts documented
   // line item properties, so never forward fulfillmentCode at this level.
   const lineItems = catalogLines.map(({ fulfillmentCode, selectedDeliveryMode, ...line }) => line);
@@ -927,7 +1003,7 @@ async function handleCreateStripePaymentIntent(request, response) {
   const body = await readBody(request);
   const items = Array.isArray(body?.cart?.items) ? body.cart.items.slice(0, 35) : [];
   if (!items.length) return sendError(response, 400, "Tu bolsa está vacía.");
-  const verified = await Promise.all(items.map(stripeLineItemFromCartItem));
+  const verified = await verifiedCheckoutCatalogItems(items);
   const lines = verified.map(line => ({
     productId: safeText(line?.price_data?.product_data?.metadata?.productId, 80),
     variantId: safeText(line?.price_data?.product_data?.metadata?.variantId, 80),
@@ -1366,7 +1442,7 @@ async function checkoutDelivery(body) {
 }
 
 async function verifiedCheckoutLines(items) {
-  const verified = await Promise.all(items.map(stripeLineItemFromCartItem));
+  const verified = await verifiedCheckoutCatalogItems(items);
   return verified.map(line => ({
     productId: line.price_data.product_data.metadata.productId,
     variantId: line.price_data.product_data.metadata.variantId,
@@ -1377,6 +1453,14 @@ async function verifiedCheckoutLines(items) {
     fulfillmentCode: safeText(line.fulfillmentCode, 10).toUpperCase(),
     selectedDeliveryMode: safeText(line.selectedDeliveryMode, 20).toLowerCase()
   }));
+}
+
+async function handleValidateCheckoutCart(request, response) {
+  const body = await readBody(request);
+  const items = Array.isArray(body?.cart?.items) ? body.cart.items.slice(0, 50) : [];
+  if (!items.length) return sendError(response, 400, "Tu bolsa está vacía.");
+  await verifiedCheckoutCatalogItems(items);
+  sendJson(response, 200, { ok: true });
 }
 
 function nequiExternalOrderId(requestId) {
@@ -5171,12 +5255,12 @@ const server =
         }
 
         if(request.method === "POST" && url.pathname === "/api/stripe/checkout"){
-          await handleCreateStripeCheckout(request,response);
+          await protectCheckoutOperation(response,"Stripe",() => handleCreateStripeCheckout(request,response));
           return;
         }
 
         if(request.method === "POST" && url.pathname === "/api/stripe/payment-intent"){
-          await handleCreateStripePaymentIntent(request,response);
+          await protectCheckoutOperation(response,"Stripe intent",() => handleCreateStripePaymentIntent(request,response));
           return;
         }
 
@@ -5200,6 +5284,11 @@ const server =
           return;
         }
 
+        if(request.method === "POST" && url.pathname === "/api/checkout/validate"){
+          await protectCheckoutOperation(response,"validation",() => handleValidateCheckoutCart(request,response));
+          return;
+        }
+
         if(request.method === "POST" && url.pathname === "/api/delivery/quote"){
           await handleDeliveryQuote(request,response);
           return;
@@ -5211,7 +5300,7 @@ const server =
         }
 
         if(request.method === "POST" && url.pathname === "/api/nequi/orders"){
-          await handleCreateNequiOrder(request,response);
+          await protectCheckoutOperation(response,"Nequi",() => handleCreateNequiOrder(request,response));
           return;
         }
 

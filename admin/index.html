@@ -5542,6 +5542,7 @@ if(
           variantId:row.variantId,
           inventoryId:row.inventoryId,
           originalSku:row.originalSku,
+          sku:row.sku,
           fulfillmentCode:fulfillmentCode(row.methods),
           quantity:$("quickProductStatus").value === "out" || row.enabled === false ? 0 : Number(row.quantity),
           enabled:row.enabled !== false

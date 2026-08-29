@@ -1761,6 +1761,36 @@ img{display:block;max-width:100%}
     };
   }
 
+  function persistSingleDeliverySelections(cart) {
+    let changed = false;
+    cart.items.forEach(item => {
+      const allowed = allowedDeliveryModes(item);
+      const selected = normalizeDeliveryMode(item.selectedDeliveryMode);
+      if (allowed.length === 1 && (!selected || !allowed.includes(selected))) {
+        item.allowedDeliveryModes = allowed;
+        item.selectedDeliveryMode = allowed[0];
+        item.deliveryMode = allowed[0];
+        changed = true;
+      }
+    });
+    if (!changed) return cart;
+
+    cart.revision = Math.max(
+      Number(readJson("cajamoda-cart", null)?.revision || 0),
+      Number(cart.revision || 0)
+    ) + 1;
+    cart.updatedAt = Date.now();
+    cart.authoritative = true;
+    saveJson("cajamoda-cart", cart);
+    saveJson("cajamoda-checkout-cart", cart);
+    window.postMessage({
+      source: "CAJAMODA_CHECKOUT",
+      type: "SYNC_CART",
+      payload: { cart }
+    }, "*");
+    return cart;
+  }
+
   function readCart() {
     const checkoutCart = readJson(
       "cajamoda-checkout-cart",
@@ -1776,9 +1806,9 @@ img{display:block;max-width:100%}
       ? regularCart
       : checkoutCart;
 
-    return normalizeCart(
+    return persistSingleDeliverySelections(normalizeCart(
       chosen || { items: [] }
-    );
+    ));
   }
 
   function saveCart(cart, syncBackend = true) {

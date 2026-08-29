@@ -2519,7 +2519,7 @@ svg{
         <div class="fulfillmentOptions">
           <button class="fulfillmentOption" type="button" data-fulfillment-preview="pickup">
             <span class="fulfillmentLetter">P</span>
-            <span>Pickup</span>
+            <span>Pronto</span>
           </button>
           <button class="fulfillmentOption active" type="button" data-fulfillment-preview="rapido">
             <span class="fulfillmentLetter">R</span>
@@ -2531,7 +2531,7 @@ svg{
           </button>
         </div>
         <div id="fulfillmentExplanation" class="fulfillmentExplanation">
-          Entrega a tu dirección en 24–48 horas.
+          Pronto · 24–48 h · Solo Cartagena
         </div>
       </section>
 
@@ -4623,9 +4623,9 @@ svg{
   }
 
   const fulfillmentMethods = {
-    pickup:{key:"pickup",copy:"Recoge en un punto aliado local o solicita entrega en moto."},
-    fast:{key:"rapido",copy:"Entrega a tu dirección en 24–48 horas."},
-    ship:{key:"liberalo",copy:"Entrega estimada en 14–21 días."}
+    pickup:{key:"pickup",copy:"Pronto · 24–48 h · Solo Cartagena"},
+    fast:{key:"rapido",copy:"Rápido Nacional · 4–7 días"},
+    ship:{key:"liberalo",copy:"Libéralo · 14–21 días"}
   };
 
   function selectedDeliveryVariant(){
@@ -4650,14 +4650,18 @@ svg{
     qsa("[data-fulfillment-preview]").forEach(button=>{
       const active=activeKeys.includes(button.dataset.fulfillmentPreview);
       button.classList.toggle("active",active);
-      button.disabled=true;
+      button.disabled=false;
+      button.onclick=()=>{
+        const method=Object.values(fulfillmentMethods).find(option=>option.key===button.dataset.fulfillmentPreview);
+        if(method){$("fulfillmentExplanation").textContent=method.copy}
+      };
       if(active){button.setAttribute("aria-current","true")}
       else{button.removeAttribute("aria-current")}
     });
     $("fulfillmentExplanation").textContent=modes.includes("pickup")&&modes.includes("fast")&&modes.includes("ship")
-      ? "Disponible para recoger ahora, entrega Rápido o Libéralo en 14–21 días."
+      ? "Pronto solo Cartagena, Rápido Nacional 4–7 días o Libéralo 14–21 días."
       : modes.includes("pickup")&&modes.includes("fast")
-      ? "Disponible para Pickup Ahora o entrega Rápido en 24–48 horas."
+      ? "Pronto 24–48 h solo Cartagena o Rápido Nacional 4–7 días."
       : (methods[0]||fulfillmentMethods.fast).copy;
   }
 

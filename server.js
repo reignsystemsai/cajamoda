@@ -3082,7 +3082,7 @@ async function createWixProduct(
     fields: ["CURRENCY", "MEDIA_ITEMS_INFO", "THUMBNAIL"]
   });
 
-  const created = result?.product;
+  let created = result?.product;
 
   if (
     !created
@@ -3104,8 +3104,58 @@ async function createWixProduct(
     throw new Error("Wix no creó el inventario del producto. No se guardó una copia incompleta.");
   }
 
+  const createdProductId = created._id || created.id;
   try {
-    await assignProductCategory(created._id || created.id, category);
+    const expectedSkuBySize = new Map(
+      variants.map(variant => [
+        existingVariantSize(variant),
+        safeText(variant?.sku, 160).toUpperCase()
+      ])
+    );
+    const createdVariants = Array.isArray(created?.variantsInfo?.variants)
+      ? created.variantsInfo.variants
+      : [];
+    if (createdVariants.length !== variants.length) {
+      throw new Error("Wix no devolvió todas las variantes para guardar sus SKU.");
+    }
+    const variantsWithSkus = createdVariants.map(variant => {
+      const size = existingVariantSize(variant);
+      const sku = expectedSkuBySize.get(size);
+      if (!sku) throw new Error(`Wix no devolvió la talla ${size || "única"} para guardar su SKU.`);
+      return {...variant, sku};
+    });
+    await wix.productsV3.updateProduct(
+      createdProductId,
+      {
+        revision:created.revision,
+        options:created.options || options,
+        variantsInfo:{variants:variantsWithSkus}
+      },
+      {fields:["CURRENCY","MEDIA_ITEMS_INFO","THUMBNAIL"]}
+    );
+    const confirmedResult = await wix.productsV3.getProduct(createdProductId, {
+      fields:["CURRENCY","MEDIA_ITEMS_INFO","THUMBNAIL"]
+    });
+    const confirmedProduct = confirmedResult?.product || confirmedResult;
+    const confirmedSkuBySize = new Map(
+      (confirmedProduct?.variantsInfo?.variants || []).map(variant => [
+        existingVariantSize(variant),
+        safeText(variant?.sku, 160).toUpperCase()
+      ])
+    );
+    for (const [size, expectedSku] of expectedSkuBySize) {
+      if (confirmedSkuBySize.get(size) !== expectedSku) {
+        throw new Error(`Wix no confirmó el SKU de la talla ${size || "única"}.`);
+      }
+    }
+    created = confirmedProduct;
+  } catch (error) {
+    await wix.productsV3.deleteProduct(createdProductId);
+    throw error;
+  }
+
+  try {
+    await assignProductCategory(createdProductId, category);
     await assignFirstOpenShowcaseSlot(created._id || created.id, category);
   } catch (error) {
     await wix.productsV3.deleteProduct(created._id || created.id);

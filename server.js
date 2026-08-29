@@ -3118,10 +3118,14 @@ async function createWixProduct(
   const createdProductId = created._id || created.id;
   let confirmedCreatedVariants = [];
   try {
-    const expectedSkuBySize = new Map(
+    const expectedBySize = new Map(
       variants.map(variant => [
         existingVariantSize(variant),
-        safeText(variant?.sku, 160).toUpperCase()
+        {
+          sku:safeText(variant?.sku, 160).toUpperCase(),
+          quantity:Number(variant?.inventoryItem?.quantity || 0),
+          inStock:variant?.inventoryItem?.inStock !== false
+        }
       ])
     );
     const createdVariants = Array.isArray(created?.variantsInfo?.variants)
@@ -3130,30 +3134,66 @@ async function createWixProduct(
     if (createdVariants.length !== variants.length) {
       throw new Error("Wix no devolvió todas las variantes para guardar sus SKU.");
     }
-    const variantsWithSkus = createdVariants.map(variant => {
+
+    let createdInventory = [];
+    for(let attempt = 0; attempt < 8; attempt += 1){
+      createdInventory = (await getWixInventory()).filter(
+        item => String(item.productId) === String(createdProductId)
+      );
+      if(!trackInventory || createdInventory.length === createdVariants.length) break;
+      if(attempt < 7) await new Promise(resolve => setTimeout(resolve, 750));
+    }
+    if(trackInventory && createdInventory.length !== createdVariants.length){
+      throw new Error("Wix no devolvió todos los inventarios permanentes del producto.");
+    }
+
+    const inventoryByVariant = new Map(
+      createdInventory.map(item => [String(item.variantId), item])
+    );
+    const variantsWithInventory = createdVariants.map(variant => {
       const size = existingVariantSize(variant);
-      const sku = expectedSkuBySize.get(size);
-      if (!sku) throw new Error(`Wix no devolvió la talla ${size || "única"} para guardar su SKU.`);
-      return {...variant, sku};
+      const expected = expectedBySize.get(size);
+      const variantId = safeText(variant?._id || variant?.id || variant?.variantId, 150);
+      const inventoryItem = inventoryByVariant.get(variantId);
+      if(!expected) throw new Error(`Wix no devolvió la talla ${size || "única"} para guardar su SKU.`);
+      if(trackInventory && !inventoryItem){
+        throw new Error(`Wix no devolvió el inventario permanente de la talla ${size || "única"}.`);
+      }
+      return {
+        ...variant,
+        sku:expected.sku,
+        inventoryItem:trackInventory
+          ? {
+              _id:inventoryItem.id,
+              revision:inventoryItem.revision,
+              quantity:expected.quantity
+            }
+          : {inStock:expected.inStock}
+      };
     });
-    await wix.productsV3.updateProduct(
+    const atomicResult = await wix.productsV3.updateProductWithInventory(
       createdProductId,
       {
         revision:created.revision,
         options:created.options || options,
-        variantsInfo:{variants:variantsWithSkus}
+        variantsInfo:{variants:variantsWithInventory}
       },
-      {fields:["CURRENCY","MEDIA_ITEMS_INFO","THUMBNAIL"]}
+      {
+        returnEntity:true,
+        fields:["CURRENCY","MEDIA_ITEMS_INFO","THUMBNAIL"]
+      }
     );
-    const expectedBySize = new Map(
-      variants.map(variant => [
-        existingVariantSize(variant),
-        {
-          sku:safeText(variant?.sku, 160).toUpperCase(),
-          quantity:Number(variant?.inventoryItem?.quantity || 0)
-        }
-      ])
-    );
+    const atomicFailures = Array.isArray(atomicResult?.inventoryResults?.results)
+      ? atomicResult.inventoryResults.results.filter(item => item?.itemMetadata?.success === false)
+      : [];
+    if(
+      atomicFailures.length ||
+      Number(atomicResult?.inventoryResults?.bulkActionMetadata?.totalFailures || 0) > 0 ||
+      atomicResult?.inventoryResults?.error
+    ){
+      throw new Error("Wix rechazó el SKU o la cantidad de una variante.");
+    }
+    created = atomicResult?.product || created;
     let confirmationFailure = "";
 
     for (let attempt = 0; attempt < 8; attempt += 1) {
@@ -3602,10 +3642,14 @@ async function handleUpdateProduct(request, response, productId) {
   const currentInventory = await getWixInventory();
   let variants = currentVariants;
   let options = current.options || [];
-  let shapeChanged = false;
 
   if(requestedVariants.length){
     const currentById = new Map(currentVariants.map(variant => [safeText(variant?._id || variant?.id || variant?.variantId, 150), variant]));
+    const inventoryByVariant = new Map(
+      currentInventory
+        .filter(item => String(item.productId) === String(productId))
+        .map(item => [String(item.variantId), item])
+    );
     const currentBySize = new Map(currentVariants.map(variant => [existingVariantSize(variant), variant]).filter(([size]) => size));
     const defaultVariant = currentVariants.find(variant => !existingVariantSize(variant));
     const firstWithSku = currentVariants.find(variant => variant?.sku);
@@ -3635,6 +3679,13 @@ async function handleUpdateProduct(request, response, productId) {
       }
       const sku = requested.sku;
       const source = existing || currentVariants[0];
+      const inventoryItem = existingId ? inventoryByVariant.get(existingId) : null;
+      if(existing && !inventoryItem){
+        throw new Error(`Wix no devolvió el inventario permanente de la talla ${requested.size}.`);
+      }
+      if(existing && requested.inventoryId && String(inventoryItem.id) !== String(requested.inventoryId)){
+        throw new Error(`El inventario permanente de la talla ${requested.size} cambió. Vuelve a abrir el producto antes de guardar.`);
+      }
       const next = {
         ...source,
         sku,
@@ -3642,7 +3693,13 @@ async function handleUpdateProduct(request, response, productId) {
         choices:buildVariantChoices({size:requested.size,color:""}),
         price:{...(source?.price || {}),actualPrice:{amount:String(Math.round(price))}},
         revenueDetails:cost > 0 ? {...(source?.revenueDetails || {}),cost:{amount:String(cost)}} : source?.revenueDetails,
-        inventoryItem:{quantity:requested.enabled ? requested.quantity : 0}
+        inventoryItem:inventoryItem
+          ? {
+              _id:inventoryItem.id,
+              revision:inventoryItem.revision,
+              quantity:requested.enabled ? requested.quantity : 0
+            }
+          : {quantity:requested.enabled ? requested.quantity : 0}
       };
       if(!existing){
         delete next._id;
@@ -3658,9 +3715,6 @@ async function handleUpdateProduct(request, response, productId) {
     }
     const requestedSizes = requestedVariants.map(item => item.size);
     options = buildOptions(requestedSizes, []);
-    shapeChanged =
-      currentVariants.length !== variants.length ||
-      currentVariants.some(variant => !requestedSizes.includes(existingVariantSize(variant)));
   }
 
   const update = {
@@ -3700,51 +3754,25 @@ async function handleUpdateProduct(request, response, productId) {
       : {itemsInfo:{items:[]}};
   }
 
-  if(shapeChanged){
-    await wix.productsV3.updateProductWithInventory(productId, update, {
+  if(requestedVariants.length){
+    const saveResult = await wix.productsV3.updateProductWithInventory(productId, update, {
+      returnEntity:true,
       fields:["PLAIN_DESCRIPTION","MERCHANT_DATA","CURRENCY","MEDIA_ITEMS_INFO","THUMBNAIL"]
     });
+    const saveFailures = Array.isArray(saveResult?.inventoryResults?.results)
+      ? saveResult.inventoryResults.results.filter(item => item?.itemMetadata?.success === false)
+      : [];
+    if(
+      saveFailures.length ||
+      Number(saveResult?.inventoryResults?.bulkActionMetadata?.totalFailures || 0) > 0 ||
+      saveResult?.inventoryResults?.error
+    ){
+      throw new Error("Wix rechazó el SKU o la cantidad de una variante.");
+    }
   }else{
     await wix.productsV3.updateProduct(productId, update, {
       fields:["PLAIN_DESCRIPTION","MERCHANT_DATA","CURRENCY","MEDIA_ITEMS_INFO","THUMBNAIL"]
     });
-  }
-
-  if(requestedVariants.length){
-    const savedResult = await wix.productsV3.getProduct(productId, {
-      fields:["PLAIN_DESCRIPTION","MERCHANT_DATA","CURRENCY","MEDIA_ITEMS_INFO","THUMBNAIL"]
-    });
-    const savedProduct = savedResult?.product || savedResult;
-    const freshInventory = await getWixInventory();
-    const savedDetails = productVariantDetails(savedProduct, freshInventory);
-    const locationId = freshInventory.find(item =>
-      String(item.productId) === String(productId) && item.locationId
-    )?.locationId || currentInventory.find(item => item.locationId)?.locationId;
-
-    for(const requested of requestedVariants){
-      const savedVariant = savedDetails.find(variant => variant.size === requested.size);
-      const savedVariantId = safeText(savedVariant?.variantId, 150);
-      if(!savedVariantId) throw new Error(`Wix todavía no devolvió la talla ${requested.size}.`);
-      const item = freshInventory.find(candidate =>
-        String(candidate.productId) === String(productId) &&
-        String(candidate.variantId) === String(savedVariantId)
-      );
-      if(item){
-        await wix.inventoryItemsV3.updateInventoryItem(
-          item.id,
-          {id:item.id,revision:item.revision,quantity:requested.enabled ? requested.quantity : 0},
-          {reason:"MANUAL"}
-        );
-      }else{
-        if(!locationId) throw new Error(`Wix todavía no devolvió el inventario de la talla ${requested.size}.`);
-        await wix.inventoryItemsV3.createInventoryItem({
-          productId:String(productId),
-          variantId:savedVariantId,
-          locationId,
-          quantity:requested.enabled ? requested.quantity : 0
-        });
-      }
-    }
   }
 
   if(body?.category) await assignProductCategory(productId, safeText(body.category, 30));
@@ -3754,7 +3782,6 @@ async function handleUpdateProduct(request, response, productId) {
   let confirmedInventory;
   let variantsConfirmed = !requestedVariants.length;
   let confirmationFailure = "";
-  const adjustedInventoryIds = new Set();
 
   for(let attempt = 0; attempt < 8; attempt += 1){
     const confirmedResult = await wix.productsV3.getProduct(productId, {
@@ -3794,16 +3821,7 @@ async function handleUpdateProduct(request, response, productId) {
         continue;
       }
       if(Number(actual.quantity) !== expected.quantity){
-        const inventoryItem = confirmedInventory.find(item => String(item.id) === String(actual.inventoryId));
-        if(inventoryItem && !adjustedInventoryIds.has(inventoryItem.id)){
-          await wix.inventoryItemsV3.updateInventoryItem(
-            inventoryItem.id,
-            {id:inventoryItem.id, revision:inventoryItem.revision, quantity:expected.quantity},
-            {reason:"MANUAL"}
-          );
-          adjustedInventoryIds.add(inventoryItem.id);
-        }
-        confirmationFailure = `Wix todavía no devolvió la cantidad de la talla ${expected.size}.`;
+        confirmationFailure = `Wix todavía no confirmó la cantidad de la talla ${expected.size}.`;
         needsAnotherRead = true;
       }
     }

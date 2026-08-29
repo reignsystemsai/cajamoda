@@ -526,6 +526,11 @@ img{display:block;max-width:100%}
   font-size:15px;
   font-weight:800
 }
+.deliverySummaryHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.deliveryGarmentCount{padding:5px 9px;border:1px solid rgba(0,0,0,.10);border-radius:999px;background:rgba(255,255,255,.58);font-size:8px;font-weight:700}
+.deliveryGroupCount{min-width:24px;height:24px;padding:0 7px;display:grid;place-items:center;border:1px solid rgba(0,0,0,.10);border-radius:999px;background:rgba(255,255,255,.58);color:#111;font-size:8px;font-weight:800}
+.deliveryGroupName{display:flex;align-items:center;gap:8px}
+.deliverySeparateNote{margin-top:8px;color:#737373;font-size:8px;line-height:1.45}
 
 .deliveryIntro{margin-bottom:22px}
 .deliveryIntro h2{
@@ -1145,22 +1150,13 @@ img{display:block;max-width:100%}
 
         <div id="cartList" class="cartList"></div>
 
-        <section class="summaryCard glassCard" aria-label="Métodos de entrega">
-          <div class="summaryTotalLabel">Entrega de tu pedido</div>
-          <div class="summaryLine">
-            <span>Pronto</span>
-            <span class="summaryValue">24–48 h en Cartagena</span>
+        <section id="bagDeliverySummary" class="summaryCard glassCard" aria-label="Entrega de tu pedido" hidden>
+          <div class="deliverySummaryHeader">
+            <div class="summaryTotalLabel">Entrega de tu pedido</div>
+            <span id="deliveryGarmentCount" class="deliveryGarmentCount">0 prendas</span>
           </div>
-          <div class="summaryLine">
-            <span>Rápido Nacional</span>
-            <span class="summaryValue">4–7 días</span>
-          </div>
-          <div class="summaryLine">
-            <span>Libéralo</span>
-            <span class="summaryValue">14–21 días</span>
-          </div>
-          <div class="summaryDivider"></div>
-          <div class="emptyCartText">Cada prenda puede tener un método diferente. Si combinas métodos, tu pedido puede llegar en entregas separadas.</div>
+          <div id="deliverySummaryRows"></div>
+          <div id="deliverySeparateNote" class="deliverySeparateNote" hidden></div>
         </section>
 
         <div class="summaryCard glassCard">
@@ -1277,9 +1273,9 @@ img{display:block;max-width:100%}
             </div>
             <div class="nequiPriceBreakdown" aria-label="Desglose del precio final">
               <div class="nequiPriceLine"><span>Precio de los artículos</span><span id="nequiSubtotal">$0</span></div>
-              <div class="nequiPriceLine"><span id="nequiDeliveryLabel">Recogida en punto</span><span id="nequiDeliveryFee">$0</span></div>
+              <div class="nequiPriceLine"><span>Entrega</span><span id="nequiDeliveryFee">$0</span></div>
               <div class="nequiPriceLine nequiFinalLine">
-                <div><span class="nequiFinalLabel">Precio final</span><small id="nequiFinalNote" class="nequiFinalNote">Incluye recogida en punto</small></div>
+                <span class="nequiFinalLabel">Precio final</span>
                 <span id="nequiAmount" class="paymentAmount">$0 COP</span>
               </div>
             </div>
@@ -1336,7 +1332,7 @@ img{display:block;max-width:100%}
             </div>
             <div class="paymentSummary">
               <div class="summaryLine">
-                <span>Subtotal</span>
+                <span>Precio de los artículos</span>
                 <span id="subtotalValue" class="summaryValue">$0</span>
               </div>
               <div class="summaryLine">
@@ -1345,7 +1341,7 @@ img{display:block;max-width:100%}
               </div>
               <div class="summaryDivider"></div>
               <div class="summaryTotal">
-                <span class="summaryTotalLabel">Total</span>
+                <span class="summaryTotalLabel">Precio final</span>
                 <span id="totalValue" class="summaryTotalValue">$0</span>
               </div>
             </div>
@@ -1379,10 +1375,12 @@ img{display:block;max-width:100%}
       <div id="deliveryHelpTitle" class="deliveryHelpTitle">Tiempos de entrega</div>
       <button id="deliveryHelpClose" class="deliveryHelpClose" type="button" aria-label="Cerrar">×</button>
     </div>
-    <div class="deliveryHelpLine"><strong>Pronto – Cartagena</strong>Disponible en 24–48 h.</div>
-    <div class="deliveryHelpLine"><strong>Rápido Nacional</strong>Envío nacional, 4–7 días.</div>
-    <div class="deliveryHelpLine"><strong>Libéralo</strong>Lanzamiento anticipado, 14–21 días.</div>
-    <div class="deliveryHelpLine">El tiempo disponible depende de cada producto.</div>
+    <div id="deliveryHelpContent">
+      <div class="deliveryHelpLine"><strong>Pronto</strong>24–48 h · Solo Cartagena.</div>
+      <div class="deliveryHelpLine"><strong>Rápido Nacional</strong>4–7 días.</div>
+      <div class="deliveryHelpLine"><strong>Libéralo</strong>14–21 días.</div>
+      <div class="deliveryHelpLine">El tiempo disponible depende de cada producto.</div>
+    </div>
   </div>
 </div>
 
@@ -1516,20 +1514,13 @@ img{display:block;max-width:100%}
     const deliveryFee = checkoutDeliveryFee();
     const total = subtotal + deliveryFee;
     const quoteReady = deliveryQuoteMatchesCart(cart);
-    const deliveryLabel = deliverySummaryLabel(cart);
     if ($("subtotalValue")) $("subtotalValue").textContent = money(subtotal);
     if ($("totalValue")) $("totalValue").textContent = money(total);
     if ($("nequiAmount")) $("nequiAmount").textContent = `${money(total)} COP`;
     if ($("nequiSubtotal")) $("nequiSubtotal").textContent = money(subtotal);
     if ($("nequiDeliveryFee")) $("nequiDeliveryFee").textContent = quoteReady ? money(deliveryFee) : "Por calcular";
-    if ($("nequiDeliveryLabel")) $("nequiDeliveryLabel").textContent = deliveryLabel;
-    if ($("nequiFinalNote")) $("nequiFinalNote").textContent = `Incluye ${deliveryLabel.toLocaleLowerCase("es-CO")}`;
     if ($("stripePayButton")) $("stripePayButton").textContent = `Pagar ${money(total)} COP`;
-    if ($("deliverySummary")) {
-      $("deliverySummary").textContent = quoteReady
-        ? `${deliveryLabel} · ${money(deliveryFee)}`
-        : `${deliveryLabel} · Por calcular`;
-    }
+    if ($("deliverySummary")) $("deliverySummary").textContent = quoteReady ? money(deliveryFee) : "Por calcular";
   }
 
   let activeStep = "bag";
@@ -2010,9 +2001,52 @@ img{display:block;max-width:100%}
     const short={pickup:"P",fast:"R",ship:"L"};
     const label={pickup:"Pronto",fast:"Rápido Nacional",ship:"Libéralo"};
     return `<div class="cartDeliveryChoices" aria-label="Método de entrega">
-      <span class="cartDeliveryLabel">Entrega:</span>
+      <span class="cartDeliveryLabel">Selecciona tu entrega:</span>
       ${allowed.map(mode=>`<button class="cartDeliveryChoice ${selected===mode?"selected":""}" type="button" data-cart-delivery="${mode}" data-item-id="${escapeHtml(item.id)}" aria-label="${label[mode]}">${short[mode]}</button>`).join("")}
     </div>`;
+  }
+
+  const deliveryExplanations={
+    pickup:{label:"Pronto",copy:"24–48 h · Solo Cartagena."},
+    fast:{label:"Rápido Nacional",copy:"4–7 días."},
+    ship:{label:"Libéralo",copy:"14–21 días."}
+  };
+
+  function openDeliveryHelp(mode=""){
+    const explanation=deliveryExplanations[normalizeDeliveryMode(mode)];
+    $("deliveryHelpTitle").textContent=explanation?explanation.label:"Tiempos de entrega";
+    $("deliveryHelpContent").innerHTML=explanation
+      ? `<div class="deliveryHelpLine"><strong>${explanation.label}</strong>${explanation.copy}</div>`
+      : Object.values(deliveryExplanations).map(item=>`<div class="deliveryHelpLine"><strong>${item.label}</strong>${item.copy}</div>`).join("")+
+        `<div class="deliveryHelpLine">El tiempo disponible depende de cada producto.</div>`;
+    $("deliveryHelp").classList.add("isOpen");
+  }
+
+  function renderBagDeliverySummary(cart=readCart()){
+    const counts={pickup:0,fast:0,ship:0};
+    cart.items.forEach(item=>{
+      const allowed=allowedDeliveryModes(item);
+      const selected=normalizeDeliveryMode(item.selectedDeliveryMode)||(allowed.length===1?allowed[0]:"");
+      if(counts[selected]===undefined||!allowed.includes(selected)){return}
+      counts[selected]+=Math.max(1,Math.floor(Number(item.quantity||1)));
+    });
+    const groups=[
+      {mode:"pickup",label:"Pronto",time:"24–48 h · Solo Cartagena"},
+      {mode:"fast",label:"Rápido Nacional",time:"4–7 días"},
+      {mode:"ship",label:"Libéralo",time:"14–21 días"}
+    ].filter(group=>counts[group.mode]>0);
+    const garmentCount=cart.items.reduce((total,item)=>total+Math.max(1,Math.floor(Number(item.quantity||1))),0);
+    $("bagDeliverySummary").hidden=groups.length===0;
+    $("deliveryGarmentCount").textContent=garmentCount===1?"1 prenda":`${garmentCount} prendas`;
+    $("deliverySummaryRows").innerHTML=groups.map(group=>`
+      <div class="summaryLine">
+        <span class="deliveryGroupName">${group.label}<span class="deliveryGroupCount">${counts[group.mode]}</span></span>
+        <span class="summaryValue">${group.time}</span>
+      </div>`).join("");
+    $("deliverySeparateNote").hidden=groups.length<2;
+    $("deliverySeparateNote").textContent=groups.length>1
+      ? `Tu pedido llegará en ${groups.length} entregas separadas.`
+      :"";
   }
 
   function deliverySelectionsComplete(cart=readCart()){
@@ -2161,6 +2195,7 @@ img{display:block;max-width:100%}
 
     syncDeliveryControls();
     renderPaymentTotals();
+    renderBagDeliverySummary(cart);
 
     if (!cart.items.length) {
       $("cartList").innerHTML = `
@@ -2498,6 +2533,10 @@ img{display:block;max-width:100%}
     const normalized=normalizeDeliveryMode(mode);
     if(!item||!allowedDeliveryModes(item).includes(normalized)){return}
     item.allowedDeliveryModes=allowedDeliveryModes(item);
+    if(normalizeDeliveryMode(item.selectedDeliveryMode)===normalized){
+      openDeliveryHelp(normalized);
+      return;
+    }
     item.selectedDeliveryMode=normalized;
     item.deliveryMode=normalized;
     saveCart(cart);
@@ -3294,7 +3333,7 @@ img{display:block;max-width:100%}
     $(id)?.addEventListener("change", updateStripePayAvailability);
   });
 
-  $("deliveryInfoButton").onclick = () => $("deliveryHelp").classList.add("isOpen");
+  $("deliveryInfoButton").onclick = () => openDeliveryHelp();
   $("deliveryHelpClose").onclick = () => $("deliveryHelp").classList.remove("isOpen");
   $("deliveryHelp").onclick = event => { if (event.target === $("deliveryHelp")) $("deliveryHelp").classList.remove("isOpen"); };
   $("copyNequiButton").onclick = async () => {

@@ -1152,7 +1152,7 @@ img{display:block;max-width:100%}
             <span class="summaryValue">24–48 h en Cartagena</span>
           </div>
           <div class="summaryLine">
-            <span>Rápido</span>
+            <span>Rápido Nacional</span>
             <span class="summaryValue">4–7 días</span>
           </div>
           <div class="summaryLine">
@@ -1246,23 +1246,21 @@ img{display:block;max-width:100%}
             <label class="wide"><input id="deliveryAddress" class="compactInput" autocomplete="street-address" placeholder="Dirección"></label>
             <label class="wide"><input id="deliveryPostalCode" class="compactInput" autocomplete="postal-code" inputmode="numeric" placeholder="Código postal (opcional)"></label>
           </div>
-          <div class="deliveryDivider"></div>
-          <div class="deliveryChoiceLabel">Elige cómo recibirlo</div>
-          <div class="deliveryChoices">
-            <button class="deliveryChoice isSelected" type="button" data-delivery="pickup">
-              <svg viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2.2"/></svg>
-              Recoger en punto
-            </button>
-            <button class="deliveryChoice" type="button" data-delivery="moto">
-              <svg viewBox="0 0 24 24"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9 17h6l-2.5-6H8m5-3h3"/></svg>
-              Moto a tu dirección
-            </button>
-            <button class="deliveryChoice" type="button" data-delivery="national" hidden>
-              <svg viewBox="0 0 24 24"><path d="M3 7h11v10H3zM14 10h4l3 3v4h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>
-              Envío nacional · 4–7 días
-            </button>
+          <div id="prontoReceivingChoice">
+            <div class="deliveryDivider"></div>
+            <div class="deliveryChoiceLabel">Elige cómo recibir tu pedido Pronto</div>
+            <div class="deliveryChoices">
+              <button class="deliveryChoice isSelected" type="button" data-delivery="pickup">
+                <svg viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2.2"/></svg>
+                Recoger en punto
+              </button>
+              <button class="deliveryChoice" type="button" data-delivery="moto">
+                <svg viewBox="0 0 24 24"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M9 17h6l-2.5-6H8m5-3h3"/></svg>
+                Moto a tu dirección
+              </button>
+            </div>
+            <div id="pickupAddress" class="pickupAddress"><strong>Punto de recogida · 10.000 COP</strong><br>Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar.</div>
           </div>
-          <div id="pickupAddress" class="pickupAddress"><strong>Punto de recogida · 10.000 COP</strong><br>Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar.</div>
           <p class="deliveryNote">El costo se calcula según tu ubicación.</p>
         </section>
 
@@ -1382,7 +1380,7 @@ img{display:block;max-width:100%}
       <button id="deliveryHelpClose" class="deliveryHelpClose" type="button" aria-label="Cerrar">×</button>
     </div>
     <div class="deliveryHelpLine"><strong>Pronto – Cartagena</strong>Disponible en 24–48 h.</div>
-    <div class="deliveryHelpLine"><strong>Rápido</strong>Envío nacional, 4–7 días.</div>
+    <div class="deliveryHelpLine"><strong>Rápido Nacional</strong>Envío nacional, 4–7 días.</div>
     <div class="deliveryHelpLine"><strong>Libéralo</strong>Lanzamiento anticipado, 14–21 días.</div>
     <div class="deliveryHelpLine">El tiempo disponible depende de cada producto.</div>
   </div>
@@ -1460,15 +1458,52 @@ img{display:block;max-width:100%}
   let stripeSessionId = "";
   let stripeSessionGeneration = 0;
   let stripeCanConfirm = false;
-  let deliveryQuote = { method: "pickup", fee: 10000 };
+  let deliveryQuote = { method: "pickup", prontoMethod: "pickup", fee: 10000, title: "Pronto · Recoger" };
   let quoteTimer = null;
   let unavailableProductIds = new Set();
   const PICKUP_FEE_COP = 10000;
   const CART_ITEM_UNAVAILABLE_CODE = "CART_ITEM_UNAVAILABLE";
   const PAYMENT_PREPARATION_ERROR = "No pudimos preparar el pago. Inténtalo nuevamente.";
 
+  function checkoutFulfillmentProfile(cart = readCart()) {
+    const modes = cart.items
+      .map(item => normalizeDeliveryMode(item.selectedDeliveryMode))
+      .filter(Boolean);
+    return {
+      hasPronto: modes.includes("pickup"),
+      hasFast: modes.includes("fast"),
+      hasShip: modes.includes("ship"),
+      hasNational: modes.includes("fast") || modes.includes("ship")
+    };
+  }
+
+  function checkoutDeliveryMethod(cart = readCart()) {
+    const profile = checkoutFulfillmentProfile(cart);
+    if (profile.hasPronto && profile.hasNational) return "mixed";
+    if (profile.hasPronto) return selectedDelivery === "moto" ? "moto" : "pickup";
+    return "national";
+  }
+
+  function deliverySummaryLabel(cart = readCart()) {
+    const profile = checkoutFulfillmentProfile(cart);
+    const labels = [];
+    if (profile.hasPronto) labels.push(selectedDelivery === "moto" ? "Pronto · Moto Cartagena" : "Pronto · Recoger Cartagena");
+    if (profile.hasFast) labels.push("Rápido Nacional · 4–7 días");
+    if (profile.hasShip) labels.push("Libéralo · 14–21 días");
+    return labels.join(" + ") || "Entrega";
+  }
+
+  function deliveryQuoteMatchesCart(cart = readCart()) {
+    const profile = checkoutFulfillmentProfile(cart);
+    return Boolean(
+      deliveryQuote &&
+      deliveryQuote.method === checkoutDeliveryMethod(cart) &&
+      (!profile.hasPronto || deliveryQuote.prontoMethod === selectedDelivery)
+    );
+  }
+
   function checkoutDeliveryFee() {
-    return deliveryQuote?.method === selectedDelivery ? Number(deliveryQuote.fee || 0) : 0;
+    return deliveryQuoteMatchesCart() ? Number(deliveryQuote.fee || 0) : 0;
   }
 
   function checkoutTotal() {
@@ -1476,22 +1511,24 @@ img{display:block;max-width:100%}
   }
 
   function renderPaymentTotals() {
-    const subtotal = readCart().total;
+    const cart = readCart();
+    const subtotal = cart.total;
     const deliveryFee = checkoutDeliveryFee();
-    const total = checkoutTotal();
+    const total = subtotal + deliveryFee;
+    const quoteReady = deliveryQuoteMatchesCart(cart);
+    const deliveryLabel = deliverySummaryLabel(cart);
     if ($("subtotalValue")) $("subtotalValue").textContent = money(subtotal);
     if ($("totalValue")) $("totalValue").textContent = money(total);
     if ($("nequiAmount")) $("nequiAmount").textContent = `${money(total)} COP`;
     if ($("nequiSubtotal")) $("nequiSubtotal").textContent = money(subtotal);
-    if ($("nequiDeliveryFee")) $("nequiDeliveryFee").textContent = deliveryQuote?.method === selectedDelivery ? money(deliveryFee) : "Por calcular";
-    const nequiDeliveryLabel = selectedDelivery === "pickup" ? "Recogida en punto" : selectedDelivery === "moto" ? "Entrega por moto" : "Envío nacional";
-    if ($("nequiDeliveryLabel")) $("nequiDeliveryLabel").textContent = nequiDeliveryLabel;
-    if ($("nequiFinalNote")) $("nequiFinalNote").textContent = `Incluye ${nequiDeliveryLabel.toLocaleLowerCase("es-CO")}`;
+    if ($("nequiDeliveryFee")) $("nequiDeliveryFee").textContent = quoteReady ? money(deliveryFee) : "Por calcular";
+    if ($("nequiDeliveryLabel")) $("nequiDeliveryLabel").textContent = deliveryLabel;
+    if ($("nequiFinalNote")) $("nequiFinalNote").textContent = `Incluye ${deliveryLabel.toLocaleLowerCase("es-CO")}`;
     if ($("stripePayButton")) $("stripePayButton").textContent = `Pagar ${money(total)} COP`;
     if ($("deliverySummary")) {
-      $("deliverySummary").textContent = deliveryQuote?.method === selectedDelivery
-        ? `${selectedDelivery === "pickup" ? "Pronto · Recoger" : selectedDelivery === "national" ? "Rápido · Nacional" : `Pronto · Moto · ${deliveryQuote.distanceKm || ""} km`} · ${money(deliveryQuote.fee)}`
-        : `${selectedDelivery === "national" ? "Rápido · Nacional" : "Pronto · Moto"} · Por calcular`;
+      $("deliverySummary").textContent = quoteReady
+        ? `${deliveryLabel} · ${money(deliveryFee)}`
+        : `${deliveryLabel} · Por calcular`;
     }
   }
 
@@ -1963,7 +2000,7 @@ img{display:block;max-width:100%}
     const mode=normalizeDeliveryMode(item.selectedDeliveryMode||item.deliveryMode);
     if(["ship","liberalo","liberala","release","global","l"].includes(mode)){return "Libéralo"}
     if(["pickup","pronto","pick","p"].includes(mode)){return "Pronto"}
-    return "Rápido";
+    return "Rápido Nacional";
   }
 
   function deliveryChoices(item){
@@ -1971,7 +2008,7 @@ img{display:block;max-width:100%}
     const selected=normalizeDeliveryMode(item.selectedDeliveryMode);
     if(allowed.length===1){return ""}
     const short={pickup:"P",fast:"R",ship:"L"};
-    const label={pickup:"Pronto",fast:"Rápido",ship:"Libéralo"};
+    const label={pickup:"Pronto",fast:"Rápido Nacional",ship:"Libéralo"};
     return `<div class="cartDeliveryChoices" aria-label="Método de entrega">
       <span class="cartDeliveryLabel">Entrega:</span>
       ${allowed.map(mode=>`<button class="cartDeliveryChoice ${selected===mode?"selected":""}" type="button" data-cart-delivery="${mode}" data-item-id="${escapeHtml(item.id)}" aria-label="${label[mode]}">${short[mode]}</button>`).join("")}
@@ -2122,6 +2159,7 @@ img{display:block;max-width:100%}
 
     updateNequiConfirmAvailability();
 
+    syncDeliveryControls();
     renderPaymentTotals();
 
     if (!cart.items.length) {
@@ -2548,6 +2586,7 @@ img{display:block;max-width:100%}
     }
 
     updateReviewCustomer();
+    syncDeliveryControls();
   }
 
   function collectCustomer() {
@@ -2724,8 +2763,49 @@ img{display:block;max-width:100%}
     }
   }
 
+  function syncDeliveryControls() {
+    const profile = checkoutFulfillmentProfile();
+    const isCartagena = normalizeChoice($("deliveryCity")?.value) === "cartagena";
+    const showProntoChoice = profile.hasPronto && isCartagena;
+    if (!profile.hasPronto) selectedDelivery = "national";
+    else if (!["pickup", "moto"].includes(selectedDelivery)) selectedDelivery = "pickup";
+    if ($("prontoReceivingChoice")) $("prontoReceivingChoice").hidden = !showProntoChoice;
+    document.querySelectorAll("[data-delivery]").forEach(button => {
+      button.classList.toggle("isSelected", button.dataset.delivery === selectedDelivery);
+    });
+    if ($("pickupAddress")) $("pickupAddress").hidden = !showProntoChoice || selectedDelivery !== "pickup";
+    const address = $("deliveryAddress");
+    if (address) {
+      address.disabled = false;
+      address.placeholder = profile.hasNational
+        ? "Dirección completa de entrega"
+        : selectedDelivery === "moto"
+          ? "Dirección para moto"
+          : "Dirección del cliente";
+    }
+    if ($("promiseName")) {
+      $("promiseName").textContent = profile.hasPronto && profile.hasNational
+        ? "Entrega separada"
+        : profile.hasPronto
+          ? "Pronto – Cartagena"
+          : profile.hasFast
+            ? "Rápido Nacional"
+            : "Libéralo";
+    }
+    if ($("promiseTime")) {
+      const nationalPromises = [profile.hasFast ? "Rápido Nacional · 4–7 días" : "", profile.hasShip ? "Libéralo · 14–21 días" : ""].filter(Boolean);
+      $("promiseTime").textContent = profile.hasPronto && profile.hasNational
+        ? `Pronto Cartagena + ${nationalPromises.join(" + ")}`
+        : profile.hasPronto
+          ? "Disponible en 24–48 h"
+          : nationalPromises.join(" + ");
+    }
+  }
+
   function validatePaymentDetails() {
-    if(!deliverySelectionsComplete()){
+    const cart = readCart();
+    const profile = checkoutFulfillmentProfile(cart);
+    if(!deliverySelectionsComplete(cart)){
       goToStep("bag");
       showToast("Selecciona la entrega de cada producto.");
       return false;
@@ -2735,6 +2815,7 @@ img{display:block;max-width:100%}
     const lastName = $("customerLastName")?.value.trim();
     const phone = $("customerPhone")?.value.trim();
     const address = $("deliveryAddress")?.value.trim();
+    const isCartagena = normalizeChoice($("deliveryCity")?.value) === "cartagena";
     if (!firstName) {
       $("customerFirstName")?.focus();
       showToast("Ingresa tu nombre.");
@@ -2750,17 +2831,22 @@ img{display:block;max-width:100%}
       showToast("Ingresa tu número de teléfono.");
       return false;
     }
-    if (["moto", "national"].includes(selectedDelivery) && !address) {
-      $("deliveryAddress")?.focus();
-      showToast("Ingresa la dirección de entrega.");
-      return false;
-    }
     if (!$("deliveryCity")?.value.trim()) {
       $("deliveryCity")?.focus();
       showToast("Ingresa la ciudad de entrega.");
       return false;
     }
-    if (selectedDelivery === "national" && !$("deliveryDepartment")?.value) {
+    if (profile.hasPronto && !isCartagena) {
+      $("deliveryCity")?.focus();
+      showToast("Pronto solo está disponible en Cartagena.");
+      return false;
+    }
+    if ((profile.hasNational || (profile.hasPronto && selectedDelivery === "moto")) && !address) {
+      $("deliveryAddress")?.focus();
+      showToast("Ingresa la dirección de entrega.");
+      return false;
+    }
+    if (profile.hasNational && !$("deliveryDepartment")?.value) {
       $("deliveryDepartment")?.focus();
       showToast("Selecciona el departamento de entrega.");
       return false;
@@ -2777,16 +2863,19 @@ img{display:block;max-width:100%}
   }
 
   function checkoutPayload() {
+    const cart = readCart();
+    const profile = checkoutFulfillmentProfile(cart);
     return {
       requestId: createId(),
-      cart: readCart(),
+      cart,
       customer: collectCustomer(),
       delivery: {
-        method: selectedDelivery,
-        promise: "pronto",
+        method: checkoutDeliveryMethod(cart),
+        prontoMethod: profile.hasPronto ? selectedDelivery : "",
+        promise: profile.hasPronto && profile.hasNational ? "mixed" : profile.hasShip ? "liberalo" : profile.hasFast ? "rapido-nacional" : "pronto",
         city: $("deliveryCity")?.value.trim() || "",
-        state: selectedDelivery === "national" ? $("deliveryDepartment")?.value || "" : "BL",
-        postalCode: selectedDelivery === "national" ? $("deliveryPostalCode")?.value.trim() || "" : "130001",
+        state: profile.hasNational ? $("deliveryDepartment")?.value || "" : "BL",
+        postalCode: profile.hasNational ? $("deliveryPostalCode")?.value.trim() || "" : "130001",
         fee: checkoutDeliveryFee(),
         address: $("deliveryAddress")?.value.trim() || ""
       },
@@ -2796,14 +2885,16 @@ img{display:block;max-width:100%}
   }
 
   async function refreshDeliveryQuote(options = {}) {
-    if (selectedDelivery === "pickup") {
-      deliveryQuote = { method: "pickup", fee: PICKUP_FEE_COP };
+    const profile = checkoutFulfillmentProfile();
+    if (profile.hasPronto && !profile.hasNational && selectedDelivery === "pickup") {
+      deliveryQuote = { method: "pickup", prontoMethod: "pickup", fee: PICKUP_FEE_COP, title: "Pronto · Recoger Cartagena" };
       renderPaymentTotals();
       return deliveryQuote;
     }
+    const addressRequired = profile.hasNational || (profile.hasPronto && selectedDelivery === "moto");
     const address = $("deliveryAddress")?.value.trim();
-    const nationalReady = selectedDelivery !== "national" || ($("deliveryCity")?.value.trim() && $("deliveryDepartment")?.value);
-    if (!address || !nationalReady) {
+    const nationalReady = !profile.hasNational || ($("deliveryCity")?.value.trim() && $("deliveryDepartment")?.value);
+    if ((addressRequired && !address) || !nationalReady) {
       deliveryQuote = null;
       renderPaymentTotals();
       if (options.required) throw new Error("Completa la dirección para calcular la entrega.");
@@ -2832,7 +2923,10 @@ img{display:block;max-width:100%}
   function scheduleDeliveryQuote() {
     clearTimeout(quoteTimer);
     if (selectedPayment === "stripe") resetStripePaymentSession();
-    deliveryQuote = selectedDelivery === "pickup" ? { method: "pickup", fee: PICKUP_FEE_COP } : null;
+    const profile = checkoutFulfillmentProfile();
+    deliveryQuote = profile.hasPronto && !profile.hasNational && selectedDelivery === "pickup"
+      ? { method: "pickup", prontoMethod: "pickup", fee: PICKUP_FEE_COP, title: "Pronto · Recoger Cartagena" }
+      : null;
     renderPaymentTotals();
     quoteTimer = setTimeout(async () => {
       const quote = await refreshDeliveryQuote();
@@ -2867,6 +2961,8 @@ img{display:block;max-width:100%}
   }
 
   function cardCheckoutDetailsReady() {
+    const profile = checkoutFulfillmentProfile();
+    const isCartagena = normalizeChoice($("deliveryCity")?.value) === "cartagena";
     if(!deliverySelectionsComplete()){return false}
     if (!$("customerFirstName")?.value.trim() ||
         !$("customerLastName")?.value.trim() ||
@@ -2874,8 +2970,9 @@ img{display:block;max-width:100%}
         !$("deliveryCity")?.value.trim() ||
         !$("billingFirstName")?.value.trim() ||
         !$("billingLastName")?.value.trim()) return false;
-    if (["moto", "national"].includes(selectedDelivery) && !$("deliveryAddress")?.value.trim()) return false;
-    if (selectedDelivery === "national" && !$("deliveryDepartment")?.value) return false;
+    if (profile.hasPronto && !isCartagena) return false;
+    if ((profile.hasNational || (profile.hasPronto && selectedDelivery === "moto")) && !$("deliveryAddress")?.value.trim()) return false;
+    if (profile.hasNational && !$("deliveryDepartment")?.value) return false;
     if (!$("billingSame")?.checked) {
       return Boolean(
         $("billingAddress")?.value.trim() &&
@@ -3166,49 +3263,24 @@ img{display:block;max-width:100%}
 
   document.querySelectorAll("[data-delivery]").forEach(button => {
     button.onclick = () => {
-      if (button.dataset.delivery === "pickup" && normalizeChoice($("deliveryCity")?.value) !== "cartagena") {
-        showToast("La recogida en punto solo está disponible en Cartagena.");
+      const profile = checkoutFulfillmentProfile();
+      if (!profile.hasPronto || normalizeChoice($("deliveryCity")?.value) !== "cartagena") {
+        showToast("Pronto solo está disponible en Cartagena.");
         return;
       }
       selectedDelivery = button.dataset.delivery;
+      syncDeliveryControls();
       syncBillingAddressMode();
-      document.querySelectorAll("[data-delivery]").forEach(candidate => candidate.classList.toggle("isSelected", candidate === button));
-      const address = $("deliveryAddress");
-      address.disabled = false;
-      address.placeholder = selectedDelivery === "moto"
-        ? "Dirección para moto"
-        : selectedDelivery === "national"
-          ? "Dirección completa de entrega"
-          : "Dirección del cliente";
-      $("pickupAddress").hidden = selectedDelivery !== "pickup";
       scheduleDeliveryQuote();
       syncPanelHeight();
     };
   });
 
   $("deliveryCity").onchange = () => {
-    const pickupButton = document.querySelector('[data-delivery="pickup"]');
-    const motoButton = document.querySelector('[data-delivery="moto"]');
-    const nationalButton = document.querySelector('[data-delivery="national"]');
-    const isCartagena = normalizeChoice($("deliveryCity").value) === "cartagena";
-    $("promiseName").textContent = isCartagena ? "Pronto – Cartagena" : "Rápido – Colombia";
-    $("promiseTime").textContent = isCartagena ? "Disponible en 24–48 h" : "Entrega nacional · 4–7 días";
-    pickupButton.hidden = !isCartagena;
-    pickupButton.disabled = !isCartagena;
-    pickupButton.setAttribute("aria-disabled", String(!isCartagena));
-    pickupButton.style.opacity = isCartagena ? "1" : ".38";
-    motoButton.hidden = !isCartagena;
-    nationalButton.hidden = isCartagena;
-    if (!isCartagena) {
-      nationalButton.click();
-    } else if (selectedDelivery === "national") {
-      pickupButton.click();
-    }
-    $("pickupAddress").hidden = !isCartagena || selectedDelivery !== "pickup";
-    scheduleDeliveryQuote();
+    syncDeliveryControls();
+    updateStripePayAvailability();
     syncPanelHeight();
   };
-
   ["deliveryAddress", "deliveryCity", "deliveryPostalCode"].forEach(id => {
     $(id)?.addEventListener("change", scheduleDeliveryQuote);
   });

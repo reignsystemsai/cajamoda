@@ -56,13 +56,20 @@ function renderShipmentCards(shipments) {
     title.textContent = shipment?.label || (type === "L" ? "Libéralo" : "Rápido y Fácil");
     const status = document.createElement("div");
     status.className = "shipmentStatus";
-    status.textContent = shipment?.status === "delivered"
-      ? "Entregado"
-      : hasTracking
-        ? "Enviado"
-        : type === "L"
-          ? "Libéralo en proceso"
-          : "Listo para enviar";
+    status.textContent = shipment?.statusLabel ||
+      (shipment?.status === "delivered"
+        ? "Entregado"
+        : shipment?.status === "out_for_delivery"
+          ? "En reparto"
+          : shipment?.status === "in_transit"
+            ? "En tránsito"
+            : shipment?.status === "exception"
+              ? "Novedad en el envío"
+              : hasTracking
+                ? "Enviado"
+                : type === "L"
+                  ? "Libéralo en proceso"
+                  : "Listo para enviar");
     heading.append(title, status);
 
     const message = document.createElement("p");

@@ -3070,7 +3070,7 @@ async function createWixProduct(
     );
 
   const cost = Math.max(0, Number(input.cost || 0));
-  const price = cost > 0 ? Math.round(cost * 2.56) : 0;
+  const price = cost > 0 ? Math.round(cost * 2.816) : 0;
   const trackInventory = input.trackInventory !== false;
   const stockStatus = input.stockStatus === "OUT_OF_STOCK" ? "OUT_OF_STOCK" : "IN_STOCK";
   const allowPreorder = Boolean(input.allowPreorder);
@@ -3739,7 +3739,7 @@ async function handleUpdateProduct(request, response, productId) {
   const description = safeText(body?.description, 16000);
   const cost = Math.max(0, Number(body?.cost || 0));
   const currentPrice = Number(current?.variantsInfo?.variants?.[0]?.price?.actualPrice?.amount || 0);
-  const price = cost > 0 ? Math.round(cost * 2.56) : Number(body?.price || currentPrice);
+  const price = cost > 0 ? Math.round(cost * 2.816) : Number(body?.price || currentPrice);
   if(!name) return sendError(response, 400, "El producto necesita conservar su nombre.");
   if(!Number.isFinite(price) || price <= 0) return sendError(response, 400, "Agrega un precio válido.");
 

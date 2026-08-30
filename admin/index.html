@@ -4548,7 +4548,7 @@ if(
 
   function calculateSalePrice(cost){
     const safeCost = Math.max(0, Number(cost || 0));
-    return safeCost > 0 ? Math.round(safeCost * 2.56) : 0;
+    return safeCost > 0 ? Math.round(safeCost * 2.816) : 0;
   }
 
   function updateCalculatedPrice(){
@@ -5210,7 +5210,7 @@ if(
       $("productDescription").value = detail.description || product.description || "";
       const existingPrice = Math.round(Number(detail.price || product.price || 0));
       const existingCost = Math.max(0, Number(detail.cost || 0));
-      $("productCost").value = existingCost || Math.max(0, Math.round(existingPrice / 2.56));
+      $("productCost").value = existingCost || Math.max(0, Math.round(existingPrice / 2.816));
       updateCalculatedPrice();
       $("productCategory").value = detail.category || product.category || "quick";
       const totalQuantity = rows.reduce((sum,row) => sum + row.quantity, 0);
@@ -5281,7 +5281,7 @@ if(
           <div class="quickEditColumns">
             <label>Categoría<select id="quickProductCategory"><option value="late" ${quickCategory === "late" ? "selected" : ""}>Noches Largas</option><option value="chill" ${quickCategory === "chill" ? "selected" : ""}>Días Tranquilos</option><option value="quick" ${quickCategory === "quick" ? "selected" : ""}>Rápido y Fácil</option><option value="sun" ${quickCategory === "sun" ? "selected" : ""}>Baño de Sol</option></select></label>
             <label>Costo de compra COP<input id="quickProductCost" inputmode="numeric" type="number" min="0" step="1" value="${Math.round(Number(detail.cost || 0))}"></label>
-            <label>Precio de venta COP<input id="quickProductPrice" class="quickCalculatedPrice" inputmode="numeric" type="number" value="${Math.round(Number(detail.cost || 0) > 0 ? Number(detail.cost) * 2.56 : Number(detail.price || product.price || 0))}" readonly></label>
+            <label>Precio de venta COP<input id="quickProductPrice" class="quickCalculatedPrice" inputmode="numeric" type="number" value="${Math.round(Number(detail.cost || 0) > 0 ? Number(detail.cost) * 2.816 : Number(detail.price || product.price || 0))}" readonly></label>
             <label>Estado<select id="quickProductStatus"><option value="in" ${totalQuantity > 0 ? "selected" : ""}>En stock</option><option value="out" ${totalQuantity <= 0 ? "selected" : ""}>Agotado</option></select></label>
           </div>
           <div class="quickAssistField"><label>Descripción<textarea id="quickProductDescription" maxlength="16000">${escapeHtml(detail.description || "")}</textarea></label><button id="quickDescribeProduct" class="secondaryButton quickAssistButton" type="button">Descríbelo</button></div>
@@ -5454,7 +5454,7 @@ if(
       $("quickDescribeProduct").onclick = () => assistQuickField("description");
       $("quickProductCost").oninput = () => {
         const cost = Math.max(0, Number($("quickProductCost").value || 0));
-        $("quickProductPrice").value = cost > 0 ? Math.round(cost * 2.56) : "";
+        $("quickProductPrice").value = cost > 0 ? Math.round(cost * 2.816) : "";
       };
       $("quickDeleteProduct").onclick = async () => {
         if(!confirm(`¿Eliminar "${detail.name || product.name || "este producto"}" de Wix, el inventario y la tienda? Esta acción no se puede deshacer.`)) return;

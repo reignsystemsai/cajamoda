@@ -1377,7 +1377,7 @@ img{display:block;max-width:100%}
     <div id="deliveryHelpContent">
       <div class="deliveryHelpLine"><strong>Pronto</strong>24–48 h · Solo Cartagena.</div>
       <div class="deliveryHelpLine"><strong>Rápido Nacional</strong>4–7 días.</div>
-      <div class="deliveryHelpLine"><strong>Libéralo</strong>14–21 días.</div>
+      <div class="deliveryHelpLine"><strong>Libéralo</strong>14–28 días.</div>
       <div class="deliveryHelpLine">El tiempo disponible depende de cada producto.</div>
     </div>
   </div>
@@ -1487,7 +1487,7 @@ img{display:block;max-width:100%}
     const labels = [];
     if (profile.hasPronto) labels.push(selectedDelivery === "moto" ? "Pronto · Moto Cartagena" : "Pronto · Recoger Cartagena");
     if (profile.hasFast) labels.push("Rápido Nacional · 4–7 días");
-    if (profile.hasShip) labels.push("Libéralo · 14–21 días");
+    if (profile.hasShip) labels.push("Libéralo · 14–28 días");
     return labels.join(" + ") || "Entrega";
   }
 
@@ -2025,7 +2025,7 @@ img{display:block;max-width:100%}
   const deliveryExplanations={
     pickup:{label:"Pronto",copy:"24–48 h · Solo Cartagena."},
     fast:{label:"Rápido Nacional",copy:"4–7 días."},
-    ship:{label:"Libéralo",copy:"14–21 días."}
+    ship:{label:"Libéralo",copy:"14–28 días."}
   };
 
   function openDeliveryHelp(mode=""){
@@ -2049,7 +2049,7 @@ img{display:block;max-width:100%}
     const groups=[
       {mode:"pickup",label:"Pronto",time:"24–48 h · Solo Cartagena"},
       {mode:"fast",label:"Rápido Nacional",time:"4–7 días"},
-      {mode:"ship",label:"Libéralo",time:"14–21 días"}
+      {mode:"ship",label:"Libéralo",time:"14–28 días"}
     ].filter(group=>counts[group.mode]>0);
     const garmentCount=cart.items.reduce((total,item)=>total+Math.max(1,Math.floor(Number(item.quantity||1))),0);
     $("bagDeliverySummary").hidden=groups.length===0;
@@ -2885,7 +2885,7 @@ img{display:block;max-width:100%}
             : "Libéralo";
     }
     if ($("promiseTime")) {
-      const nationalPromises = [profile.hasFast ? "Rápido Nacional · 4–7 días" : "", profile.hasShip ? "Libéralo · 14–21 días" : ""].filter(Boolean);
+      const nationalPromises = [profile.hasFast ? "Rápido Nacional · 4–7 días" : "", profile.hasShip ? "Libéralo · 14–28 días" : ""].filter(Boolean);
       $("promiseTime").textContent = profile.hasPronto && profile.hasNational
         ? `Pronto Cartagena + ${nationalPromises.join(" + ")}`
         : profile.hasPronto

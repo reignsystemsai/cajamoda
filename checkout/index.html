@@ -1257,7 +1257,7 @@ img{display:block;max-width:100%}
             </div>
             <div id="pickupAddress" class="pickupAddress"><strong>Punto de recogida · 10.000 COP</strong><br>Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar.</div>
           </div>
-          <p class="deliveryNote">El costo se calcula según tu ubicación.</p>
+          <p id="deliveryQuoteStatus" class="deliveryNote" role="status" aria-live="polite">El costo se calcula según tu ubicación.</p>
         </section>
 
         <h2 class="paymentSectionTitle">Finaliza tu pago</h2>
@@ -1313,7 +1313,7 @@ img{display:block;max-width:100%}
                   <input id="billingLastName" class="cardInput" autocomplete="cc-family-name" placeholder="Apellido">
                 </label>
               </div>
-              <label id="billingSameRow" class="billingToggle"><input id="billingSame" type="checkbox"><span>La dirección de facturación es igual a la de entrega</span></label>
+              <label id="billingSameRow" class="billingToggle"><input id="billingSame" type="checkbox" checked><span>La dirección de facturación es igual a la de entrega</span></label>
               <div id="billingFields" class="billingFields">
                 <label class="cardLabel wide" for="billingAddress">Dirección
                   <input id="billingAddress" class="cardInput" autocomplete="billing street-address" placeholder="Calle y número">
@@ -1455,6 +1455,10 @@ img{display:block;max-width:100%}
   let stripeCanConfirm = false;
   let stripeSessionUpdate = Promise.resolve();
   let deliveryQuote = { method: "pickup", prontoMethod: "pickup", fee: 10000, title: "Pronto · Recoger" };
+  let deliveryQuotePending = false;
+  let deliveryQuoteError = "";
+  let quoteDestinationKey = "";
+  let quoteRequestVersion = 0;
   let quoteTimer = null;
   let unavailableProductIds = new Set();
   let incompatibleProntoItemIds = new Set();
@@ -1491,12 +1495,27 @@ img{display:block;max-width:100%}
     return labels.join(" + ") || "Entrega";
   }
 
+  function currentDeliveryQuoteKey(cart = readCart()) {
+    return [
+      checkoutDeliveryMethod(cart),
+      selectedDelivery,
+      $("deliveryAddress")?.value.trim().toLowerCase() || "",
+      $("deliveryCity")?.value.trim().toLowerCase() || "",
+      $("deliveryDepartment")?.value || "",
+      $("deliveryPostalCode")?.value.trim() || ""
+    ].join("|");
+  }
+
   function deliveryQuoteMatchesCart(cart = readCart()) {
     const profile = checkoutFulfillmentProfile(cart);
+    const destinationQuoteRequired =
+      profile.hasNational ||
+      (profile.hasPronto && selectedDelivery === "moto");
     return Boolean(
       deliveryQuote &&
       deliveryQuote.method === checkoutDeliveryMethod(cart) &&
-      (!profile.hasPronto || deliveryQuote.prontoMethod === selectedDelivery)
+      (!profile.hasPronto || deliveryQuote.prontoMethod === selectedDelivery) &&
+      (!destinationQuoteRequired || quoteDestinationKey === currentDeliveryQuoteKey(cart))
     );
   }
 
@@ -1520,7 +1539,18 @@ img{display:block;max-width:100%}
     if ($("nequiSubtotal")) $("nequiSubtotal").textContent = money(subtotal);
     if ($("nequiDeliveryFee")) $("nequiDeliveryFee").textContent = quoteReady ? money(deliveryFee) : "Por calcular";
     if ($("stripePayButton")) $("stripePayButton").textContent = `Pagar ${money(total)} COP`;
-    if ($("deliverySummary")) $("deliverySummary").textContent = quoteReady ? money(deliveryFee) : "Por calcular";
+    if ($("deliverySummary")) $("deliverySummary").textContent = deliveryQuotePending ? "Calculando…" : quoteReady ? money(deliveryFee) : "Por calcular";
+    const profile = checkoutFulfillmentProfile(cart);
+    const quoteStatus = $("deliveryQuoteStatus");
+    if (quoteStatus && profile.hasNational) {
+      quoteStatus.textContent = deliveryQuotePending
+        ? "Calculando envío con Envia…"
+        : quoteReady
+          ? `Envío nacional calculado con Envia. Total de entrega: ${money(deliveryFee)}.`
+          : deliveryQuoteError || "Completa tu dirección de entrega para calcular el envío.";
+    }
+    updateStripePayAvailability();
+    updateNequiConfirmAvailability();
   }
 
   let activeStep = "bag";
@@ -2957,7 +2987,11 @@ img{display:block;max-width:100%}
     const button = $("confirmNequiButton");
     if (!button) return;
     const cart=readCart();
-    button.disabled = cart.items.length === 0 || !deliverySelectionsComplete(cart) || !$("nequiReference")?.value.trim();
+    button.disabled =
+      cart.items.length === 0 ||
+      !deliverySelectionsComplete(cart) ||
+      !deliveryQuoteMatchesCart(cart) ||
+      !$("nequiReference")?.value.trim();
   }
 
   function checkoutPayload() {
@@ -2986,6 +3020,10 @@ img{display:block;max-width:100%}
   async function refreshDeliveryQuote(options = {}) {
     const profile = checkoutFulfillmentProfile();
     if (profile.hasPronto && !profile.hasNational && selectedDelivery === "pickup") {
+      quoteRequestVersion += 1;
+      deliveryQuotePending = false;
+      deliveryQuoteError = "";
+      quoteDestinationKey = "";
       deliveryQuote = { method: "pickup", prontoMethod: "pickup", fee: PICKUP_FEE_COP, title: "Pronto · Recoger Cartagena" };
       renderPaymentTotals();
       return deliveryQuote;
@@ -2994,11 +3032,22 @@ img{display:block;max-width:100%}
     const address = $("deliveryAddress")?.value.trim();
     const nationalReady = !profile.hasNational || ($("deliveryCity")?.value.trim() && $("deliveryDepartment")?.value);
     if ((addressRequired && !address) || !nationalReady) {
+      quoteRequestVersion += 1;
       deliveryQuote = null;
+      deliveryQuotePending = false;
+      deliveryQuoteError = "";
+      quoteDestinationKey = "";
       renderPaymentTotals();
       if (options.required) throw new Error("Completa la dirección para calcular la entrega.");
       return null;
     }
+    const requestVersion = ++quoteRequestVersion;
+    const destinationKey = currentDeliveryQuoteKey();
+    deliveryQuotePending = true;
+    deliveryQuoteError = "";
+    deliveryQuote = null;
+    quoteDestinationKey = "";
+    renderPaymentTotals();
     try {
       const response = await fetch(`${STORE_API_URL}/api/delivery/quote`, {
         method: "POST",
@@ -3006,29 +3055,42 @@ img{display:block;max-width:100%}
         body: JSON.stringify(checkoutPayload())
       });
       const result = await response.json().catch(() => ({}));
+      if (requestVersion !== quoteRequestVersion) return null;
       if (!response.ok || !result?.quote) {
         if (result?.code) throw paymentPreparationFailure(result);
-        throw new Error("No pudimos calcular la entrega.");
+        throw new Error("No pudimos calcular el envío. Verifica tu dirección e inténtalo nuevamente.");
       }
+      deliveryQuotePending = false;
+      deliveryQuoteError = "";
+      quoteDestinationKey = destinationKey;
       deliveryQuote = result.quote;
       renderPaymentTotals();
       return deliveryQuote;
     } catch (error) {
+      if (requestVersion !== quoteRequestVersion) return null;
       deliveryQuote = null;
+      deliveryQuotePending = false;
+      quoteDestinationKey = "";
+      deliveryQuoteError = "No pudimos calcular el envío. Verifica tu dirección e inténtalo nuevamente.";
       renderPaymentTotals();
       if (options.required) throw error;
       if ([CART_ITEM_UNAVAILABLE_CODE, PRONTO_LOCATION_UNAVAILABLE_CODE].includes(error?.code)) return null;
-      showToast(error?.message || "No pudimos calcular la entrega.");
+      showToast(deliveryQuoteError);
       return null;
     }
   }
 
   function scheduleDeliveryQuote() {
     clearTimeout(quoteTimer);
+    quoteRequestVersion += 1;
     const profile = checkoutFulfillmentProfile();
-    deliveryQuote = profile.hasPronto && !profile.hasNational && selectedDelivery === "pickup"
+    const pickupOnly = profile.hasPronto && !profile.hasNational && selectedDelivery === "pickup";
+    deliveryQuote = pickupOnly
       ? { method: "pickup", prontoMethod: "pickup", fee: PICKUP_FEE_COP, title: "Pronto · Recoger Cartagena" }
       : null;
+    deliveryQuotePending = !pickupOnly;
+    deliveryQuoteError = "";
+    quoteDestinationKey = "";
     renderPaymentTotals();
     quoteTimer = setTimeout(async () => {
       const quote = await refreshDeliveryQuote();
@@ -3075,7 +3137,14 @@ img{display:block;max-width:100%}
   }
 
   function updateStripePayAvailability() {
-    const ready = Boolean(checkoutElements && checkoutActions && paymentElement && stripeCanConfirm);
+    const ready = Boolean(
+      checkoutElements &&
+      checkoutActions &&
+      paymentElement &&
+      stripeCanConfirm &&
+      cardCheckoutDetailsReady() &&
+      deliveryQuoteMatchesCart()
+    );
     $("stripePayButton").disabled = !ready;
   }
 
@@ -3366,7 +3435,7 @@ img{display:block;max-width:100%}
     syncPanelHeight();
   };
   ["deliveryAddress", "deliveryCity", "deliveryPostalCode"].forEach(id => {
-    $(id)?.addEventListener("change", scheduleDeliveryQuote);
+    $(id)?.addEventListener("input", scheduleDeliveryQuote);
   });
   $("deliveryDepartment")?.addEventListener("change", () => {
     selectBolivarDepartment();

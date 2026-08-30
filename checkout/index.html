@@ -3540,7 +3540,7 @@ img{display:block;max-width:100%}
   loadCustomer();
   renderCart();
   syncBillingAddressMode();
-  loadCheckoutConfig();
+  loadCheckoutConfig().then(() => initializeStripePaymentElement());
   loadDeliveryDepartments();
 
   window.postMessage({

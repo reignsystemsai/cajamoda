@@ -723,7 +723,7 @@ async function handleCreateStripeCheckout(request, response) {
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     ui_mode: "elements",
-    payment_method_types: ["card", "link"],
+    payment_method_types: ["card"],
     payment_intent_data: {
       capture_method: captureMethod,
       receipt_email: customerEmail || undefined,
@@ -1098,7 +1098,7 @@ async function handleCreateStripePaymentIntent(request, response) {
     use_stripe_sdk: true,
     return_url: `${STOREFRONT_URL}/order-confirmation/`,
     capture_method: captureMethod,
-    payment_method_types: ["card", "link"],
+    payment_method_types: ["card"],
     receipt_email: customerEmail || undefined,
     description: `CajaModa · ${lines.length} producto${lines.length === 1 ? "" : "s"}`,
     shipping: {

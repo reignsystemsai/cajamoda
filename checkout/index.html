@@ -1301,7 +1301,6 @@ img{display:block;max-width:100%}
             </div>
               <div class="customCardShell">
               <div id="stripeStatus" class="stripeStatus">Preparando el formulario seguro de Stripe…</div>
-              <div id="expressCheckoutElement"></div>
               <div id="paymentElement"></div>
             </div>
             <div class="billingGlass">
@@ -1451,7 +1450,6 @@ img{display:block;max-width:100%}
   let stripeClient = null;
   let checkoutElements = null;
   let checkoutActions = null;
-  let expressCheckoutElement = null;
   let paymentElement = null;
   let stripeSessionId = "";
   let stripeCanConfirm = false;
@@ -3172,13 +3170,6 @@ img{display:block;max-width:100%}
       const loaded = await checkoutElements.loadActions();
       if (loaded?.type === "error") throw new Error(loaded.error?.message || "No pudimos cargar el pago seguro.");
       checkoutActions = loaded.actions;
-      expressCheckoutElement = checkoutElements.createExpressCheckoutElement({
-        paymentMethodOrder: ["link"],
-        layout: { maxColumns: 1, overflow: "never" },
-        buttonHeight: 48
-      });
-      expressCheckoutElement.on("confirm", submitStripeExpressPayment);
-      expressCheckoutElement.mount("#expressCheckoutElement");
       paymentElement = checkoutElements.createPaymentElement({
         layout: "accordion",
         fields: { billingDetails: "never" }
@@ -3200,32 +3191,11 @@ img{display:block;max-width:100%}
       stripeCanConfirm = false;
       checkoutElements = null;
       checkoutActions = null;
-      expressCheckoutElement = null;
       paymentElement = null;
       stripeSessionId = "";
       console.error("[CajaModa] Stripe Payment Element error:", error);
       status.hidden = true;
       errorBox.textContent = error?.code === CART_ITEM_UNAVAILABLE_CODE ? "" : PAYMENT_PREPARATION_ERROR;
-    }
-  }
-
-  async function submitStripeExpressPayment() {
-    const errorBox = $("stripeError");
-    errorBox.textContent = "";
-    try {
-      if (!checkoutElements || !checkoutActions || !expressCheckoutElement) {
-        throw new Error("El pago rápido de Link todavía está cargando.");
-      }
-      if (!validatePaymentDetails()) throw new Error("Completa tus datos de contacto y entrega.");
-      await refreshDeliveryQuote({ required: true });
-      await syncStripeCheckoutSession();
-      const result = await checkoutActions.confirm();
-      if (result?.type === "error") throw result.error;
-      location.href = `${location.origin}/order-confirmation/?stripeSessionId=${encodeURIComponent(stripeSessionId)}`;
-    } catch (error) {
-      if (![CART_ITEM_UNAVAILABLE_CODE, PRONTO_LOCATION_UNAVAILABLE_CODE].includes(error?.code)) {
-        errorBox.textContent = error?.message || "No pudimos procesar el pago.";
-      }
     }
   }
 

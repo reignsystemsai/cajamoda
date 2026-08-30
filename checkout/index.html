@@ -2046,10 +2046,15 @@ img{display:block;max-width:100%}
       if(counts[selected]===undefined||!allowed.includes(selected)){return}
       counts[selected]+=Math.max(1,Math.floor(Number(item.quantity||1)));
     });
+    const nationalQuoteFees={};
+    (Array.isArray(deliveryQuote?.groups)?deliveryQuote.groups:[]).forEach(group=>{
+      if(group?.type==="R"){nationalQuoteFees.fast=Number(group.fee||0)}
+      if(group?.type==="L"){nationalQuoteFees.ship=Number(group.fee||0)}
+    });
     const groups=[
       {mode:"pickup",label:"Pronto",time:"24–48 h · Solo Cartagena"},
-      {mode:"fast",label:"Rápido Nacional",time:"4–7 días"},
-      {mode:"ship",label:"Libéralo",time:"14–28 días"}
+      {mode:"fast",label:"Rápido Nacional",time:"4–7 días",fee:nationalQuoteFees.fast},
+      {mode:"ship",label:"Libéralo",time:"14–28 días",fee:nationalQuoteFees.ship}
     ].filter(group=>counts[group.mode]>0);
     const garmentCount=cart.items.reduce((total,item)=>total+Math.max(1,Math.floor(Number(item.quantity||1))),0);
     $("bagDeliverySummary").hidden=groups.length===0;
@@ -2057,7 +2062,7 @@ img{display:block;max-width:100%}
     $("deliverySummaryRows").innerHTML=groups.map(group=>`
       <div class="summaryLine">
         <span class="deliveryGroupName">${group.label}<span class="deliveryGroupCount">${counts[group.mode]}</span></span>
-        <span class="summaryValue">${group.time}</span>
+        <span class="summaryValue">${group.time}${Number.isFinite(group.fee)?` · ${money(group.fee)}`:""}</span>
       </div>`).join("");
     $("deliverySeparateNote").hidden=groups.length<2;
     $("deliverySeparateNote").textContent=groups.length>1

@@ -7,8 +7,10 @@ import {
   STANDARD_CLOTHING_PARCEL,
   applyNationalQuoteToPlan,
   buildEnviaNationalPayload,
+  customerEnviaTrackingLabel,
   groupWixOrderNationalLines,
   nationalLinesDeclaredValue,
+  normalizeEnviaTrackingStatus,
   nationalShipmentDefinition,
   publicNationalShipmentPlan
 } from "./shipping/shipping-service.js";
@@ -90,6 +92,7 @@ const ENVIA_API_BASE = ENVIA_ENV === "sandbox" ? "https://api-test.envia.com" : 
 const ENVIA_QUERIES_BASE = ENVIA_ENV === "sandbox" ? "https://queries-test.envia.com" : "https://queries.envia.com";
 const ENVIA_PRINT_FORMAT = safeEnv(process.env.ENVIA_PRINT_FORMAT);
 const ENVIA_PRINT_SIZE = safeEnv(process.env.ENVIA_PRINT_SIZE);
+const ENVIA_WEBHOOK_SECRET = safeEnv(process.env.ENVIA_WEBHOOK_SECRET);
 const ENVIA_ORIGIN_NAME = safeEnv(process.env.ENVIA_ORIGIN_NAME);
 const ENVIA_ORIGIN_PHONE = safeEnv(process.env.ENVIA_ORIGIN_PHONE);
 const ENVIA_ORIGIN_STREET = safeEnv(process.env.ENVIA_ORIGIN_STREET);
@@ -104,6 +107,9 @@ const motoQuoteCache = new Map();
 const stripeIntentSyncLocks = new Map();
 const nequiConfirmationLocks = new Map();
 const enviaLabelLocks = new Map();
+const enviaWebhookProcessing = new Set();
+const processedEnviaWebhookIds = new Map();
+const enviaShipmentStatuses = new Map();
 const CARTAGENA_PICKUP_ADDRESS = "Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar, Colombia";
 const STOREFRONT_URL = String(
   process.env.STOREFRONT_URL || "https://www.cajamoda.com"
@@ -4458,10 +4464,17 @@ function normalizedNationalOrderShipments(order) {
         status: fulfillment?.completed
           ? "delivered"
           : trackingNumber
-            ? "shipped"
+            ? (enviaShipmentStatuses.get(trackingNumber)?.status || "shipped")
             : type === "R"
               ? "ready"
               : "processing",
+        statusLabel: trackingNumber
+          ? customerEnviaTrackingLabel(
+              fulfillment?.completed
+                ? "delivered"
+                : (enviaShipmentStatuses.get(trackingNumber)?.status || "shipped")
+            )
+          : "",
         carrier: safeText(trackingInfo?.shippingProvider, 200),
         trackingNumber,
         trackingLink: safeText(trackingInfo?.trackingLink, 500),
@@ -4975,6 +4988,164 @@ async function handleGenerateEnviaLabel(request, response, orderId, shipmentType
   } finally {
     enviaLabelLocks.delete(lockKey);
   }
+}
+
+function timingSafeHexEqual(left, right) {
+  if (!/^[a-f0-9]+$/i.test(left) || !/^[a-f0-9]+$/i.test(right)) return false;
+  const leftBuffer = Buffer.from(left, "hex");
+  const rightBuffer = Buffer.from(right, "hex");
+  return leftBuffer.length === rightBuffer.length &&
+    crypto.timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function verifyEnviaWebhook(request, rawBody) {
+  if (!ENVIA_WEBHOOK_SECRET) throw new Error("El secreto del webhook de Envia no está configurado.");
+
+  const event = safeText(request.headers["x-webhook-event"], 100);
+  const eventId = safeText(request.headers["x-webhook-id"], 200);
+  const timestamp = safeText(request.headers["x-webhook-timestamp"], 30);
+  const supplied = safeText(request.headers["x-webhook-signature"], 200).replace(/^v1=/i, "");
+  if (!event || !eventId || !timestamp || !supplied) {
+    throw new Error("La firma del webhook de Envia está incompleta.");
+  }
+
+  const numericTimestamp = Number(timestamp);
+  const timestampMs = numericTimestamp > 1e12 ? numericTimestamp : numericTimestamp * 1000;
+  if (!Number.isFinite(timestampMs) || Math.abs(Date.now() - timestampMs) > 5 * 60 * 1000) {
+    throw new Error("El webhook de Envia está fuera de la ventana permitida.");
+  }
+
+  const signed = `${timestamp}.${event}.${rawBody.toString("utf8")}`;
+  const expected = crypto
+    .createHmac("sha256", ENVIA_WEBHOOK_SECRET)
+    .update(signed)
+    .digest("hex");
+  if (!timingSafeHexEqual(supplied, expected)) {
+    throw new Error("La firma del webhook de Envia no es válida.");
+  }
+  return { event, eventId };
+}
+
+function rememberProcessedEnviaWebhook(eventId) {
+  processedEnviaWebhookIds.set(eventId, Date.now());
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  for (const [id, receivedAt] of processedEnviaWebhookIds) {
+    if (receivedAt < cutoff) processedEnviaWebhookIds.delete(id);
+  }
+}
+
+async function findEnviaFulfillment(trackingNumber, orderNumber = "") {
+  let orders = [];
+  if (orderNumber) {
+    const result = await wix.orders.searchOrders({
+      filter: { number: orderNumber },
+      cursorPaging: { limit: 10 }
+    });
+    orders = Array.isArray(result?.orders) ? result.orders : [];
+  } else {
+    let cursor = "";
+    for (let page = 0; page < 10; page += 1) {
+      const result = await wix.orders.searchOrders({
+        sort: [{ fieldName: "createdDate", order: "DESC" }],
+        cursorPaging: { limit: 100, ...(cursor ? { cursor } : {}) }
+      });
+      orders.push(...(Array.isArray(result?.orders) ? result.orders : []));
+      cursor = safeText(result?.pagingMetadata?.cursors?.next, 500);
+      if (!cursor) break;
+    }
+  }
+
+  for (const order of orders) {
+    const orderId = safeText(order?._id || order?.id, 150);
+    if (!orderId) continue;
+    const listed = await wix.orderFulfillments.listFulfillmentsForSingleOrder(orderId);
+    const fulfillments = listed?.orderWithFulfillments?.fulfillments || [];
+    const fulfillment = fulfillments.find(candidate =>
+      safeText(candidate?.trackingInfo?.trackingNumber, 300) === trackingNumber
+    );
+    if (fulfillment) return { orderId, fulfillment };
+  }
+  return null;
+}
+
+async function processEnviaTrackingWebhook(payload) {
+  if (!wix) throw new Error("Wix no está configurado.");
+  if (!["tracking.simple", "tracking.ecommerce"].includes(safeText(payload?.type, 100))) {
+    return;
+  }
+
+  const data = payload?.data || {};
+  const trackingNumber = safeText(data?.tracking_number, 300);
+  const orderNumber = safeText(data?.order_data?.order_number, 100);
+  if (!trackingNumber) throw new Error("Envia no incluyó un número de rastreo.");
+
+  const matched = await findEnviaFulfillment(trackingNumber, orderNumber);
+  if (!matched) throw new Error(`No se encontró el cumplimiento Wix para ${trackingNumber}.`);
+
+  const status = normalizeEnviaTrackingStatus(data?.status);
+  const fulfillmentId = safeText(
+    matched.fulfillment?._id || matched.fulfillment?.fulfillmentId,
+    150
+  );
+  const completed = status === "delivered";
+  enviaShipmentStatuses.set(trackingNumber, {
+    status,
+    description: safeText(data?.status_description, 300),
+    updatedAt: new Date().toISOString()
+  });
+
+  const currentStatus = safeText(matched.fulfillment?.status, 100).toLowerCase();
+  if ((completed && matched.fulfillment?.completed) ||
+      (!completed && currentStatus === "in_delivery")) {
+    return;
+  }
+
+  await wix.orderFulfillments.updateFulfillment(
+    { orderId: matched.orderId, fulfillmentId },
+    {
+      fulfillment: {
+        trackingInfo: matched.fulfillment?.trackingInfo,
+        status: completed ? "Fulfilled" : "In_Delivery",
+        completed
+      }
+    }
+  );
+}
+
+async function handleEnviaWebhook(request, response) {
+  if (!ENVIA_WEBHOOK_SECRET) {
+    return sendError(response, 503, "El webhook de Envia no está configurado.");
+  }
+
+  const rawBody = await readRawBody(request);
+  let verified;
+  try {
+    verified = verifyEnviaWebhook(request, rawBody);
+  } catch (error) {
+    return sendError(response, 401, error?.message || "Webhook de Envia rechazado.");
+  }
+
+  if (processedEnviaWebhookIds.has(verified.eventId) ||
+      enviaWebhookProcessing.has(verified.eventId)) {
+    return sendJson(response, 200, { received: true, duplicate: true });
+  }
+
+  let payload;
+  try {
+    payload = JSON.parse(rawBody.toString("utf8"));
+  } catch {
+    return sendError(response, 400, "El webhook de Envia no contiene JSON válido.");
+  }
+
+  enviaWebhookProcessing.add(verified.eventId);
+  sendJson(response, 200, { received: true });
+
+  setImmediate(() => {
+    void processEnviaTrackingWebhook(payload)
+      .then(() => rememberProcessedEnviaWebhook(verified.eventId))
+      .catch(error => console.error("[Envia] Webhook processing failed:", error))
+      .finally(() => enviaWebhookProcessing.delete(verified.eventId));
+  });
 }
 
 async function handleSaveOrderTracking(request, response, orderId) {
@@ -5862,6 +6033,11 @@ const server =
 
         if(request.method === "POST" && url.pathname === "/api/stripe/webhook"){
           await handleStripeWebhook(request,response);
+          return;
+        }
+
+        if(request.method === "POST" && url.pathname === "/api/webhooks/envia"){
+          await handleEnviaWebhook(request,response);
           return;
         }
 

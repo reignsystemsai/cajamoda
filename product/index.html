@@ -4526,18 +4526,6 @@ svg{
      DETAILS
      ============================================================ */
 
-  let detailsAutoCloseTimer = null;
-
-  function cancelDetailsAutoClose(){
-    clearTimeout(detailsAutoCloseTimer);
-    detailsAutoCloseTimer = null;
-  }
-
-  function scheduleDetailsAutoClose(){
-    cancelDetailsAutoClose();
-    detailsAutoCloseTimer = setTimeout(closeDetails,3000);
-  }
-
   function openDetails(){
 
     $("detailsOverlay")
@@ -4554,16 +4542,12 @@ svg{
 
     syncBagCount();
 
-    scheduleDetailsAutoClose();
-
     track(
       "PRODUCT_DETAILS_OPEN"
     );
   }
 
   function closeDetails(){
-
-    cancelDetailsAutoClose();
 
     $("detailsOverlay")
       .classList
@@ -4674,7 +4658,6 @@ svg{
 
   function openProductReviews(){
     openDetails();
-    cancelDetailsAutoClose();
     renderProductReviews();
     $("detailsSheet").classList.add("reviewMode");
     $("productReviewList").hidden = true;
@@ -4690,7 +4673,6 @@ svg{
   $("productRatingSummary").onclick = openProductReviews;
   $("detailsRatingSummary").onclick = openProductReviews;
   $("readReviewsButton").onclick = () => {
-    cancelDetailsAutoClose();
     const list=$("productReviewList");
     const opening=list.hidden;
     list.hidden=!opening;
@@ -4702,7 +4684,6 @@ svg{
   $("reviewClose").onclick = () => {
     $("productReviews").hidden = true;
     $("detailsSheet").classList.remove("reviewMode");
-    scheduleDetailsAutoClose();
   };
 
   $("detailsBackdrop")
@@ -4712,11 +4693,6 @@ svg{
   $("dragHandle")
     .onclick =
       closeDetails;
-
-  $("detailsSheet")?.addEventListener(
-    "pointerdown",
-    scheduleDetailsAutoClose
-  );
 
   window.addEventListener("pagehide",closeDetails);
 

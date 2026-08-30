@@ -4,7 +4,9 @@ import Stripe from "stripe";
 
 import {
   NATIONAL_SHIPPING,
-  STANDARD_CLOTHING_PARCEL
+  STANDARD_CLOTHING_PARCEL,
+  applyNationalQuoteToPlan,
+  publicNationalShipmentPlan
 } from "./shipping/shipping-service.js";
 
 import {
@@ -756,6 +758,7 @@ async function handleCreateStripeCheckout(request, response) {
       source: "cajamoda-storefront",
       deliveryMethod,
       deliverySummary: safeText(delivery.title, 300),
+      deliveryPlan: safeText(encodedNationalDeliveryPlan(delivery), 500),
       deliveryPromise: safeText(body?.delivery?.promise, 40) || "pronto",
       customerName: safeText(body?.customer?.customerName, 160),
       customerPhone: safeText(body?.customer?.customerPhone, 80),
@@ -811,6 +814,7 @@ async function handleUpdateStripeCheckout(request, response) {
       ...session.metadata,
       deliveryMethod: delivery.method,
       deliverySummary: safeText(delivery.title, 300),
+      deliveryPlan: safeText(encodedNationalDeliveryPlan(delivery), 500),
       deliveryPromise: safeText(body?.delivery?.promise, 40) || "pronto",
       customerName: safeText(body?.customer?.customerName, 160),
       customerPhone: safeText(body?.customer?.customerPhone, 80),
@@ -1020,6 +1024,20 @@ async function syncCompletedStripeSession(session) {
   });
 }
 
+function encodedNationalDeliveryPlan(delivery) {
+  const plan = publicNationalShipmentPlan(delivery?.quote?.groups || [])
+    .map(shipment => ({
+      t: shipment.type,
+      f: shipment.fee,
+      e: shipment.estimate,
+      c: shipment.carrier,
+      s: shipment.service
+    }));
+  return plan.length
+    ? Buffer.from(JSON.stringify(plan)).toString("base64url")
+    : "";
+}
+
 function stripeIntentMetadata(lines, body, delivery) {
   const metadata = {
     source: "cajamoda-custom-card",
@@ -1035,7 +1053,8 @@ function stripeIntentMetadata(lines, body, delivery) {
     deliveryCity: safeText(delivery.city, 100),
     deliveryState: safeText(delivery.state, 100),
     deliveryPostalCode: safeText(delivery.postalCode, 40),
-    deliveryFee: String(Math.max(0, Number(delivery.fee || 0)))
+    deliveryFee: String(Math.max(0, Number(delivery.fee || 0))),
+    deliveryPlan: safeText(encodedNationalDeliveryPlan(delivery), 500)
   };
   lines.forEach((line, index) => {
     metadata[`item${index}`] = Buffer.from(JSON.stringify({
@@ -1490,7 +1509,17 @@ async function calculateDeliveryQuote(body, lines = []) {
   }
   if (profile.hasNational) {
     const nationalQuote = await quoteNationalDelivery(body?.delivery || {}, body?.customer || {}, body?.cart?.total);
-    groups.push({ ...nationalQuote, fulfillment: profile.hasFast && profile.hasShip ? "rapido-nacional+liberalo" : profile.hasShip ? "liberalo" : "rapido-nacional" });
+    const nationalPlan = applyNationalQuoteToPlan(lines.length ? lines : body?.cart?.items, nationalQuote);
+    publicNationalShipmentPlan(nationalPlan).forEach(shipment => {
+      groups.push({
+        ...nationalQuote,
+        type: shipment.type,
+        fulfillment: shipment.type === "L" ? "liberalo" : "rapido-nacional",
+        fee: shipment.fee,
+        estimate: shipment.estimate,
+        itemCount: shipment.itemCount
+      });
+    });
   }
   const method = profile.hasPronto && profile.hasNational
     ? "mixed"

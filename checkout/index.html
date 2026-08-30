@@ -1235,12 +1235,13 @@ img{display:block;max-width:100%}
               <input id="customerPhone" name="phone" class="compactInput" autocomplete="tel-national" inputmode="tel" placeholder="Número de teléfono">
             </div>
             <label><select id="deliveryDepartment" class="compactInput" autocomplete="address-level1"><option value="">Departamento</option></select></label>
-            <label><input id="deliveryCity" name="city" class="compactInput cityInput" autocomplete="address-level2" list="colombiaCities" aria-label="Ciudad de entrega" placeholder="Ciudad" value="Cartagena"></label>
-            <datalist id="colombiaCities">
-              <option value="Cartagena"><option value="Bogotá"><option value="Medellín"><option value="Cali"><option value="Barranquilla"><option value="Santa Marta"><option value="Bucaramanga"><option value="Pereira"><option value="Manizales"><option value="Armenia"><option value="Cúcuta"><option value="Ibagué"><option value="Villavicencio"><option value="Montería"><option value="Sincelejo"><option value="Valledupar"><option value="Riohacha"><option value="Tunja"><option value="Popayán"><option value="Pasto"><option value="Neiva"><option value="Florencia"><option value="Quibdó"><option value="Yopal"><option value="Arauca"><option value="Leticia"><option value="San Andrés"><option value="Buenaventura"><option value="Palmira"><option value="Soacha"><option value="Envigado"><option value="Bello"><option value="Rionegro"><option value="Itagüí"><option value="Girardot"><option value="Zipaquirá"><option value="Sogamoso"><option value="Duitama"><option value="Magangué"><option value="Turbo"><option value="Apartadó"><option value="Tuluá"><option value="Buga"><option value="Cartago"><option value="Ipiales"><option value="Ocaña"><option value="Barrancabermeja"><option value="Maicao"><option value="Ciénaga"><option value="Lorica">
-            </datalist>
-            <label class="wide"><input id="deliveryAddress" class="compactInput" autocomplete="street-address" placeholder="Dirección"></label>
-            <label class="wide"><input id="deliveryPostalCode" class="compactInput" autocomplete="postal-code" inputmode="numeric" placeholder="Código postal (opcional)"></label>
+            <label><input id="deliveryCity" name="city" class="compactInput cityInput" autocomplete="address-level2" list="colombiaCities" aria-label="Ciudad de entrega" placeholder="Selecciona el departamento primero"></label>
+            <datalist id="colombiaCities"></datalist>
+            <label class="wide"><input id="deliveryAddress" class="compactInput" autocomplete="shipping street-address" list="deliveryAddressSuggestions" placeholder="Dirección"></label>
+            <datalist id="deliveryAddressSuggestions"></datalist>
+            <input id="deliveryAddressPlaceId" type="hidden">
+            <label class="wide"><input id="deliveryPostalCode" class="compactInput" autocomplete="shipping postal-code" inputmode="numeric" placeholder="Código postal (opcional)"></label>
+            <p id="addressSuggestionSource" class="deliveryNote wide" hidden>Direcciones sugeridas por Google</p>
           </div>
           <div id="prontoReceivingChoice">
             <div class="deliveryDivider"></div>
@@ -1460,6 +1461,13 @@ img{display:block;max-width:100%}
   let quoteDestinationKey = "";
   let quoteRequestVersion = 0;
   let quoteTimer = null;
+  let cityRequestVersion = 0;
+  let addressSuggestionVersion = 0;
+  let addressSuggestionTimer = null;
+  let postalLookupTimer = null;
+  let postalLookupVersion = 0;
+  let applyingAddressSuggestion = false;
+  const addressAutocompleteSession = createId();
   let unavailableProductIds = new Set();
   let incompatibleProntoItemIds = new Set();
   const PICKUP_FEE_COP = 10000;
@@ -1502,7 +1510,8 @@ img{display:block;max-width:100%}
       $("deliveryAddress")?.value.trim().toLowerCase() || "",
       $("deliveryCity")?.value.trim().toLowerCase() || "",
       $("deliveryDepartment")?.value || "",
-      $("deliveryPostalCode")?.value.trim() || ""
+      $("deliveryPostalCode")?.value.trim() || "",
+      $("deliveryAddressPlaceId")?.value || ""
     ].join("|");
   }
 
@@ -1921,6 +1930,14 @@ img{display:block;max-width:100%}
 
   function normalizeChoice(value) {
     return String(value || "").trim().toLowerCase();
+  }
+
+  function normalizeLocationChoice(value) {
+    return normalizeChoice(value)
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
   }
 
   function normalizeDeliveryMode(value){
@@ -2682,7 +2699,7 @@ img{display:block;max-width:100%}
     }
   }
 
-  const customerFields = ["email", "customerFirstName", "customerLastName", "phoneCountryCode", "customerPhone", "deliveryCity", "deliveryDepartment", "deliveryPostalCode", "deliveryAddress"];
+  const customerFields = ["email", "customerFirstName", "customerLastName", "phoneCountryCode", "customerPhone", "deliveryCity", "deliveryDepartment", "deliveryPostalCode", "deliveryAddress", "deliveryAddressPlaceId"];
 
   function loadCustomer() {
     const saved = readJson(
@@ -2932,7 +2949,6 @@ img{display:block;max-width:100%}
   function validatePaymentDetails() {
     const cart = readCart();
     const profile = checkoutFulfillmentProfile(cart);
-    selectBolivarDepartment();
     if(!deliverySelectionsComplete(cart)){
       goToStep("bag");
       showToast("Selecciona la entrega de cada producto.");
@@ -3008,9 +3024,10 @@ img{display:block;max-width:100%}
         city: $("deliveryCity")?.value.trim() || "",
         state: $("deliveryDepartment")?.value || "",
         stateName: $("deliveryDepartment")?.selectedOptions?.[0]?.textContent || "",
-        postalCode: $("deliveryPostalCode")?.value.trim() || "130001",
+        postalCode: $("deliveryPostalCode")?.value.trim() || "",
         fee: checkoutDeliveryFee(),
-        address: $("deliveryAddress")?.value.trim() || ""
+        address: $("deliveryAddress")?.value.trim() || "",
+        addressPlaceId: $("deliveryAddressPlaceId")?.value || ""
       },
       currency: "COP",
       country: "CO"
@@ -3158,7 +3175,7 @@ img{display:block;max-width:100%}
         line1: $("deliveryAddress")?.value.trim() || "",
         city: $("deliveryCity")?.value.trim() || "",
         state: $("deliveryDepartment")?.value || "",
-        postal_code: $("deliveryPostalCode")?.value.trim() || "130001",
+        postal_code: $("deliveryPostalCode")?.value.trim() || "",
         country: "CO"
       };
     }
@@ -3353,6 +3370,183 @@ img{display:block;max-width:100%}
     }
   }
 
+  function selectedDepartmentName() {
+    return $("deliveryDepartment")?.selectedOptions?.[0]?.textContent || "";
+  }
+
+  async function loadDeliveryCities({ preserveCity = false } = {}) {
+    const select = $("deliveryDepartment");
+    const cityInput = $("deliveryCity");
+    const list = $("colombiaCities");
+    const state = select?.value || "";
+    const stateName = selectedDepartmentName();
+    const previousCity = preserveCity ? cityInput?.value.trim() || "" : "";
+    const requestVersion = ++cityRequestVersion;
+    list.innerHTML = "";
+    if (!state || !stateName) {
+      cityInput.value = "";
+      cityInput.placeholder = "Selecciona el departamento primero";
+      return [];
+    }
+    cityInput.placeholder = "Cargando ciudades…";
+    try {
+      const params = new URLSearchParams({ state, stateName });
+      const response = await fetch(`${STORE_API_URL}/api/delivery/cities?${params}`, {
+        headers: { Accept: "application/json" }
+      });
+      const result = await response.json().catch(() => ({}));
+      if (requestVersion !== cityRequestVersion) return [];
+      if (!response.ok || !Array.isArray(result?.cities)) {
+        throw new Error("No pudimos cargar las ciudades.");
+      }
+      result.cities.forEach(city => {
+        const option = document.createElement("option");
+        option.value = city.name;
+        option.dataset.daneCode = city.daneCode || "";
+        list.append(option);
+      });
+      const matchingCity = result.cities.find(city =>
+        normalizeLocationChoice(city.name) === normalizeLocationChoice(previousCity)
+      );
+      cityInput.value = matchingCity?.name || previousCity;
+      cityInput.placeholder = "Ciudad";
+      return result.cities;
+    } catch (error) {
+      if (requestVersion !== cityRequestVersion) return [];
+      cityInput.value = preserveCity ? previousCity : "";
+      cityInput.placeholder = "Escribe tu ciudad";
+      console.error("[CajaModa] Cities error:", error);
+      return [];
+    }
+  }
+
+  function clearAddressVerification() {
+    if ($("deliveryAddressPlaceId")) $("deliveryAddressPlaceId").value = "";
+  }
+
+  function matchingAddressSuggestion() {
+    const value = $("deliveryAddress")?.value.trim() || "";
+    return [...($("deliveryAddressSuggestions")?.options || [])]
+      .find(option => option.value === value) || null;
+  }
+
+  async function applyAddressSuggestion(option) {
+    const placeId = option?.dataset?.placeId || "";
+    if (!placeId) return;
+    applyingAddressSuggestion = true;
+    try {
+      const response = await fetch(`${STORE_API_URL}/api/delivery/address-details`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ placeId, sessionToken: addressAutocompleteSession })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result?.address) throw new Error("No pudimos completar la dirección.");
+      const details = result.address;
+      const departmentOption = [...($("deliveryDepartment")?.options || [])].find(candidate =>
+        normalizeLocationChoice(candidate.textContent) === normalizeLocationChoice(details.departmentName)
+      );
+      if (departmentOption) {
+        $("deliveryDepartment").value = departmentOption.value;
+        await loadDeliveryCities();
+      }
+      if (details.city) $("deliveryCity").value = details.city;
+      if (details.address) $("deliveryAddress").value = details.address;
+      if (details.postalCode) $("deliveryPostalCode").value = details.postalCode;
+      $("deliveryAddressPlaceId").value = details.placeId || placeId;
+      saveCustomer();
+      renderCart();
+      scheduleDeliveryQuote();
+    } catch (error) {
+      clearAddressVerification();
+      showToast(error?.message || "No pudimos completar la dirección.");
+    } finally {
+      applyingAddressSuggestion = false;
+    }
+  }
+
+  function scheduleAddressSuggestions() {
+    clearTimeout(addressSuggestionTimer);
+    const requestVersion = ++addressSuggestionVersion;
+    const input = $("deliveryAddress")?.value.trim() || "";
+    const list = $("deliveryAddressSuggestions");
+    const source = $("addressSuggestionSource");
+    const exact = matchingAddressSuggestion();
+    if (exact) {
+      applyAddressSuggestion(exact);
+      return;
+    }
+    clearAddressVerification();
+    if (input.length < 3) {
+      list.innerHTML = "";
+      source.hidden = true;
+      return;
+    }
+    addressSuggestionTimer = setTimeout(async () => {
+      try {
+        const response = await fetch(`${STORE_API_URL}/api/delivery/address-suggestions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({
+            input,
+            city: $("deliveryCity")?.value.trim() || "",
+            stateName: selectedDepartmentName(),
+            sessionToken: addressAutocompleteSession
+          })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (requestVersion !== addressSuggestionVersion) return;
+        list.innerHTML = "";
+        (result?.suggestions || []).forEach(suggestion => {
+          const option = document.createElement("option");
+          option.value = suggestion.mainText || suggestion.text;
+          option.label = suggestion.secondaryText || suggestion.text;
+          option.dataset.placeId = suggestion.placeId;
+          list.append(option);
+        });
+        source.hidden = !list.options.length;
+      } catch (error) {
+        if (requestVersion !== addressSuggestionVersion) return;
+        list.innerHTML = "";
+        source.hidden = true;
+        console.error("[CajaModa] Address suggestions error:", error);
+      }
+    }, 350);
+  }
+
+  function schedulePostalLookup() {
+    clearTimeout(postalLookupTimer);
+    const requestVersion = ++postalLookupVersion;
+    const postalCode = $("deliveryPostalCode")?.value.trim() || "";
+    if (!/^\d{6}$/.test(postalCode)) return;
+    postalLookupTimer = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `${STORE_API_URL}/api/delivery/postal-code?postalCode=${encodeURIComponent(postalCode)}`,
+          { headers: { Accept: "application/json" } }
+        );
+        const result = await response.json().catch(() => ({}));
+        if (requestVersion !== postalLookupVersion) return;
+        if (!response.ok || !result?.location) return;
+        const stateOption = [...($("deliveryDepartment")?.options || [])].find(option =>
+          normalizeChoice(option.value) === normalizeChoice(result.location.state)
+        );
+        if (stateOption && $("deliveryDepartment").value !== stateOption.value) {
+          $("deliveryDepartment").value = stateOption.value;
+          await loadDeliveryCities();
+        }
+        if (result.location.city) $("deliveryCity").value = result.location.city;
+        if (result.location.postalCode) $("deliveryPostalCode").value = result.location.postalCode;
+        clearAddressVerification();
+        saveCustomer();
+        renderCart();
+        scheduleDeliveryQuote();
+      } catch (error) {
+        console.error("[CajaModa] Postal code lookup error:", error);
+      }
+    }, 450);
+  }
+
   async function loadDeliveryDepartments() {
     try {
       const response = await fetch(`${STORE_API_URL}/api/delivery/departments`, { headers: { Accept: "application/json" } });
@@ -3367,8 +3561,9 @@ img{display:block;max-width:100%}
         $("billingDepartment")?.append(billingOption);
       });
       loadCustomer();
-      selectBolivarDepartment();
+      await loadDeliveryCities({ preserveCity: true });
       renderCart();
+      scheduleDeliveryQuote();
     } catch (error) {
       console.error("[CajaModa] Departments error:", error);
     }
@@ -3428,17 +3623,25 @@ img{display:block;max-width:100%}
   });
 
   $("deliveryCity").onchange = () => {
-    selectBolivarDepartment();
     renderCart();
     syncDeliveryControls();
     updateStripePayAvailability();
+    scheduleDeliveryQuote();
     syncPanelHeight();
   };
   ["deliveryAddress", "deliveryCity", "deliveryPostalCode"].forEach(id => {
     $(id)?.addEventListener("input", scheduleDeliveryQuote);
   });
-  $("deliveryDepartment")?.addEventListener("change", () => {
-    selectBolivarDepartment();
+  $("deliveryAddress")?.addEventListener("input", () => {
+    if (!applyingAddressSuggestion) scheduleAddressSuggestions();
+  });
+  $("deliveryPostalCode")?.addEventListener("input", schedulePostalLookup);
+  $("deliveryDepartment")?.addEventListener("change", async () => {
+    $("deliveryCity").value = "";
+    $("deliveryPostalCode").value = "";
+    clearAddressVerification();
+    saveCustomer();
+    await loadDeliveryCities();
     renderCart();
     scheduleDeliveryQuote();
   });

@@ -4616,7 +4616,7 @@ svg{
   const fulfillmentMethods = {
     pickup:{key:"pickup",copy:"Pronto · 24–48 h · Solo Cartagena"},
     fast:{key:"rapido",copy:"Rápido Nacional · 4–7 días"},
-    ship:{key:"liberalo",copy:"Libéralo · 14–21 días"}
+    ship:{key:"liberalo",copy:"Libéralo · 14–28 días"}
   };
 
   function selectedDeliveryVariant(){
@@ -4650,7 +4650,7 @@ svg{
       else{button.removeAttribute("aria-current")}
     });
     $("fulfillmentExplanation").textContent=modes.includes("pickup")&&modes.includes("fast")&&modes.includes("ship")
-      ? "Pronto solo Cartagena, Rápido Nacional 4–7 días o Libéralo 14–21 días."
+      ? "Pronto solo Cartagena, Rápido Nacional 4–7 días o Libéralo 14–28 días."
       : modes.includes("pickup")&&modes.includes("fast")
       ? "Pronto 24–48 h solo Cartagena o Rápido Nacional 4–7 días."
       : (methods[0]||fulfillmentMethods.fast).copy;

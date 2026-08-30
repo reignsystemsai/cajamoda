@@ -865,7 +865,8 @@ async function handleStripeConfirmation(request, response, url) {
       delivery: {
         method: "Entrega CajaModa",
         message: "Te enviaremos la información de entrega por correo."
-      }
+      },
+      shipments: pendingNationalShipmentsFromEncodedPlan(session?.metadata?.deliveryPlan)
     }
   });
 }
@@ -1046,6 +1047,31 @@ function encodedNationalDeliveryPlan(delivery) {
   return plan.length
     ? Buffer.from(JSON.stringify(plan)).toString("base64url")
     : "";
+}
+
+function pendingNationalShipmentsFromEncodedPlan(value) {
+  const encoded = safeText(value, 500);
+  if (!encoded) return [];
+  try {
+    const parsed = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8"));
+    return (Array.isArray(parsed) ? parsed : [])
+      .filter(shipment => ["R", "L"].includes(safeText(shipment?.t, 1).toUpperCase()))
+      .map(shipment => {
+        const type = safeText(shipment.t, 1).toUpperCase();
+        const definition = nationalShipmentDefinition(type);
+        return {
+          type,
+          label: definition?.label || type,
+          estimate: safeText(shipment?.e, 40) || definition?.estimate || "",
+          status: type === "R" ? "ready" : "processing",
+          carrier: "",
+          trackingNumber: "",
+          trackingLink: ""
+        };
+      });
+  } catch {
+    return [];
+  }
 }
 
 function stripeIntentMetadata(lines, body, delivery) {
@@ -1279,7 +1305,8 @@ async function handleStripeIntentConfirmation(request, response, url) {
         : authorized
           ? "Pago con tarjeta autorizado"
           : "Pago en proceso",
-      delivery: getConfirmationDelivery({ shippingInfo: { title: deliveryTitle } })
+      delivery: getConfirmationDelivery({ shippingInfo: { title: deliveryTitle } }),
+      shipments: pendingNationalShipmentsFromEncodedPlan(intent?.metadata?.deliveryPlan)
     }
   });
 }
@@ -5130,7 +5157,10 @@ async function handleTrackOrder(
           order.carrier,
 
         trackingNumber:
-          order.trackingNumber
+          order.trackingNumber,
+
+        shipments:
+          order.nationalShipments
       }
     }
   );
@@ -5206,7 +5236,8 @@ async function handleOrderConfirmation(request, response, url) {
     order: {
       number: safeText(order?.number, 100),
       payment,
-      delivery: getConfirmationDelivery(order)
+      delivery: getConfirmationDelivery(order),
+      shipments: normalizedNationalOrderShipments(order)
     }
   });
 }

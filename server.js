@@ -5043,11 +5043,16 @@ async function findEnviaFulfillment(trackingNumber, orderNumber = "") {
     });
     orders = Array.isArray(result?.orders) ? result.orders : [];
   } else {
-    const result = await wix.orders.searchOrders({
-      sort: [{ fieldName: "createdDate", order: "DESC" }],
-      cursorPaging: { limit: 100 }
-    });
-    orders = Array.isArray(result?.orders) ? result.orders : [];
+    let cursor = "";
+    for (let page = 0; page < 10; page += 1) {
+      const result = await wix.orders.searchOrders({
+        sort: [{ fieldName: "createdDate", order: "DESC" }],
+        cursorPaging: { limit: 100, ...(cursor ? { cursor } : {}) }
+      });
+      orders.push(...(Array.isArray(result?.orders) ? result.orders : []));
+      cursor = safeText(result?.pagingMetadata?.cursors?.next, 500);
+      if (!cursor) break;
+    }
   }
 
   for (const order of orders) {

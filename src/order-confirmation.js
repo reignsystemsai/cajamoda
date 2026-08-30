@@ -37,6 +37,65 @@ function setStatus(message, error = false) {
   $("statusText").classList.toggle("error", error);
 }
 
+function renderShipmentCards(shipments) {
+  const container = $("shipmentCards");
+  const nationalShipments = Array.isArray(shipments) ? shipments : [];
+  container.replaceChildren();
+  container.hidden = !nationalShipments.length;
+
+  nationalShipments.forEach(shipment => {
+    const type = String(shipment?.type || "").toUpperCase();
+    const hasTracking = Boolean(shipment?.trackingNumber);
+    const card = document.createElement("article");
+    card.className = "shipmentCard";
+
+    const heading = document.createElement("div");
+    heading.className = "shipmentHeading";
+    const title = document.createElement("div");
+    title.className = "shipmentTitle";
+    title.textContent = shipment?.label || (type === "L" ? "Libéralo" : "Rápido y Fácil");
+    const status = document.createElement("div");
+    status.className = "shipmentStatus";
+    status.textContent = shipment?.status === "delivered"
+      ? "Entregado"
+      : hasTracking
+        ? "Enviado"
+        : type === "L"
+          ? "Libéralo en proceso"
+          : "Listo para enviar";
+    heading.append(title, status);
+
+    const message = document.createElement("p");
+    message.className = "shipmentMessage";
+    message.textContent = type === "L" && !hasTracking
+      ? "Seguimiento de Envia pendiente. Recibirás tu número cuando el paquete esté listo para salir desde Cartagena. Entrega estimada: 14–28 días."
+      : !hasTracking
+        ? `Preparando tu envío desde Cartagena. Entrega estimada: ${shipment?.estimate || "4–7 días"}.`
+        : `Entrega estimada: ${shipment?.estimate || (type === "L" ? "14–28 días" : "4–7 días")}.`;
+
+    card.append(heading, message);
+
+    if (hasTracking) {
+      const tracking = document.createElement("div");
+      tracking.className = "shipmentTracking";
+      const carrier = shipment?.carrier ? `${shipment.carrier} · ` : "";
+      tracking.append(document.createTextNode(`${carrier}${shipment.trackingNumber}`));
+      if (shipment?.trackingLink) {
+        tracking.append(document.createTextNode(" · "));
+        const link = document.createElement("a");
+        link.href = shipment.trackingLink;
+        link.target = "_blank";
+        link.rel = "noopener";
+        link.textContent = "Rastrear envío";
+        tracking.append(link);
+      }
+      card.append(tracking);
+    }
+
+    container.append(card);
+  });
+}
+
 async function loadConfirmation() {
   if (nequiOrderNumber) {
     $("confirmationTitle").textContent = "PEDIDO RECIBIDO";
@@ -59,8 +118,9 @@ async function loadConfirmation() {
       throw new Error(payload?.error || "El pago todavía no está confirmado.");
     }
     confirmation = payload.order;
+    renderShipmentCards(confirmation.shipments);
     $("confirmationTitle").textContent = confirmation.paid ? "COMPRA CONFIRMADA" : "PAGO AUTORIZADO";
-    $("orderNumber").textContent = `Pago #${confirmation.number}`;
+    $("orderNumber").textContent = `Pedido #${confirmation.number}`;
     $("paymentStatus").textContent = confirmation.payment;
     $("deliveryMethod").textContent = confirmation.delivery?.method || "Entrega CajaModa";
     $("deliveryMessage").textContent = confirmation.delivery?.message || "Te enviaremos actualizaciones por correo.";
@@ -78,8 +138,9 @@ async function loadConfirmation() {
       throw new Error(payload?.error || "El pago todavía no está confirmado.");
     }
     confirmation = payload.order;
+    renderShipmentCards(confirmation.shipments);
     $("confirmationTitle").textContent = confirmation.paid ? "COMPRA CONFIRMADA" : "PAGO AUTORIZADO";
-    $("orderNumber").textContent = `Pago #${confirmation.number}`;
+    $("orderNumber").textContent = `Pedido #${confirmation.number}`;
     $("paymentStatus").textContent = confirmation.payment;
     $("deliveryMethod").textContent = confirmation.delivery?.method || "Entrega CajaModa";
     $("deliveryMessage").textContent = confirmation.delivery?.message || "Te enviaremos actualizaciones por correo.";
@@ -96,6 +157,7 @@ async function loadConfirmation() {
   if (!response.ok || !payload?.ok) throw new Error(payload?.error || "No pudimos confirmar tu compra.");
 
   confirmation = payload.order;
+  renderShipmentCards(confirmation.shipments);
   $("confirmationTitle").textContent = "COMPRA CONFIRMADA";
   $("orderNumber").textContent = `Pedido #${confirmation.number}`;
   $("paymentStatus").textContent = confirmation.payment;

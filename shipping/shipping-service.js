@@ -64,6 +64,96 @@ export function nationalShipmentDefinition(type) {
   return null;
 }
 
+function descriptionLineText(line) {
+  return (Array.isArray(line?.descriptionLines) ? line.descriptionLines : [])
+    .map(description => String(
+      description?.plainText?.translated ||
+      description?.plainText?.original ||
+      description?.plainText ||
+      ""
+    ))
+    .join(" ")
+    .toLowerCase();
+}
+
+export function wixLineNationalShipmentType(line) {
+  const description = descriptionLineText(line);
+  if (description.includes("libéralo") || description.includes("liberalo")) return "L";
+  if (description.includes("rápido") || description.includes("rapido")) return "R";
+  return nationalShipmentType(line);
+}
+
+export function groupWixOrderNationalLines(order = {}) {
+  const groups = { R: [], L: [] };
+  for (const line of Array.isArray(order?.lineItems) ? order.lineItems : []) {
+    const type = wixLineNationalShipmentType(line);
+    if (type) groups[type].push(line);
+  }
+  return groups;
+}
+
+export function nationalLinesDeclaredValue(lines = []) {
+  return (Array.isArray(lines) ? lines : []).reduce((total, line) => {
+    const quantity = Math.max(1, Math.floor(Number(line?.quantity || 1)));
+    const amount = Number(
+      line?.price?.amount ||
+      line?.price_data?.unit_amount / 100 ||
+      line?.amount ||
+      0
+    );
+    return total + (Number.isFinite(amount) ? Math.max(0, amount) * quantity : 0);
+  }, 0);
+}
+
+export function buildEnviaNationalPayload({
+  origin = {},
+  destination = {},
+  customer = {},
+  carrier = "",
+  service = "",
+  declaredValue = 0,
+  printFormat = "",
+  printSize = ""
+} = {}) {
+  const payload = {
+    origin: {
+      name: String(origin.name || ""),
+      phone: String(origin.phone || ""),
+      street: String(origin.street || ""),
+      city: String(origin.city || "13001000"),
+      state: String(origin.state || "BL"),
+      country: "CO",
+      postalCode: String(origin.postalCode || "")
+    },
+    destination: {
+      name: String(customer.name || "Cliente CajaModa"),
+      phone: String(customer.phone || ""),
+      street: String(destination.street || ""),
+      city: String(destination.city || ""),
+      state: String(destination.state || ""),
+      country: "CO",
+      postalCode: String(destination.postalCode || "")
+    },
+    packages: [{
+      ...STANDARD_CLOTHING_PARCEL,
+      declaredValue: Math.max(1, Math.round(Number(declaredValue) || 1))
+    }],
+    shipment: {
+      type: 1,
+      carrier: String(carrier || ""),
+      service: String(service || "")
+    }
+  };
+  if (printFormat && printSize) {
+    payload.settings = {
+      currency: "COP",
+      printFormat: String(printFormat),
+      printSize: String(printSize)
+    };
+  }
+  return payload;
+}
+
 export function buildNationalShipmentPlan(lines = [], quotes = {}) {
   const groups = groupNationalShipmentLines(lines);
   return ["R", "L"]

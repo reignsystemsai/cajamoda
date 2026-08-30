@@ -4998,6 +4998,12 @@ function timingSafeHexEqual(left, right) {
     crypto.timingSafeEqual(leftBuffer, rightBuffer);
 }
 
+function timingSafeTextEqual(left, right) {
+  const leftHash = crypto.createHash("sha256").update(String(left || "")).digest("hex");
+  const rightHash = crypto.createHash("sha256").update(String(right || "")).digest("hex");
+  return timingSafeHexEqual(leftHash, rightHash);
+}
+
 function verifyEnviaWebhook(request, rawBody) {
   if (!ENVIA_WEBHOOK_SECRET) throw new Error("El secreto del webhook de Envia no está configurado.");
 
@@ -5005,25 +5011,35 @@ function verifyEnviaWebhook(request, rawBody) {
   const eventId = safeText(request.headers["x-webhook-id"], 200);
   const timestamp = safeText(request.headers["x-webhook-timestamp"], 30);
   const supplied = safeText(request.headers["x-webhook-signature"], 200).replace(/^v1=/i, "");
-  if (!event || !eventId || !timestamp || !supplied) {
-    throw new Error("La firma del webhook de Envia está incompleta.");
+
+  if (event && eventId && timestamp && supplied) {
+    const numericTimestamp = Number(timestamp);
+    const timestampMs = numericTimestamp > 1e12 ? numericTimestamp : numericTimestamp * 1000;
+    if (!Number.isFinite(timestampMs) || Math.abs(Date.now() - timestampMs) > 5 * 60 * 1000) {
+      throw new Error("El webhook de Envia está fuera de la ventana permitida.");
+    }
+
+    const signed = `${timestamp}.${event}.${rawBody.toString("utf8")}`;
+    const expected = crypto
+      .createHmac("sha256", ENVIA_WEBHOOK_SECRET)
+      .update(signed)
+      .digest("hex");
+    if (!timingSafeHexEqual(supplied, expected)) {
+      throw new Error("La firma del webhook de Envia no es válida.");
+    }
+    return { event, eventId };
   }
 
-  const numericTimestamp = Number(timestamp);
-  const timestampMs = numericTimestamp > 1e12 ? numericTimestamp : numericTimestamp * 1000;
-  if (!Number.isFinite(timestampMs) || Math.abs(Date.now() - timestampMs) > 5 * 60 * 1000) {
-    throw new Error("El webhook de Envia está fuera de la ventana permitida.");
+  const url = new URL(request.url || "/", "http://localhost");
+  const token = safeText(url.searchParams.get("token"), 500);
+  if (!token || !timingSafeTextEqual(token, ENVIA_WEBHOOK_SECRET)) {
+    throw new Error("El token del webhook de Envia no es válido.");
   }
 
-  const signed = `${timestamp}.${event}.${rawBody.toString("utf8")}`;
-  const expected = crypto
-    .createHmac("sha256", ENVIA_WEBHOOK_SECRET)
-    .update(signed)
-    .digest("hex");
-  if (!timingSafeHexEqual(supplied, expected)) {
-    throw new Error("La firma del webhook de Envia no es válida.");
-  }
-  return { event, eventId };
+  return {
+    event: "onShipmentStatusUpdate",
+    eventId: crypto.createHash("sha256").update(rawBody).digest("hex")
+  };
 }
 
 function rememberProcessedEnviaWebhook(eventId) {
@@ -5070,19 +5086,36 @@ async function findEnviaFulfillment(trackingNumber, orderNumber = "") {
 
 async function processEnviaTrackingWebhook(payload) {
   if (!wix) throw new Error("Wix no está configurado.");
-  if (!["tracking.simple", "tracking.ecommerce"].includes(safeText(payload?.type, 100))) {
-    return;
-  }
 
-  const data = payload?.data || {};
-  const trackingNumber = safeText(data?.tracking_number, 300);
-  const orderNumber = safeText(data?.order_data?.order_number, 100);
+  const type = safeText(payload?.type, 100);
+  const isSignedV2 = ["tracking.simple", "tracking.ecommerce"].includes(type);
+  const isLegacy = !type && Boolean(
+    payload?.trackingNumber ||
+    payload?.tracking_number
+  );
+  if (!isSignedV2 && !isLegacy) return;
+
+  const data = isSignedV2 ? (payload?.data || {}) : payload;
+  const trackingNumber = safeText(
+    data?.tracking_number ||
+    data?.trackingNumber,
+    300
+  );
+  const orderNumber = safeText(
+    data?.order_data?.order_number ||
+    data?.orderData?.orderNumber,
+    100
+  );
   if (!trackingNumber) throw new Error("Envia no incluyó un número de rastreo.");
 
   const matched = await findEnviaFulfillment(trackingNumber, orderNumber);
   if (!matched) throw new Error(`No se encontró el cumplimiento Wix para ${trackingNumber}.`);
 
-  const status = normalizeEnviaTrackingStatus(data?.status);
+  const status = normalizeEnviaTrackingStatus(
+    data?.status ||
+    data?.shipment_status ||
+    data?.shipmentStatus
+  );
   const fulfillmentId = safeText(
     matched.fulfillment?._id || matched.fulfillment?.fulfillmentId,
     150
@@ -5090,7 +5123,11 @@ async function processEnviaTrackingWebhook(payload) {
   const completed = status === "delivered";
   enviaShipmentStatuses.set(trackingNumber, {
     status,
-    description: safeText(data?.status_description, 300),
+    description: safeText(
+      data?.status_description ||
+      data?.statusDescription,
+      300
+    ),
     updatedAt: new Date().toISOString()
   });
 

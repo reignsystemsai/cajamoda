@@ -121,6 +121,8 @@ export function nationalLinesDeclaredValue(lines = []) {
     const amount = Number(
       line?.price?.amount ||
       line?.price_data?.unit_amount / 100 ||
+      line?.unitPrice ||
+      (typeof line?.price === "number" ? line.price : 0) ||
       line?.amount ||
       0
     );

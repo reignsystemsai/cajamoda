@@ -89,6 +89,34 @@ export function nationalShipmentCount(lines = []) {
   return buildNationalShipmentPlan(lines).length;
 }
 
+export function applyNationalQuoteToPlan(lines = [], quote = {}) {
+  const groups = groupNationalShipmentLines(lines);
+  const quotes = {
+    R: groups.R.length ? quote : {},
+    L: groups.L.length ? quote : {}
+  };
+  return buildNationalShipmentPlan(lines, quotes);
+}
+
+export function publicNationalShipmentPlan(plan = []) {
+  return (Array.isArray(plan) ? plan : [])
+    .filter(shipment => shipment?.type === "R" || shipment?.type === "L")
+    .map(shipment => ({
+      type: shipment.type,
+      label: String(shipment.label || ""),
+      estimate: String(shipment.estimate || ""),
+      fee: Math.max(0, Number(shipment.fee || 0)),
+      carrier: String(shipment.carrier || ""),
+      service: String(shipment.service || ""),
+      itemCount: Array.isArray(shipment.items)
+        ? shipment.items.reduce(
+            (total, line) => total + Math.max(1, Math.floor(Number(line?.quantity || 1))),
+            0
+          )
+        : Math.max(0, Math.floor(Number(shipment.itemCount || 0)))
+    }));
+}
+
 export function nationalShippingSummary(lines = []) {
   return buildNationalShipmentPlan(lines)
     .map(shipment => `${shipment.label} · ${shipment.estimate}`)

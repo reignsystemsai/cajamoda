@@ -1450,17 +1450,16 @@ img{display:block;max-width:100%}
   let stripePublishableKey = "";
   let stripeClient = null;
   let checkoutElements = null;
-  let checkoutActions = null;
   let expressCheckoutElement = null;
   let paymentElement = null;
-  let stripeSessionId = "";
-  let stripeSessionGeneration = 0;
   let stripeCanConfirm = false;
   let deliveryQuote = { method: "pickup", prontoMethod: "pickup", fee: 10000, title: "Pronto · Recoger" };
   let quoteTimer = null;
   let unavailableProductIds = new Set();
+  let incompatibleProntoItemIds = new Set();
   const PICKUP_FEE_COP = 10000;
   const CART_ITEM_UNAVAILABLE_CODE = "CART_ITEM_UNAVAILABLE";
+  const PRONTO_LOCATION_UNAVAILABLE_CODE = "PRONTO_LOCATION_UNAVAILABLE";
   const PAYMENT_PREPARATION_ERROR = "No pudimos preparar el pago. Inténtalo nuevamente.";
 
   function checkoutFulfillmentProfile(cart = readCart()) {
@@ -1508,6 +1507,15 @@ img{display:block;max-width:100%}
     return readCart().total + checkoutDeliveryFee();
   }
 
+  function syncStripeAmount() {
+    if (!checkoutElements) return;
+    try {
+      checkoutElements.update({ amount: Math.max(1, Math.round(checkoutTotal() * 100)) });
+    } catch (error) {
+      console.error("[CajaModa] Stripe amount update error:", error);
+    }
+  }
+
   function renderPaymentTotals() {
     const cart = readCart();
     const subtotal = cart.total;
@@ -1521,6 +1529,7 @@ img{display:block;max-width:100%}
     if ($("nequiDeliveryFee")) $("nequiDeliveryFee").textContent = quoteReady ? money(deliveryFee) : "Por calcular";
     if ($("stripePayButton")) $("stripePayButton").textContent = `Pagar ${money(total)} COP`;
     if ($("deliverySummary")) $("deliverySummary").textContent = quoteReady ? money(deliveryFee) : "Por calcular";
+    syncStripeAmount();
   }
 
   let activeStep = "bag";
@@ -1560,10 +1569,21 @@ img{display:block;max-width:100%}
     return unavailableProductIds.has(String(item?.productId || ""));
   }
 
+  function isIncompatibleProntoItem(item) {
+    return incompatibleProntoItemIds.has(String(item?.id || ""));
+  }
+
+  function isFlaggedCartItem(item) {
+    return isUnavailableItem(item) || isIncompatibleProntoItem(item);
+  }
+
   function unavailableItemNotice(item) {
-    if (!isUnavailableItem(item)) return "";
+    if (!isFlaggedCartItem(item)) return "";
+    const message = isIncompatibleProntoItem(item)
+      ? "Pronto actualmente está disponible únicamente en Cartagena. Retira este producto para continuar con los demás artículos."
+      : "Este producto ya no está disponible. Retíralo para continuar.";
     return `<div class="cartUnavailableNotice" role="alert">
-      <strong>Este producto ya no está disponible. Retíralo para continuar.</strong>
+      <strong>${message}</strong>
       <button class="cartUnavailableRemove" type="button" data-remove-unavailable="${escapeHtml(item.id)}">Retirar de la bolsa</button>
     </div>`;
   }
@@ -1574,6 +1594,11 @@ img{display:block;max-width:100%}
       unavailableProductIds = new Set(result.productIds.map(String).filter(Boolean));
       renderCart();
       error.code = CART_ITEM_UNAVAILABLE_CODE;
+    } else if (result?.code === PRONTO_LOCATION_UNAVAILABLE_CODE && Array.isArray(result?.cartLineIds)) {
+      incompatibleProntoItemIds = new Set(result.cartLineIds.map(String).filter(Boolean));
+      renderCart();
+      goToStep("bag");
+      error.code = PRONTO_LOCATION_UNAVAILABLE_CODE;
     } else {
       error.code = "PAYMENT_PREPARATION_FAILED";
     }
@@ -2056,6 +2081,39 @@ img{display:block;max-width:100%}
     });
   }
 
+  function selectedDepartmentIsBolivar() {
+    const select = $("deliveryDepartment");
+    const optionText = select?.selectedOptions?.[0]?.textContent || "";
+    const normalizedValue = normalizeChoice(select?.value);
+    return normalizedValue === "bl" || normalizeChoice(optionText) === "bolivar";
+  }
+
+  function selectBolivarDepartment() {
+    const select = $("deliveryDepartment");
+    if (!select || normalizeChoice($("deliveryCity")?.value) !== "cartagena") return false;
+    const option = [...select.options].find(candidate =>
+      normalizeChoice(candidate.value) === "bl" || normalizeChoice(candidate.textContent) === "bolivar"
+    );
+    if (!option) return false;
+    if (select.value !== option.value) select.value = option.value;
+    return true;
+  }
+
+  function syncProntoLocationWarnings(cart = readCart()) {
+    const city = normalizeChoice($("deliveryCity")?.value);
+    const departmentSelected = Boolean($("deliveryDepartment")?.value);
+    const outsideCartagena = Boolean(city) && city !== "cartagena";
+    const wrongDepartment = departmentSelected && !selectedDepartmentIsBolivar();
+    incompatibleProntoItemIds = new Set(
+      outsideCartagena || wrongDepartment
+        ? cart.items
+            .filter(item => normalizeDeliveryMode(item.selectedDeliveryMode) === "pickup")
+            .map(item => String(item.id))
+        : []
+    );
+    return incompatibleProntoItemIds;
+  }
+
   function cartItemDetails(item){
     const details=[];
     if(item.size){details.push(`<span class="cartOptionLine">Talla: ${escapeHtml(item.size)}</span>`)}
@@ -2165,6 +2223,7 @@ img{display:block;max-width:100%}
 
   function renderCart() {
     const cart = readCart();
+    syncProntoLocationWarnings(cart);
     const totalText = money(cart.total);
 
     $("headerBagBadge").textContent =
@@ -2241,7 +2300,7 @@ img{display:block;max-width:100%}
 
     $("cartList").innerHTML = cart.items.map(item => `
       <article
-        class="cartItem ${isUnavailableItem(item) ? "isUnavailable" : ""}"
+        class="cartItem ${isFlaggedCartItem(item) ? "isUnavailable" : ""}"
         data-cart-item="${escapeHtml(item.id)}"
       >
         ${productImage(item)}
@@ -2320,7 +2379,7 @@ img{display:block;max-width:100%}
     `).join("");
 
     $("reviewList").innerHTML = cart.items.map(item => `
-      <article class="cartItem finalCheckoutItem ${isUnavailableItem(item) ? "isUnavailable" : ""}" data-cart-item="${escapeHtml(item.id)}">
+      <article class="cartItem finalCheckoutItem ${isFlaggedCartItem(item) ? "isUnavailable" : ""}" data-cart-item="${escapeHtml(item.id)}">
         ${productImage(item)}
 
         <div class="cartInfo">
@@ -2343,7 +2402,7 @@ img{display:block;max-width:100%}
 
           ${cartItemDetails(item)}
 
-          ${unavailableItemNotice(item)}
+          ${isIncompatibleProntoItem(item) ? "" : unavailableItemNotice(item)}
 
           <div class="cartOptionControls">
             ${colorChoices(item)}
@@ -2555,6 +2614,7 @@ img{display:block;max-width:100%}
     if (removedItem && !cart.items.some(item => String(item.productId) === String(removedItem.productId))) {
       unavailableProductIds.delete(String(removedItem.productId));
     }
+    incompatibleProntoItemIds.delete(String(itemId));
 
     saveCart(cart);
     showToast("Producto eliminado.");
@@ -2569,10 +2629,11 @@ img{display:block;max-width:100%}
     if (!cart.items.some(item => String(item.productId) === String(removedItem.productId))) {
       unavailableProductIds.delete(String(removedItem.productId));
     }
+    incompatibleProntoItemIds.delete(String(itemId));
     const correctedCart = saveCart(cart);
     if (!correctedCart.items.length) {
       unavailableProductIds.clear();
-      resetStripePaymentSession();
+      incompatibleProntoItemIds.clear();
       goToStep("bag");
       return;
     }
@@ -2586,8 +2647,9 @@ img{display:block;max-width:100%}
       const result = await response.json().catch(() => ({}));
       if (!response.ok || result?.ok !== true) throw paymentPreparationFailure(result);
       unavailableProductIds.clear();
+      incompatibleProntoItemIds.clear();
       renderCart();
-      if (selectedPayment === "stripe") await rebuildStripePaymentForDelivery();
+      scheduleDeliveryQuote();
       updateNequiConfirmAvailability();
     } catch (error) {
       if (error?.code !== CART_ITEM_UNAVAILABLE_CODE) showToast(PAYMENT_PREPARATION_ERROR);
@@ -2805,7 +2867,7 @@ img{display:block;max-width:100%}
   function syncDeliveryControls() {
     const profile = checkoutFulfillmentProfile();
     const isCartagena = normalizeChoice($("deliveryCity")?.value) === "cartagena";
-    const showProntoChoice = profile.hasPronto && isCartagena;
+    const showProntoChoice = profile.hasPronto && isCartagena && selectedDepartmentIsBolivar();
     if (!profile.hasPronto) selectedDelivery = "national";
     else if (!["pickup", "moto"].includes(selectedDelivery)) selectedDelivery = "pickup";
     if ($("prontoReceivingChoice")) $("prontoReceivingChoice").hidden = !showProntoChoice;
@@ -2844,6 +2906,7 @@ img{display:block;max-width:100%}
   function validatePaymentDetails() {
     const cart = readCart();
     const profile = checkoutFulfillmentProfile(cart);
+    selectBolivarDepartment();
     if(!deliverySelectionsComplete(cart)){
       goToStep("bag");
       showToast("Selecciona la entrega de cada producto.");
@@ -2854,7 +2917,6 @@ img{display:block;max-width:100%}
     const lastName = $("customerLastName")?.value.trim();
     const phone = $("customerPhone")?.value.trim();
     const address = $("deliveryAddress")?.value.trim();
-    const isCartagena = normalizeChoice($("deliveryCity")?.value) === "cartagena";
     if (!firstName) {
       $("customerFirstName")?.focus();
       showToast("Ingresa tu nombre.");
@@ -2875,9 +2937,10 @@ img{display:block;max-width:100%}
       showToast("Ingresa la ciudad de entrega.");
       return false;
     }
-    if (profile.hasPronto && !isCartagena) {
-      $("deliveryCity")?.focus();
-      showToast("Pronto solo está disponible en Cartagena.");
+    if (syncProntoLocationWarnings(cart).size) {
+      renderCart();
+      goToStep("bag");
+      document.querySelector(".cartItem.isUnavailable")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return false;
     }
     if ((profile.hasNational || (profile.hasPronto && selectedDelivery === "moto")) && !address) {
@@ -2913,8 +2976,9 @@ img{display:block;max-width:100%}
         prontoMethod: profile.hasPronto ? selectedDelivery : "",
         promise: profile.hasPronto && profile.hasNational ? "mixed" : profile.hasShip ? "liberalo" : profile.hasFast ? "rapido-nacional" : "pronto",
         city: $("deliveryCity")?.value.trim() || "",
-        state: profile.hasNational ? $("deliveryDepartment")?.value || "" : "BL",
-        postalCode: profile.hasNational ? $("deliveryPostalCode")?.value.trim() || "" : "130001",
+        state: $("deliveryDepartment")?.value || "",
+        stateName: $("deliveryDepartment")?.selectedOptions?.[0]?.textContent || "",
+        postalCode: $("deliveryPostalCode")?.value.trim() || "130001",
         fee: checkoutDeliveryFee(),
         address: $("deliveryAddress")?.value.trim() || ""
       },
@@ -2946,7 +3010,10 @@ img{display:block;max-width:100%}
         body: JSON.stringify(checkoutPayload())
       });
       const result = await response.json().catch(() => ({}));
-      if (!response.ok || !result?.quote) throw new Error(result?.error || "No pudimos calcular la entrega.");
+      if (!response.ok || !result?.quote) {
+        if (result?.code) throw paymentPreparationFailure(result);
+        throw new Error("No pudimos calcular la entrega.");
+      }
       deliveryQuote = result.quote;
       renderPaymentTotals();
       return deliveryQuote;
@@ -2954,6 +3021,7 @@ img{display:block;max-width:100%}
       deliveryQuote = null;
       renderPaymentTotals();
       if (options.required) throw error;
+      if ([CART_ITEM_UNAVAILABLE_CODE, PRONTO_LOCATION_UNAVAILABLE_CODE].includes(error?.code)) return null;
       showToast(error?.message || "No pudimos calcular la entrega.");
       return null;
     }
@@ -2961,33 +3029,12 @@ img{display:block;max-width:100%}
 
   function scheduleDeliveryQuote() {
     clearTimeout(quoteTimer);
-    if (selectedPayment === "stripe") resetStripePaymentSession();
     const profile = checkoutFulfillmentProfile();
     deliveryQuote = profile.hasPronto && !profile.hasNational && selectedDelivery === "pickup"
       ? { method: "pickup", prontoMethod: "pickup", fee: PICKUP_FEE_COP, title: "Pronto · Recoger Cartagena" }
       : null;
     renderPaymentTotals();
-    quoteTimer = setTimeout(async () => {
-      const quote = await refreshDeliveryQuote();
-      if (quote && selectedPayment === "stripe") {
-        await rebuildStripePaymentForDelivery();
-      }
-    }, 650);
-  }
-
-  function resetStripePaymentSession() {
-    stripeSessionGeneration += 1;
-    stripeCanConfirm = false;
-    try { expressCheckoutElement?.destroy?.(); } catch {}
-    try { paymentElement?.destroy?.(); } catch {}
-    $("expressCheckoutElement")?.replaceChildren();
-    $("paymentElement")?.replaceChildren();
-    checkoutElements = null;
-    checkoutActions = null;
-    expressCheckoutElement = null;
-    paymentElement = null;
-    stripeSessionId = "";
-    $("stripePayButton").disabled = true;
+    quoteTimer = setTimeout(() => refreshDeliveryQuote(), 650);
   }
 
   function syncBillingAddressMode() {
@@ -3001,7 +3048,6 @@ img{display:block;max-width:100%}
 
   function cardCheckoutDetailsReady() {
     const profile = checkoutFulfillmentProfile();
-    const isCartagena = normalizeChoice($("deliveryCity")?.value) === "cartagena";
     if(!deliverySelectionsComplete()){return false}
     if (!$("customerFirstName")?.value.trim() ||
         !$("customerLastName")?.value.trim() ||
@@ -3009,7 +3055,6 @@ img{display:block;max-width:100%}
         !$("deliveryCity")?.value.trim() ||
         !$("billingFirstName")?.value.trim() ||
         !$("billingLastName")?.value.trim()) return false;
-    if (profile.hasPronto && !isCartagena) return false;
     if ((profile.hasNational || (profile.hasPronto && selectedDelivery === "moto")) && !$("deliveryAddress")?.value.trim()) return false;
     if (profile.hasNational && !$("deliveryDepartment")?.value) return false;
     if (!$("billingSame")?.checked) {
@@ -3024,14 +3069,8 @@ img{display:block;max-width:100%}
   }
 
   function updateStripePayAvailability() {
-    const ready = Boolean(checkoutElements && checkoutActions && paymentElement && stripeCanConfirm);
+    const ready = Boolean(checkoutElements && paymentElement && stripeCanConfirm);
     $("stripePayButton").disabled = !ready;
-  }
-
-  async function rebuildStripePaymentForDelivery() {
-    resetStripePaymentSession();
-    await initializeStripePaymentElement();
-    syncPanelHeight();
   }
 
   function billingAddress() {
@@ -3043,8 +3082,8 @@ img{display:block;max-width:100%}
       return {
         line1: $("deliveryAddress")?.value.trim() || "",
         city: $("deliveryCity")?.value.trim() || "",
-        state: selectedDelivery === "national" ? $("deliveryDepartment")?.value || "" : "BL",
-        postal_code: selectedDelivery === "national" ? $("deliveryPostalCode")?.value.trim() || "" : "130001",
+        state: $("deliveryDepartment")?.value || "",
+        postal_code: $("deliveryPostalCode")?.value.trim() || "130001",
         country: "CO"
       };
     }
@@ -3068,7 +3107,6 @@ img{display:block;max-width:100%}
 
   async function initializeStripePaymentElement() {
     if (checkoutElements) return;
-    const generation = stripeSessionGeneration;
     const errorBox = $("stripeError");
     const status = $("stripeStatus");
     if (!stripePublishableKey || typeof window.Stripe !== "function") {
@@ -3080,66 +3118,51 @@ img{display:block;max-width:100%}
       status.hidden = false;
       status.textContent = "Preparando el formulario seguro de Stripe…";
       stripeClient ||= window.Stripe(stripePublishableKey);
-      if (typeof stripeClient.initCheckoutElementsSdk !== "function") {
+      if (typeof stripeClient.elements !== "function") {
         throw new Error("No se pudo cargar la versión actual del formulario de Stripe.");
       }
-      if (selectedDelivery !== "pickup") await refreshDeliveryQuote({ required: true });
-      const payload = checkoutPayload();
-      const response = await fetch(`${STORE_API_URL}/api/stripe/checkout`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify(payload)
-      });
-      const result = await response.json().catch(() => ({}));
-      if (generation !== stripeSessionGeneration) return;
-      if (!response.ok || !result?.clientSecret || !result?.sessionId) {
-        throw paymentPreparationFailure(result);
-      }
-      unavailableProductIds.clear();
-      saveJson("cajamoda-pending-checkout", payload);
-      saveJson("cajamoda-pending-stripe-session", result.sessionId);
-      stripeSessionId = result.sessionId;
-      checkoutElements = stripeClient.initCheckoutElementsSdk({
-        clientSecret: result.clientSecret,
-        elementsOptions: {
-          appearance: {
-            theme: "stripe",
-            variables: { colorPrimary: "#080808", borderRadius: "13px", fontFamily: "Inter, Arial, sans-serif" }
-          }
+      checkoutElements = stripeClient.elements({
+        mode: "payment",
+        amount: Math.max(1, Math.round(checkoutTotal() * 100)),
+        currency: "cop",
+        paymentMethodTypes: ["card", "link"],
+        appearance: {
+          theme: "stripe",
+          variables: { colorPrimary: "#080808", borderRadius: "13px", fontFamily: "Inter, Arial, sans-serif" }
         }
       });
-      const loaded = await checkoutElements.loadActions();
-      if (generation !== stripeSessionGeneration) return;
-      if (loaded?.type === "error") throw new Error(loaded.error?.message || "No pudimos cargar el pago seguro.");
-      checkoutActions = loaded.actions;
-      expressCheckoutElement = checkoutElements.createExpressCheckoutElement({
-        paymentMethodOrder: ["link"],
+      expressCheckoutElement = checkoutElements.create("expressCheckout", {
+        paymentMethods: { link: "always", applePay: "never", googlePay: "never", paypal: "never" },
         layout: { maxColumns: 1, overflow: "never" },
         buttonHeight: 48
       });
       expressCheckoutElement.on("confirm", submitStripeExpressPayment);
-      expressCheckoutElement.mount("#expressCheckoutElement");
-      paymentElement = checkoutElements.createPaymentElement({
-        layout: "accordion",
-        fields: { billingDetails: "never" }
+      expressCheckoutElement.on("ready", event => {
+        $("expressCheckoutElement").hidden = !event?.availablePaymentMethods;
+        syncPanelHeight();
       });
-      paymentElement.mount("#paymentElement");
-      stripeCanConfirm = false;
-      updateStripePayAvailability();
-      checkoutElements.on("change", session => {
-        const stripeTotal = session?.total?.total?.amount;
-        if (stripeTotal) $("stripePayButton").textContent = `Pagar ${stripeTotal}`;
-        stripeCanConfirm = Boolean(session.canConfirm);
+      expressCheckoutElement.mount("#expressCheckoutElement");
+      paymentElement = checkoutElements.create("payment", {
+        layout: "accordion",
+        fields: { billingDetails: { name: "never", email: "never", phone: "never", address: "never" } }
+      });
+      paymentElement.on("ready", () => {
+        status.hidden = true;
+        syncPanelHeight();
+      });
+      paymentElement.on("change", event => {
+        stripeCanConfirm = Boolean(event?.complete);
         if (stripeCanConfirm) errorBox.textContent = "";
         updateStripePayAvailability();
         syncPanelHeight();
       });
-      status.hidden = true;
+      paymentElement.mount("#paymentElement");
+      stripeCanConfirm = false;
+      updateStripePayAvailability();
       syncPanelHeight();
     } catch (error) {
       stripeCanConfirm = false;
       checkoutElements = null;
-      checkoutActions = null;
       expressCheckoutElement = null;
       paymentElement = null;
       console.error("[CajaModa] Stripe Payment Element error:", error);
@@ -3152,18 +3175,73 @@ img{display:block;max-width:100%}
     const errorBox = $("stripeError");
     errorBox.textContent = "";
     try {
-      if (!checkoutElements || !checkoutActions || !expressCheckoutElement) {
+      if (!checkoutElements || !expressCheckoutElement) {
         throw new Error("El pago rápido de Link todavía está cargando.");
       }
-      if (!validatePaymentDetails()) {
-        throw new Error("Completa tus datos de contacto y entrega.");
-      }
-      const result = await checkoutActions.confirm();
-      if (result?.type === "error") throw result.error;
-      location.href = `${location.origin}/order-confirmation/?stripeSessionId=${encodeURIComponent(stripeSessionId)}`;
+      await finalizeStripePayment({ submitElements: false });
     } catch (error) {
-      errorBox.textContent = error?.message || "No pudimos procesar el pago.";
+      if (![CART_ITEM_UNAVAILABLE_CODE, PRONTO_LOCATION_UNAVAILABLE_CODE].includes(error?.code)) {
+        errorBox.textContent = error?.message || "No pudimos procesar el pago.";
+      }
     }
+  }
+
+  async function finalizeStripePayment({ submitElements = true } = {}) {
+      if (!checkoutElements || !paymentElement) throw new Error("El formulario de Stripe todavía está cargando.");
+      if (!validatePaymentDetails()) {
+        const error = new Error("Completa tus datos de contacto y entrega.");
+        if (incompatibleProntoItemIds.size) error.code = PRONTO_LOCATION_UNAVAILABLE_CODE;
+        throw error;
+      }
+      await refreshDeliveryQuote({ required: true });
+      const firstName = $("billingFirstName")?.value.trim();
+      const lastName = $("billingLastName")?.value.trim();
+      if (!firstName || !lastName) {
+        $(!firstName ? "billingFirstName" : "billingLastName")?.focus();
+        throw new Error("Ingresa el nombre y el apellido que aparecen en la tarjeta.");
+      }
+      const name = `${firstName} ${lastName}`;
+      const address = billingAddress();
+      if (submitElements) {
+        const submitted = await checkoutElements.submit();
+        if (submitted?.error) throw submitted.error;
+      }
+      const tokenResult = await stripeClient.createConfirmationToken({
+        elements: checkoutElements,
+        params: {
+          payment_method_data: {
+            billing_details: {
+              name,
+              email: $("email")?.value.trim() || undefined,
+              phone: `${$("phoneCountryCode")?.value || ""}${$("customerPhone")?.value.trim() || ""}` || undefined,
+              address
+            }
+          },
+          return_url: `${location.origin}/order-confirmation/`
+        }
+      });
+      if (tokenResult?.error || !tokenResult?.confirmationToken?.id) {
+        throw tokenResult?.error || new Error("No pudimos validar los datos de la tarjeta.");
+      }
+      const payload = checkoutPayload();
+      const response = await fetch(`${STORE_API_URL}/api/stripe/payment-intent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ ...payload, confirmationTokenId: tokenResult.confirmationToken.id })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result?.paymentIntentId || !result?.clientSecret) {
+        throw paymentPreparationFailure(result);
+      }
+      unavailableProductIds.clear();
+      incompatibleProntoItemIds.clear();
+      saveJson("cajamoda-pending-checkout", payload);
+      try { sessionStorage.setItem("cajamoda-confirmation-payment-intent", result.paymentIntentId); } catch {}
+      if (result.status === "requires_action") {
+        const nextAction = await stripeClient.handleNextAction({ clientSecret: result.clientSecret });
+        if (nextAction?.error) throw nextAction.error;
+      }
+      location.href = `${location.origin}/order-confirmation/?paymentIntent=${encodeURIComponent(result.paymentIntentId)}`;
   }
 
   async function submitStripePayment() {
@@ -3174,25 +3252,13 @@ img{display:block;max-width:100%}
     errorBox.textContent = "";
     button.textContent = "Procesando pago…";
     try {
-      if (!checkoutElements || !checkoutActions || !paymentElement) throw new Error("El formulario de Stripe todavía está cargando.");
-      if (!validatePaymentDetails()) throw new Error("Completa tus datos de contacto y entrega.");
-      const firstName = $("billingFirstName")?.value.trim();
-      const lastName = $("billingLastName")?.value.trim();
-      if (!firstName || !lastName) {
-        $(!firstName ? "billingFirstName" : "billingLastName")?.focus();
-        throw new Error("Ingresa el nombre y el apellido que aparecen en la tarjeta.");
-      }
-      const name = `${firstName} ${lastName}`;
-      const address = billingAddress();
-      const result = await checkoutActions.confirm({
-        billingAddress: { name, address }
-      });
-      if (result?.type === "error") throw result.error;
-      location.href = `${location.origin}/order-confirmation/?stripeSessionId=${encodeURIComponent(stripeSessionId)}`;
+      await finalizeStripePayment();
     } catch (error) {
-      errorBox.textContent = error?.message || "No pudimos procesar el pago.";
+      if (![CART_ITEM_UNAVAILABLE_CODE, PRONTO_LOCATION_UNAVAILABLE_CODE].includes(error?.code)) {
+        errorBox.textContent = error?.message || "No pudimos procesar el pago.";
+      }
       button.textContent = originalLabel;
-      button.disabled = false;
+      updateStripePayAvailability();
     }
   }
 
@@ -3219,13 +3285,14 @@ img{display:block;max-width:100%}
         throw paymentPreparationFailure(result);
       }
       unavailableProductIds.clear();
+      incompatibleProntoItemIds.clear();
       saveJson("cajamoda-pending-nequi-order", result);
       location.href = `/order-confirmation/?nequiOrder=${encodeURIComponent(result.orderNumber)}`;
     } catch (error) {
       console.error("[CajaModa] Nequi order error:", error);
       button.disabled = false;
       button.textContent = "Confirmar que ya pagué";
-      if (error?.code !== CART_ITEM_UNAVAILABLE_CODE) {
+      if (![CART_ITEM_UNAVAILABLE_CODE, PRONTO_LOCATION_UNAVAILABLE_CODE].includes(error?.code)) {
         showToast(error?.code === "PAYMENT_PREPARATION_FAILED" ? PAYMENT_PREPARATION_ERROR : error?.message || PAYMENT_PREPARATION_ERROR);
       }
     }
@@ -3257,6 +3324,8 @@ img{display:block;max-width:100%}
         $("billingDepartment")?.append(billingOption);
       });
       loadCustomer();
+      selectBolivarDepartment();
+      renderCart();
     } catch (error) {
       console.error("[CajaModa] Departments error:", error);
     }
@@ -3303,7 +3372,7 @@ img{display:block;max-width:100%}
   document.querySelectorAll("[data-delivery]").forEach(button => {
     button.onclick = () => {
       const profile = checkoutFulfillmentProfile();
-      if (!profile.hasPronto || normalizeChoice($("deliveryCity")?.value) !== "cartagena") {
+      if (!profile.hasPronto || normalizeChoice($("deliveryCity")?.value) !== "cartagena" || !selectedDepartmentIsBolivar()) {
         showToast("Pronto solo está disponible en Cartagena.");
         return;
       }
@@ -3316,6 +3385,8 @@ img{display:block;max-width:100%}
   });
 
   $("deliveryCity").onchange = () => {
+    selectBolivarDepartment();
+    renderCart();
     syncDeliveryControls();
     updateStripePayAvailability();
     syncPanelHeight();
@@ -3323,7 +3394,11 @@ img{display:block;max-width:100%}
   ["deliveryAddress", "deliveryCity", "deliveryPostalCode"].forEach(id => {
     $(id)?.addEventListener("change", scheduleDeliveryQuote);
   });
-  $("deliveryDepartment")?.addEventListener("change", scheduleDeliveryQuote);
+  $("deliveryDepartment")?.addEventListener("change", () => {
+    selectBolivarDepartment();
+    renderCart();
+    scheduleDeliveryQuote();
+  });
 
   [
     "customerFirstName", "customerLastName", "customerPhone", "deliveryAddress", "deliveryCity",

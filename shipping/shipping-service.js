@@ -20,6 +20,29 @@ export const NATIONAL_SHIPPING = Object.freeze({
   })
 });
 
+export function normalizeEnviaTrackingStatus(value) {
+  const status = String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+
+  if (/(delivered|entregado|entregada)/.test(status)) return "delivered";
+  if (/(out_for_delivery|reparto|ruta_de_entrega)/.test(status)) return "out_for_delivery";
+  if (/(exception|failed|failure|return|cancel|novedad|incidencia)/.test(status)) return "exception";
+  if (/(transit|picked|pickup|collected|recolect|en_camino|despach)/.test(status)) return "in_transit";
+  return "shipped";
+}
+
+export function customerEnviaTrackingLabel(status) {
+  if (status === "delivered") return "Entregado";
+  if (status === "out_for_delivery") return "En reparto";
+  if (status === "in_transit") return "En tránsito";
+  if (status === "exception") return "Novedad en el envío";
+  return "Enviado";
+}
+
 export const STANDARD_CLOTHING_PARCEL = Object.freeze({
   type: "box",
   content: "Ropa para mujer",

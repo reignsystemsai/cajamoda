@@ -5880,6 +5880,9 @@ function renderInventory(){
      ORDERS
      ============================================================ */
 
+  const readyLiberaloShipments = new Set();
+  const generatedEnviaLabels = new Map();
+
   const trackingStatuses = [
     "new",
     "processing",
@@ -5939,6 +5942,78 @@ function renderInventory(){
         `
       )
       .join("");
+  }
+
+  function nationalShipmentKey(orderId, type){
+    return `${orderId}:${type}`;
+  }
+
+  function renderNationalShipmentCards(order){
+    const shipments = Array.isArray(order.nationalShipments)
+      ? order.nationalShipments
+      : [];
+
+    if(!shipments.length){
+      return "";
+    }
+
+    return `
+      <div style="display:grid;gap:10px;margin:12px 0">
+        ${shipments.map(shipment => {
+          const type = String(shipment.type || "").toUpperCase();
+          const key = nationalShipmentKey(order.id, type);
+          const isReady = type === "R" || readyLiberaloShipments.has(key);
+          const hasTracking = Boolean(shipment.trackingNumber);
+          const generated = generatedEnviaLabels.get(key);
+          const statusText = shipment.status === "delivered"
+            ? "Entregado"
+            : hasTracking
+              ? "Enviado"
+              : isReady
+                ? "Listo para enviar"
+                : "Libéralo en proceso";
+
+          return `
+            <div class="trackingBlock" data-national-shipment="${escapeHtml(key)}">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+                <div>
+                  <strong>${escapeHtml(shipment.label || type)}</strong>
+                  <div style="margin-top:3px;font-size:11px;color:#6f6f6f">
+                    ${escapeHtml(shipment.products || "")} · ${escapeHtml(shipment.estimate || "")}
+                  </div>
+                  <div style="margin-top:6px;font-size:12px;font-weight:750">${escapeHtml(statusText)}</div>
+                  ${hasTracking ? `
+                    <div style="margin-top:5px;font-size:11px;color:#6f6f6f">
+                      ${escapeHtml(shipment.carrier || "Transportadora")} · ${escapeHtml(shipment.trackingNumber)}
+                    </div>
+                  ` : ""}
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  ${type === "L" && !hasTracking && !isReady ? `
+                    <button class="secondaryButton" type="button"
+                      data-mark-l-ready="${escapeHtml(key)}">
+                      Marcar listo para enviar
+                    </button>
+                  ` : ""}
+                  ${!hasTracking && isReady ? `
+                    <button class="secondaryButton" type="button"
+                      data-generate-envia-label="${escapeHtml(key)}"
+                      data-order-id="${escapeHtml(order.id)}"
+                      data-shipment-type="${escapeHtml(type)}">
+                      Generar guía Envia
+                    </button>
+                  ` : ""}
+                  ${generated?.labelUrl ? `
+                    <a class="secondaryButton" href="${escapeHtml(generated.labelUrl)}"
+                      target="_blank" rel="noopener">Imprimir guía</a>
+                  ` : ""}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    `;
   }
 
   function renderOrders(){
@@ -6028,7 +6103,9 @@ function renderInventory(){
                   </div>
                 ` : ""}
 
-                ${order.source !== "stripeAuthorization" ? `<div class="trackingBlock">
+                ${renderNationalShipmentCards(order)}
+
+                ${order.source !== "stripeAuthorization" && !(Array.isArray(order.nationalShipments) && order.nationalShipments.length) ? `<div class="trackingBlock">
 
                   <div class="trackingSteps">
 
@@ -6202,6 +6279,41 @@ function renderInventory(){
 
         }
       );
+
+    qsa("[data-mark-l-ready]").forEach(button => {
+      button.onclick = () => {
+        readyLiberaloShipments.add(button.dataset.markLReady);
+        renderOrders();
+      };
+    });
+
+    qsa("[data-generate-envia-label]").forEach(button => {
+      button.onclick = async () => {
+        const orderId = button.dataset.orderId;
+        const type = button.dataset.shipmentType;
+        const key = nationalShipmentKey(orderId, type);
+        button.disabled = true;
+        button.textContent = "Generando…";
+        try {
+          const result = await apiRequest(
+            `/api/orders/${encodeURIComponent(orderId)}/shipments/${encodeURIComponent(type)}/label`,
+            {
+              method: "POST",
+              body: { ready: type === "R" || readyLiberaloShipments.has(key) }
+            }
+          );
+          if(result?.shipment?.labelUrl){
+            generatedEnviaLabels.set(key, result.shipment);
+          }
+          showToast(result?.duplicatePrevented ? "La guía ya existe." : "Guía Envia generada.");
+          await loadRealOrders(true);
+        } catch (error) {
+          button.disabled = false;
+          button.textContent = "Generar guía Envia";
+          showToast(error?.message || "No pudimos generar la guía Envia.");
+        }
+      };
+    });
 
     qsa("[data-confirm-nequi]").forEach(button => {
       button.onclick = async () => {

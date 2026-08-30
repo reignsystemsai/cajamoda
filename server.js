@@ -6,6 +6,10 @@ import {
   NATIONAL_SHIPPING,
   STANDARD_CLOTHING_PARCEL,
   applyNationalQuoteToPlan,
+  buildEnviaNationalPayload,
+  groupWixOrderNationalLines,
+  nationalLinesDeclaredValue,
+  nationalShipmentDefinition,
   publicNationalShipmentPlan
 } from "./shipping/shipping-service.js";
 
@@ -81,6 +85,11 @@ const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 const STRIPE_PUBLISHABLE_KEY = safeEnv(process.env.STRIPE_PUBLISHABLE_KEY);
 const NEQUI_PHONE = safeEnv(process.env.NEQUI_PHONE);
 const ENVIA_API_TOKEN = safeEnv(process.env.ENVIA_API_TOKEN);
+const ENVIA_ENV = safeEnv(process.env.ENVIA_ENV).toLowerCase() === "sandbox" ? "sandbox" : "production";
+const ENVIA_API_BASE = ENVIA_ENV === "sandbox" ? "https://api-test.envia.com" : "https://api.envia.com";
+const ENVIA_QUERIES_BASE = ENVIA_ENV === "sandbox" ? "https://queries-test.envia.com" : "https://queries.envia.com";
+const ENVIA_PRINT_FORMAT = safeEnv(process.env.ENVIA_PRINT_FORMAT);
+const ENVIA_PRINT_SIZE = safeEnv(process.env.ENVIA_PRINT_SIZE);
 const ENVIA_ORIGIN_NAME = safeEnv(process.env.ENVIA_ORIGIN_NAME);
 const ENVIA_ORIGIN_PHONE = safeEnv(process.env.ENVIA_ORIGIN_PHONE);
 const ENVIA_ORIGIN_STREET = safeEnv(process.env.ENVIA_ORIGIN_STREET);
@@ -94,6 +103,7 @@ const MOTO_QUOTE_CACHE_TTL = 24 * 60 * 60 * 1000;
 const motoQuoteCache = new Map();
 const stripeIntentSyncLocks = new Map();
 const nequiConfirmationLocks = new Map();
+const enviaLabelLocks = new Map();
 const CARTAGENA_PICKUP_ADDRESS = "Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar, Colombia";
 const STOREFRONT_URL = String(
   process.env.STOREFRONT_URL || "https://www.cajamoda.com"
@@ -1394,7 +1404,7 @@ function rateMaxDays(rate) {
 }
 
 async function locateColombiaCity(city, state) {
-  const payload = await externalJson("https://api.envia.com/locate", {
+  const payload = await externalJson(`${ENVIA_API_BASE}/locate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ city, state, country: "CO" })
@@ -1405,7 +1415,7 @@ async function locateColombiaCity(city, state) {
 }
 
 async function enviaCarriers() {
-  const payload = await externalJson("https://queries.envia.com/available-carrier/CO/0/1", {
+  const payload = await externalJson(`${ENVIA_QUERIES_BASE}/available-carrier/CO/0/1`, {
     headers: { Authorization: `Bearer ${ENVIA_API_TOKEN}` }
   });
   const names = enviaDataArray(payload)
@@ -1442,7 +1452,7 @@ async function quoteNationalDelivery(delivery, customer, declaredValue) {
     settings: { currency: "COP" },
     shipment: { type: 1, carrier }
   });
-  const responses = await Promise.allSettled(carriers.map(carrier => externalJson("https://api.envia.com/ship/rate/", {
+  const responses = await Promise.allSettled(carriers.map(carrier => externalJson(`${ENVIA_API_BASE}/ship/rate/`, {
     method: "POST",
     headers: { Authorization: `Bearer ${ENVIA_API_TOKEN}`, "Content-Type": "application/json" },
     body: JSON.stringify(quoteBody(carrier))
@@ -1455,7 +1465,8 @@ async function quoteNationalDelivery(delivery, customer, declaredValue) {
   return {
     method: "national", fee: Math.ceil(ratePrice(selected)),
     carrier: safeText(selected.carrier, 60),
-    service: safeText(selected.serviceDescription || selected.service, 100),
+    service: safeText(selected.service, 100),
+    serviceDescription: safeText(selected.serviceDescription || selected.service, 100),
     estimate: safeText(selected.deliveryEstimate || "4–7 días", 100)
   };
 }
@@ -1548,7 +1559,7 @@ async function handleDeliveryQuote(request, response) {
 
 async function handleDeliveryDepartments(_request, response) {
   if (!ENVIA_API_TOKEN) return sendError(response, 503, "Envia todavía no está configurado.");
-  const payload = await externalJson("https://queries.envia.com/state?country_code=CO", {
+  const payload = await externalJson(`${ENVIA_QUERIES_BASE}/state?country_code=CO`, {
     headers: { Authorization: `Bearer ${ENVIA_API_TOKEN}` }
   });
   const departments = enviaDataArray(payload)
@@ -4382,6 +4393,56 @@ function getFirstTrackingInfo(
   return {};
 }
 
+function orderLineId(line) {
+  return safeText(line?._id || line?.id, 100);
+}
+
+function fulfillmentLineIds(fulfillment) {
+  return new Set(
+    (Array.isArray(fulfillment?.lineItems) ? fulfillment.lineItems : [])
+      .map(orderLineId)
+      .filter(Boolean)
+  );
+}
+
+function normalizedNationalOrderShipments(order) {
+  const groups = groupWixOrderNationalLines(order);
+  const fulfillments = Array.isArray(order?.fulfillments) ? order.fulfillments : [];
+  return ["R", "L"]
+    .filter(type => groups[type].length)
+    .map(type => {
+      const lineIds = new Set(groups[type].map(orderLineId).filter(Boolean));
+      const fulfillment = fulfillments.find(candidate => {
+        const candidateIds = fulfillmentLineIds(candidate);
+        return [...lineIds].some(id => candidateIds.has(id));
+      });
+      const trackingInfo = fulfillment?.trackingInfo || {};
+      const trackingNumber = safeText(trackingInfo?.trackingNumber, 300);
+      const definition = nationalShipmentDefinition(type);
+      return {
+        type,
+        label: definition?.label || type,
+        estimate: definition?.estimate || "",
+        itemCount: groups[type].reduce(
+          (total, line) => total + Math.max(1, Math.floor(Number(line?.quantity || 1))),
+          0
+        ),
+        products: groups[type].map(getLineItemName).join(", "),
+        status: fulfillment?.completed
+          ? "delivered"
+          : trackingNumber
+            ? "shipped"
+            : type === "R"
+              ? "ready"
+              : "processing",
+        carrier: safeText(trackingInfo?.shippingProvider, 200),
+        trackingNumber,
+        trackingLink: safeText(trackingInfo?.trackingLink, 500),
+        fulfillmentId: safeText(fulfillment?._id || fulfillment?.fulfillmentId, 100)
+      };
+    });
+}
+
 function normalizeWixOrder(
   order
 ) {
@@ -4469,6 +4530,9 @@ function normalizeWixOrder(
 
     delivery:
       safeText(order?.shippingInfo?.title, 250),
+
+    nationalShipments:
+      normalizedNationalOrderShipments(order),
 
     fulfillmentStatus:
       safeText(
@@ -4709,6 +4773,181 @@ async function handleStoreOwnerSummary(request, response) {
       stripeOperational: Boolean(stripe)
     }
   });
+}
+
+function rawOrderNationalShipment(order, type) {
+  const groups = groupWixOrderNationalLines(order);
+  const lines = groups[type] || [];
+  if (!lines.length) throw new Error(`El pedido no contiene productos ${type}.`);
+  return { type, lines, definition: nationalShipmentDefinition(type) };
+}
+
+function orderNationalDelivery(order) {
+  const destination = order?.shippingInfo?.logistics?.shippingDestination || {};
+  const address = destination?.address || {};
+  const contact = destination?.contactDetails || getContactDetails(order);
+  return {
+    delivery: {
+      address: safeText(address?.addressLine || address?.streetAddress?.value || address?.streetAddress, 250),
+      city: safeText(address?.city, 100),
+      state: safeText(address?.subdivision || address?.state, 10),
+      postalCode: safeText(address?.postalCode, 20)
+    },
+    customer: {
+      name: getOrderCustomerName(order),
+      phone: safeText(contact?.phone, 80)
+    }
+  };
+}
+
+function fulfillmentForShipment(fulfillments, lines) {
+  const lineIds = new Set(lines.map(orderLineId).filter(Boolean));
+  return (Array.isArray(fulfillments) ? fulfillments : []).find(fulfillment => {
+    const candidateIds = fulfillmentLineIds(fulfillment);
+    return [...lineIds].some(id => candidateIds.has(id));
+  });
+}
+
+async function handleGenerateEnviaLabel(request, response, orderId, shipmentType) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
+  if (!wix) return sendError(response, 503, "Wix no está configurado.");
+  requireDeliveryEnvironment("national");
+
+  const type = safeText(shipmentType, 1).toUpperCase();
+  if (!["R", "L"].includes(type)) return sendError(response, 400, "El grupo de envío no es válido.");
+  const body = await readBody(request);
+  if (type === "L" && body?.ready !== true) {
+    return sendError(response, 409, "Marca el pedido Libéralo como listo antes de generar la guía.");
+  }
+
+  const lockKey = `${orderId}:${type}`;
+  if (enviaLabelLocks.has(lockKey)) {
+    return sendError(response, 409, "La guía de este envío ya se está generando.");
+  }
+  enviaLabelLocks.set(lockKey, true);
+
+  try {
+    const order = await wix.orders.getOrder(orderId);
+    const paymentStatus = safeText(order?.paymentStatus, 100).toUpperCase();
+    if (!["PAID", "PARTIALLY_PAID", "AUTHORIZED"].includes(paymentStatus)) {
+      return sendError(response, 409, "Confirma el pago antes de generar una guía.");
+    }
+
+    const shipment = rawOrderNationalShipment(order, type);
+    const listed = await wix.orderFulfillments.listFulfillmentsForSingleOrder(orderId);
+    const fulfillments = listed?.orderWithFulfillments?.fulfillments || [];
+    const existing = fulfillmentForShipment(fulfillments, shipment.lines);
+    const existingTracking = safeText(existing?.trackingInfo?.trackingNumber, 300);
+    if (existingTracking) {
+      return sendJson(response, 200, {
+        ok: true,
+        duplicatePrevented: true,
+        shipment: {
+          type,
+          carrier: safeText(existing?.trackingInfo?.shippingProvider, 200),
+          trackingNumber: existingTracking,
+          trackingLink: safeText(existing?.trackingInfo?.trackingLink, 500)
+        }
+      });
+    }
+
+    const destination = orderNationalDelivery(order);
+    const quote = await quoteNationalDelivery(
+      destination.delivery,
+      destination.customer,
+      nationalLinesDeclaredValue(shipment.lines)
+    );
+    if (!quote.carrier || !quote.service) {
+      return sendError(response, 502, "Envia no devolvió una transportadora y servicio válidos.");
+    }
+
+    const located = await locateColombiaCity(destination.delivery.city, destination.delivery.state);
+    const payload = buildEnviaNationalPayload({
+      origin: {
+        name: ENVIA_ORIGIN_NAME,
+        phone: ENVIA_ORIGIN_PHONE,
+        street: ENVIA_ORIGIN_STREET,
+        city: "13001000",
+        state: "BL",
+        postalCode: ENVIA_ORIGIN_POSTAL_CODE
+      },
+      destination: {
+        street: destination.delivery.address,
+        city: safeText(located?.city, 20),
+        state: safeText(located?.state || destination.delivery.state, 5),
+        postalCode: destination.delivery.postalCode || safeText(located?.postalCode || located?.zipcode, 20)
+      },
+      customer: destination.customer,
+      carrier: quote.carrier,
+      service: quote.service,
+      declaredValue: nationalLinesDeclaredValue(shipment.lines),
+      printFormat: ENVIA_PRINT_FORMAT,
+      printSize: ENVIA_PRINT_SIZE
+    });
+    const generated = await externalJson(`${ENVIA_API_BASE}/ship/generate/`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${ENVIA_API_TOKEN}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+    const label = enviaDataArray(generated)[0] || generated?.data || {};
+    const trackingNumber = safeText(label?.trackingNumber || label?.tracking_number, 300);
+    const labelUrl = safeText(label?.label || label?.labelUrl || label?.label_url, 1000);
+    const trackingLink = safeText(label?.trackUrl || label?.trackingLink || label?.tracking_url, 1000);
+    const shipmentId = safeText(label?.shipmentId || label?.shipment_id || label?.id, 100);
+    if (!trackingNumber || !labelUrl) {
+      return sendError(response, 502, "Envia no devolvió la guía y el número de rastreo.");
+    }
+
+    const fulfillment = {
+      trackingInfo: {
+        trackingNumber,
+        shippingProvider: quote.carrier,
+        ...(trackingLink ? { trackingLink } : {})
+      },
+      status: "In_Delivery",
+      completed: false
+    };
+    const lineItems = shipment.lines
+      .map(line => ({
+        _id: orderLineId(line),
+        quantity: Math.max(1, Math.floor(Number(line?.quantity || 1)))
+      }))
+      .filter(line => line._id);
+
+    if (existing?._id || existing?.fulfillmentId) {
+      await wix.orderFulfillments.updateFulfillment(
+        {
+          orderId,
+          fulfillmentId: safeText(existing?._id || existing?.fulfillmentId, 100)
+        },
+        { fulfillment }
+      );
+    } else {
+      await wix.orderFulfillments.createFulfillment(orderId, { ...fulfillment, lineItems });
+    }
+
+    sendJson(response, 201, {
+      ok: true,
+      shipment: {
+        type,
+        label: shipment.definition?.label || type,
+        estimate: shipment.definition?.estimate || "",
+        carrier: quote.carrier,
+        service: quote.serviceDescription || quote.service,
+        trackingNumber,
+        trackingLink,
+        shipmentId,
+        labelUrl,
+        price: Number(label?.totalPrice || label?.price || quote.fee || 0),
+        environment: ENVIA_ENV
+      }
+    });
+  } finally {
+    enviaLabelLocks.delete(lockKey);
+  }
 }
 
 async function handleSaveOrderTracking(request, response, orderId) {
@@ -5477,6 +5716,17 @@ const server =
         const cancelStripeMatch = url.pathname.match(/^\/api\/stripe\/authorizations\/(pi_[A-Za-z0-9]+)\/cancel$/);
         if (request.method === "POST" && cancelStripeMatch) {
           await handleCancelStripeAuthorization(request, response, cancelStripeMatch[1]);
+          return;
+        }
+
+        const enviaLabelMatch = url.pathname.match(/^\/api\/orders\/([^/]+)\/shipments\/([RL])\/label$/);
+        if (request.method === "POST" && enviaLabelMatch) {
+          await handleGenerateEnviaLabel(
+            request,
+            response,
+            decodeURIComponent(enviaLabelMatch[1]),
+            enviaLabelMatch[2]
+          );
           return;
         }
 

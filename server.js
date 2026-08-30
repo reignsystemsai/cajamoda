@@ -511,6 +511,8 @@ function wixVariantPrice(variant) {
 
 const CHECKOUT_ITEM_UNAVAILABLE_CODE = "CART_ITEM_UNAVAILABLE";
 const CHECKOUT_ITEM_UNAVAILABLE_MESSAGE = "Uno de los productos de tu bolsa ya no está disponible.";
+const PRONTO_LOCATION_UNAVAILABLE_CODE = "PRONTO_LOCATION_UNAVAILABLE";
+const PRONTO_LOCATION_UNAVAILABLE_MESSAGE = "Pronto actualmente está disponible únicamente en Cartagena.";
 const CHECKOUT_SAFE_ERROR_MESSAGE = "No pudimos preparar el pago. Inténtalo nuevamente.";
 
 class CartItemUnavailableError extends Error {
@@ -519,6 +521,15 @@ class CartItemUnavailableError extends Error {
     this.name = "CartItemUnavailableError";
     this.code = CHECKOUT_ITEM_UNAVAILABLE_CODE;
     this.productIds = [...new Set((productIds || []).map(value => safeText(value, 80)).filter(Boolean))];
+  }
+}
+
+class ProntoLocationUnavailableError extends Error {
+  constructor(cartLineIds) {
+    super(PRONTO_LOCATION_UNAVAILABLE_MESSAGE);
+    this.name = "ProntoLocationUnavailableError";
+    this.code = PRONTO_LOCATION_UNAVAILABLE_CODE;
+    this.cartLineIds = [...new Set((cartLineIds || []).map(value => safeText(value, 80)).filter(Boolean))];
   }
 }
 
@@ -572,6 +583,14 @@ async function protectCheckoutOperation(response, label, operation) {
       });
       return;
     }
+    if (error instanceof ProntoLocationUnavailableError) {
+      sendJson(response, 409, {
+        code: PRONTO_LOCATION_UNAVAILABLE_CODE,
+        message: PRONTO_LOCATION_UNAVAILABLE_MESSAGE,
+        cartLineIds: error.cartLineIds
+      });
+      return;
+    }
     sendJson(response, 500, {
       code: "PAYMENT_PREPARATION_FAILED",
       message: CHECKOUT_SAFE_ERROR_MESSAGE
@@ -580,6 +599,7 @@ async function protectCheckoutOperation(response, label, operation) {
 }
 
 async function stripeLineItemFromCartItem(item) {
+  const cartLineId = safeText(item?.id || item?._id || item?.lineItemId, 80);
   const productId = safeText(item?.productId, 80);
   const variantId = safeText(item?.variantId, 80);
   const quantity = Math.min(20, Math.max(1, Math.floor(Number(item?.quantity || 1))));
@@ -640,6 +660,7 @@ async function stripeLineItemFromCartItem(item) {
   }
 
   return {
+    cartLineId,
     quantity,
     fulfillmentCode: normalizedFulfillmentCode,
     selectedDeliveryMode,
@@ -683,7 +704,7 @@ async function handleCreateStripeCheckout(request, response) {
   const catalogLines = await verifiedCheckoutCatalogItems(items);
   // Keep CajaModa fulfillment data server-side. Stripe only accepts documented
   // line item properties, so never forward fulfillmentCode at this level.
-  const lineItems = catalogLines.map(({ fulfillmentCode, selectedDeliveryMode, ...line }) => line);
+  const lineItems = catalogLines.map(({ cartLineId, fulfillmentCode, selectedDeliveryMode, ...line }) => line);
   const customerEmail = safeText(body?.customer?.email, 250);
   const delivery = await checkoutDelivery(body, catalogLines);
   const deliveryMethod = delivery.method;
@@ -992,10 +1013,15 @@ function stripeIntentLines(intent) {
 async function handleCreateStripePaymentIntent(request, response) {
   if (!stripe) return sendError(response, 503, "Stripe todavía no está configurado en el servidor.");
   const body = await readBody(request);
+  const confirmationTokenId = safeText(body?.confirmationTokenId, 120);
+  if (!/^ctoken_[A-Za-z0-9_]+$/.test(confirmationTokenId)) {
+    return sendError(response, 400, "Los datos de la tarjeta no son válidos.");
+  }
   const items = Array.isArray(body?.cart?.items) ? body.cart.items.slice(0, 35) : [];
   if (!items.length) return sendError(response, 400, "Tu bolsa está vacía.");
   const verified = await verifiedCheckoutCatalogItems(items);
   const lines = verified.map(line => ({
+    cartLineId: safeText(line?.cartLineId, 80),
     productId: safeText(line?.price_data?.product_data?.metadata?.productId, 80),
     variantId: safeText(line?.price_data?.product_data?.metadata?.variantId, 80),
     quantity: Math.max(1, Math.floor(Number(line.quantity || 1))),
@@ -1014,6 +1040,10 @@ async function handleCreateStripePaymentIntent(request, response) {
   const intent = await stripe.paymentIntents.create({
     amount: totalCents,
     currency: "cop",
+    confirm: true,
+    confirmation_token: confirmationTokenId,
+    use_stripe_sdk: true,
+    return_url: `${STOREFRONT_URL}/order-confirmation/`,
     capture_method: captureMethod,
     payment_method_types: ["card", "link"],
     receipt_email: customerEmail || undefined,
@@ -1037,6 +1067,7 @@ async function handleCreateStripePaymentIntent(request, response) {
     ok: true,
     clientSecret: intent.client_secret,
     paymentIntentId: intent.id,
+    status: intent.status,
     amount: totalCents
   });
 }
@@ -1369,15 +1400,27 @@ function checkoutFulfillmentProfile(body, lines = []) {
   const hasShip = modes.includes("ship");
   const hasNational = hasFast || hasShip;
   const city = safeText(body?.delivery?.city || body?.customer?.deliveryDestinationCity, 100);
-  const isCartagena = city.toLocaleLowerCase("es-CO").normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes("cartagena");
+  const state = safeText(body?.delivery?.state, 100);
+  const stateName = safeText(body?.delivery?.stateName, 100);
+  const normalizedCity = city.toLocaleLowerCase("es-CO").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const normalizedState = state.toLocaleLowerCase("es-CO").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const normalizedStateName = stateName.toLocaleLowerCase("es-CO").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const isCartagena = normalizedCity.includes("cartagena");
+  const isBolivar = normalizedState === "bl" || normalizedState === "bolivar" || normalizedStateName === "bolivar";
+  const prontoCartLineIds = source
+    .filter(line => checkoutLineDeliveryMode(line) === "pickup")
+    .map(line => safeText(line?.cartLineId || line?.id || line?._id || line?.lineItemId, 80))
+    .filter(Boolean);
   const requestedProntoMethod = safeText(body?.delivery?.prontoMethod || body?.delivery?.method, 20).toLowerCase();
   const prontoMethod = hasPronto ? requestedProntoMethod : "";
   if (!hasPronto && !hasNational) throw new Error("Selecciona la entrega de cada producto.");
-  if (hasPronto && !isCartagena) throw new Error("Pronto solo está disponible en Cartagena.");
+  if (hasPronto && (!isCartagena || !isBolivar)) {
+    throw new ProntoLocationUnavailableError(prontoCartLineIds);
+  }
   if (hasPronto && !["pickup", "moto"].includes(prontoMethod)) {
     throw new Error("Elige cómo recibir tu pedido Pronto en Cartagena.");
   }
-  return { hasPronto, hasFast, hasShip, hasNational, prontoMethod, city };
+  return { hasPronto, hasFast, hasShip, hasNational, prontoMethod, city, state };
 }
 
 async function calculateDeliveryQuote(body, lines = []) {
@@ -1489,6 +1532,7 @@ async function checkoutDelivery(body, lines = []) {
 async function verifiedCheckoutLines(items) {
   const verified = await verifiedCheckoutCatalogItems(items);
   return verified.map(line => ({
+    cartLineId: safeText(line.cartLineId, 80),
     productId: line.price_data.product_data.metadata.productId,
     variantId: line.price_data.product_data.metadata.variantId,
     quantity: line.quantity,
@@ -5461,7 +5505,7 @@ const server =
         }
 
         if(request.method === "POST" && url.pathname === "/api/delivery/quote"){
-          await handleDeliveryQuote(request,response);
+          await protectCheckoutOperation(response,"delivery quote",() => handleDeliveryQuote(request,response));
           return;
         }
 

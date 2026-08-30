@@ -3,6 +3,11 @@ import crypto from "node:crypto";
 import Stripe from "stripe";
 
 import {
+  NATIONAL_SHIPPING,
+  STANDARD_CLOTHING_PARCEL
+} from "./shipping/shipping-service.js";
+
+import {
   createClient,
   ApiKeyStrategy
 } from "@wix/sdk";
@@ -1412,10 +1417,8 @@ async function quoteNationalDelivery(delivery, customer, declaredValue) {
       postalCode: postalCode || safeText(located.postalCode || located.zipcode, 20)
     },
     packages: [{
-      type: "box", content: "Ropa para mujer", amount: 1,
-      declaredValue: Math.max(1, Math.round(Number(declaredValue) || 1)),
-      lengthUnit: "CM", weightUnit: "KG", weight: 0.5,
-      dimensions: { length: 30, width: 25, height: 5 }
+      ...STANDARD_CLOTHING_PARCEL,
+      declaredValue: Math.max(1, Math.round(Number(declaredValue) || 1))
     }],
     settings: { currency: "COP" },
     shipment: { type: 1, carrier }
@@ -1497,14 +1500,14 @@ async function calculateDeliveryQuote(body, lines = []) {
   const labels = [];
   if (profile.hasPronto) labels.push(profile.prontoMethod === "moto" ? "Pronto · Moto Cartagena" : "Pronto · Recoger Cartagena");
   if (profile.hasFast) labels.push("Rápido Nacional · 4–7 días");
-  if (profile.hasShip) labels.push("Libéralo · 14–21 días");
+  if (profile.hasShip) labels.push("Libéralo · 14–28 días");
   return {
     method,
     prontoMethod: profile.prontoMethod,
     fee: groups.reduce((sum, group) => sum + Math.max(0, Number(group.fee || 0)), 0),
     groups,
     title: labels.join(" + "),
-    maxBusinessDays: profile.hasShip ? 21 : profile.hasNational ? 7 : 2
+    maxBusinessDays: profile.hasShip ? NATIONAL_SHIPPING.liberalo.maxDays : profile.hasNational ? NATIONAL_SHIPPING.rapido.maxDays : 2
   };
 }
 
@@ -4905,7 +4908,7 @@ function getConfirmationDelivery(order) {
     return { method: title || "Pickup Ahora", message: "Te avisaremos cuando tu pedido esté listo." };
   }
   if (normalized.includes("libér") || normalized.includes("liber")) {
-    return { method: title || "Libéralo", message: "Te enviaremos actualizaciones durante los próximos 14–21 días." };
+    return { method: title || "Libéralo", message: "Te enviaremos actualizaciones durante los próximos 14–28 días." };
   }
   return { method: title || "Entrega CajaModa", message: "Te enviaremos la información de entrega por correo." };
 }

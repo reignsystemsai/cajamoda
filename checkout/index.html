@@ -1450,9 +1450,12 @@ img{display:block;max-width:100%}
   let stripePublishableKey = "";
   let stripeClient = null;
   let checkoutElements = null;
+  let checkoutActions = null;
   let expressCheckoutElement = null;
   let paymentElement = null;
+  let stripeSessionId = "";
   let stripeCanConfirm = false;
+  let stripeSessionUpdate = Promise.resolve();
   let deliveryQuote = { method: "pickup", prontoMethod: "pickup", fee: 10000, title: "Pronto · Recoger" };
   let quoteTimer = null;
   let unavailableProductIds = new Set();
@@ -1507,15 +1510,6 @@ img{display:block;max-width:100%}
     return readCart().total + checkoutDeliveryFee();
   }
 
-  function syncStripeAmount() {
-    if (!checkoutElements) return;
-    try {
-      checkoutElements.update({ amount: Math.max(1, Math.round(checkoutTotal() * 100)) });
-    } catch (error) {
-      console.error("[CajaModa] Stripe amount update error:", error);
-    }
-  }
-
   function renderPaymentTotals() {
     const cart = readCart();
     const subtotal = cart.total;
@@ -1529,7 +1523,6 @@ img{display:block;max-width:100%}
     if ($("nequiDeliveryFee")) $("nequiDeliveryFee").textContent = quoteReady ? money(deliveryFee) : "Por calcular";
     if ($("stripePayButton")) $("stripePayButton").textContent = `Pagar ${money(total)} COP`;
     if ($("deliverySummary")) $("deliverySummary").textContent = quoteReady ? money(deliveryFee) : "Por calcular";
-    syncStripeAmount();
   }
 
   let activeStep = "bag";
@@ -3034,7 +3027,17 @@ img{display:block;max-width:100%}
       ? { method: "pickup", prontoMethod: "pickup", fee: PICKUP_FEE_COP, title: "Pronto · Recoger Cartagena" }
       : null;
     renderPaymentTotals();
-    quoteTimer = setTimeout(() => refreshDeliveryQuote(), 650);
+    quoteTimer = setTimeout(async () => {
+      const quote = await refreshDeliveryQuote();
+      if (quote && checkoutElements && stripeSessionId) {
+        try {
+          await syncStripeCheckoutSession();
+        } catch (error) {
+          console.error("[CajaModa] Stripe Checkout update error:", error);
+          $("stripeError").textContent = PAYMENT_PREPARATION_ERROR;
+        }
+      }
+    }, 650);
   }
 
   function syncBillingAddressMode() {
@@ -3069,7 +3072,7 @@ img{display:block;max-width:100%}
   }
 
   function updateStripePayAvailability() {
-    const ready = Boolean(checkoutElements && paymentElement && stripeCanConfirm);
+    const ready = Boolean(checkoutElements && checkoutActions && paymentElement && stripeCanConfirm);
     $("stripePayButton").disabled = !ready;
   }
 
@@ -3105,6 +3108,26 @@ img{display:block;max-width:100%}
     return address;
   }
 
+  function syncStripeCheckoutSession() {
+    if (!checkoutElements || !stripeSessionId || typeof checkoutElements.runServerUpdate !== "function") {
+      return Promise.resolve();
+    }
+    const update = async () => {
+      const response = await fetch(`${STORE_API_URL}/api/stripe/checkout/update`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ ...checkoutPayload(), sessionId: stripeSessionId })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result?.ok !== true) throw paymentPreparationFailure(result);
+    };
+    stripeSessionUpdate = stripeSessionUpdate.catch(() => {}).then(async () => {
+      const result = await checkoutElements.runServerUpdate(update);
+      if (result?.type === "error") throw new Error(result?.error?.message || PAYMENT_PREPARATION_ERROR);
+    });
+    return stripeSessionUpdate;
+  }
+
   async function initializeStripePaymentElement() {
     if (checkoutElements) return;
     const errorBox = $("stripeError");
@@ -3118,53 +3141,68 @@ img{display:block;max-width:100%}
       status.hidden = false;
       status.textContent = "Preparando el formulario seguro de Stripe…";
       stripeClient ||= window.Stripe(stripePublishableKey);
-      if (typeof stripeClient.elements !== "function") {
+      if (typeof stripeClient.initCheckoutElementsSdk !== "function") {
         throw new Error("No se pudo cargar la versión actual del formulario de Stripe.");
       }
-      checkoutElements = stripeClient.elements({
-        mode: "payment",
-        amount: Math.max(1, Math.round(checkoutTotal() * 100)),
-        currency: "cop",
-        paymentMethodTypes: ["card", "link"],
-        appearance: {
-          theme: "stripe",
-          variables: { colorPrimary: "#080808", borderRadius: "13px", fontFamily: "Inter, Arial, sans-serif" }
+      await refreshDeliveryQuote({ required: true });
+      const payload = checkoutPayload();
+      const response = await fetch(`${STORE_API_URL}/api/stripe/checkout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result?.clientSecret || !result?.sessionId) {
+        throw paymentPreparationFailure(result);
+      }
+      unavailableProductIds.clear();
+      incompatibleProntoItemIds.clear();
+      saveJson("cajamoda-pending-checkout", payload);
+      saveJson("cajamoda-pending-stripe-session", result.sessionId);
+      stripeSessionId = result.sessionId;
+      checkoutElements = stripeClient.initCheckoutElementsSdk({
+        clientSecret: result.clientSecret,
+        elementsOptions: {
+          appearance: {
+            theme: "stripe",
+            variables: { colorPrimary: "#080808", borderRadius: "13px", fontFamily: "Inter, Arial, sans-serif" }
+          }
         }
       });
-      expressCheckoutElement = checkoutElements.create("expressCheckout", {
-        paymentMethods: { link: "always", applePay: "never", googlePay: "never", paypal: "never" },
+      const loaded = await checkoutElements.loadActions();
+      if (loaded?.type === "error") throw new Error(loaded.error?.message || "No pudimos cargar el pago seguro.");
+      checkoutActions = loaded.actions;
+      expressCheckoutElement = checkoutElements.createExpressCheckoutElement({
+        paymentMethodOrder: ["link"],
         layout: { maxColumns: 1, overflow: "never" },
         buttonHeight: 48
       });
       expressCheckoutElement.on("confirm", submitStripeExpressPayment);
-      expressCheckoutElement.on("ready", event => {
-        $("expressCheckoutElement").hidden = !event?.availablePaymentMethods;
-        syncPanelHeight();
-      });
       expressCheckoutElement.mount("#expressCheckoutElement");
-      paymentElement = checkoutElements.create("payment", {
+      paymentElement = checkoutElements.createPaymentElement({
         layout: "accordion",
-        fields: { billingDetails: { name: "never", email: "never", phone: "never", address: "never" } }
-      });
-      paymentElement.on("ready", () => {
-        status.hidden = true;
-        syncPanelHeight();
-      });
-      paymentElement.on("change", event => {
-        stripeCanConfirm = Boolean(event?.complete);
-        if (stripeCanConfirm) errorBox.textContent = "";
-        updateStripePayAvailability();
-        syncPanelHeight();
+        fields: { billingDetails: "never" }
       });
       paymentElement.mount("#paymentElement");
       stripeCanConfirm = false;
       updateStripePayAvailability();
+      checkoutElements.on("change", session => {
+        const stripeTotal = session?.total?.total?.amount;
+        if (stripeTotal) $("stripePayButton").textContent = `Pagar ${stripeTotal}`;
+        stripeCanConfirm = Boolean(session.canConfirm);
+        if (stripeCanConfirm) errorBox.textContent = "";
+        updateStripePayAvailability();
+        syncPanelHeight();
+      });
+      status.hidden = true;
       syncPanelHeight();
     } catch (error) {
       stripeCanConfirm = false;
       checkoutElements = null;
+      checkoutActions = null;
       expressCheckoutElement = null;
       paymentElement = null;
+      stripeSessionId = "";
       console.error("[CajaModa] Stripe Payment Element error:", error);
       status.hidden = true;
       errorBox.textContent = error?.code === CART_ITEM_UNAVAILABLE_CODE ? "" : PAYMENT_PREPARATION_ERROR;
@@ -3175,73 +3213,20 @@ img{display:block;max-width:100%}
     const errorBox = $("stripeError");
     errorBox.textContent = "";
     try {
-      if (!checkoutElements || !expressCheckoutElement) {
+      if (!checkoutElements || !checkoutActions || !expressCheckoutElement) {
         throw new Error("El pago rápido de Link todavía está cargando.");
       }
-      await finalizeStripePayment({ submitElements: false });
+      if (!validatePaymentDetails()) throw new Error("Completa tus datos de contacto y entrega.");
+      await refreshDeliveryQuote({ required: true });
+      await syncStripeCheckoutSession();
+      const result = await checkoutActions.confirm();
+      if (result?.type === "error") throw result.error;
+      location.href = `${location.origin}/order-confirmation/?stripeSessionId=${encodeURIComponent(stripeSessionId)}`;
     } catch (error) {
       if (![CART_ITEM_UNAVAILABLE_CODE, PRONTO_LOCATION_UNAVAILABLE_CODE].includes(error?.code)) {
         errorBox.textContent = error?.message || "No pudimos procesar el pago.";
       }
     }
-  }
-
-  async function finalizeStripePayment({ submitElements = true } = {}) {
-      if (!checkoutElements || !paymentElement) throw new Error("El formulario de Stripe todavía está cargando.");
-      if (!validatePaymentDetails()) {
-        const error = new Error("Completa tus datos de contacto y entrega.");
-        if (incompatibleProntoItemIds.size) error.code = PRONTO_LOCATION_UNAVAILABLE_CODE;
-        throw error;
-      }
-      await refreshDeliveryQuote({ required: true });
-      const firstName = $("billingFirstName")?.value.trim();
-      const lastName = $("billingLastName")?.value.trim();
-      if (!firstName || !lastName) {
-        $(!firstName ? "billingFirstName" : "billingLastName")?.focus();
-        throw new Error("Ingresa el nombre y el apellido que aparecen en la tarjeta.");
-      }
-      const name = `${firstName} ${lastName}`;
-      const address = billingAddress();
-      if (submitElements) {
-        const submitted = await checkoutElements.submit();
-        if (submitted?.error) throw submitted.error;
-      }
-      const tokenResult = await stripeClient.createConfirmationToken({
-        elements: checkoutElements,
-        params: {
-          payment_method_data: {
-            billing_details: {
-              name,
-              email: $("email")?.value.trim() || undefined,
-              phone: `${$("phoneCountryCode")?.value || ""}${$("customerPhone")?.value.trim() || ""}` || undefined,
-              address
-            }
-          },
-          return_url: `${location.origin}/order-confirmation/`
-        }
-      });
-      if (tokenResult?.error || !tokenResult?.confirmationToken?.id) {
-        throw tokenResult?.error || new Error("No pudimos validar los datos de la tarjeta.");
-      }
-      const payload = checkoutPayload();
-      const response = await fetch(`${STORE_API_URL}/api/stripe/payment-intent`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ ...payload, confirmationTokenId: tokenResult.confirmationToken.id })
-      });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok || !result?.paymentIntentId || !result?.clientSecret) {
-        throw paymentPreparationFailure(result);
-      }
-      unavailableProductIds.clear();
-      incompatibleProntoItemIds.clear();
-      saveJson("cajamoda-pending-checkout", payload);
-      try { sessionStorage.setItem("cajamoda-confirmation-payment-intent", result.paymentIntentId); } catch {}
-      if (result.status === "requires_action") {
-        const nextAction = await stripeClient.handleNextAction({ clientSecret: result.clientSecret });
-        if (nextAction?.error) throw nextAction.error;
-      }
-      location.href = `${location.origin}/order-confirmation/?paymentIntent=${encodeURIComponent(result.paymentIntentId)}`;
   }
 
   async function submitStripePayment() {
@@ -3252,7 +3237,21 @@ img{display:block;max-width:100%}
     errorBox.textContent = "";
     button.textContent = "Procesando pago…";
     try {
-      await finalizeStripePayment();
+      if (!checkoutElements || !checkoutActions || !paymentElement) throw new Error("El formulario de Stripe todavía está cargando.");
+      if (!validatePaymentDetails()) throw new Error("Completa tus datos de contacto y entrega.");
+      await refreshDeliveryQuote({ required: true });
+      await syncStripeCheckoutSession();
+      const firstName = $("billingFirstName")?.value.trim();
+      const lastName = $("billingLastName")?.value.trim();
+      if (!firstName || !lastName) {
+        $(!firstName ? "billingFirstName" : "billingLastName")?.focus();
+        throw new Error("Ingresa el nombre y el apellido que aparecen en la tarjeta.");
+      }
+      const result = await checkoutActions.confirm({
+        billingAddress: { name: `${firstName} ${lastName}`, address: billingAddress() }
+      });
+      if (result?.type === "error") throw result.error;
+      location.href = `${location.origin}/order-confirmation/?stripeSessionId=${encodeURIComponent(stripeSessionId)}`;
     } catch (error) {
       if (![CART_ITEM_UNAVAILABLE_CODE, PRONTO_LOCATION_UNAVAILABLE_CODE].includes(error?.code)) {
         errorBox.textContent = error?.message || "No pudimos procesar el pago.";

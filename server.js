@@ -765,6 +765,59 @@ async function handleCreateStripeCheckout(request, response) {
   sendJson(response, 200, { ok: true, clientSecret: session.client_secret, sessionId: session.id });
 }
 
+async function handleUpdateStripeCheckout(request, response) {
+  if (!stripe) {
+    sendError(response, 503, "Stripe todavía no está configurado en el servidor.");
+    return;
+  }
+  const body = await readBody(request);
+  const sessionId = safeText(body?.sessionId, 100);
+  if (!/^cs_(test|live)_[A-Za-z0-9]+$/.test(sessionId)) {
+    sendError(response, 400, "La sesión de pago no es válida.");
+    return;
+  }
+  const session = await stripe.checkout.sessions.retrieve(sessionId);
+  if (session?.status !== "open" || session?.metadata?.source !== "cajamoda-storefront") {
+    sendError(response, 409, "La sesión de pago ya no está disponible.");
+    return;
+  }
+  const items = Array.isArray(body?.cart?.items) ? body.cart.items.slice(0, 50) : [];
+  if (!items.length) {
+    sendError(response, 400, "Tu bolsa está vacía.");
+    return;
+  }
+  const catalogLines = await verifiedCheckoutCatalogItems(items);
+  const lineItems = catalogLines.map(({ cartLineId, fulfillmentCode, selectedDeliveryMode, ...line }) => line);
+  const delivery = await checkoutDelivery(body, catalogLines);
+  const updated = await stripe.checkout.sessions.update(sessionId, {
+    line_items: lineItems,
+    shipping_options: [{
+      shipping_rate_data: {
+        type: "fixed_amount",
+        fixed_amount: { amount: delivery.fee * 100, currency: "cop" },
+        display_name: delivery.title,
+        delivery_estimate: {
+          minimum: { unit: "business_day", value: 1 },
+          maximum: { unit: "business_day", value: delivery.maxBusinessDays }
+        }
+      }
+    }],
+    metadata: {
+      ...session.metadata,
+      deliveryMethod: delivery.method,
+      deliverySummary: safeText(delivery.title, 300),
+      deliveryPromise: safeText(body?.delivery?.promise, 40) || "pronto",
+      customerName: safeText(body?.customer?.customerName, 160),
+      customerPhone: safeText(body?.customer?.customerPhone, 80),
+      deliveryAddress: delivery.addressLine,
+      deliveryCity: delivery.city,
+      deliveryState: delivery.state,
+      deliveryPostalCode: delivery.postalCode
+    }
+  });
+  sendJson(response, 200, { ok: true, sessionId: updated.id, amountTotal: updated.amount_total });
+}
+
 async function handleStripeConfirmation(request, response, url) {
   if (!stripe) {
     sendError(response, 503, "Stripe todavía no está configurado.");
@@ -5471,6 +5524,11 @@ const server =
 
         if(request.method === "POST" && url.pathname === "/api/stripe/checkout"){
           await protectCheckoutOperation(response,"Stripe",() => handleCreateStripeCheckout(request,response));
+          return;
+        }
+
+        if(request.method === "POST" && url.pathname === "/api/stripe/checkout/update"){
+          await protectCheckoutOperation(response,"Stripe update",() => handleUpdateStripeCheckout(request,response));
           return;
         }
 

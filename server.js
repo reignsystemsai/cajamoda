@@ -5,9 +5,9 @@ import Stripe from "stripe";
 import {
   NATIONAL_SHIPPING,
   STANDARD_CLOTHING_PARCEL,
-  applyNationalQuoteToPlan,
   buildEnviaNationalPayload,
   customerEnviaTrackingLabel,
+  groupNationalShipmentLines,
   groupWixOrderNationalLines,
   nationalLinesDeclaredValue,
   normalizeEnviaTrackingStatus,
@@ -90,6 +90,8 @@ const ENVIA_API_TOKEN = safeEnv(process.env.ENVIA_API_TOKEN);
 const ENVIA_ENV = safeEnv(process.env.ENVIA_ENV).toLowerCase() === "sandbox" ? "sandbox" : "production";
 const ENVIA_API_BASE = ENVIA_ENV === "sandbox" ? "https://api-test.envia.com" : "https://api.envia.com";
 const ENVIA_QUERIES_BASE = ENVIA_ENV === "sandbox" ? "https://queries-test.envia.com" : "https://queries.envia.com";
+const ENVIA_GEOCODES_BASE = "https://geocodes.envia.com";
+const COLOMBIA_MUNICIPALITIES_URL = "https://www.datos.gov.co/resource/gdxc-w37w.json?$select=cod_dpto,dpto,cod_mpio,nom_mpio&$limit=2000";
 const ENVIA_PRINT_FORMAT = safeEnv(process.env.ENVIA_PRINT_FORMAT);
 const ENVIA_PRINT_SIZE = safeEnv(process.env.ENVIA_PRINT_SIZE);
 const ENVIA_WEBHOOK_SECRET = safeEnv(process.env.ENVIA_WEBHOOK_SECRET);
@@ -104,6 +106,10 @@ const MOTO_INCLUDED_KM = 3;
 const MOTO_EXTRA_KM_COP = 1000;
 const MOTO_QUOTE_CACHE_TTL = 24 * 60 * 60 * 1000;
 const motoQuoteCache = new Map();
+const colombiaMunicipalityCache = { loadedAt: 0, items: [] };
+const googlePlaceDetailsCache = new Map();
+const DELIVERY_REFERENCE_CACHE_TTL = 24 * 60 * 60 * 1000;
+const GOOGLE_PLACE_CACHE_TTL = 30 * 60 * 1000;
 const stripeIntentSyncLocks = new Map();
 const nequiConfirmationLocks = new Map();
 const enviaLabelLocks = new Map();
@@ -1436,6 +1442,39 @@ function rateMaxDays(rate) {
   return numbers.length ? Math.max(...numbers) : 99;
 }
 
+function normalizeLocationName(value) {
+  return safeText(value, 160)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function titleLocationName(value) {
+  return safeText(value, 160)
+    .toLocaleLowerCase("es-CO")
+    .replace(/(^|[\s-])([a-záéíóúüñ])/g, (_match, prefix, letter) =>
+      `${prefix}${letter.toLocaleUpperCase("es-CO")}`
+    );
+}
+
+function locationNamesMatch(left, right) {
+  const first = normalizeLocationName(left)
+    .replace(/\bde indias\b/g, "")
+    .replace(/\bd c\b/g, "")
+    .trim();
+  const second = normalizeLocationName(right)
+    .replace(/\bde indias\b/g, "")
+    .replace(/\bd c\b/g, "")
+    .trim();
+  return Boolean(
+    first &&
+    second &&
+    (first === second || first.includes(second) || second.includes(first))
+  );
+}
+
 async function locateColombiaCity(city, state) {
   const payload = await externalJson(`${ENVIA_API_BASE}/locate`, {
     method: "POST",
@@ -1445,6 +1484,112 @@ async function locateColombiaCity(city, state) {
   const located = Array.isArray(payload?.data) ? payload.data[0] : payload?.data || payload;
   if (!located?.city) throw new Error("No pudimos validar la ciudad de entrega.");
   return located;
+}
+
+async function validateColombiaPostalCode(postalCode, located) {
+  const requested = safeText(postalCode, 20);
+  if (!requested) return safeText(located?.postalCode || located?.zipcode, 20);
+  const payload = await externalJson(
+    `${ENVIA_GEOCODES_BASE}/zipcode/CO/${encodeURIComponent(requested)}`,
+    {},
+    8000
+  );
+  const resolved = payload?.data || payload;
+  if (!resolved?.zipcode) throw new Error("El código postal no es válido.");
+  const locatedState = normalizeLocationName(located?.state);
+  const postalState = normalizeLocationName(resolved?.state);
+  if (locatedState && postalState && locatedState !== postalState) {
+    throw new Error("El código postal no corresponde al departamento seleccionado.");
+  }
+  return safeText(resolved.zipcode, 20);
+}
+
+async function colombiaMunicipalities() {
+  if (
+    colombiaMunicipalityCache.items.length &&
+    Date.now() - colombiaMunicipalityCache.loadedAt < DELIVERY_REFERENCE_CACHE_TTL
+  ) {
+    return colombiaMunicipalityCache.items;
+  }
+  const payload = await externalJson(COLOMBIA_MUNICIPALITIES_URL, {}, 20000);
+  const items = (Array.isArray(payload) ? payload : [])
+    .map(item => ({
+      departmentCode: safeText(item?.cod_dpto, 4),
+      departmentName: safeText(item?.dpto, 100),
+      daneCode: safeText(item?.cod_mpio, 8),
+      name: titleLocationName(item?.nom_mpio).replace(/,\s*d\.?c\.?$/i, "")
+    }))
+    .filter(item => item.departmentName && item.daneCode && item.name);
+  if (!items.length) throw new Error("No pudimos cargar los municipios de Colombia.");
+  colombiaMunicipalityCache.loadedAt = Date.now();
+  colombiaMunicipalityCache.items = items;
+  return items;
+}
+
+function googleAddressComponent(place, type, short = false) {
+  const component = (Array.isArray(place?.addressComponents) ? place.addressComponents : [])
+    .find(item => Array.isArray(item?.types) && item.types.includes(type));
+  return safeText(short ? component?.shortText : component?.longText, 160);
+}
+
+async function googlePlaceDetails(placeId, sessionToken = "") {
+  if (!GOOGLE_MAPS_API_KEY) throw new Error("La ayuda de dirección todavía no está configurada.");
+  const id = safeText(placeId, 220);
+  if (!id) throw new Error("Selecciona una dirección válida.");
+  const cached = googlePlaceDetailsCache.get(id);
+  if (cached && Date.now() - cached.loadedAt < GOOGLE_PLACE_CACHE_TTL) return cached.place;
+  const query = sessionToken ? `?sessionToken=${encodeURIComponent(safeText(sessionToken, 120))}` : "";
+  const place = await externalJson(
+    `https://places.googleapis.com/v1/places/${encodeURIComponent(id)}${query}`,
+    {
+      headers: {
+        "X-Goog-Api-Key": GOOGLE_MAPS_API_KEY,
+        "X-Goog-FieldMask": "id,formattedAddress,addressComponents,location"
+      }
+    },
+    10000
+  );
+  if (!place?.id) throw new Error("No pudimos verificar la dirección seleccionada.");
+  if (googlePlaceDetailsCache.size >= 1000) {
+    googlePlaceDetailsCache.delete(googlePlaceDetailsCache.keys().next().value);
+  }
+  googlePlaceDetailsCache.set(id, { loadedAt: Date.now(), place });
+  return place;
+}
+
+function publicGoogleAddress(place) {
+  const route = googleAddressComponent(place, "route");
+  const streetNumber = googleAddressComponent(place, "street_number");
+  const city =
+    googleAddressComponent(place, "locality") ||
+    googleAddressComponent(place, "administrative_area_level_2");
+  return {
+    placeId: safeText(place?.id, 220),
+    formattedAddress: safeText(place?.formattedAddress, 300),
+    address: [route, streetNumber].filter(Boolean).join(" ") || safeText(place?.formattedAddress, 300),
+    city,
+    departmentName: googleAddressComponent(place, "administrative_area_level_1"),
+    postalCode: googleAddressComponent(place, "postal_code"),
+    latitude: Number(place?.location?.latitude) || null,
+    longitude: Number(place?.location?.longitude) || null
+  };
+}
+
+async function validateSelectedGoogleAddress(delivery) {
+  const placeId = safeText(delivery?.addressPlaceId, 220);
+  if (!placeId) return null;
+  const details = publicGoogleAddress(await googlePlaceDetails(placeId));
+  const enteredCity = normalizeLocationName(delivery?.city);
+  const placeCity = normalizeLocationName(details.city);
+  const enteredState = normalizeLocationName(delivery?.stateName);
+  const placeState = normalizeLocationName(details.departmentName);
+  if (enteredCity && placeCity && !locationNamesMatch(enteredCity, placeCity)) {
+    throw new Error("La dirección seleccionada no corresponde a la ciudad.");
+  }
+  if (enteredState && placeState && !locationNamesMatch(enteredState, placeState)) {
+    throw new Error("La dirección seleccionada no corresponde al departamento.");
+  }
+  return details;
 }
 
 async function enviaCarriers() {
@@ -1465,6 +1610,11 @@ async function quoteNationalDelivery(delivery, customer, declaredValue) {
   const postalCode = safeText(delivery?.postalCode, 20);
   if (!city || !state || !street) throw new Error("Completa la ciudad, departamento y dirección de entrega.");
   const located = await locateColombiaCity(city, state);
+  const selectedAddress = await validateSelectedGoogleAddress(delivery);
+  const verifiedPostalCode = await validateColombiaPostalCode(
+    postalCode || selectedAddress?.postalCode,
+    located
+  );
   const carriers = await enviaCarriers();
   if (!carriers.length) throw new Error("Envia no devolvió transportadoras disponibles.");
   const quoteBody = carrier => ({
@@ -1476,7 +1626,7 @@ async function quoteNationalDelivery(delivery, customer, declaredValue) {
       name: safeText(customer?.customerName || customer?.name, 120) || "Cliente CajaModa",
       phone: safeText(customer?.customerPhone || customer?.phone, 50), street,
       city: safeText(located.city, 20), state: safeText(located.state || state, 5), country: "CO",
-      postalCode: postalCode || safeText(located.postalCode || located.zipcode, 20)
+      postalCode: verifiedPostalCode || safeText(located.postalCode || located.zipcode, 20)
     },
     packages: [{
       ...STANDARD_CLOTHING_PARCEL,
@@ -1552,18 +1702,31 @@ async function calculateDeliveryQuote(body, lines = []) {
     groups.push({ ...prontoQuote, fulfillment: "pronto" });
   }
   if (profile.hasNational) {
-    const nationalQuote = await quoteNationalDelivery(body?.delivery || {}, body?.customer || {}, body?.cart?.total);
-    const nationalPlan = applyNationalQuoteToPlan(lines.length ? lines : body?.cart?.items, nationalQuote);
-    publicNationalShipmentPlan(nationalPlan).forEach(shipment => {
-      groups.push({
-        ...nationalQuote,
-        type: shipment.type,
-        fulfillment: shipment.type === "L" ? "liberalo" : "rapido-nacional",
-        fee: shipment.fee,
-        estimate: shipment.estimate,
-        itemCount: shipment.itemCount
-      });
-    });
+    const nationalLines = lines.length ? lines : body?.cart?.items;
+    const nationalGroups = groupNationalShipmentLines(nationalLines);
+    const shipmentQuotes = await Promise.all(
+      ["R", "L"]
+        .filter(type => nationalGroups[type].length)
+        .map(async type => {
+          const shipmentLines = nationalGroups[type];
+          const quote = await quoteNationalDelivery(
+            body?.delivery || {},
+            body?.customer || {},
+            nationalLinesDeclaredValue(shipmentLines)
+          );
+          return {
+            ...quote,
+            type,
+            fulfillment: type === "L" ? "liberalo" : "rapido-nacional",
+            estimate: nationalShipmentDefinition(type).estimate,
+            itemCount: shipmentLines.reduce(
+              (total, line) => total + Math.max(1, Math.floor(Number(line?.quantity || 1))),
+              0
+            )
+          };
+        })
+    );
+    groups.push(...shipmentQuotes);
   }
   const method = profile.hasPronto && profile.hasNational
     ? "mixed"
@@ -1588,6 +1751,94 @@ async function handleDeliveryQuote(request, response) {
   const body = await readBody(request);
   const quote = await calculateDeliveryQuote(body);
   sendJson(response, 200, { ok: true, quote });
+}
+
+async function handleDeliveryCities(_request, response, url) {
+  const stateCode = safeText(url.searchParams.get("state"), 5).toUpperCase();
+  const stateName = safeText(url.searchParams.get("stateName"), 100);
+  const query = normalizeLocationName(url.searchParams.get("q"));
+  if (!stateCode || !stateName) {
+    return sendError(response, 400, "Selecciona un departamento.");
+  }
+  const department = normalizeLocationName(stateName);
+  const cities = (await colombiaMunicipalities())
+    .filter(item => locationNamesMatch(item.departmentName, department))
+    .filter(item => !query || normalizeLocationName(item.name).includes(query))
+    .map(item => ({ name: item.name, daneCode: item.daneCode }))
+    .sort((a, b) => a.name.localeCompare(b.name, "es"));
+  sendJson(response, 200, { ok: true, state: stateCode, cities });
+}
+
+async function handleDeliveryPostalCode(_request, response, url) {
+  const postalCode = safeText(url.searchParams.get("postalCode"), 20);
+  if (!postalCode) return sendError(response, 400, "Ingresa un código postal.");
+  const payload = await externalJson(
+    `${ENVIA_GEOCODES_BASE}/zipcode/CO/${encodeURIComponent(postalCode)}`,
+    {},
+    8000
+  );
+  const located = payload?.data || payload;
+  if (!located?.zipcode) return sendError(response, 404, "Código postal no encontrado.");
+  sendJson(response, 200, {
+    ok: true,
+    location: {
+      city: safeText(located.city, 100),
+      state: safeText(located.state, 5).toUpperCase(),
+      postalCode: safeText(located.zipcode, 20)
+    }
+  });
+}
+
+async function handleDeliveryAddressSuggestions(request, response) {
+  if (!GOOGLE_MAPS_API_KEY) {
+    return sendError(response, 503, "La ayuda de dirección todavía no está configurada.");
+  }
+  const body = await readBody(request);
+  const input = safeText(body?.input, 180);
+  if (input.length < 3) return sendJson(response, 200, { ok: true, suggestions: [] });
+  const context = [
+    input,
+    safeText(body?.city, 100),
+    safeText(body?.stateName, 100),
+    "Colombia"
+  ].filter(Boolean).join(", ");
+  const payload = await externalJson(
+    "https://places.googleapis.com/v1/places:autocomplete",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": GOOGLE_MAPS_API_KEY,
+        "X-Goog-FieldMask": "suggestions.placePrediction.placeId,suggestions.placePrediction.text.text,suggestions.placePrediction.structuredFormat.mainText.text,suggestions.placePrediction.structuredFormat.secondaryText.text"
+      },
+      body: JSON.stringify({
+        input: context,
+        includedRegionCodes: ["co"],
+        languageCode: "es",
+        regionCode: "co",
+        sessionToken: safeText(body?.sessionToken, 120) || undefined
+      })
+    },
+    10000
+  );
+  const suggestions = (Array.isArray(payload?.suggestions) ? payload.suggestions : [])
+    .map(item => item?.placePrediction)
+    .filter(Boolean)
+    .map(item => ({
+      placeId: safeText(item.placeId, 220),
+      text: safeText(item?.text?.text, 300),
+      mainText: safeText(item?.structuredFormat?.mainText?.text, 180),
+      secondaryText: safeText(item?.structuredFormat?.secondaryText?.text, 220)
+    }))
+    .filter(item => item.placeId && item.text)
+    .slice(0, 5);
+  sendJson(response, 200, { ok: true, suggestions });
+}
+
+async function handleDeliveryAddressDetails(request, response) {
+  const body = await readBody(request);
+  const place = await googlePlaceDetails(body?.placeId, body?.sessionToken);
+  sendJson(response, 200, { ok: true, address: publicGoogleAddress(place) });
 }
 
 async function handleDeliveryDepartments(_request, response) {
@@ -6095,6 +6346,26 @@ const server =
 
         if(request.method === "GET" && url.pathname === "/api/delivery/departments"){
           await handleDeliveryDepartments(request,response);
+          return;
+        }
+
+        if(request.method === "GET" && url.pathname === "/api/delivery/cities"){
+          await handleDeliveryCities(request,response,url);
+          return;
+        }
+
+        if(request.method === "GET" && url.pathname === "/api/delivery/postal-code"){
+          await handleDeliveryPostalCode(request,response,url);
+          return;
+        }
+
+        if(request.method === "POST" && url.pathname === "/api/delivery/address-suggestions"){
+          await handleDeliveryAddressSuggestions(request,response);
+          return;
+        }
+
+        if(request.method === "POST" && url.pathname === "/api/delivery/address-details"){
+          await handleDeliveryAddressDetails(request,response);
           return;
         }
 

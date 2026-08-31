@@ -3557,7 +3557,7 @@ img{display:block;max-width:100%}
       .join(" ");
     const synchronizedBillingAddress = billingAddress();
     const synchronizedKey = currentDeliveryQuoteKey();
-    const expectedAmountTotal = Math.round(checkoutTotal() * 100);
+    const expectedAmountTotal = Math.round(checkoutTotal())
     let returnedAmountTotal = null;
     stripeSessionCartKey = "";
     stripeSessionSynchronized = false;
@@ -3655,7 +3655,7 @@ img{display:block;max-width:100%}
       if (!response.ok || !result?.clientSecret || !result?.sessionId) {
         throw paymentPreparationFailure(result);
       }
-      const expectedAmountTotal = Math.round(readCart().total * 100);
+      const expectedAmountTotal = Math.round(readCart().total)
       if (Number(result.amountTotal) !== expectedAmountTotal) {
         throw new Error("El subtotal inicial de Stripe no coincide con el pedido.");
       }

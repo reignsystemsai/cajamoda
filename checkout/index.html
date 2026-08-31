@@ -1198,7 +1198,7 @@ img{display:block;max-width:100%}
                 Moto a tu dirección
               </button>
             </div>
-            <div id="bagPickupAddress" class="pickupAddress" hidden><strong>Punto de recogida · 10.000 COP</strong><br>Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar.</div>
+            <div id="bagPickupAddress" class="pickupAddress" hidden><strong>Pronto: Recoger en punto · 10.000 COP</strong><br>Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar.</div>
           </div>
           <div id="deliverySeparateNote" class="deliverySeparateNote" hidden></div>
         </section>
@@ -1536,9 +1536,9 @@ img{display:block;max-width:100%}
   function deliverySummaryLabel(cart = readCart()) {
     const profile = checkoutFulfillmentProfile(cart);
     const labels = [];
-    if (profile.hasPronto) labels.push(selectedDelivery === "moto" ? "Pronto · Moto Cartagena" : "Pronto · Recoger Cartagena");
+    if (profile.hasPronto) labels.push(selectedDelivery === "moto" ? "Pronto a domicilio · 24–48 h" : "Pronto: Recoger en punto · 24–48 h");
     if (profile.hasFast) labels.push("Rápido Nacional · 4–7 días");
-    if (profile.hasShip) labels.push("Libéralo · 14–28 días");
+    if (profile.hasShip) labels.push("Libéralo Nacional · 14–28 días");
     return labels.join(" + ") || "Entrega";
   }
 
@@ -1582,13 +1582,13 @@ img{display:block;max-width:100%}
     const groups = quoteReady && Array.isArray(deliveryQuote?.groups) ? deliveryQuote.groups : [];
     const rows = [];
     if (profile.hasPronto && selectedDelivery === "pickup") {
-      rows.push({ key: "pickup", label: "Recoger en punto", fee: PICKUP_FEE_COP, resolved: true });
+      rows.push({ key: "pickup", label: "Pronto: Recoger en punto · 24–48 h", fee: PICKUP_FEE_COP, resolved: true });
     }
     if (profile.hasPronto && selectedDelivery === "moto") {
       const quote = groups.find(group => group?.fulfillment === "pronto" && group?.method === "moto");
       rows.push({
         key: "moto",
-        label: "Moto a tu dirección",
+        label: "Pronto a domicilio · 24–48 h",
         fee: Number(quote?.fee || 0),
         resolved: Boolean(quote),
         pending: "Se calcula con la dirección"
@@ -1608,7 +1608,7 @@ img{display:block;max-width:100%}
       const quote = groups.find(group => group?.type === "L");
       rows.push({
         key: "L",
-        label: "Libéralo · 14–28 días",
+        label: "Libéralo Nacional · 14–28 días",
         fee: Number(quote?.fee || 0),
         resolved: Boolean(quote),
         pending: "Se calcula con Envia"
@@ -2203,7 +2203,7 @@ img{display:block;max-width:100%}
   }
 
   const deliveryExplanations={
-    pickup:{label:"Pronto",copy:"24–48 h · Solo Cartagena."},
+    pickup:{label:"Pronto",copy:"A domicilio o recoger en punto · 24–48 h · Solo Cartagena."},
     fast:{label:"Rápido Nacional",copy:"4–7 días."},
     ship:{label:"Libéralo",copy:"14–28 días."}
   };
@@ -2231,15 +2231,20 @@ img{display:block;max-width:100%}
       if(group?.type==="R"){nationalQuoteFees.fast=Number(group.fee||0)}
       if(group?.type==="L"){nationalQuoteFees.ship=Number(group.fee||0)}
     });
-    const prontoTime=selectedDelivery==="pickup"
-      ? `Recoger en punto · ${money(PICKUP_FEE_COP)}`
+    const prontoLabel=selectedDelivery==="pickup"
+      ? "Pronto: Recoger en punto"
       : selectedDelivery==="moto"
-        ? "Moto · Ver cálculo al ingresar la dirección"
+        ? "Pronto a domicilio"
+        : "Pronto";
+    const prontoTime=selectedDelivery==="pickup"
+      ? `24–48 h · ${money(PICKUP_FEE_COP)}`
+      : selectedDelivery==="moto"
+        ? "24–48 h · Ver cálculo al ingresar la dirección"
         : "Elige recoger en punto o moto";
     const groups=[
-      {mode:"pickup",label:"Pronto",time:prontoTime},
+      {mode:"pickup",label:prontoLabel,time:prontoTime},
       {mode:"fast",label:"Rápido Nacional",time:"4–7 días · Ver cálculo al ingresar la dirección"},
-      {mode:"ship",label:"Libéralo",time:"14–28 días · Ver cálculo al ingresar la dirección"}
+      {mode:"ship",label:"Libéralo Nacional",time:"14–28 días · Ver cálculo al ingresar la dirección"}
     ].filter(group=>counts[group.mode]>0);
     const garmentCount=cart.items.reduce((total,item)=>total+Math.max(1,Math.floor(Number(item.quantity||1))),0);
     $("bagDeliverySummary").hidden=groups.length===0;
@@ -2291,11 +2296,17 @@ img{display:block;max-width:100%}
   function syncProntoLocationWarnings(cart = readCart()) {
     const city = normalizeChoice($("deliveryCity")?.value);
     const departmentSelected = Boolean($("deliveryDepartment")?.value);
+    const addressConfirmed = Boolean($("deliveryAddress")?.value.trim());
     const isCartagena = city === "cartagena" || city === "cartagena de indias";
     const outsideCartagena = Boolean(city) && !isCartagena;
     const wrongDepartment = departmentSelected && !selectedDepartmentIsBolivar();
+    const validateMotoLocation =
+      selectedDelivery === "moto" &&
+      addressConfirmed &&
+      Boolean(city) &&
+      departmentSelected;
     incompatibleProntoItemIds = new Set(
-      outsideCartagena || wrongDepartment
+      validateMotoLocation && (outsideCartagena || wrongDepartment)
         ? cart.items
             .filter(item => normalizeDeliveryMode(item.selectedDeliveryMode) === "pickup")
             .map(item => String(item.id))
@@ -3224,7 +3235,7 @@ img{display:block;max-width:100%}
       deliveryQuotePending = false;
       deliveryQuoteError = "";
       quoteDestinationKey = "";
-      deliveryQuote = { method: "pickup", prontoMethod: "pickup", fee: PICKUP_FEE_COP, title: "Pronto · Recoger Cartagena" };
+      deliveryQuote = { method: "pickup", prontoMethod: "pickup", fee: PICKUP_FEE_COP, title: "Pronto: Recoger en punto · 24–48 h" };
       renderPaymentTotals();
       return deliveryQuote;
     }
@@ -3300,7 +3311,7 @@ img{display:block;max-width:100%}
     const profile = checkoutFulfillmentProfile();
     const pickupOnly = profile.hasPronto && !profile.hasNational && selectedDelivery === "pickup";
     deliveryQuote = pickupOnly
-      ? { method: "pickup", prontoMethod: "pickup", fee: PICKUP_FEE_COP, title: "Pronto · Recoger Cartagena" }
+      ? { method: "pickup", prontoMethod: "pickup", fee: PICKUP_FEE_COP, title: "Pronto: Recoger en punto · 24–48 h" }
       : null;
     deliveryQuotePending = !pickupOnly;
     deliveryQuoteError = "";

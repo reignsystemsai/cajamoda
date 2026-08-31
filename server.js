@@ -736,29 +736,10 @@ async function handleCreateStripeCheckout(request, response) {
   const delivery = await checkoutDelivery(body, catalogLines);
   const deliveryMethod = delivery.method;
   const deliveryLabel = delivery.title;
-  const intentLines = catalogLines.map(line => ({
-    productId: safeText(line?.price_data?.product_data?.metadata?.productId, 80),
-    variantId: safeText(line?.price_data?.product_data?.metadata?.variantId, 80),
-    quantity: Math.max(1, Math.floor(Number(line?.quantity || 1))),
-    amount: Number(line?.price_data?.unit_amount || 0) / 100,
-    name: safeText(line?.price_data?.product_data?.name, 300) || "Producto CajaModa",
-    fulfillmentCode: safeText(line?.fulfillmentCode, 10).toUpperCase(),
-    selectedDeliveryMode: safeText(line?.selectedDeliveryMode, 20).toLowerCase()
-  }));
-  const captureMethod = stripeCaptureMethod(intentLines);
-  const intentMetadata = stripeIntentMetadata(intentLines, body, delivery);
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     ui_mode: "elements",
     payment_method_types: ["card"],
-    payment_intent_data: {
-      capture_method: captureMethod,
-      receipt_email: customerEmail || undefined,
-      metadata: {
-        ...intentMetadata,
-        source: "cajamoda-checkout-elements"
-      }
-    },
     line_items: lineItems,
     customer_email: customerEmail || undefined,
     shipping_options: [{

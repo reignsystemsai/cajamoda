@@ -1063,7 +1063,10 @@ img{display:block;max-width:100%}
 .autocompletePrimary{display:block;font-size:10px;font-weight:700;line-height:1.35}
 .autocompleteSecondary{display:block;margin-top:3px;color:#737373;font-size:8px;line-height:1.35}
 .autocompleteMessage{padding:12px;color:#666;font-size:8.5px;line-height:1.45}
-.cityInput{padding-right:16px}
+.cityInput{padding-right:42px!important}
+.cityDropdownButton{position:absolute;right:8px;top:23px;width:32px;height:32px;display:grid;place-items:center;border-radius:50%;color:#222;font-size:15px;line-height:1}
+.cityDropdownButton:disabled{opacity:.35;cursor:wait}
+.googleAttribution{padding:7px 12px 5px;text-align:right;color:#777;font-size:7px;font-weight:650;letter-spacing:.02em}
 .phoneInputGroup{display:grid;grid-template-columns:110px 1fr;gap:10px}.phoneInputGroup .compactInput{min-width:0}
 .cartItem.isUnavailable{border-color:rgba(163,25,25,.28);background:rgba(255,246,244,.76)}
 .cartUnavailableNotice{margin-top:10px;padding:11px 12px;border:1px solid rgba(163,25,25,.18);border-radius:12px;background:#fff5f3;color:#8e211b;font-size:8.5px;line-height:1.45}
@@ -1254,9 +1257,9 @@ img{display:block;max-width:100%}
             </select></label>
             <label class="deliveryField"><span class="fieldLabel">Teléfono</span><input id="customerPhone" name="phone" class="compactInput" autocomplete="tel-national" inputmode="tel" placeholder="Número de teléfono"></label>
             <label id="departmentField" class="deliveryField"><span class="fieldLabel">Departamento</span><select id="deliveryDepartment" class="compactInput" autocomplete="address-level1" disabled><option value="">Cargando departamentos…</option></select><span id="departmentFieldStatus" class="fieldStatus" hidden></span></label>
-            <div id="cityField" class="deliveryField autocompleteField"><span class="fieldLabel">Ciudad / municipio</span><input id="deliveryCity" name="city" class="compactInput cityInput" autocomplete="address-level2" aria-autocomplete="list" aria-controls="citySuggestionPanel" aria-expanded="false" aria-label="Ciudad o municipio de entrega" placeholder="Selecciona el departamento primero" disabled><input id="deliveryCityDaneCode" type="hidden"><span id="cityFieldStatus" class="fieldStatus" hidden></span><div id="citySuggestionPanel" class="autocompleteMenu" role="listbox" hidden></div></div>
+            <div id="cityField" class="deliveryField autocompleteField"><span class="fieldLabel">Ciudad / municipio</span><input id="deliveryCity" name="city" class="compactInput cityInput" autocomplete="address-level2" aria-autocomplete="list" aria-controls="citySuggestionPanel" aria-expanded="false" aria-label="Ciudad o municipio de entrega" placeholder="Selecciona el departamento primero" disabled><button id="cityDropdownButton" class="cityDropdownButton" type="button" aria-label="Mostrar ciudades" disabled>⌄</button><input id="deliveryCityDaneCode" type="hidden"><span id="cityFieldStatus" class="fieldStatus" hidden></span><div id="citySuggestionPanel" class="autocompleteMenu" role="listbox" hidden></div></div>
             <div id="addressField" class="wide deliveryField autocompleteField"><span class="fieldLabel">Dirección principal</span><input id="deliveryAddress" class="compactInput" autocomplete="shipping street-address" aria-autocomplete="list" aria-controls="addressSuggestionPanel" aria-expanded="false" aria-label="Dirección principal de entrega" placeholder="Ej. Kr 13 #60-19"><span id="addressFieldStatus" class="fieldStatus" hidden></span><div id="addressSuggestionPanel" class="autocompleteMenu" role="listbox" hidden></div></div>
-            <label id="neighborhoodField" class="deliveryField"><span class="fieldLabel">Barrio</span><input id="deliveryNeighborhood" class="compactInput" autocomplete="shipping address-level3" placeholder="Barrio"><span id="neighborhoodFieldStatus" class="fieldStatus" hidden></span></label>
+            <label id="neighborhoodField" class="deliveryField"><span class="fieldLabel">Barrio (opcional)</span><input id="deliveryNeighborhood" class="compactInput" autocomplete="shipping address-level3" placeholder="Barrio"><span id="neighborhoodFieldStatus" class="fieldStatus" hidden></span></label>
             <label class="deliveryField"><span class="fieldLabel">Apto., torre o interior (opcional)</span><input id="deliveryComplement" class="compactInput" autocomplete="shipping address-line2" placeholder="Apartamento, torre o interior"></label>
             <input id="deliveryAddressPlaceId" type="hidden">
             <label id="postalCodeField" class="wide deliveryField"><span class="fieldLabel">Código postal (opcional)</span><input id="deliveryPostalCode" class="compactInput" autocomplete="shipping postal-code" inputmode="numeric" maxlength="6" placeholder="Código postal"><span id="postalCodeFieldStatus" class="fieldStatus" hidden></span></label>
@@ -1601,11 +1604,25 @@ img{display:block;max-width:100%}
     const profile = checkoutFulfillmentProfile(cart);
     const quoteStatus = $("deliveryQuoteStatus");
     if (quoteStatus && profile.hasNational) {
-      quoteStatus.textContent = deliveryQuotePending
-        ? "Calculando envío con Envia…"
-        : quoteReady
-          ? `Envío nacional calculado con Envia. Total de entrega: ${money(deliveryFee)}.`
-          : deliveryQuoteError || "Completa tu dirección de entrega para calcular el envío.";
+      const destinationReady = Boolean(
+        $("deliveryDepartment")?.value &&
+        $("deliveryCityDaneCode")?.value &&
+        $("deliveryAddress")?.value.trim()
+      );
+      const hasFieldError = Boolean(document.querySelector(".shippingFields .deliveryField.hasError"));
+      const showQuoteStatus = !hasFieldError && (
+        quoteReady ||
+        (deliveryQuotePending && destinationReady) ||
+        Boolean(deliveryQuoteError)
+      );
+      quoteStatus.hidden = !showQuoteStatus;
+      if (showQuoteStatus) {
+        quoteStatus.textContent = deliveryQuotePending
+          ? "Calculando envío con Envia…"
+          : quoteReady
+            ? `Envío nacional calculado con Envia. Total de entrega: ${money(deliveryFee)}.`
+            : deliveryQuoteError;
+      }
     }
     updateStripePayAvailability();
     updateNequiConfirmAvailability();
@@ -3023,6 +3040,17 @@ img{display:block;max-width:100%}
       showToast("Ingresa la ciudad de entrega.");
       return false;
     }
+    if (profile.hasNational && !$("deliveryDepartment")?.value) {
+      $("deliveryDepartment")?.focus();
+      setDeliveryFieldStatus("department", "Selecciona el departamento de entrega.");
+      return false;
+    }
+    if (profile.hasNational && !$("deliveryCityDaneCode")?.value) {
+      $("deliveryCity")?.focus();
+      setDeliveryFieldStatus("city", "Selecciona una ciudad o municipio de la lista.");
+      renderCitySuggestions();
+      return false;
+    }
     if (syncProntoLocationWarnings(cart).size) {
       renderCart();
       goToStep("bag");
@@ -3034,16 +3062,7 @@ img{display:block;max-width:100%}
       setDeliveryFieldStatus("address", "Ingresa la dirección principal.");
       return false;
     }
-    if (profile.hasNational && !$("deliveryNeighborhood")?.value.trim()) {
-      $("deliveryNeighborhood")?.focus();
-      setDeliveryFieldStatus("neighborhood", "Ingresa el barrio de entrega.");
-      return false;
-    }
-    if (profile.hasNational && !$("deliveryDepartment")?.value) {
-      $("deliveryDepartment")?.focus();
-      showToast("Selecciona el departamento de entrega.");
-      return false;
-    }
+
     saveCustomer();
     return true;
   }
@@ -3103,10 +3122,6 @@ img{display:block;max-width:100%}
       setDeliveryFieldStatus("city", text);
       return "Corrige la ciudad o municipio marcado para calcular el envío.";
     }
-    if (normalized.includes("barrio")) {
-      setDeliveryFieldStatus("neighborhood", text);
-      return "Corrige el barrio marcado para calcular el envío.";
-    }
     if (normalized.includes("postal")) {
       setDeliveryFieldStatus("postalCode", text);
       return "Corrige el código postal marcado para calcular el envío.";
@@ -3133,8 +3148,8 @@ img{display:block;max-width:100%}
     const address = $("deliveryAddress")?.value.trim();
     const nationalReady = !profile.hasNational || (
       $("deliveryCity")?.value.trim() &&
-      $("deliveryDepartment")?.value &&
-      $("deliveryNeighborhood")?.value.trim()
+      $("deliveryCityDaneCode")?.value &&
+      $("deliveryDepartment")?.value
     );
     if ((addressRequired && !address) || !nationalReady) {
       quoteRequestVersion += 1;
@@ -3228,7 +3243,7 @@ img{display:block;max-width:100%}
         !$("billingFirstName")?.value.trim() ||
         !$("billingLastName")?.value.trim()) return false;
     if ((profile.hasNational || (profile.hasPronto && selectedDelivery === "moto")) && !$("deliveryAddress")?.value.trim()) return false;
-    if (profile.hasNational && !$("deliveryDepartment")?.value) return false;
+    if (profile.hasNational && (!$("deliveryDepartment")?.value || !$("deliveryCityDaneCode")?.value)) return false;
     if (!$("billingSame")?.checked) {
       return Boolean(
         $("billingAddress")?.value.trim() &&
@@ -3568,9 +3583,11 @@ img{display:block;max-width:100%}
   async function loadDeliveryCities({ preserveCity = false } = {}) {
     const select = $("deliveryDepartment");
     const cityInput = $("deliveryCity");
+    const cityButton = $("cityDropdownButton");
     const state = select?.value || "";
     const stateName = selectedDepartmentName();
     const previousCity = preserveCity ? cityInput?.value.trim() || "" : "";
+    const previousDaneCode = preserveCity ? $("deliveryCityDaneCode")?.value || "" : "";
     const requestVersion = ++cityRequestVersion;
     deliveryCities = [];
     clearDeliveryFieldStatus("city");
@@ -3579,10 +3596,12 @@ img{display:block;max-width:100%}
       cityInput.value = "";
       $("deliveryCityDaneCode").value = "";
       cityInput.disabled = true;
+      if (cityButton) cityButton.disabled = true;
       cityInput.placeholder = "Selecciona el departamento primero";
       return [];
     }
     cityInput.disabled = true;
+    if (cityButton) cityButton.disabled = true;
     cityInput.placeholder = "Cargando ciudades…";
     try {
       const params = new URLSearchParams({ state, stateName });
@@ -3596,21 +3615,24 @@ img{display:block;max-width:100%}
       }
       deliveryCities = result.cities;
       const matchingCity = deliveryCities.find(city =>
+        (previousDaneCode && city.daneCode === previousDaneCode) ||
         normalizeLocationChoice(city.name) === normalizeLocationChoice(previousCity)
       );
-      cityInput.value = matchingCity?.name || previousCity;
-      $("deliveryCityDaneCode").value = matchingCity?.daneCode || "";
+      const selectedCity = matchingCity || (deliveryCities.length === 1 ? deliveryCities[0] : null);
+      cityInput.value = selectedCity?.name || "";
+      $("deliveryCityDaneCode").value = selectedCity?.daneCode || "";
       cityInput.disabled = false;
-      cityInput.placeholder = "Escribe tu ciudad";
+      if (cityButton) cityButton.disabled = false;
+      cityInput.placeholder = "Busca o selecciona una ciudad";
       return deliveryCities;
     } catch (error) {
       if (requestVersion !== cityRequestVersion) return [];
-      cityInput.value = preserveCity ? previousCity : "";
+      cityInput.value = "";
       $("deliveryCityDaneCode").value = "";
-      cityInput.disabled = false;
-      cityInput.placeholder = "Escribe tu ciudad manualmente";
-      setDeliveryFieldStatus("city", "No pudimos cargar los municipios. Puedes escribir la ciudad manualmente.");
-      renderAutocompleteMessage("deliveryCity", "citySuggestionPanel", "No pudimos cargar las ciudades. Puedes escribirla manualmente.");
+      cityInput.disabled = true;
+      if (cityButton) cityButton.disabled = true;
+      cityInput.placeholder = "Ciudades no disponibles";
+      setDeliveryFieldStatus("city", "No pudimos cargar los municipios. Inténtalo nuevamente.");
       console.error("[CajaModa] Cities error:", error);
       return [];
     }
@@ -3642,11 +3664,17 @@ img{display:block;max-width:100%}
         await loadDeliveryCities();
       }
       if (details.city) $("deliveryCity").value = details.city;
-      syncCityDaneCode();
+      const matchedCity = syncCityDaneCode();
+      if (details.city && !matchedCity) {
+        setDeliveryFieldStatus("city", "Selecciona una ciudad o municipio de la lista.");
+        renderCitySuggestions();
+      } else {
+        clearDeliveryFieldStatus("city");
+      }
       if (details.address) $("deliveryAddress").value = details.address;
       if (details.postalCode) $("deliveryPostalCode").value = details.postalCode;
       $("deliveryAddressPlaceId").value = details.placeId || placeId;
-      clearDeliveryFieldStatus("city");
+      if ($("deliveryCityDaneCode")?.value) clearDeliveryFieldStatus("city");
       setDeliveryFieldStatus("address", "Dirección verificada por Google", "success");
       $("addressSuggestionSource").hidden = true;
       saveCustomer();
@@ -3687,6 +3715,10 @@ img{display:block;max-width:100%}
       button.addEventListener("click", () => applyAddressSuggestion(suggestion));
       panel.append(button);
     });
+    const attribution = document.createElement("div");
+    attribution.className = "googleAttribution";
+    attribution.textContent = "Powered by Google";
+    panel.append(attribution);
     setAutocompleteExpanded("deliveryAddress", "addressSuggestionPanel", true);
   }
 
@@ -3750,6 +3782,7 @@ img{display:block;max-width:100%}
           await loadDeliveryCities();
         }
         if (result.location.city) $("deliveryCity").value = result.location.city;
+        syncCityDaneCode();
         if (result.location.postalCode) $("deliveryPostalCode").value = result.location.postalCode;
         clearAddressVerification();
         saveCustomer();
@@ -3850,9 +3883,13 @@ img{display:block;max-width:100%}
   });
 
   $("deliveryCity")?.addEventListener("focus", renderCitySuggestions);
-  $("deliveryCity")?.addEventListener("input", () => {
+  $("cityDropdownButton")?.addEventListener("click", () => {
+    $("deliveryCity")?.focus();
     renderCitySuggestions();
-    syncCityDaneCode();
+  });
+  $("deliveryCity")?.addEventListener("input", () => {
+    $("deliveryCityDaneCode").value = "";
+    renderCitySuggestions();
     clearDeliveryFieldStatus("city");
     clearAddressVerification();
     renderCart();
@@ -3860,6 +3897,12 @@ img{display:block;max-width:100%}
     updateStripePayAvailability();
     scheduleDeliveryQuote();
     syncPanelHeight();
+  });
+  $("deliveryCity")?.addEventListener("blur", () => {
+    if ($("deliveryCity")?.value.trim() && !$("deliveryCityDaneCode")?.value) {
+      setDeliveryFieldStatus("city", "Selecciona una ciudad o municipio de la lista.");
+      renderPaymentTotals();
+    }
   });
   ["deliveryAddress", "deliveryNeighborhood", "deliveryComplement", "deliveryReferences", "deliveryPostalCode"].forEach(id => {
     $(id)?.addEventListener("input", () => {

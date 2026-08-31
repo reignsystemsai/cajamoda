@@ -3925,7 +3925,7 @@ img{display:block;max-width:100%}
       } catch (error) {
         if (requestVersion !== addressSuggestionVersion) return;
         renderAutocompleteMessage("deliveryAddress", "addressSuggestionPanel", "No pudimos cargar sugerencias. Puedes escribir la dirección manualmente.");
-        setDeliveryFieldStatus("address", "Las sugerencias no están disponibles. La dirección manual sigue habilitada.");
+        clearDeliveryFieldStatus("address");
         $("addressSuggestionSource").hidden = true;
         console.error("[CajaModa] Address suggestions error:", error);
       }

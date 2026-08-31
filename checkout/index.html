@@ -1516,6 +1516,7 @@ img{display:block;max-width:100%}
   let stripeInitializing = false;
   let stripeSessionUpdate = Promise.resolve();
   let stripeSessionCartKey = "";
+  let stripeSessionSynchronized = false;
   let stripeSessionUpdating = false;
   let deliveryQuote = { method: "pickup", prontoMethod: "pickup", fee: 10000, title: "Pronto · Recoger" };
   let deliveryQuotePending = false;
@@ -2157,6 +2158,7 @@ img{display:block;max-width:100%}
       deliveryQuoteError = "";
       quoteDestinationKey = "";
       stripeSessionCartKey = "";
+      stripeSessionSynchronized = false;
       updateStripePayAvailability();
     }
 
@@ -3500,7 +3502,7 @@ img{display:block;max-width:100%}
       paymentElement &&
       stripeCanConfirm &&
       !stripeSessionUpdating &&
-      stripeSessionCartKey === currentDeliveryQuoteKey() &&
+      stripeSessionSynchronized &&
       cardCheckoutDetailsReady() &&
       deliveryQuoteMatchesCart()
     );
@@ -3549,6 +3551,7 @@ img{display:block;max-width:100%}
     const expectedAmountTotal = Math.round(checkoutTotal() * 100);
     let returnedAmountTotal = null;
     stripeSessionCartKey = "";
+    stripeSessionSynchronized = false;
     updateStripePayAvailability();
     const update = async () => {
       const response = await fetch(`${STORE_API_URL}/api/stripe/checkout/update`, {
@@ -3571,6 +3574,7 @@ img{display:block;max-width:100%}
         if (result?.type === "error") throw new Error(result?.error?.message || PAYMENT_PREPARATION_ERROR);
         if (synchronizedKey === currentDeliveryQuoteKey()) {
           stripeSessionCartKey = synchronizedKey;
+          stripeSessionSynchronized = true;
         }
       } finally {
         stripeSessionUpdating = false;
@@ -3638,6 +3642,7 @@ img{display:block;max-width:100%}
         throw new Error("El subtotal inicial de Stripe no coincide con el pedido.");
       }
       stripeSessionCartKey = "";
+      stripeSessionSynchronized = false;
       unavailableProductIds.clear();
       incompatibleProntoItemIds.clear();
       saveJson("cajamoda-pending-checkout", payload);
@@ -3679,6 +3684,7 @@ img{display:block;max-width:100%}
       paymentElement = null;
       stripeSessionId = "";
       stripeSessionCartKey = "";
+      stripeSessionSynchronized = false;
       stripeSessionUpdating = false;
       console.error("[CajaModa] Stripe Payment Element error:", error);
       status.hidden = true;

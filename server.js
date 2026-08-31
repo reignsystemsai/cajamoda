@@ -116,9 +116,6 @@ const enviaLabelLocks = new Map();
 const enviaWebhookProcessing = new Set();
 const processedEnviaWebhookIds = new Map();
 const enviaShipmentStatuses = new Map();
-const checkoutErrorLog = [];
-const checkoutTelemetryRateLimits = new Map();
-const CHECKOUT_ERROR_LOG_LIMIT = 200;
 const CARTAGENA_PICKUP_ADDRESS = "Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar, Colombia";
 const STOREFRONT_URL = String(
   process.env.STOREFRONT_URL || "https://www.cajamoda.com"
@@ -401,74 +398,6 @@ function sendError(
         message
     }
   );
-}
-
-function checkoutTelemetryClientKey(request) {
-  return safeText(request.headers["x-forwarded-for"] || request.socket?.remoteAddress, 120)
-    .split(",")[0]
-    .trim() || "unknown";
-}
-
-function checkoutTelemetryAllowed(request) {
-  const key = checkoutTelemetryClientKey(request);
-  const now = Date.now();
-  const previous = checkoutTelemetryRateLimits.get(key);
-  const state = !previous || now - previous.startedAt > 60_000
-    ? { startedAt: now, count: 0 }
-    : previous;
-  state.count += 1;
-  checkoutTelemetryRateLimits.set(key, state);
-  if (checkoutTelemetryRateLimits.size > 500) {
-    for (const [candidate, value] of checkoutTelemetryRateLimits) {
-      if (now - value.startedAt > 60_000) checkoutTelemetryRateLimits.delete(candidate);
-    }
-  }
-  return state.count <= 30;
-}
-
-function redactCheckoutTelemetryMessage(value) {
-  return safeText(value, 300)
-    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[correo oculto]")
-    .replace(/\b(?:\d[ -]*?){12,19}\b/g, "[número oculto]");
-}
-
-function sanitizedCheckoutReadiness(value) {
-  const source = value && typeof value === "object" ? value : {};
-  return Object.fromEntries([
-    "cartHasItems", "deliverySelections", "contact", "citySelected",
-    "addressPresent", "deliveryQuote", "stripeLoaded", "cardComplete",
-    "stripeSynchronized", "stripeUpdating"
-  ].map(key => [key, Boolean(source[key])]));
-}
-
-async function handleRecordCheckoutError(request, response) {
-  if (!checkoutTelemetryAllowed(request)) return sendError(response, 429, "Demasiados reportes de diagnóstico.");
-  if (Number(request.headers["content-length"] || 0) > 8192) return sendError(response, 413, "Reporte demasiado grande.");
-  const body = await readBody(request);
-  const reference = safeText(body?.reference, 16).replace(/[^A-Za-z0-9]/g, "").toUpperCase();
-  const stage = safeText(body?.stage, 80).replace(/[^A-Za-z0-9._-]/g, "_") || "checkout.unknown";
-  const entry = {
-    id: crypto.randomUUID(),
-    reference: reference || crypto.randomBytes(4).toString("hex").toUpperCase(),
-    createdAt: new Date().toISOString(),
-    stage,
-    code: safeText(body?.code, 80).replace(/[^A-Za-z0-9._-]/g, "_") || "CHECKOUT_FAILED",
-    message: redactCheckoutTelemetryMessage(body?.message) || CHECKOUT_SAFE_ERROR_MESSAGE,
-    itemCount: Math.min(50, Math.max(0, Math.floor(Number(body?.itemCount || 0)))),
-    totalCop: Math.min(9_999_999_999, Math.max(0, Math.round(Number(body?.totalCop || 0)))),
-    deliveryMethod: safeText(body?.deliveryMethod, 30).replace(/[^A-Za-z0-9._-]/g, ""),
-    readiness: sanitizedCheckoutReadiness(body?.readiness),
-    page: safeText(body?.page, 120).split("?")[0]
-  };
-  checkoutErrorLog.unshift(entry);
-  if (checkoutErrorLog.length > CHECKOUT_ERROR_LOG_LIMIT) checkoutErrorLog.length = CHECKOUT_ERROR_LOG_LIMIT;
-  console.error(`[Checkout telemetry] ${JSON.stringify(entry)}`);
-  sendJson(response, 202, { ok: true, reference: entry.reference });
-}
-
-async function handleGetCheckoutErrors(request, response) {
-  if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
-  sendJson(response, 200, { ok: true, errors: checkoutErrorLog });
 }
 
 /* ============================================================
@@ -804,20 +733,7 @@ async function handleCreateStripeCheckout(request, response) {
   // line item properties, so never forward fulfillmentCode at this level.
   const lineItems = catalogLines.map(({ cartLineId, fulfillmentCode, selectedDeliveryMode, ...line }) => line);
   const customerEmail = safeText(body?.customer?.email, 250);
-  const prepareOnly = body?.prepareOnly === true;
-  const delivery = prepareOnly
-    ? {
-        method: "pending",
-        title: "Entrega pendiente",
-        addressLine: "",
-        city: "",
-        state: "",
-        postalCode: "",
-        fee: 0,
-        maxBusinessDays: 28,
-        quote: { groups: [] }
-      }
-    : await checkoutDelivery(body, catalogLines);
+  const delivery = await checkoutDelivery(body, catalogLines);
   const deliveryMethod = delivery.method;
   const deliveryLabel = delivery.title;
   const intentLines = catalogLines.map(line => ({
@@ -848,22 +764,17 @@ async function handleCreateStripeCheckout(request, response) {
     },
     line_items: lineItems,
     customer_email: customerEmail || undefined,
-    permissions: {
-      update_shipping_details: "server_only"
-    },
-    ...(prepareOnly ? {} : {
-      shipping_options: [{
-        shipping_rate_data: {
-          type: "fixed_amount",
-          fixed_amount: { amount: delivery.fee * 100, currency: "cop" },
-          display_name: deliveryLabel,
-          delivery_estimate: {
-            minimum: { unit: "business_day", value: 1 },
-            maximum: { unit: "business_day", value: delivery.maxBusinessDays }
-          }
+    shipping_options: [{
+      shipping_rate_data: {
+        type: "fixed_amount",
+        fixed_amount: { amount: delivery.fee * 100, currency: "cop" },
+        display_name: deliveryLabel,
+        delivery_estimate: {
+          minimum: { unit: "business_day", value: 1 },
+          maximum: { unit: "business_day", value: delivery.maxBusinessDays }
         }
-      }]
-    }),
+          }
+    }],
     locale: "es",
     return_url: `${STOREFRONT_URL}/order-confirmation/?stripeSessionId={CHECKOUT_SESSION_ID}`,
     metadata: {
@@ -890,77 +801,6 @@ async function handleCreateStripeCheckout(request, response) {
   });
 }
 
-async function handleCreateCheckout2StripeSession(request, response) {
-  if (!stripe) return sendError(response, 503, "Stripe todavía no está configurado en el servidor.");
-  const body = await readBody(request);
-  const items = Array.isArray(body?.cart?.items) ? body.cart.items.slice(0, 50) : [];
-  if (!items.length) return sendError(response, 400, "Tu bolsa está vacía.");
-
-  const catalogLines = await verifiedCheckoutCatalogItems(items);
-  const delivery = await checkoutDelivery(body, catalogLines);
-  const lineItems = catalogLines.map(({ cartLineId, fulfillmentCode, selectedDeliveryMode, ...line }) => line);
-  const customerEmail = safeText(body?.customer?.email, 250);
-  const intentLines = catalogLines.map(line => ({
-    productId: safeText(line?.price_data?.product_data?.metadata?.productId, 80),
-    variantId: safeText(line?.price_data?.product_data?.metadata?.variantId, 80),
-    quantity: Math.max(1, Math.floor(Number(line?.quantity || 1))),
-    amount: Number(line?.price_data?.unit_amount || 0) / 100,
-    name: safeText(line?.price_data?.product_data?.name, 300) || "Producto CajaModa",
-    fulfillmentCode: safeText(line?.fulfillmentCode, 10).toUpperCase(),
-    selectedDeliveryMode: safeText(line?.selectedDeliveryMode, 20).toLowerCase()
-  }));
-  const intentMetadata = stripeIntentMetadata(intentLines, body, delivery);
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    ui_mode: "elements",
-    payment_method_types: ["card"],
-    wallet_options: { link: { display: "never" } },
-    payment_intent_data: {
-      capture_method: stripeCaptureMethod(intentLines),
-      receipt_email: customerEmail || undefined,
-      metadata: { ...intentMetadata, source: "cajamoda-checkout-2" }
-    },
-    line_items: lineItems,
-    customer_email: customerEmail || undefined,
-    shipping_options: Number(delivery.fee || 0) > 0 ? [{
-      shipping_rate_data: {
-        type: "fixed_amount",
-        fixed_amount: { amount: Math.round(Number(delivery.fee) * 100), currency: "cop" },
-        display_name: delivery.title,
-        delivery_estimate: {
-          minimum: { unit: "business_day", value: 1 },
-          maximum: { unit: "business_day", value: delivery.maxBusinessDays }
-        }
-      }
-    }] : [],
-    locale: "es",
-    return_url: `${STOREFRONT_URL}/order-confirmation/?stripeSessionId={CHECKOUT_SESSION_ID}`,
-    metadata: {
-      source: "cajamoda-checkout-2",
-      deliveryMethod: delivery.method,
-      deliverySummary: safeText(delivery.title, 300),
-      deliveryPlan: safeText(encodedNationalDeliveryPlan(delivery), 500),
-      deliveryPromise: safeText(body?.delivery?.promise, 40) || "pronto",
-      customerName: safeText(body?.customer?.customerName, 160),
-      customerPhone: safeText(body?.customer?.customerPhone, 80),
-      deliveryAddress: delivery.addressLine,
-      deliveryCity: delivery.city,
-      deliveryState: delivery.state,
-      deliveryPostalCode: delivery.postalCode
-    }
-  }, {
-    idempotencyKey: safeText(body?.requestId, 100) || undefined
-  });
-
-  sendJson(response, 200, {
-    ok: true,
-    clientSecret: session.client_secret,
-    sessionId: session.id,
-    amountTotal: session.amount_total,
-    currency: session.currency
-  });
-}
-
 async function handleUpdateStripeCheckout(request, response) {
   if (!stripe) {
     sendError(response, 503, "Stripe todavía no está configurado en el servidor.");
@@ -983,24 +823,21 @@ async function handleUpdateStripeCheckout(request, response) {
     return;
   }
   const catalogLines = await verifiedCheckoutCatalogItems(items);
+  const lineItems = catalogLines.map(({ cartLineId, fulfillmentCode, selectedDeliveryMode, ...line }) => line);
   const delivery = await checkoutDelivery(body, catalogLines);
   const updated = await stripe.checkout.sessions.update(sessionId, {
-    shipping_options: Number(delivery.fee || 0) > 0
-      ? [{
-          shipping_rate_data: {
-            type: "fixed_amount",
-            fixed_amount: {
-              amount: Math.round(Number(delivery.fee) * 100),
-              currency: "cop"
-            },
-            display_name: delivery.title,
-            delivery_estimate: {
-              minimum: { unit: "business_day", value: 1 },
-              maximum: { unit: "business_day", value: delivery.maxBusinessDays }
-            }
-          }
-        }]
-      : [],
+    line_items: lineItems,
+    shipping_options: [{
+      shipping_rate_data: {
+        type: "fixed_amount",
+        fixed_amount: { amount: delivery.fee * 100, currency: "cop" },
+        display_name: delivery.title,
+        delivery_estimate: {
+          minimum: { unit: "business_day", value: 1 },
+          maximum: { unit: "business_day", value: delivery.maxBusinessDays }
+        }
+      }
+    }],
     metadata: {
       ...session.metadata,
       deliveryMethod: delivery.method,
@@ -6558,11 +6395,6 @@ const server =
           return;
         }
 
-        if(request.method === "POST" && url.pathname === "/api/checkout-2/stripe/session"){
-          await protectCheckoutOperation(response,"Checkout 2 Stripe",() => handleCreateCheckout2StripeSession(request,response));
-          return;
-        }
-
         if(request.method === "POST" && url.pathname === "/api/stripe/checkout/update"){
           await protectCheckoutOperation(response,"Stripe update",() => handleUpdateStripeCheckout(request,response));
           return;
@@ -6595,16 +6427,6 @@ const server =
 
         if(request.method === "GET" && url.pathname === "/api/checkout/config"){
           await handleCheckoutConfig(request,response);
-          return;
-        }
-
-        if(request.method === "POST" && url.pathname === "/api/checkout/errors"){
-          await handleRecordCheckoutError(request,response);
-          return;
-        }
-
-        if(request.method === "GET" && url.pathname === "/api/checkout/errors"){
-          await handleGetCheckoutErrors(request,response);
           return;
         }
 

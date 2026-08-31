@@ -622,7 +622,9 @@ async function protectCheckoutOperation(response, label, operation) {
     }
     sendJson(response, 500, {
       code: "PAYMENT_PREPARATION_FAILED",
-      message: CHECKOUT_SAFE_ERROR_MESSAGE
+      message: CHECKOUT_SAFE_ERROR_MESSAGE,
+      reason: safeText(error?.code || error?.type || error?.name, 80),
+      parameter: safeText(error?.param, 80)
     });
   }
 }

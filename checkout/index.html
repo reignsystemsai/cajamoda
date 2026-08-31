@@ -533,6 +533,23 @@ img{display:block;max-width:100%}
 .deliveryGroupCount{min-width:24px;height:24px;padding:0 7px;display:grid;place-items:center;border:1px solid rgba(0,0,0,.10);border-radius:999px;background:rgba(255,255,255,.58);color:#111;font-size:8px;font-weight:800}
 .deliveryGroupName{display:flex;align-items:center;gap:8px}
 .deliverySeparateNote{margin-top:8px;color:#737373;font-size:8px;line-height:1.45}
+.separateDeliveryExplanation{
+  margin:2px 0 10px;
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  color:#737373;
+  font-size:8px;
+  line-height:1.45
+}
+.separateDeliveryExplanation svg{
+  flex:0 0 auto;
+  width:15px;
+  height:15px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.35
+}
 
 .deliveryIntro{margin-bottom:22px}
 .deliveryIntro h2{
@@ -1641,6 +1658,18 @@ img{display:block;max-width:100%}
     const container = $(containerId);
     if (!container) return;
     container.innerHTML = "";
+    if (chargeRows.length > 1) {
+      const explanation = document.createElement("div");
+      explanation.className = "separateDeliveryExplanation";
+      explanation.innerHTML = `
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m4 7 8-4 8 4-8 4-8-4Z"/>
+          <path d="M4 7v10l8 4 8-4V7M12 11v10"/>
+        </svg>
+        <span>Tu pedido llegará en entregas separadas; cada envío tiene su propio costo.</span>
+      `;
+      container.append(explanation);
+    }
     chargeRows.forEach(charge => {
       const row = document.createElement("div");
       row.className = containerId === "nequiShipmentCharges" ? "nequiPriceLine" : "summaryLine";

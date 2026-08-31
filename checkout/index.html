@@ -3544,9 +3544,18 @@ img{display:block;max-width:100%}
   }
 
   function syncStripeCheckoutSession() {
-    if (!checkoutElements || !stripeSessionId || typeof checkoutElements.runServerUpdate !== "function") {
+    if (!checkoutElements || !checkoutActions || !stripeSessionId || typeof checkoutElements.runServerUpdate !== "function") {
       return Promise.resolve();
     }
+    const emailInput = $("email");
+    const email = emailInput?.value.trim() || "";
+    if (!email || !emailInput.checkValidity() || !cardCheckoutDetailsReady()) {
+      return Promise.resolve();
+    }
+    const customerName = [$("customerFirstName")?.value.trim(), $("customerLastName")?.value.trim()]
+      .filter(Boolean)
+      .join(" ");
+    const synchronizedBillingAddress = billingAddress();
     const synchronizedKey = currentDeliveryQuoteKey();
     const expectedAmountTotal = Math.round(checkoutTotal() * 100);
     let returnedAmountTotal = null;
@@ -3570,6 +3579,17 @@ img{display:block;max-width:100%}
       stripeSessionUpdating = true;
       updateStripePayAvailability();
       try {
+        const emailResult = await checkoutActions.updateEmail(email);
+        if (emailResult?.type === "error") {
+          throw new Error(emailResult?.error?.message || PAYMENT_PREPARATION_ERROR);
+        }
+        const billingResult = await checkoutActions.updateBillingAddress({
+          name: customerName,
+          address: synchronizedBillingAddress
+        });
+        if (billingResult?.type === "error") {
+          throw new Error(billingResult?.error?.message || PAYMENT_PREPARATION_ERROR);
+        }
         const result = await checkoutElements.runServerUpdate(update);
         if (result?.type === "error") throw new Error(result?.error?.message || PAYMENT_PREPARATION_ERROR);
         stripeSessionCartKey = synchronizedKey;
@@ -4284,11 +4304,14 @@ img{display:block;max-width:100%}
   });
 
   [
-    "customerFirstName", "customerLastName", "customerPhone", "deliveryAddress", "deliveryCity",
+    "email", "customerFirstName", "customerLastName", "customerPhone", "deliveryAddress", "deliveryCity",
     "deliveryNeighborhood", "deliveryComplement", "deliveryReferences", "deliveryDepartment", "billingAddress", "billingComplement", "billingCity", "billingDepartment", "billingPostalCode"
   ].forEach(id => {
     $(id)?.addEventListener("input", updateStripePayAvailability);
-    $(id)?.addEventListener("change", updateStripePayAvailability);
+    $(id)?.addEventListener("change", () => {
+      updateStripePayAvailability();
+      if (deliveryQuoteMatchesCart()) syncPaymentInBackground();
+    });
   });
 
   $("bagDeliveryInfoButton").onclick = () => openDeliveryHelp();

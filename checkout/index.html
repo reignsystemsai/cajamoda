@@ -3572,10 +3572,8 @@ img{display:block;max-width:100%}
       try {
         const result = await checkoutElements.runServerUpdate(update);
         if (result?.type === "error") throw new Error(result?.error?.message || PAYMENT_PREPARATION_ERROR);
-        if (synchronizedKey === currentDeliveryQuoteKey()) {
-          stripeSessionCartKey = synchronizedKey;
-          stripeSessionSynchronized = true;
-        }
+        stripeSessionCartKey = synchronizedKey;
+        stripeSessionSynchronized = true;
       } finally {
         stripeSessionUpdating = false;
         updateStripePayAvailability();

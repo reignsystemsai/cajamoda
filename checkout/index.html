@@ -1256,11 +1256,11 @@ img{display:block;max-width:100%}
             <label id="departmentField" class="deliveryField"><span class="fieldLabel">Departamento</span><select id="deliveryDepartment" class="compactInput" autocomplete="address-level1" disabled><option value="">Cargando departamentos…</option></select><span id="departmentFieldStatus" class="fieldStatus" hidden></span></label>
             <div id="cityField" class="deliveryField autocompleteField"><span class="fieldLabel">Ciudad / municipio</span><input id="deliveryCity" name="city" class="compactInput cityInput" autocomplete="address-level2" aria-autocomplete="list" aria-controls="citySuggestionPanel" aria-expanded="false" aria-label="Ciudad o municipio de entrega" placeholder="Selecciona el departamento primero" disabled><input id="deliveryCityDaneCode" type="hidden"><span id="cityFieldStatus" class="fieldStatus" hidden></span><div id="citySuggestionPanel" class="autocompleteMenu" role="listbox" hidden></div></div>
             <div id="addressField" class="wide deliveryField autocompleteField"><span class="fieldLabel">Dirección principal</span><input id="deliveryAddress" class="compactInput" autocomplete="shipping street-address" aria-autocomplete="list" aria-controls="addressSuggestionPanel" aria-expanded="false" aria-label="Dirección principal de entrega" placeholder="Ej. Kr 13 #60-19"><span id="addressFieldStatus" class="fieldStatus" hidden></span><div id="addressSuggestionPanel" class="autocompleteMenu" role="listbox" hidden></div></div>
-            <label class="deliveryField"><span class="fieldLabel">Barrio</span><input id="deliveryNeighborhood" class="compactInput" autocomplete="shipping address-level3" placeholder="Barrio"></label>
-            <label class="deliveryField"><span class="fieldLabel">Apto., torre o interior</span><input id="deliveryComplement" class="compactInput" autocomplete="shipping address-line2" placeholder="Opcional"></label>
+            <label id="neighborhoodField" class="deliveryField"><span class="fieldLabel">Barrio</span><input id="deliveryNeighborhood" class="compactInput" autocomplete="shipping address-level3" placeholder="Barrio"><span id="neighborhoodFieldStatus" class="fieldStatus" hidden></span></label>
+            <label class="deliveryField"><span class="fieldLabel">Apto., torre o interior (opcional)</span><input id="deliveryComplement" class="compactInput" autocomplete="shipping address-line2" placeholder="Apartamento, torre o interior"></label>
             <input id="deliveryAddressPlaceId" type="hidden">
-            <label class="wide deliveryField"><span class="fieldLabel">Código postal</span><input id="deliveryPostalCode" class="compactInput" autocomplete="shipping postal-code" inputmode="numeric" maxlength="6" placeholder="Opcional"></label>
-            <label class="wide deliveryField"><span class="fieldLabel">Referencias para la entrega</span><input id="deliveryReferences" class="compactInput" placeholder="Ej. portería, color de la casa o punto cercano"></label>
+            <label id="postalCodeField" class="wide deliveryField"><span class="fieldLabel">Código postal (opcional)</span><input id="deliveryPostalCode" class="compactInput" autocomplete="shipping postal-code" inputmode="numeric" maxlength="6" placeholder="Código postal"><span id="postalCodeFieldStatus" class="fieldStatus" hidden></span></label>
+            <label class="wide deliveryField"><span class="fieldLabel">Referencias para la entrega (opcional)</span><input id="deliveryReferences" class="compactInput" placeholder="Ej. portería, color de la casa o punto cercano"></label>
           </div>
           <p id="addressSuggestionSource" class="deliveryNote" role="status" aria-live="polite" hidden>Dirección verificada por Google</p>
           <div id="prontoReceivingChoice">
@@ -3031,7 +3031,12 @@ img{display:block;max-width:100%}
     }
     if ((profile.hasNational || (profile.hasPronto && selectedDelivery === "moto")) && !address) {
       $("deliveryAddress")?.focus();
-      showToast("Ingresa la dirección de entrega.");
+      setDeliveryFieldStatus("address", "Ingresa la dirección principal.");
+      return false;
+    }
+    if (profile.hasNational && !$("deliveryNeighborhood")?.value.trim()) {
+      $("deliveryNeighborhood")?.focus();
+      setDeliveryFieldStatus("neighborhood", "Ingresa el barrio de entrega.");
       return false;
     }
     if (profile.hasNational && !$("deliveryDepartment")?.value) {
@@ -3083,6 +3088,36 @@ img{display:block;max-width:100%}
     };
   }
 
+  function reportDeliveryQuoteError(message) {
+    const text = String(message || "Envia no pudo calcular el envío.");
+    const normalized = normalizeLocationChoice(text);
+    ["department", "city", "address", "neighborhood", "postalCode"].forEach(fieldId => {
+      const field = $(`${fieldId}Field`);
+      if (field?.classList.contains("hasError")) clearDeliveryFieldStatus(fieldId);
+    });
+    if (normalized.includes("departamento")) {
+      setDeliveryFieldStatus("department", text);
+      return "Corrige el departamento marcado para calcular el envío.";
+    }
+    if (normalized.includes("ciudad") || normalized.includes("municipio")) {
+      setDeliveryFieldStatus("city", text);
+      return "Corrige la ciudad o municipio marcado para calcular el envío.";
+    }
+    if (normalized.includes("barrio")) {
+      setDeliveryFieldStatus("neighborhood", text);
+      return "Corrige el barrio marcado para calcular el envío.";
+    }
+    if (normalized.includes("postal")) {
+      setDeliveryFieldStatus("postalCode", text);
+      return "Corrige el código postal marcado para calcular el envío.";
+    }
+    if (normalized.includes("direccion")) {
+      setDeliveryFieldStatus("address", text);
+      return "Corrige la dirección marcada para calcular el envío.";
+    }
+    return `Envia no pudo calcular el envío: ${text}`;
+  }
+
   async function refreshDeliveryQuote(options = {}) {
     const profile = checkoutFulfillmentProfile();
     if (profile.hasPronto && !profile.hasNational && selectedDelivery === "pickup") {
@@ -3096,7 +3131,11 @@ img{display:block;max-width:100%}
     }
     const addressRequired = profile.hasNational || (profile.hasPronto && selectedDelivery === "moto");
     const address = $("deliveryAddress")?.value.trim();
-    const nationalReady = !profile.hasNational || ($("deliveryCity")?.value.trim() && $("deliveryDepartment")?.value);
+    const nationalReady = !profile.hasNational || (
+      $("deliveryCity")?.value.trim() &&
+      $("deliveryDepartment")?.value &&
+      $("deliveryNeighborhood")?.value.trim()
+    );
     if ((addressRequired && !address) || !nationalReady) {
       quoteRequestVersion += 1;
       deliveryQuote = null;
@@ -3124,7 +3163,7 @@ img{display:block;max-width:100%}
       if (requestVersion !== quoteRequestVersion) return null;
       if (!response.ok || !result?.quote) {
         if (result?.code) throw paymentPreparationFailure(result);
-        throw new Error("No pudimos calcular el envío. Verifica tu dirección e inténtalo nuevamente.");
+        throw new Error(result?.error || "No pudimos calcular el envío con Envia.");
       }
       deliveryQuotePending = false;
       deliveryQuoteError = "";
@@ -3137,11 +3176,10 @@ img{display:block;max-width:100%}
       deliveryQuote = null;
       deliveryQuotePending = false;
       quoteDestinationKey = "";
-      deliveryQuoteError = "No pudimos calcular el envío. Verifica tu dirección e inténtalo nuevamente.";
+      deliveryQuoteError = reportDeliveryQuoteError(error?.message);
       renderPaymentTotals();
       if (options.required) throw error;
       if ([CART_ITEM_UNAVAILABLE_CODE, PRONTO_LOCATION_UNAVAILABLE_CODE].includes(error?.code)) return null;
-      showToast(deliveryQuoteError);
       return null;
     }
   }
@@ -3824,7 +3862,12 @@ img{display:block;max-width:100%}
     syncPanelHeight();
   });
   ["deliveryAddress", "deliveryNeighborhood", "deliveryComplement", "deliveryReferences", "deliveryPostalCode"].forEach(id => {
-    $(id)?.addEventListener("input", scheduleDeliveryQuote);
+    $(id)?.addEventListener("input", () => {
+      if (id === "deliveryAddress") clearDeliveryFieldStatus("address");
+      if (id === "deliveryNeighborhood") clearDeliveryFieldStatus("neighborhood");
+      if (id === "deliveryPostalCode") clearDeliveryFieldStatus("postalCode");
+      scheduleDeliveryQuote();
+    });
   });
   $("deliveryAddress")?.addEventListener("input", () => {
     if (!applyingAddressSuggestion) scheduleAddressSuggestions();

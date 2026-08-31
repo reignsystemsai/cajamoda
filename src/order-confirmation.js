@@ -24,10 +24,9 @@ const checkoutId = (() => {
 
 const stripeSessionId = confirmationReference("stripeSessionId", "cajamoda-confirmation-stripe-session");
 const paymentIntentId = confirmationReference("paymentIntent", "cajamoda-confirmation-payment-intent");
-const checkout3PaymentId = confirmationReference("checkout3Payment", "cajamoda-confirmation-checkout-3-payment");
 const nequiOrderNumber = new URLSearchParams(location.search).get("nequiOrder") || "";
 
-if (confirmationQuery.has("stripeSessionId") || confirmationQuery.has("paymentIntent") || confirmationQuery.has("checkout3Payment")) {
+if (confirmationQuery.has("stripeSessionId") || confirmationQuery.has("paymentIntent")) {
   history.replaceState(history.state, document.title, `${location.pathname}${location.hash}`);
 }
 
@@ -114,29 +113,6 @@ async function loadConfirmation() {
     $("shareButton").hidden = true;
     setStatus("Tu pedido está reservado mientras verificamos el pago.");
     try { localStorage.removeItem("cajamoda-pending-nequi-order"); } catch {}
-    return;
-  }
-  if (checkout3PaymentId) {
-    const response = await fetch(
-      `${API_BASE}/api/checkout-3/payment/confirmation?paymentIntent=${encodeURIComponent(checkout3PaymentId)}`,
-      { headers: { Accept: "application/json" } }
-    );
-    const payload = await response.json();
-    if (!response.ok || !payload?.ok || !payload?.order?.paid) {
-      throw new Error(payload?.message || payload?.error || "El pago todavía no está confirmado.");
-    }
-    confirmation = payload.order;
-    renderShipmentCards(confirmation.shipments);
-    $("confirmationTitle").textContent = "COMPRA CONFIRMADA";
-    $("orderNumber").textContent = `Pedido #${confirmation.number}`;
-    $("paymentStatus").textContent = confirmation.payment;
-    $("deliveryMethod").textContent = confirmation.delivery?.method || "Entrega CajaModa";
-    $("deliveryMessage").textContent = confirmation.delivery?.message || "Te enviaremos actualizaciones por correo.";
-    $("shareButton").hidden = true;
-    try {
-      sessionStorage.removeItem("cajamoda-checkout-3-payment");
-      sessionStorage.removeItem("cajamoda-confirmation-checkout-3-payment");
-    } catch {}
     return;
   }
   if (paymentIntentId) {

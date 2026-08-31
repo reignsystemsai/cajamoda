@@ -3693,6 +3693,7 @@ img{display:block;max-width:100%}
         updateStripePayAvailability();
         syncPanelHeight();
       });
+      await syncStripeCheckoutSession();
       status.hidden = true;
       syncPanelHeight();
     } catch (error) {

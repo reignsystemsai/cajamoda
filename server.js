@@ -751,6 +751,9 @@ async function handleCreateStripeCheckout(request, response) {
     mode: "payment",
     ui_mode: "elements",
     payment_method_types: ["card"],
+    wallet_options: {
+      link: { display: "never" }
+    },
     payment_intent_data: {
       capture_method: captureMethod,
       receipt_email: customerEmail || undefined,
@@ -790,7 +793,12 @@ async function handleCreateStripeCheckout(request, response) {
   }, {
     idempotencyKey: safeText(body?.requestId, 100) || undefined
   });
-  sendJson(response, 200, { ok: true, clientSecret: session.client_secret, sessionId: session.id });
+  sendJson(response, 200, {
+    ok: true,
+    clientSecret: session.client_secret,
+    sessionId: session.id,
+    amountTotal: session.amount_total
+  });
 }
 
 async function handleUpdateStripeCheckout(request, response) {

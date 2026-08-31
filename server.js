@@ -116,6 +116,9 @@ const enviaLabelLocks = new Map();
 const enviaWebhookProcessing = new Set();
 const processedEnviaWebhookIds = new Map();
 const enviaShipmentStatuses = new Map();
+const checkoutErrorLog = [];
+const checkoutTelemetryRateLimits = new Map();
+const CHECKOUT_ERROR_LOG_LIMIT = 200;
 const CARTAGENA_PICKUP_ADDRESS = "Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar, Colombia";
 const STOREFRONT_URL = String(
   process.env.STOREFRONT_URL || "https://www.cajamoda.com"
@@ -398,6 +401,74 @@ function sendError(
         message
     }
   );
+}
+
+function checkoutTelemetryClientKey(request) {
+  return safeText(request.headers["x-forwarded-for"] || request.socket?.remoteAddress, 120)
+    .split(",")[0]
+    .trim() || "unknown";
+}
+
+function checkoutTelemetryAllowed(request) {
+  const key = checkoutTelemetryClientKey(request);
+  const now = Date.now();
+  const previous = checkoutTelemetryRateLimits.get(key);
+  const state = !previous || now - previous.startedAt > 60_000
+    ? { startedAt: now, count: 0 }
+    : previous;
+  state.count += 1;
+  checkoutTelemetryRateLimits.set(key, state);
+  if (checkoutTelemetryRateLimits.size > 500) {
+    for (const [candidate, value] of checkoutTelemetryRateLimits) {
+      if (now - value.startedAt > 60_000) checkoutTelemetryRateLimits.delete(candidate);
+    }
+  }
+  return state.count <= 30;
+}
+
+function redactCheckoutTelemetryMessage(value) {
+  return safeText(value, 300)
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[correo oculto]")
+    .replace(/\b(?:\d[ -]*?){12,19}\b/g, "[número oculto]");
+}
+
+function sanitizedCheckoutReadiness(value) {
+  const source = value && typeof value === "object" ? value : {};
+  return Object.fromEntries([
+    "cartHasItems", "deliverySelections", "contact", "citySelected",
+    "addressPresent", "deliveryQuote", "stripeLoaded", "cardComplete",
+    "stripeSynchronized", "stripeUpdating"
+  ].map(key => [key, Boolean(source[key])]));
+}
+
+async function handleRecordCheckoutError(request, response) {
+  if (!checkoutTelemetryAllowed(request)) return sendError(response, 429, "Demasiados reportes de diagnóstico.");
+  if (Number(request.headers["content-length"] || 0) > 8192) return sendError(response, 413, "Reporte demasiado grande.");
+  const body = await readBody(request);
+  const reference = safeText(body?.reference, 16).replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+  const stage = safeText(body?.stage, 80).replace(/[^A-Za-z0-9._-]/g, "_") || "checkout.unknown";
+  const entry = {
+    id: crypto.randomUUID(),
+    reference: reference || crypto.randomBytes(4).toString("hex").toUpperCase(),
+    createdAt: new Date().toISOString(),
+    stage,
+    code: safeText(body?.code, 80).replace(/[^A-Za-z0-9._-]/g, "_") || "CHECKOUT_FAILED",
+    message: redactCheckoutTelemetryMessage(body?.message) || CHECKOUT_SAFE_ERROR_MESSAGE,
+    itemCount: Math.min(50, Math.max(0, Math.floor(Number(body?.itemCount || 0)))),
+    totalCop: Math.min(9_999_999_999, Math.max(0, Math.round(Number(body?.totalCop || 0)))),
+    deliveryMethod: safeText(body?.deliveryMethod, 30).replace(/[^A-Za-z0-9._-]/g, ""),
+    readiness: sanitizedCheckoutReadiness(body?.readiness),
+    page: safeText(body?.page, 120).split("?")[0]
+  };
+  checkoutErrorLog.unshift(entry);
+  if (checkoutErrorLog.length > CHECKOUT_ERROR_LOG_LIMIT) checkoutErrorLog.length = CHECKOUT_ERROR_LOG_LIMIT;
+  console.error(`[Checkout telemetry] ${JSON.stringify(entry)}`);
+  sendJson(response, 202, { ok: true, reference: entry.reference });
+}
+
+async function handleGetCheckoutErrors(request, response) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Inicia sesión en Store Loader.");
+  sendJson(response, 200, { ok: true, errors: checkoutErrorLog });
 }
 
 /* ============================================================
@@ -6441,6 +6512,16 @@ const server =
 
         if(request.method === "GET" && url.pathname === "/api/checkout/config"){
           await handleCheckoutConfig(request,response);
+          return;
+        }
+
+        if(request.method === "POST" && url.pathname === "/api/checkout/errors"){
+          await handleRecordCheckoutError(request,response);
+          return;
+        }
+
+        if(request.method === "GET" && url.pathname === "/api/checkout/errors"){
+          await handleGetCheckoutErrors(request,response);
           return;
         }
 

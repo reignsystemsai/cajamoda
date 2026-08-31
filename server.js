@@ -1496,6 +1496,19 @@ function locationNamesMatch(left, right) {
   );
 }
 
+function colombiaStatesMatch(left, right) {
+  const stateKey = value => {
+    const normalized = normalizeLocationName(value);
+    if (["dc", "bogota", "bogota dc", "distrito capital", "bogota distrito capital"].includes(normalized)) {
+      return "dc";
+    }
+    return normalized;
+  };
+  const first = stateKey(left);
+  const second = stateKey(right);
+  return Boolean(first && second && first === second);
+}
+
 async function validateDeliveryMunicipality(delivery = {}) {
   const daneCode = safeText(delivery?.cityDaneCode, 8);
   if (!daneCode) throw new Error("Selecciona una ciudad o municipio válido.");
@@ -1528,22 +1541,37 @@ async function locateColombiaCity(city, state) {
   return located;
 }
 
-async function validateColombiaPostalCode(postalCode, located) {
+async function validateColombiaPostalCode(postalCode, located, selectedState = "") {
   const requested = safeText(postalCode, 20);
-  if (!requested) return safeText(located?.postalCode || located?.zipcode, 20);
-  const payload = await externalJson(
-    `${ENVIA_GEOCODES_BASE}/zipcode/CO/${encodeURIComponent(requested)}`,
-    {},
-    8000
-  );
-  const resolved = payload?.data || payload;
-  if (!resolved?.zipcode) throw new Error("El código postal no es válido.");
-  const locatedState = normalizeLocationName(located?.state);
-  const postalState = normalizeLocationName(resolved?.state);
-  if (locatedState && postalState && locatedState !== postalState) {
-    throw new Error("El código postal no corresponde al departamento seleccionado.");
+  const locatedPostalCode = safeText(located?.postalCode || located?.zipcode, 20);
+  if (!requested) {
+    if (/^\d{6}$/.test(locatedPostalCode)) return locatedPostalCode;
+    throw new Error("Ingresa el código postal colombiano de seis dígitos.");
   }
-  return safeText(resolved.zipcode, 20);
+  if (!/^\d{6}$/.test(requested)) {
+    throw new Error("El código postal debe tener seis dígitos.");
+  }
+  try {
+    const payload = await externalJson(
+      `${ENVIA_GEOCODES_BASE}/zipcode/CO/${encodeURIComponent(requested)}`,
+      {},
+      8000
+    );
+    const resolved = Array.isArray(payload?.data)
+      ? payload.data[0]
+      : payload?.data || payload;
+    const resolvedPostalCode = safeText(resolved?.zipcode || resolved?.postalCode, 20);
+    if (!resolvedPostalCode) return requested;
+    const postalState = safeText(resolved?.state, 100);
+    const expectedStates = [safeText(located?.state, 100), safeText(selectedState, 100)].filter(Boolean);
+    if (postalState && expectedStates.length && !expectedStates.some(state => colombiaStatesMatch(state, postalState))) {
+      throw new Error("El código postal no corresponde al departamento seleccionado.");
+    }
+    return resolvedPostalCode;
+  } catch (error) {
+    if (safeText(error?.message, 300).includes("no corresponde al departamento")) throw error;
+    return requested;
+  }
 }
 
 async function colombiaMunicipalities() {
@@ -1656,7 +1684,8 @@ async function quoteNationalDelivery(delivery, customer, declaredValue) {
   const selectedAddress = await validateSelectedGoogleAddress(delivery);
   const verifiedPostalCode = await validateColombiaPostalCode(
     postalCode || selectedAddress?.postalCode,
-    located
+    located,
+    state
   );
   const carriers = await enviaCarriers();
   if (!carriers.length) throw new Error("Envia no devolvió transportadoras disponibles.");
@@ -1693,7 +1722,8 @@ async function quoteNationalDelivery(delivery, customer, declaredValue) {
     carrier: safeText(selected.carrier, 60),
     service: safeText(selected.service, 100),
     serviceDescription: safeText(selected.serviceDescription || selected.service, 100),
-    estimate: safeText(selected.deliveryEstimate || "4–7 días", 100)
+    estimate: safeText(selected.deliveryEstimate || "4–7 días", 100),
+    postalCode: verifiedPostalCode
   };
 }
 
@@ -1960,7 +1990,8 @@ async function checkoutDelivery(body, lines = []) {
     neighborhood: safeText(body?.delivery?.neighborhood, 100),
     complement: safeText(body?.delivery?.complement, 120),
     references: safeText(body?.delivery?.references, 180),
-    postalCode: safeText(body?.delivery?.postalCode, 20),
+    postalCode: safeText(body?.delivery?.postalCode, 20) ||
+      safeText(quote?.groups?.find(group => group?.postalCode)?.postalCode, 20),
     fee: quote.fee,
     title: quote.title,
     maxBusinessDays: quote.maxBusinessDays,

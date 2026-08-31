@@ -18,6 +18,7 @@ const checks = [
   ["Color is derived from Wix variants", checkout.includes("function visibleColor") && product.includes("function productColorValues")],
   ["Bag lines are canonicalized", checkout.includes("const canonicalItems=[]")],
   ["COP card totals use Stripe minor units", checkout.includes("function copMinorUnits(amount)") && checkout.includes("copMinorUnits(readCart().total)") && checkout.includes("copMinorUnits(checkoutTotal())") && server.includes("unit_amount: unitAmount * 100") && server.includes("unit_amount: Math.round(Number(delivery.fee) * 100)")],
+  ["Stripe readiness is recoverable and explicit", checkout.includes('Correo electrónico *</span>') && checkout.includes('required aria-required="true"') && checkout.includes('showToast("Ingresa tu correo electrónico.")') && checkout.includes("if (!stripeSessionUpdating && !stripeSessionSynchronized) syncPaymentInBackground();") && checkout.includes('$("deliveryCity")?.addEventListener("blur", () => {\n    syncCityDaneCode();')],
   ["Wix review credentials remain server-side", !product.includes("WIX_API_KEY") && server.includes("WIX_API_KEY")]
 ];
 

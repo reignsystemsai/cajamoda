@@ -1182,7 +1182,10 @@ img{display:block;max-width:100%}
 
         <section id="bagDeliverySummary" class="summaryCard glassCard" aria-label="Entrega de tu pedido" hidden>
           <div class="deliverySummaryHeader">
-            <div class="summaryTotalLabel">Entrega de tu pedido</div>
+            <div>
+              <div class="summaryTotalLabel">Entrega de tu pedido</div>
+              <button id="bagDeliveryInfoButton" class="editDelivery" type="button">Ver tipos de entrega</button>
+            </div>
             <span id="deliveryGarmentCount" class="deliveryGarmentCount">0 prendas</span>
           </div>
           <div id="deliverySummaryRows"></div>
@@ -1407,7 +1410,7 @@ img{display:block;max-width:100%}
       <button id="deliveryHelpClose" class="deliveryHelpClose" type="button" aria-label="Cerrar">×</button>
     </div>
     <div id="deliveryHelpContent">
-      <div class="deliveryHelpLine"><strong>Pronto</strong>24–48 h · Solo Cartagena.</div>
+      <div class="deliveryHelpLine"><strong>Pronto a domicilio</strong>24–48 h · Solo Cartagena. Elige Moto a tu dirección o Recoger en punto.</div>
       <div class="deliveryHelpLine"><strong>Rápido Nacional</strong>4–7 días.</div>
       <div class="deliveryHelpLine"><strong>Libéralo</strong>14–28 días.</div>
       <div class="deliveryHelpLine">El tiempo disponible depende de cada producto.</div>
@@ -2205,7 +2208,7 @@ img{display:block;max-width:100%}
   }
 
   const deliveryExplanations={
-    pickup:{label:"Pronto",copy:"A domicilio o recoger en punto · 24–48 h · Solo Cartagena."},
+    pickup:{label:"Pronto a domicilio",copy:"24–48 h · Solo Cartagena. Elige Moto a tu dirección o Recoger en punto."},
     fast:{label:"Rápido Nacional",copy:"4–7 días."},
     ship:{label:"Libéralo",copy:"14–28 días."}
   };
@@ -4156,6 +4159,7 @@ img{display:block;max-width:100%}
     $(id)?.addEventListener("change", updateStripePayAvailability);
   });
 
+  $("bagDeliveryInfoButton").onclick = () => openDeliveryHelp();
   $("deliveryInfoButton").onclick = () => openDeliveryHelp();
   $("deliveryHelpClose").onclick = () => $("deliveryHelp").classList.remove("isOpen");
   $("deliveryHelp").onclick = event => { if (event.target === $("deliveryHelp")) $("deliveryHelp").classList.remove("isOpen"); };

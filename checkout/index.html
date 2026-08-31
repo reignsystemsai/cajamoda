@@ -1779,11 +1779,11 @@ img{display:block;max-width:100%}
     if(isIncompatibleProntoItem(item)){
       const alternatives=allowedDeliveryModes(item).filter(mode=>mode!=="pickup");
       if(alternatives.length){
-        return `<div class="cartUnavailableNotice" role="alert"><strong>Pronto solo está disponible en Cartagena. Selecciona R o L para continuar con este producto.</strong></div>`;
+        return `<div class="cartUnavailableNotice" role="alert"><strong>Pronto solo está disponible en Cartagena. Revisa tu dirección de entrega en Tarjeta o Nequi. Si la entrega es fuera de Cartagena, selecciona R o L para continuar con este producto.</strong></div>`;
       }
     }
     return `<div class="cartUnavailableNotice" role="alert">
-      <strong>${isIncompatibleProntoItem(item)?"Pronto solo está disponible en Cartagena. Retira este producto para continuar.":"Este producto ya no está disponible. Retíralo para continuar."}</strong>
+      <strong>${isIncompatibleProntoItem(item)?"Pronto solo está disponible en Cartagena. Revisa tu dirección de entrega en Tarjeta o Nequi. Si la entrega es fuera de Cartagena, retira este producto para continuar.":"Este producto ya no está disponible. Retíralo para continuar."}</strong>
       <button class="cartUnavailableRemove" type="button" data-remove-unavailable="${escapeHtml(item.id)}">Retirar de la bolsa</button>
     </div>`;
   }

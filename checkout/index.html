@@ -1524,6 +1524,7 @@ img{display:block;max-width:100%}
   let stripeSessionCartKey = "";
   let stripeSessionSynchronized = false;
   let stripeSessionUpdating = false;
+  let stripePaymentSubmitting = false;
   let deliveryQuote = { method: "pickup", prontoMethod: "pickup", fee: 10000, title: "Pronto · Recoger" };
   let deliveryQuotePending = false;
   let deliveryQuoteError = "";
@@ -1611,12 +1612,20 @@ img{display:block;max-width:100%}
     );
   }
 
+  function checkoutAmounts(cart = readCart()) {
+    const subtotal = Math.max(0, Number(cart?.total || 0));
+    const deliveryFee = deliveryQuoteMatchesCart(cart)
+      ? Math.max(0, Number(deliveryQuote?.fee || 0))
+      : 0;
+    return { subtotal, deliveryFee, total: subtotal + deliveryFee };
+  }
+
   function checkoutDeliveryFee() {
-    return deliveryQuoteMatchesCart() ? Number(deliveryQuote.fee || 0) : 0;
+    return checkoutAmounts().deliveryFee;
   }
 
   function checkoutTotal() {
-    return readCart().total + checkoutDeliveryFee();
+    return checkoutAmounts().total;
   }
 
   function copMinorUnits(amount) {
@@ -1735,12 +1744,11 @@ img{display:block;max-width:100%}
 
   function renderPaymentTotals() {
     const cart = readCart();
-    const subtotal = cart.total;
+    const amounts = checkoutAmounts(cart);
+    const subtotal = amounts.subtotal;
     const chargeRows = selectedShipmentChargeRows(cart);
-    const deliveryFee = chargeRows
-      .filter(charge => charge.resolved)
-      .reduce((sum, charge) => sum + Math.max(0, Number(charge.fee || 0)), 0);
-    const total = subtotal + deliveryFee;
+    const deliveryFee = amounts.deliveryFee;
+    const total = amounts.total;
     const bagKnownDeliveryFee = chargeRows
       .filter(charge => charge.key === "pickup" && charge.resolved)
       .reduce((sum, charge) => sum + Math.max(0, Number(charge.fee || 0)), 0);
@@ -1760,7 +1768,6 @@ img{display:block;max-width:100%}
     renderShipmentCharges("nequiShipmentCharges", chargeRows);
     renderShipmentCharges("stripeShipmentCharges", chargeRows);
     renderDeliveryQuoteBreakdown(profile, quoteReady, total);
-    if ($("stripePayButton")) $("stripePayButton").textContent = `Pagar ${money(total)} COP`;
     const quoteStatus = $("deliveryQuoteStatus");
     if (quoteStatus && profile.hasNational) {
       const destinationReady = Boolean(
@@ -1990,11 +1997,20 @@ img{display:block;max-width:100%}
       ].find(([id]) => !$(id)?.value.trim());
       if (missingBilling) throw checkoutStepError(`billing.${missingBilling[0]}`, missingBilling[1], { targetId: missingBilling[0], sectionId: "billingGlass" });
     }
+    if (deliveryQuotePending) {
+      throw checkoutStepError("delivery.quote_pending", "Espera mientras terminamos de calcular la entrega.", { sectionId: "deliveryGlass" });
+    }
+    if (!deliveryQuoteMatchesCart(cart)) {
+      throw checkoutStepError("delivery.quote", "El total final de entrega todavía no está listo.", { sectionId: "deliveryGlass" });
+    }
     if (!checkoutElements || !checkoutActions || !paymentElement) {
       throw checkoutStepError("stripe.not_loaded", "El formulario seguro de Stripe todavía está cargando.", { sectionId: "customCardShell" });
     }
     if (!stripeCanConfirm) {
       throw checkoutStepError("stripe.card_incomplete", "Completa el número, vencimiento y código de seguridad de la tarjeta.", { sectionId: "customCardShell" });
+    }
+    if (stripeSessionUpdating || !stripeSessionSynchronized || stripeSessionCartKey !== currentDeliveryQuoteKey(cart)) {
+      throw checkoutStepError("stripe.sync", "El pago seguro todavía se está preparando.", { sectionId: "paymentSummary" });
     }
     return true;
   }
@@ -2283,6 +2299,8 @@ img{display:block;max-width:100%}
       "cajamoda-checkout-cart",
       normalized
     );
+
+    if (checkoutElements || stripeSessionId) resetStripeCheckoutSession();
 
     if (syncBackend) {
       window.postMessage({
@@ -3645,15 +3663,67 @@ img{display:block;max-width:100%}
     return Boolean($("deliveryAddress")?.value.trim());
   }
 
+  function invalidateStripeSynchronization() {
+    stripeSessionCartKey = "";
+    stripeSessionSynchronized = false;
+    updateStripePayAvailability();
+  }
+
+  function resetStripeCheckoutSession() {
+    try {
+      paymentElement?.destroy?.();
+    } catch (error) {
+      console.warn("[CajaModa] Stripe element cleanup:", error);
+    }
+    $("paymentElement")?.replaceChildren();
+    checkoutElements = null;
+    checkoutActions = null;
+    paymentElement = null;
+    stripeSessionId = "";
+    stripeCanConfirm = false;
+    stripeSessionUpdate = Promise.resolve();
+    stripeSessionCartKey = "";
+    stripeSessionSynchronized = false;
+    stripeSessionUpdating = false;
+    const status = $("stripeStatus");
+    if (status) {
+      status.hidden = false;
+      status.textContent = "Preparando el formulario seguro de Stripe…";
+    }
+    updateStripePayAvailability();
+  }
+
   function updateStripePayAvailability() {
+    const button = $("stripePayButton");
+    if (!button) return;
+    const cart = readCart();
+    const quoteReady = deliveryQuoteMatchesCart(cart) && !deliveryQuotePending;
+    const sessionReady = Boolean(
+      stripeSessionSynchronized &&
+      stripeSessionCartKey === currentDeliveryQuoteKey(cart)
+    );
     const ready = Boolean(
       checkoutElements &&
       checkoutActions &&
       paymentElement &&
+      stripeCanConfirm &&
+      cardCheckoutDetailsReady() &&
+      quoteReady &&
+      sessionReady &&
       !stripeInitializing &&
-      !stripeSessionUpdating
+      !stripeSessionUpdating &&
+      !stripePaymentSubmitting
     );
-    $("stripePayButton").disabled = !ready;
+    button.disabled = !ready;
+    if (stripePaymentSubmitting) {
+      button.textContent = "Procesando pago…";
+    } else if (!quoteReady) {
+      button.textContent = deliveryQuotePending ? "Calculando entrega…" : "Preparando total final…";
+    } else if (!sessionReady || stripeInitializing || stripeSessionUpdating) {
+      button.textContent = "Preparando pago seguro…";
+    } else {
+      button.textContent = `Pagar ${money(checkoutTotal())} COP`;
+    }
   }
 
   function billingAddress() {
@@ -3694,6 +3764,7 @@ img{display:block;max-width:100%}
     if (!checkoutElements || !checkoutActions || !stripeSessionId || typeof checkoutElements.runServerUpdate !== "function") {
       return Promise.resolve();
     }
+    if (!deliveryQuoteMatchesCart()) return Promise.resolve();
     const emailInput = $("email");
     const email = emailInput?.value.trim() || "";
     if (!email || !emailInput.checkValidity() || !cardCheckoutDetailsReady()) {
@@ -3704,6 +3775,7 @@ img{display:block;max-width:100%}
       .join(" ");
     const synchronizedBillingAddress = billingAddress();
     const synchronizedKey = currentDeliveryQuoteKey();
+    if (stripeSessionSynchronized && stripeSessionCartKey === synchronizedKey) return Promise.resolve();
     const expectedAmountTotal = copMinorUnits(checkoutTotal());
     let returnedAmountTotal = null;
     stripeSessionCartKey = "";
@@ -3741,6 +3813,7 @@ img{display:block;max-width:100%}
         if (result?.type === "error") throw new Error(result?.error?.message || PAYMENT_PREPARATION_ERROR);
         stripeSessionCartKey = synchronizedKey;
         stripeSessionSynchronized = true;
+        clearPaymentFailure();
       } finally {
         stripeSessionUpdating = false;
         updateStripePayAvailability();
@@ -3756,7 +3829,8 @@ img{display:block;max-width:100%}
       stripeInitializing ||
       !stripePublishableKey ||
       !cart.items.length ||
-      !deliverySelectionsComplete(cart)
+      !deliverySelectionsComplete(cart) ||
+      !deliveryQuoteMatchesCart(cart)
     ) return;
     void initializeStripePaymentElement();
   }
@@ -3778,7 +3852,13 @@ img{display:block;max-width:100%}
 
   async function initializeStripePaymentElement() {
     const cart = readCart();
-    if (checkoutElements || stripeInitializing || !cart.items.length || !deliverySelectionsComplete(cart)) return;
+    if (
+      checkoutElements ||
+      stripeInitializing ||
+      !cart.items.length ||
+      !deliverySelectionsComplete(cart) ||
+      !deliveryQuoteMatchesCart(cart)
+    ) return;
     stripeInitializing = true;
     const errorBox = $("stripeError");
     const status = $("stripeStatus");
@@ -3794,7 +3874,7 @@ img{display:block;max-width:100%}
       if (typeof stripeClient.initCheckoutElementsSdk !== "function") {
         throw new Error("No se pudo cargar la versión actual del formulario de Stripe.");
       }
-      const payload = { ...checkoutPayload(), prepareOnly: true };
+      const payload = checkoutPayload();
       const response = await fetch(`${STORE_API_URL}/api/stripe/checkout`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -3804,12 +3884,12 @@ img{display:block;max-width:100%}
       if (!response.ok || !result?.clientSecret || !result?.sessionId) {
         throw paymentPreparationFailure(result);
       }
-      const expectedAmountTotal = copMinorUnits(readCart().total);
+      const expectedAmountTotal = copMinorUnits(checkoutTotal());
       if (Number(result.amountTotal) !== expectedAmountTotal) {
-        throw new Error("El subtotal inicial de Stripe no coincide con el pedido.");
+        throw new Error("El total final de Stripe no coincide con el pedido.");
       }
-      stripeSessionCartKey = "";
-      stripeSessionSynchronized = false;
+      stripeSessionCartKey = currentDeliveryQuoteKey(cart);
+      stripeSessionSynchronized = true;
       unavailableProductIds.clear();
       incompatibleProntoItemIds.clear();
       saveJson("cajamoda-pending-checkout", payload);
@@ -3835,8 +3915,6 @@ img{display:block;max-width:100%}
       stripeCanConfirm = false;
       updateStripePayAvailability();
       checkoutElements.on("change", session => {
-        const stripeTotal = session?.total?.total?.amount;
-        if (stripeTotal) $("stripePayButton").textContent = `Pagar ${stripeTotal}`;
         stripeCanConfirm = Boolean(session.canConfirm);
         if (stripeCanConfirm) {
           errorBox.textContent = "";
@@ -3870,24 +3948,13 @@ img{display:block;max-width:100%}
   }
 
   async function submitStripePayment() {
-    const button = $("stripePayButton");
     const errorBox = $("stripeError");
-    const originalLabel = button.textContent;
-    button.disabled = true;
     errorBox.textContent = "";
-    button.textContent = "Procesando pago…";
     try {
       clearPaymentFailure();
       assertStripePaymentReady();
-      saveCustomer();
-      await refreshDeliveryQuote({ required: true });
-      if (!deliveryQuoteMatchesCart()) {
-        throw checkoutStepError("delivery.quote", "No pudimos confirmar el costo de entrega. Revisa la dirección marcada.", { sectionId: "deliveryGlass" });
-      }
-      await syncStripeCheckoutSession();
-      if (!stripeSessionSynchronized) {
-        throw checkoutStepError("stripe.sync", "No pudimos sincronizar el total final con Stripe. Inténtalo nuevamente.", { sectionId: "paymentSummary" });
-      }
+      stripePaymentSubmitting = true;
+      updateStripePayAvailability();
       const firstName = $("customerFirstName")?.value.trim();
       const lastName = $("customerLastName")?.value.trim();
       const result = await checkoutActions.confirm({
@@ -3896,8 +3963,8 @@ img{display:block;max-width:100%}
       if (result?.type === "error") throw result.error;
       location.href = `${location.origin}/order-confirmation/?stripeSessionId=${encodeURIComponent(stripeSessionId)}`;
     } catch (error) {
+      stripePaymentSubmitting = false;
       presentPaymentFailure(error, error?.checkoutStage || "stripe.confirm");
-      button.textContent = originalLabel;
       updateStripePayAvailability();
     }
   }
@@ -4379,7 +4446,9 @@ img{display:block;max-width:100%}
   $("nequiReference")?.addEventListener("input", updateNequiConfirmAvailability);
   $("stripePayButton").onclick = submitStripePayment;
   $("billingSame")?.addEventListener("change", () => {
+    invalidateStripeSynchronization();
     syncBillingAddressMode();
+    syncPaymentInBackground();
   });
 
   document.querySelectorAll("[data-pronto-delivery]").forEach(button => {
@@ -4476,7 +4545,7 @@ img{display:block;max-width:100%}
     $(id)?.addEventListener("input", () => {
       $(id)?.closest?.(".deliveryField")?.classList.remove("paymentValidationError");
       $(id)?.classList.remove("paymentValidationError");
-      updateStripePayAvailability();
+      invalidateStripeSynchronization();
     });
     $(id)?.addEventListener("change", () => {
       updateStripePayAvailability();

@@ -848,6 +848,9 @@ async function handleCreateStripeCheckout(request, response) {
     },
     line_items: lineItems,
     customer_email: customerEmail || undefined,
+    permissions: {
+      update_shipping_details: "server_only"
+    },
     ...(prepareOnly ? {} : {
       shipping_options: [{
         shipping_rate_data: {
@@ -909,20 +912,24 @@ async function handleUpdateStripeCheckout(request, response) {
     return;
   }
   const catalogLines = await verifiedCheckoutCatalogItems(items);
-  const lineItems = catalogLines.map(({ cartLineId, fulfillmentCode, selectedDeliveryMode, ...line }) => line);
   const delivery = await checkoutDelivery(body, catalogLines);
-  const deliveryLineItems = Number(delivery.fee || 0) > 0
-    ? [{
-        price_data: {
-          currency: "cop",
-          unit_amount: Math.round(Number(delivery.fee) * 100),
-          product_data: { name: "Entrega CajaModa" }
-        },
-        quantity: 1
-      }]
-    : [];
   const updated = await stripe.checkout.sessions.update(sessionId, {
-    line_items: [...lineItems, ...deliveryLineItems],
+    shipping_options: Number(delivery.fee || 0) > 0
+      ? [{
+          shipping_rate_data: {
+            type: "fixed_amount",
+            fixed_amount: {
+              amount: Math.round(Number(delivery.fee) * 100),
+              currency: "cop"
+            },
+            display_name: delivery.title,
+            delivery_estimate: {
+              minimum: { unit: "business_day", value: 1 },
+              maximum: { unit: "business_day", value: delivery.maxBusinessDays }
+            }
+          }
+        }]
+      : [],
     metadata: {
       ...session.metadata,
       deliveryMethod: delivery.method,

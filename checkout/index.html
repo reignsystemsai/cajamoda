@@ -3243,7 +3243,7 @@ img{display:block;max-width:100%}
       quoteDestinationKey = "";
       deliveryQuote = { method: "pickup", prontoMethod: "pickup", fee: PICKUP_FEE_COP, title: "Pronto: Recoger en punto · 24–48 h" };
       renderPaymentTotals();
-      prepareStripeInBackground();
+      syncPaymentInBackground();
       return deliveryQuote;
     }
     const addressRequired = profile.hasNational || (profile.hasPronto && selectedDelivery === "moto");
@@ -3298,7 +3298,7 @@ img{display:block;max-width:100%}
       quoteDestinationKey = currentDeliveryQuoteKey();
       renderBillingAddressSummary();
       renderPaymentTotals();
-      prepareStripeInBackground();
+      syncPaymentInBackground();
       return deliveryQuote;
     } catch (error) {
       if (requestVersion !== quoteRequestVersion) return null;
@@ -3325,18 +3325,8 @@ img{display:block;max-width:100%}
     deliveryQuoteError = "";
     quoteDestinationKey = "";
     renderPaymentTotals();
-    prepareStripeInBackground();
-    quoteTimer = setTimeout(async () => {
-      const quote = await refreshDeliveryQuote();
-      if (quote && checkoutElements && stripeSessionId) {
-        try {
-          await syncStripeCheckoutSession();
-        } catch (error) {
-          console.error("[CajaModa] Stripe Checkout update error:", error);
-          $("stripeError").textContent = PAYMENT_PREPARATION_ERROR;
-        }
-      }
-    }, 650);
+    syncPaymentInBackground();
+    quoteTimer = setTimeout(refreshDeliveryQuote, 650);
   }
 
   function renderBillingAddressSummary() {
@@ -3461,6 +3451,19 @@ img{display:block;max-width:100%}
       !deliveryQuoteMatchesCart()
     ) return;
     void initializeStripePaymentElement();
+  }
+
+  function syncPaymentInBackground() {
+    if (activeStep !== "payment" || selectedPayment !== "stripe" || !deliveryQuoteMatchesCart()) return;
+    if (!checkoutElements || !stripeSessionId) {
+      prepareStripeInBackground();
+      return;
+    }
+    void syncStripeCheckoutSession().catch(error => {
+      console.error("[CajaModa] Stripe Checkout update error:", error);
+      $("stripeError").textContent = PAYMENT_PREPARATION_ERROR;
+      updateStripePayAvailability();
+    });
   }
 
   async function initializeStripePaymentElement() {
@@ -4009,10 +4012,10 @@ img{display:block;max-width:100%}
           $("paymentGlass").classList.toggle("isStripe", selectedPayment === "stripe");
         }
         if (!goToStep(tab.dataset.step)) return;
+        if (!deliveryQuoteMatchesCart()) scheduleDeliveryQuote();
         if (selectedPayment === "stripe" && tab.dataset.method === "stripe") {
           syncBillingAddressMode();
-          if (deliveryQuoteMatchesCart()) prepareStripeInBackground();
-          else scheduleDeliveryQuote();
+          syncPaymentInBackground();
           syncPanelHeight();
         }
       };
@@ -4025,8 +4028,8 @@ img{display:block;max-width:100%}
     $("paymentGlass").classList.add("isStripe");
     if (!goToStep("payment")) return;
     syncBillingAddressMode();
-    if (deliveryQuoteMatchesCart()) prepareStripeInBackground();
-    else scheduleDeliveryQuote();
+    if (!deliveryQuoteMatchesCart()) scheduleDeliveryQuote();
+    syncPaymentInBackground();
     syncPanelHeight();
   };
 
@@ -4270,7 +4273,7 @@ img{display:block;max-width:100%}
   loadCustomer({ restoreLocation: false });
   renderCart();
   syncBillingAddressMode();
-  loadCheckoutConfig().then(prepareStripeInBackground);
+  loadCheckoutConfig().then(syncPaymentInBackground);
   loadDeliveryDepartments();
 
   window.postMessage({

@@ -1300,10 +1300,10 @@ async function handleStripeIntentConfirmation(request, response, url) {
   const authorized = intent.status === "requires_capture";
   const deliveryTitle = safeText(intent.metadata.deliverySummary, 300) ||
     (intent.metadata.deliveryMethod === "pickup"
-      ? "Pronto – Recoger en punto"
+      ? "Pronto: Recoger en punto · 24–48 h"
       : intent.metadata.deliveryMethod === "national"
-        ? "Rápido Nacional – Envío nacional 4–7 días"
-        : "Pronto – Moto Cartagena");
+        ? "Rápido Nacional · 4–7 días"
+        : "Pronto a domicilio · 24–48 h");
   sendJson(response, 200, {
     ok: true,
     order: {
@@ -1754,11 +1754,11 @@ function checkoutFulfillmentProfile(body, lines = []) {
   const requestedProntoMethod = safeText(body?.delivery?.prontoMethod || body?.delivery?.method, 20).toLowerCase();
   const prontoMethod = hasPronto ? requestedProntoMethod : "";
   if (!hasPronto && !hasNational) throw new Error("Selecciona la entrega de cada producto.");
-  if (hasPronto && (!isCartagena || !isBolivar)) {
-    throw new ProntoLocationUnavailableError(prontoCartLineIds);
-  }
   if (hasPronto && !["pickup", "moto"].includes(prontoMethod)) {
     throw new Error("Elige cómo recibir tu pedido Pronto en Cartagena.");
+  }
+  if (hasPronto && prontoMethod === "moto" && (!isCartagena || !isBolivar)) {
+    throw new ProntoLocationUnavailableError(prontoCartLineIds);
   }
   return { hasPronto, hasFast, hasShip, hasNational, prontoMethod, city, state };
 }
@@ -1805,9 +1805,9 @@ async function calculateDeliveryQuote(body, lines = []) {
       ? profile.prontoMethod
       : "national";
   const labels = [];
-  if (profile.hasPronto) labels.push(profile.prontoMethod === "moto" ? "Pronto · Moto Cartagena" : "Pronto · Recoger Cartagena");
+  if (profile.hasPronto) labels.push(profile.prontoMethod === "moto" ? "Pronto a domicilio · 24–48 h" : "Pronto: Recoger en punto · 24–48 h");
   if (profile.hasFast) labels.push("Rápido Nacional · 4–7 días");
-  if (profile.hasShip) labels.push("Libéralo · 14–28 días");
+  if (profile.hasShip) labels.push("Libéralo Nacional · 14–28 días");
   return {
     method,
     prontoMethod: profile.prontoMethod,

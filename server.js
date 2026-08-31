@@ -681,9 +681,7 @@ async function stripeLineItemFromCartItem(item) {
   const requestedMode = safeText(item?.selectedDeliveryMode, 20).toLowerCase();
   const selectedDeliveryMode = requestedMode && allowedDeliveryModes.includes(requestedMode)
     ? requestedMode
-    : allowedDeliveryModes.length === 1
-      ? allowedDeliveryModes[0]
-      : "";
+    : "";
   if (!selectedDeliveryMode) {
     throw new Error(`Selecciona un método de entrega válido para ${safeText(product?.name, 80)}.`);
   }

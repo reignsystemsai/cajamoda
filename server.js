@@ -890,6 +890,77 @@ async function handleCreateStripeCheckout(request, response) {
   });
 }
 
+async function handleCreateCheckout2StripeSession(request, response) {
+  if (!stripe) return sendError(response, 503, "Stripe todavía no está configurado en el servidor.");
+  const body = await readBody(request);
+  const items = Array.isArray(body?.cart?.items) ? body.cart.items.slice(0, 50) : [];
+  if (!items.length) return sendError(response, 400, "Tu bolsa está vacía.");
+
+  const catalogLines = await verifiedCheckoutCatalogItems(items);
+  const delivery = await checkoutDelivery(body, catalogLines);
+  const lineItems = catalogLines.map(({ cartLineId, fulfillmentCode, selectedDeliveryMode, ...line }) => line);
+  const customerEmail = safeText(body?.customer?.email, 250);
+  const intentLines = catalogLines.map(line => ({
+    productId: safeText(line?.price_data?.product_data?.metadata?.productId, 80),
+    variantId: safeText(line?.price_data?.product_data?.metadata?.variantId, 80),
+    quantity: Math.max(1, Math.floor(Number(line?.quantity || 1))),
+    amount: Number(line?.price_data?.unit_amount || 0) / 100,
+    name: safeText(line?.price_data?.product_data?.name, 300) || "Producto CajaModa",
+    fulfillmentCode: safeText(line?.fulfillmentCode, 10).toUpperCase(),
+    selectedDeliveryMode: safeText(line?.selectedDeliveryMode, 20).toLowerCase()
+  }));
+  const intentMetadata = stripeIntentMetadata(intentLines, body, delivery);
+  const session = await stripe.checkout.sessions.create({
+    mode: "payment",
+    ui_mode: "elements",
+    payment_method_types: ["card"],
+    wallet_options: { link: { display: "never" } },
+    payment_intent_data: {
+      capture_method: stripeCaptureMethod(intentLines),
+      receipt_email: customerEmail || undefined,
+      metadata: { ...intentMetadata, source: "cajamoda-checkout-2" }
+    },
+    line_items: lineItems,
+    customer_email: customerEmail || undefined,
+    shipping_options: Number(delivery.fee || 0) > 0 ? [{
+      shipping_rate_data: {
+        type: "fixed_amount",
+        fixed_amount: { amount: Math.round(Number(delivery.fee) * 100), currency: "cop" },
+        display_name: delivery.title,
+        delivery_estimate: {
+          minimum: { unit: "business_day", value: 1 },
+          maximum: { unit: "business_day", value: delivery.maxBusinessDays }
+        }
+      }
+    }] : [],
+    locale: "es",
+    return_url: `${STOREFRONT_URL}/order-confirmation/?stripeSessionId={CHECKOUT_SESSION_ID}`,
+    metadata: {
+      source: "cajamoda-checkout-2",
+      deliveryMethod: delivery.method,
+      deliverySummary: safeText(delivery.title, 300),
+      deliveryPlan: safeText(encodedNationalDeliveryPlan(delivery), 500),
+      deliveryPromise: safeText(body?.delivery?.promise, 40) || "pronto",
+      customerName: safeText(body?.customer?.customerName, 160),
+      customerPhone: safeText(body?.customer?.customerPhone, 80),
+      deliveryAddress: delivery.addressLine,
+      deliveryCity: delivery.city,
+      deliveryState: delivery.state,
+      deliveryPostalCode: delivery.postalCode
+    }
+  }, {
+    idempotencyKey: safeText(body?.requestId, 100) || undefined
+  });
+
+  sendJson(response, 200, {
+    ok: true,
+    clientSecret: session.client_secret,
+    sessionId: session.id,
+    amountTotal: session.amount_total,
+    currency: session.currency
+  });
+}
+
 async function handleUpdateStripeCheckout(request, response) {
   if (!stripe) {
     sendError(response, 503, "Stripe todavía no está configurado en el servidor.");
@@ -6484,6 +6555,11 @@ const server =
 
         if(request.method === "POST" && url.pathname === "/api/stripe/checkout"){
           await protectCheckoutOperation(response,"Stripe",() => handleCreateStripeCheckout(request,response));
+          return;
+        }
+
+        if(request.method === "POST" && url.pathname === "/api/checkout-2/stripe/session"){
+          await protectCheckoutOperation(response,"Checkout 2 Stripe",() => handleCreateCheckout2StripeSession(request,response));
           return;
         }
 

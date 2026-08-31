@@ -3575,7 +3575,7 @@ img{display:block;max-width:100%}
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok || !result?.clientSecret || !result?.sessionId) {
-        console.error("[CajaModa] Stripe preparation response:", result);
+        console.error("[CajaModa] Stripe preparation response:", JSON.stringify(result));
         throw paymentPreparationFailure(result);
       }
       const expectedAmountTotal = Math.round(checkoutTotal() * 100);

@@ -733,7 +733,20 @@ async function handleCreateStripeCheckout(request, response) {
   // line item properties, so never forward fulfillmentCode at this level.
   const lineItems = catalogLines.map(({ cartLineId, fulfillmentCode, selectedDeliveryMode, ...line }) => line);
   const customerEmail = safeText(body?.customer?.email, 250);
-  const delivery = await checkoutDelivery(body, catalogLines);
+  const prepareOnly = body?.prepareOnly === true;
+  const delivery = prepareOnly
+    ? {
+        method: "pending",
+        title: "Entrega pendiente",
+        addressLine: "",
+        city: "",
+        state: "",
+        postalCode: "",
+        fee: 0,
+        maxBusinessDays: 28,
+        quote: { groups: [] }
+      }
+    : await checkoutDelivery(body, catalogLines);
   const deliveryMethod = delivery.method;
   const deliveryLabel = delivery.title;
   const intentLines = catalogLines.map(line => ({
@@ -764,17 +777,19 @@ async function handleCreateStripeCheckout(request, response) {
     },
     line_items: lineItems,
     customer_email: customerEmail || undefined,
-    shipping_options: [{
-      shipping_rate_data: {
-        type: "fixed_amount",
-        fixed_amount: { amount: delivery.fee * 100, currency: "cop" },
-        display_name: deliveryLabel,
-        delivery_estimate: {
-          minimum: { unit: "business_day", value: 1 },
-          maximum: { unit: "business_day", value: delivery.maxBusinessDays }
-        }
+    ...(prepareOnly ? {} : {
+      shipping_options: [{
+        shipping_rate_data: {
+          type: "fixed_amount",
+          fixed_amount: { amount: delivery.fee * 100, currency: "cop" },
+          display_name: deliveryLabel,
+          delivery_estimate: {
+            minimum: { unit: "business_day", value: 1 },
+            maximum: { unit: "business_day", value: delivery.maxBusinessDays }
           }
-    }],
+        }
+      }]
+    }),
     locale: "es",
     return_url: `${STOREFRONT_URL}/order-confirmation/?stripeSessionId={CHECKOUT_SESSION_ID}`,
     metadata: {

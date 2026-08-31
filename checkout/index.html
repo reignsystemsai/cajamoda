@@ -1491,6 +1491,7 @@ img{display:block;max-width:100%}
   let paymentElement = null;
   let stripeSessionId = "";
   let stripeCanConfirm = false;
+  let stripeInitializing = false;
   let stripeSessionUpdate = Promise.resolve();
   let deliveryQuote = { method: "pickup", prontoMethod: "pickup", fee: 10000, title: "Pronto · Recoger" };
   let deliveryQuotePending = false;
@@ -1795,7 +1796,7 @@ img{display:block;max-width:100%}
     } else if (result?.code === PRONTO_LOCATION_UNAVAILABLE_CODE && Array.isArray(result?.cartLineIds)) {
       incompatibleProntoItemIds = new Set(result.cartLineIds.map(String).filter(Boolean));
       renderCart();
-      goToStep("bag");
+      error.message = result?.message || "Pronto a domicilio solo está disponible en Cartagena.";
       error.code = PRONTO_LOCATION_UNAVAILABLE_CODE;
     } else {
       error.code = "PAYMENT_PREPARATION_FAILED";
@@ -2980,19 +2981,19 @@ img{display:block;max-width:100%}
   function goToStep(step, options = {}) {
     if(step==="payment"&&!deliveryPlanSelectionsComplete()){
       showToast(checkoutFulfillmentProfile().hasPronto&&!["pickup","moto"].includes(selectedDelivery)?"Elige recoger en punto o moto para tu pedido Pronto.":"Selecciona la entrega de cada producto.");
-      return;
+      return false;
     }
     const index = STEPS.indexOf(step);
 
     if (index < 0) {
-      return;
+      return false;
     }
 
     if (
       step !== "bag" &&
       !validateCart()
     ) {
-      return;
+      return false;
     }
 
     activeStep = step;
@@ -3058,6 +3059,7 @@ img{display:block;max-width:100%}
         behavior: "smooth"
       });
     }
+    return true;
   }
 
   function syncDeliveryControls() {
@@ -3146,8 +3148,8 @@ img{display:block;max-width:100%}
     }
     if (syncProntoLocationWarnings(cart).size) {
       renderCart();
-      goToStep("bag");
-      document.querySelector(".cartItem.isUnavailable")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setDeliveryFieldStatus("city", "Pronto a domicilio solo está disponible en Cartagena, Bolívar.");
+      $("deliveryCity")?.focus();
       return false;
     }
     if ((profile.hasNational || (profile.hasPronto && selectedDelivery === "moto")) && !address) {
@@ -3213,7 +3215,11 @@ img{display:block;max-width:100%}
       setDeliveryFieldStatus("department", text);
       return "Corrige el departamento marcado para calcular el envío.";
     }
-    if (normalized.includes("ciudad") || normalized.includes("municipio")) {
+    if (
+      normalized.includes("ciudad") ||
+      normalized.includes("municipio") ||
+      (normalized.includes("pronto") && normalized.includes("cartagena"))
+    ) {
       setDeliveryFieldStatus("city", text);
       return "Corrige la ciudad o municipio marcado para calcular el envío.";
     }
@@ -3237,6 +3243,7 @@ img{display:block;max-width:100%}
       quoteDestinationKey = "";
       deliveryQuote = { method: "pickup", prontoMethod: "pickup", fee: PICKUP_FEE_COP, title: "Pronto: Recoger en punto · 24–48 h" };
       renderPaymentTotals();
+      syncPaymentInBackground();
       return deliveryQuote;
     }
     const addressRequired = profile.hasNational || (profile.hasPronto && selectedDelivery === "moto");
@@ -3291,6 +3298,7 @@ img{display:block;max-width:100%}
       quoteDestinationKey = currentDeliveryQuoteKey();
       renderBillingAddressSummary();
       renderPaymentTotals();
+      syncPaymentInBackground();
       return deliveryQuote;
     } catch (error) {
       if (requestVersion !== quoteRequestVersion) return null;
@@ -3317,17 +3325,8 @@ img{display:block;max-width:100%}
     deliveryQuoteError = "";
     quoteDestinationKey = "";
     renderPaymentTotals();
-    quoteTimer = setTimeout(async () => {
-      const quote = await refreshDeliveryQuote();
-      if (quote && checkoutElements && stripeSessionId) {
-        try {
-          await syncStripeCheckoutSession();
-        } catch (error) {
-          console.error("[CajaModa] Stripe Checkout update error:", error);
-          $("stripeError").textContent = PAYMENT_PREPARATION_ERROR;
-        }
-      }
-    }, 650);
+    syncPaymentInBackground();
+    quoteTimer = setTimeout(refreshDeliveryQuote, 650);
   }
 
   function renderBillingAddressSummary() {
@@ -3442,8 +3441,34 @@ img{display:block;max-width:100%}
     return stripeSessionUpdate;
   }
 
+  function prepareStripeInBackground() {
+    if (
+      activeStep !== "payment" ||
+      selectedPayment !== "stripe" ||
+      checkoutElements ||
+      stripeInitializing ||
+      !stripePublishableKey ||
+      !deliveryQuoteMatchesCart()
+    ) return;
+    void initializeStripePaymentElement();
+  }
+
+  function syncPaymentInBackground() {
+    if (activeStep !== "payment" || selectedPayment !== "stripe" || !deliveryQuoteMatchesCart()) return;
+    if (!checkoutElements || !stripeSessionId) {
+      prepareStripeInBackground();
+      return;
+    }
+    void syncStripeCheckoutSession().catch(error => {
+      console.error("[CajaModa] Stripe Checkout update error:", error);
+      $("stripeError").textContent = PAYMENT_PREPARATION_ERROR;
+      updateStripePayAvailability();
+    });
+  }
+
   async function initializeStripePaymentElement() {
-    if (checkoutElements) return;
+    if (checkoutElements || stripeInitializing || !deliveryQuoteMatchesCart()) return;
+    stripeInitializing = true;
     const errorBox = $("stripeError");
     const status = $("stripeStatus");
     if (!stripePublishableKey || typeof window.Stripe !== "function") {
@@ -3458,7 +3483,6 @@ img{display:block;max-width:100%}
       if (typeof stripeClient.initCheckoutElementsSdk !== "function") {
         throw new Error("No se pudo cargar la versión actual del formulario de Stripe.");
       }
-      await refreshDeliveryQuote({ required: true });
       const payload = checkoutPayload();
       const response = await fetch(`${STORE_API_URL}/api/stripe/checkout`, {
         method: "POST",
@@ -3511,7 +3535,11 @@ img{display:block;max-width:100%}
       stripeSessionId = "";
       console.error("[CajaModa] Stripe Payment Element error:", error);
       status.hidden = true;
-      errorBox.textContent = error?.code === CART_ITEM_UNAVAILABLE_CODE ? "" : PAYMENT_PREPARATION_ERROR;
+      errorBox.textContent = [CART_ITEM_UNAVAILABLE_CODE, PRONTO_LOCATION_UNAVAILABLE_CODE].includes(error?.code)
+        ? ""
+        : PAYMENT_PREPARATION_ERROR;
+    } finally {
+      stripeInitializing = false;
     }
   }
 
@@ -3976,30 +4004,32 @@ img{display:block;max-width:100%}
   document
     .querySelectorAll("[data-step]")
     .forEach(tab => {
-      tab.onclick = async () => {
+      tab.onclick = () => {
         if (tab.dataset.method) {
           selectedPayment = tab.dataset.method;
           $("nequiPane").hidden = selectedPayment !== "nequi";
           $("stripePane").hidden = selectedPayment !== "stripe";
           $("paymentGlass").classList.toggle("isStripe", selectedPayment === "stripe");
         }
-        goToStep(tab.dataset.step);
+        if (!goToStep(tab.dataset.step)) return;
+        if (!deliveryQuoteMatchesCart()) scheduleDeliveryQuote();
         if (selectedPayment === "stripe" && tab.dataset.method === "stripe") {
           syncBillingAddressMode();
-          await initializeStripePaymentElement();
+          syncPaymentInBackground();
           syncPanelHeight();
         }
       };
     });
 
-  $("toDeliveryButton").onclick = async () => {
+  $("toDeliveryButton").onclick = () => {
     selectedPayment = "stripe";
     $("nequiPane").hidden = true;
     $("stripePane").hidden = false;
     $("paymentGlass").classList.add("isStripe");
-    goToStep("payment");
+    if (!goToStep("payment")) return;
     syncBillingAddressMode();
-    await initializeStripePaymentElement();
+    if (!deliveryQuoteMatchesCart()) scheduleDeliveryQuote();
+    syncPaymentInBackground();
     syncPanelHeight();
   };
 
@@ -4243,7 +4273,7 @@ img{display:block;max-width:100%}
   loadCustomer({ restoreLocation: false });
   renderCart();
   syncBillingAddressMode();
-  loadCheckoutConfig().then(() => initializeStripePaymentElement());
+  loadCheckoutConfig().then(syncPaymentInBackground);
   loadDeliveryDepartments();
 
   window.postMessage({

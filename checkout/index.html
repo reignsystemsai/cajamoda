@@ -522,16 +522,23 @@ img{display:block;max-width:100%}
   font-size:18px;
   font-weight:600
 }
-.deliverySummaryTitle{display:flex;align-items:center;gap:8px}
-.bagDeliveryInfoButton{width:22px;height:22px;border:1px solid rgba(0,0,0,.35);border-radius:50%;display:grid;place-items:center;font-family:Georgia,serif;font-size:11px;line-height:1}
+.deliverySummaryTitle{display:flex;align-items:center;gap:7px;min-width:0}
+.deliverySummaryTitle .summaryTotalLabel{font-size:15px;line-height:1}
+.bagDeliveryInfoButton{flex:0 0 auto;width:18px;height:18px;border:1px solid rgba(0,0,0,.35);border-radius:50%;display:grid;place-items:center;font-family:Georgia,serif;font-size:9px;line-height:1}
 .summaryTotalValue{
   font-size:15px;
   font-weight:800
 }
-.deliverySummaryHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
-.deliveryGarmentCount{padding:5px 9px;border:1px solid rgba(0,0,0,.10);border-radius:999px;background:rgba(255,255,255,.58);font-size:8px;font-weight:700}
-.deliveryGroupCount{min-width:24px;height:24px;padding:0 7px;display:grid;place-items:center;border:1px solid rgba(0,0,0,.10);border-radius:999px;background:rgba(255,255,255,.58);color:#111;font-size:8px;font-weight:800}
-.deliveryGroupName{display:flex;align-items:center;gap:8px}
+.deliverySummaryHeader{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.deliveryGarmentCount{flex:0 0 auto;padding:4px 8px;border:1px solid rgba(0,0,0,.10);border-radius:999px;background:rgba(255,255,255,.58);font-size:7.5px;font-weight:700;line-height:1.2}
+#deliverySummaryRows .deliveryGroupRow{min-height:34px;display:grid;grid-template-columns:minmax(0,1fr) 24px minmax(112px,.9fr);align-items:start;gap:9px;font-size:8.5px}
+.deliveryGroupDetails{min-width:0;color:#666;line-height:1.25}
+.deliveryGroupLabel{display:block}
+.deliveryGroupDate{display:block;margin-top:2px;color:#777;font-size:8px}
+.deliveryGroupCount{min-width:22px;height:22px;padding:0 6px;display:grid;place-items:center;border:1px solid rgba(0,0,0,.10);border-radius:999px;background:rgba(255,255,255,.58);color:#111;font-size:7.5px;font-weight:800}
+#deliverySummaryRows .summaryValue{min-width:0;text-align:right;color:#333;font-size:8.25px;font-weight:600;line-height:1.3}
+#bagShipmentCharges .summaryLine{display:grid;grid-template-columns:minmax(0,1fr) minmax(112px,.9fr);align-items:start;gap:12px;font-size:8.5px;line-height:1.3}
+#bagShipmentCharges .summaryValue{text-align:right;font-size:8.25px;font-weight:600}
 .deliverySeparateNote{margin-top:8px;color:#737373;font-size:8px;line-height:1.45}
 .separateDeliveryExplanation{
   margin:2px 0 10px;
@@ -2147,7 +2154,6 @@ img{display:block;max-width:100%}
 
     renderCart();
     if (normalized.items.length) {
-      prepareStripeInBackground();
       scheduleDeliveryQuote();
     } else {
       quoteRequestVersion += 1;
@@ -2344,16 +2350,20 @@ img{display:block;max-width:100%}
         : "Elige recoger en punto o moto";
     const dates=deliveryDateRanges();
     const groups=[
-      {mode:"pickup",label:prontoLabel,time:prontoTime},
-      {mode:"fast",label:`Rápido Nacional · Llega ${dates.fast}`,time:"Ver cálculo al ingresar la dirección"},
-      {mode:"ship",label:`Libéralo · Llega ${dates.ship}`,time:"Ver cálculo al ingresar la dirección"}
+      {mode:"pickup",label:prontoLabel,date:"",time:prontoTime},
+      {mode:"fast",label:"Rápido Nacional",date:`Llega ${dates.fast}`,time:"Ver cálculo al ingresar la dirección"},
+      {mode:"ship",label:"Libéralo",date:`Llega ${dates.ship}`,time:"Ver cálculo al ingresar la dirección"}
     ].filter(group=>counts[group.mode]>0);
     const garmentCount=cart.items.reduce((total,item)=>total+Math.max(1,Math.floor(Number(item.quantity||1))),0);
     $("bagDeliverySummary").hidden=groups.length===0;
     $("deliveryGarmentCount").textContent=garmentCount===1?"1 prenda":`${garmentCount} prendas`;
     $("deliverySummaryRows").innerHTML=groups.map(group=>`
-      <div class="summaryLine">
-        <span class="deliveryGroupName">${group.label}<span class="deliveryGroupCount">${counts[group.mode]}</span></span>
+      <div class="summaryLine deliveryGroupRow">
+        <span class="deliveryGroupDetails">
+          <span class="deliveryGroupLabel">${group.label}</span>
+          ${group.date ? `<span class="deliveryGroupDate">${group.date}</span>` : ""}
+        </span>
+        <span class="deliveryGroupCount">${counts[group.mode]}</span>
         <span class="summaryValue">${group.time}</span>
       </div>`).join("");
     if ($("bagProntoReceivingChoice")) $("bagProntoReceivingChoice").hidden=counts.pickup===0;
@@ -3581,13 +3591,13 @@ img{display:block;max-width:100%}
   }
 
   function prepareStripeInBackground() {
-    const cart = readCart();
     if (
+      activeStep !== "payment" ||
+      selectedPayment !== "stripe" ||
       checkoutElements ||
       stripeInitializing ||
       !stripePublishableKey ||
-      !cart.items.length ||
-      !deliverySelectionsComplete(cart)
+      !deliveryQuoteMatchesCart()
     ) return;
     void initializeStripePaymentElement();
   }
@@ -3606,8 +3616,7 @@ img{display:block;max-width:100%}
   }
 
   async function initializeStripePaymentElement() {
-    const cart = readCart();
-    if (checkoutElements || stripeInitializing || !cart.items.length || !deliverySelectionsComplete(cart)) return;
+    if (checkoutElements || stripeInitializing || !deliveryQuoteMatchesCart()) return;
     stripeInitializing = true;
     const errorBox = $("stripeError");
     const status = $("stripeStatus");
@@ -3623,7 +3632,7 @@ img{display:block;max-width:100%}
       if (typeof stripeClient.initCheckoutElementsSdk !== "function") {
         throw new Error("No se pudo cargar la versión actual del formulario de Stripe.");
       }
-      const payload = { ...checkoutPayload(), prepareOnly: true };
+      const payload = checkoutPayload();
       const response = await fetch(`${STORE_API_URL}/api/stripe/checkout`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -3633,11 +3642,11 @@ img{display:block;max-width:100%}
       if (!response.ok || !result?.clientSecret || !result?.sessionId) {
         throw paymentPreparationFailure(result);
       }
-      const expectedAmountTotal = Math.round(readCart().total * 100);
+      const expectedAmountTotal = Math.round(checkoutTotal() * 100);
       if (Number(result.amountTotal) !== expectedAmountTotal) {
-        throw new Error("El subtotal inicial de Stripe no coincide con el pedido.");
+        throw new Error("El total inicial de Stripe no coincide con el pedido.");
       }
-      stripeSessionCartKey = "";
+      stripeSessionCartKey = currentDeliveryQuoteKey();
       unavailableProductIds.clear();
       incompatibleProntoItemIds.clear();
       saveJson("cajamoda-pending-checkout", payload);
@@ -4458,7 +4467,7 @@ img{display:block;max-width:100%}
   loadCustomer({ restoreLocation: false });
   renderCart();
   syncBillingAddressMode();
-  loadCheckoutConfig().then(prepareStripeInBackground);
+  loadCheckoutConfig().then(syncPaymentInBackground);
   loadDeliveryDepartments();
 
   window.postMessage({

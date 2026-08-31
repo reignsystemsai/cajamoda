@@ -751,9 +751,6 @@ async function handleCreateStripeCheckout(request, response) {
     mode: "payment",
     ui_mode: "elements",
     payment_method_types: ["card"],
-    wallet_options: {
-      link: { display: "never" }
-    },
     payment_intent_data: {
       capture_method: captureMethod,
       receipt_email: customerEmail || undefined,

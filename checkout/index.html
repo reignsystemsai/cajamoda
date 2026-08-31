@@ -1016,6 +1016,11 @@ img{display:block;max-width:100%}
 .deliveryChoice.isSelected{background:#080808;color:#fff;border-color:#080808}
 .deliveryChoice[data-delivery="national"]:not([hidden]){grid-column:1/-1}
 .deliveryNote{margin:12px 2px 0;color:#737373;font-size:8px}
+.deliveryQuoteBreakdown{margin-top:12px;padding:12px 13px;border:1px solid rgba(0,0,0,.08);border-radius:14px;background:linear-gradient(145deg,rgba(255,255,255,.72),rgba(248,241,230,.46))}
+.deliveryQuoteBreakdown[hidden]{display:none}
+.deliveryQuoteRow{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:5px 0;color:#5f5f5f;font-size:8.5px}
+.deliveryQuoteRow span:last-child{color:#111;font-weight:650}
+.deliveryQuoteTotal{margin-top:7px;padding-top:10px;border-top:1px solid rgba(0,0,0,.09);color:#111;font-size:10px;font-weight:750}
 .pickupAddress{margin:10px 2px 0;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.58);border:1px solid rgba(0,0,0,.07);font-size:8px;line-height:1.5;color:#555}
 .deliveryDetails{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
 .deliveryDetails label{min-width:0}.deliveryDetails .wide{grid-column:1/-1}
@@ -1237,7 +1242,7 @@ img{display:block;max-width:100%}
       >
         <div id="reviewList" class="reviewList"></div>
 
-        <h2 class="paymentSectionTitle">Información de entrega</h2>
+        <h2 class="paymentSectionTitle">Datos de entrega</h2>
         <section class="deliveryGlass" aria-label="Entrega">
           <div class="promiseRow" hidden style="display:none">
             <div class="promiseBadge">P</div>
@@ -1258,8 +1263,8 @@ img{display:block;max-width:100%}
             <label class="deliveryField"><span class="fieldLabel">Teléfono</span><input id="customerPhone" name="phone" class="compactInput" autocomplete="tel-national" inputmode="tel" placeholder="Número de teléfono"></label>
             <label id="departmentField" class="deliveryField"><span class="fieldLabel">Departamento</span><select id="deliveryDepartment" class="compactInput" autocomplete="address-level1" disabled><option value="">Cargando departamentos…</option></select><span id="departmentFieldStatus" class="fieldStatus" hidden></span></label>
             <div id="cityField" class="deliveryField autocompleteField"><span class="fieldLabel">Ciudad / municipio</span><input id="deliveryCity" name="city" class="compactInput cityInput" autocomplete="address-level2" aria-autocomplete="list" aria-controls="citySuggestionPanel" aria-expanded="false" aria-label="Ciudad o municipio de entrega" placeholder="Selecciona el departamento primero" disabled><button id="cityDropdownButton" class="cityDropdownButton" type="button" aria-label="Mostrar ciudades" disabled>⌄</button><input id="deliveryCityDaneCode" type="hidden"><span id="cityFieldStatus" class="fieldStatus" hidden></span><div id="citySuggestionPanel" class="autocompleteMenu" role="listbox" hidden></div></div>
-            <div id="addressField" class="wide deliveryField autocompleteField"><span class="fieldLabel">Dirección principal</span><input id="deliveryAddress" class="compactInput" autocomplete="shipping street-address" aria-autocomplete="list" aria-controls="addressSuggestionPanel" aria-expanded="false" aria-label="Dirección principal de entrega" placeholder="Ej. Kr 13 #60-19"><span id="addressFieldStatus" class="fieldStatus" hidden></span><div id="addressSuggestionPanel" class="autocompleteMenu" role="listbox" hidden></div></div>
-            <label id="neighborhoodField" class="deliveryField"><span class="fieldLabel">Barrio (opcional)</span><input id="deliveryNeighborhood" class="compactInput" autocomplete="shipping address-level3" placeholder="Barrio"><span id="neighborhoodFieldStatus" class="fieldStatus" hidden></span></label>
+            <div id="addressField" class="wide deliveryField autocompleteField"><span class="fieldLabel">Dirección principal</span><input id="deliveryAddress" class="compactInput" autocomplete="shipping street-address" aria-autocomplete="list" aria-controls="addressSuggestionPanel" aria-expanded="false" aria-label="Dirección principal de entrega" placeholder="Ej. Carrera 13 #60-19"><span id="addressFieldStatus" class="fieldStatus" hidden></span><div id="addressSuggestionPanel" class="autocompleteMenu" role="listbox" hidden></div></div>
+            <label id="neighborhoodField" class="deliveryField"><span class="fieldLabel">Barrio o localidad (opcional)</span><input id="deliveryNeighborhood" class="compactInput" autocomplete="shipping address-level3" placeholder="Barrio o localidad"><span id="neighborhoodFieldStatus" class="fieldStatus" hidden></span></label>
             <label class="deliveryField"><span class="fieldLabel">Apto., torre o interior (opcional)</span><input id="deliveryComplement" class="compactInput" autocomplete="shipping address-line2" placeholder="Apartamento, torre o interior"></label>
             <input id="deliveryAddressPlaceId" type="hidden">
             <label id="postalCodeField" class="wide deliveryField"><span class="fieldLabel">Código postal (opcional)</span><input id="deliveryPostalCode" class="compactInput" autocomplete="shipping postal-code" inputmode="numeric" maxlength="6" placeholder="Código postal"><span id="postalCodeFieldStatus" class="fieldStatus" hidden></span></label>
@@ -1282,6 +1287,10 @@ img{display:block;max-width:100%}
             <div id="pickupAddress" class="pickupAddress"><strong>Punto de recogida · 10.000 COP</strong><br>Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar.</div>
           </div>
           <p id="deliveryQuoteStatus" class="deliveryNote" role="status" aria-live="polite">El costo se calcula según tu ubicación.</p>
+          <div id="deliveryQuoteBreakdown" class="deliveryQuoteBreakdown" aria-live="polite" hidden>
+            <div id="deliveryQuoteGroups"></div>
+            <div class="deliveryQuoteRow deliveryQuoteTotal"><span>Total con entrega</span><span id="deliveryQuoteTotal">Por calcular</span></div>
+          </div>
         </section>
 
         <h2 class="paymentSectionTitle">Finaliza tu pago</h2>
@@ -1586,12 +1595,47 @@ img{display:block;max-width:100%}
     });
   }
 
+  function renderDeliveryQuoteBreakdown(profile, quoteReady, total) {
+    const panel = $("deliveryQuoteBreakdown");
+    const groupsContainer = $("deliveryQuoteGroups");
+    const totalElement = $("deliveryQuoteTotal");
+    if (!panel || !groupsContainer || !totalElement) return;
+    panel.hidden = !profile.hasNational;
+    if (!profile.hasNational) return;
+    const quotedGroups = quoteReady && Array.isArray(deliveryQuote?.groups)
+      ? deliveryQuote.groups
+      : [];
+    const requestedTypes = [profile.hasFast ? "R" : "", profile.hasShip ? "L" : ""].filter(Boolean);
+    groupsContainer.innerHTML = "";
+    requestedTypes.forEach(type => {
+      const quoted = quotedGroups.find(group => group?.type === type);
+      const row = document.createElement("div");
+      row.className = "deliveryQuoteRow";
+      const label = document.createElement("span");
+      label.textContent = type === "R" ? "Entrega Rápido (R)" : "Entrega Libérala (L)";
+      const amount = document.createElement("span");
+      amount.textContent = quoteReady && quoted
+        ? money(Number(quoted.fee || 0))
+        : deliveryQuotePending
+          ? "Calculando…"
+          : "Por calcular";
+      row.append(label, amount);
+      groupsContainer.append(row);
+    });
+    totalElement.textContent = quoteReady
+      ? money(total)
+      : deliveryQuotePending
+        ? "Calculando…"
+        : "Por calcular";
+  }
+
   function renderPaymentTotals() {
     const cart = readCart();
     const subtotal = cart.total;
     const deliveryFee = checkoutDeliveryFee();
     const total = subtotal + deliveryFee;
     const quoteReady = deliveryQuoteMatchesCart(cart);
+    const profile = checkoutFulfillmentProfile(cart);
     if ($("subtotalValue")) $("subtotalValue").textContent = money(subtotal);
     if ($("totalValue")) $("totalValue").textContent = money(total);
     if ($("nequiAmount")) $("nequiAmount").textContent = `${money(total)} COP`;
@@ -1599,9 +1643,9 @@ img{display:block;max-width:100%}
     if ($("nequiDeliveryFee")) $("nequiDeliveryFee").textContent = quoteReady ? money(deliveryFee) : "Por calcular";
     renderShipmentCharges("nequiShipmentCharges", quoteReady);
     renderShipmentCharges("stripeShipmentCharges", quoteReady);
+    renderDeliveryQuoteBreakdown(profile, quoteReady, total);
     if ($("stripePayButton")) $("stripePayButton").textContent = `Pagar ${money(total)} COP`;
     if ($("deliverySummary")) $("deliverySummary").textContent = deliveryQuotePending ? "Calculando…" : quoteReady ? money(deliveryFee) : "Por calcular";
-    const profile = checkoutFulfillmentProfile(cart);
     const quoteStatus = $("deliveryQuoteStatus");
     if (quoteStatus && profile.hasNational) {
       const destinationReady = Boolean(
@@ -3177,8 +3221,10 @@ img{display:block;max-width:100%}
       const result = await response.json().catch(() => ({}));
       if (requestVersion !== quoteRequestVersion) return null;
       if (!response.ok || !result?.quote) {
-        if (result?.code) throw paymentPreparationFailure(result);
-        throw new Error(result?.error || "No pudimos calcular el envío con Envia.");
+        if ([CART_ITEM_UNAVAILABLE_CODE, PRONTO_LOCATION_UNAVAILABLE_CODE].includes(result?.code)) {
+          throw paymentPreparationFailure(result);
+        }
+        throw new Error(result?.error || result?.message || "No pudimos calcular el envío con Envia.");
       }
       deliveryQuotePending = false;
       deliveryQuoteError = "";
@@ -3557,8 +3603,7 @@ img{display:block;max-width:100%}
     }
     const query = normalizeLocationChoice(input.value);
     const matches = deliveryCities
-      .filter(city => !query || normalizeLocationChoice(city.name).includes(query))
-      .slice(0, 8);
+      .filter(city => !query || normalizeLocationChoice(city.name).includes(query));
     panel.innerHTML = "";
     if (!matches.length) {
       renderAutocompleteMessage("deliveryCity", "citySuggestionPanel", "No encontramos una ciudad con ese nombre.");

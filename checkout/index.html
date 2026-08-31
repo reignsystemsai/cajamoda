@@ -1209,15 +1209,7 @@ img{display:block;max-width:100%}
             <span id="bagSubtotalValue" class="summaryValue">$0</span>
           </div>
 
-          <div class="summaryLine">
-            <span>Envío</span>
-            <span id="bagDeliveryValue" class="summaryValue">Selecciona tu entrega</span>
-          </div>
-
-          <div class="summaryLine">
-            <span>Impuestos</span>
-            <span class="summaryValue">Se calculan al pagar</span>
-          </div>
+          <div id="bagShipmentCharges"></div>
 
           <div class="summaryDivider"></div>
 
@@ -1321,7 +1313,6 @@ img{display:block;max-width:100%}
             <div class="nequiPriceBreakdown" aria-label="Desglose del precio final">
               <div class="nequiPriceLine"><span>Precio de los artículos</span><span id="nequiSubtotal">$0</span></div>
               <div id="nequiShipmentCharges"></div>
-              <div class="nequiPriceLine"><span>Total entrega</span><span id="nequiDeliveryFee">$0</span></div>
               <div class="nequiPriceLine nequiFinalLine">
                 <span class="nequiFinalLabel">Precio final</span>
                 <span id="nequiAmount" class="paymentAmount">$0 COP</span>
@@ -1379,10 +1370,6 @@ img{display:block;max-width:100%}
                 <span id="subtotalValue" class="summaryValue">$0</span>
               </div>
               <div id="stripeShipmentCharges"></div>
-              <div class="summaryLine">
-                <span>Total entrega</span>
-                <span id="deliverySummary" class="summaryValue">Pronto · Por calcular</span>
-              </div>
               <div class="summaryDivider"></div>
               <div class="summaryTotal">
                 <span class="summaryTotalLabel">Precio final</span>
@@ -1589,22 +1576,63 @@ img{display:block;max-width:100%}
     return readCart().total + checkoutDeliveryFee();
   }
 
-  function renderShipmentCharges(containerId, quoteReady) {
+  function selectedShipmentChargeRows(cart = readCart()) {
+    const profile = checkoutFulfillmentProfile(cart);
+    const quoteReady = deliveryQuoteMatchesCart(cart);
+    const groups = quoteReady && Array.isArray(deliveryQuote?.groups) ? deliveryQuote.groups : [];
+    const rows = [];
+    if (profile.hasPronto && selectedDelivery === "pickup") {
+      rows.push({ key: "pickup", label: "Recoger en punto", fee: PICKUP_FEE_COP, resolved: true });
+    }
+    if (profile.hasPronto && selectedDelivery === "moto") {
+      const quote = groups.find(group => group?.fulfillment === "pronto" && group?.method === "moto");
+      rows.push({
+        key: "moto",
+        label: "Moto a tu dirección",
+        fee: Number(quote?.fee || 0),
+        resolved: Boolean(quote),
+        pending: "Se calcula con la dirección"
+      });
+    }
+    if (profile.hasFast) {
+      const quote = groups.find(group => group?.type === "R");
+      rows.push({
+        key: "R",
+        label: "Rápido Nacional · 4–7 días",
+        fee: Number(quote?.fee || 0),
+        resolved: Boolean(quote),
+        pending: "Se calcula con Envia"
+      });
+    }
+    if (profile.hasShip) {
+      const quote = groups.find(group => group?.type === "L");
+      rows.push({
+        key: "L",
+        label: "Libéralo · 14–28 días",
+        fee: Number(quote?.fee || 0),
+        resolved: Boolean(quote),
+        pending: "Se calcula con Envia"
+      });
+    }
+    return rows;
+  }
+
+  function renderShipmentCharges(containerId, chargeRows) {
     const container = $(containerId);
     if (!container) return;
     container.innerHTML = "";
-    const groups = quoteReady && Array.isArray(deliveryQuote?.groups)
-      ? deliveryQuote.groups.filter(group => group?.type === "R" || group?.type === "L")
-      : [];
-    groups.forEach(group => {
+    chargeRows.forEach(charge => {
       const row = document.createElement("div");
       row.className = containerId === "nequiShipmentCharges" ? "nequiPriceLine" : "summaryLine";
       const label = document.createElement("span");
-      label.textContent = group.type === "R"
-        ? "Rápido Nacional · 4–7 días"
-        : "Libéralo · 14–28 días";
+      label.textContent = charge.label;
       const amount = document.createElement("span");
-      amount.textContent = money(Number(group.fee || 0));
+      const bagNeedsAddress = containerId === "bagShipmentCharges" && charge.key !== "pickup";
+      amount.textContent = bagNeedsAddress
+        ? "Ver cálculo al ingresar la dirección"
+        : charge.resolved
+          ? money(charge.fee)
+          : charge.pending;
       if (containerId !== "nequiShipmentCharges") amount.className = "summaryValue";
       row.append(label, amount);
       container.append(row);
@@ -1648,27 +1676,31 @@ img{display:block;max-width:100%}
   function renderPaymentTotals() {
     const cart = readCart();
     const subtotal = cart.total;
-    const deliveryFee = checkoutDeliveryFee();
+    const chargeRows = selectedShipmentChargeRows(cart);
+    const deliveryFee = chargeRows
+      .filter(charge => charge.resolved)
+      .reduce((sum, charge) => sum + Math.max(0, Number(charge.fee || 0)), 0);
     const total = subtotal + deliveryFee;
-    const quoteReady = deliveryQuoteMatchesCart(cart);
+    const bagKnownDeliveryFee = chargeRows
+      .filter(charge => charge.key === "pickup" && charge.resolved)
+      .reduce((sum, charge) => sum + Math.max(0, Number(charge.fee || 0)), 0);
+    const bagTotal = subtotal + bagKnownDeliveryFee;
+    const quoteReady = deliveryQuoteMatchesCart(cart) &&
+      deliveryPlanSelectionsComplete(cart) &&
+      chargeRows.length > 0 &&
+      chargeRows.every(charge => charge.resolved);
     const profile = checkoutFulfillmentProfile(cart);
     if ($("subtotalValue")) $("subtotalValue").textContent = money(subtotal);
     if ($("totalValue")) $("totalValue").textContent = money(total);
-    if ($("bagTotalValue")) $("bagTotalValue").textContent = quoteReady ? money(total) : money(subtotal);
-    if ($("headerTotal")) $("headerTotal").textContent = quoteReady ? money(total) : money(subtotal);
-    if ($("bagDeliveryValue")) $("bagDeliveryValue").textContent = quoteReady
-      ? money(deliveryFee)
-      : deliveryPlanSelectionsComplete(cart)
-        ? "Se calcula al pagar"
-        : "Selecciona tu entrega";
+    if ($("bagTotalValue")) $("bagTotalValue").textContent = money(bagTotal);
+    if ($("headerTotal")) $("headerTotal").textContent = money(total);
     if ($("nequiAmount")) $("nequiAmount").textContent = `${money(total)} COP`;
     if ($("nequiSubtotal")) $("nequiSubtotal").textContent = money(subtotal);
-    if ($("nequiDeliveryFee")) $("nequiDeliveryFee").textContent = quoteReady ? money(deliveryFee) : "Por calcular";
-    renderShipmentCharges("nequiShipmentCharges", quoteReady);
-    renderShipmentCharges("stripeShipmentCharges", quoteReady);
+    renderShipmentCharges("bagShipmentCharges", chargeRows);
+    renderShipmentCharges("nequiShipmentCharges", chargeRows);
+    renderShipmentCharges("stripeShipmentCharges", chargeRows);
     renderDeliveryQuoteBreakdown(profile, quoteReady, total);
     if ($("stripePayButton")) $("stripePayButton").textContent = `Pagar ${money(total)} COP`;
-    if ($("deliverySummary")) $("deliverySummary").textContent = deliveryQuotePending ? "Calculando…" : quoteReady ? money(deliveryFee) : "Por calcular";
     const quoteStatus = $("deliveryQuoteStatus");
     if (quoteStatus && profile.hasNational) {
       const destinationReady = Boolean(
@@ -2199,19 +2231,15 @@ img{display:block;max-width:100%}
       if(group?.type==="R"){nationalQuoteFees.fast=Number(group.fee||0)}
       if(group?.type==="L"){nationalQuoteFees.ship=Number(group.fee||0)}
     });
-    const prontoQuote=(Array.isArray(deliveryQuote?.groups)?deliveryQuote.groups:[])
-      .find(group=>group?.fulfillment==="pronto");
     const prontoTime=selectedDelivery==="pickup"
       ? `Recoger en punto · ${money(PICKUP_FEE_COP)}`
       : selectedDelivery==="moto"
-        ? prontoQuote
-          ? `Moto · ${money(Number(prontoQuote.fee||0))}`
-          : "Moto · Se calcula con la dirección"
+        ? "Moto · Ver cálculo al ingresar la dirección"
         : "Elige recoger en punto o moto";
     const groups=[
       {mode:"pickup",label:"Pronto",time:prontoTime},
-      {mode:"fast",label:"Rápido Nacional",time:Number.isFinite(nationalQuoteFees.fast)?`4–7 días · ${money(nationalQuoteFees.fast)}`:"4–7 días · Se calcula con Envia"},
-      {mode:"ship",label:"Libéralo",time:Number.isFinite(nationalQuoteFees.ship)?`14–28 días · ${money(nationalQuoteFees.ship)}`:"14–28 días · Se calcula con Envia"}
+      {mode:"fast",label:"Rápido Nacional",time:"4–7 días · Ver cálculo al ingresar la dirección"},
+      {mode:"ship",label:"Libéralo",time:"14–28 días · Ver cálculo al ingresar la dirección"}
     ].filter(group=>counts[group.mode]>0);
     const garmentCount=cart.items.reduce((total,item)=>total+Math.max(1,Math.floor(Number(item.quantity||1))),0);
     $("bagDeliverySummary").hidden=groups.length===0;

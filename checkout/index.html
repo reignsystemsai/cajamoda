@@ -1502,6 +1502,7 @@ img{display:block;max-width:100%}
   let cityRequestVersion = 0;
   let deliveryCities = [];
   let deliveryLocationsReady = false;
+  let deliveryDestinationActive = false;
   let addressSuggestionVersion = 0;
   let addressSuggestionTimer = null;
   let postalLookupTimer = null;
@@ -1539,7 +1540,7 @@ img{display:block;max-width:100%}
     const labels = [];
     if (profile.hasPronto) labels.push(selectedDelivery === "moto" ? "Pronto a domicilio · 24–48 h" : "Pronto: Recoger en punto · 24–48 h");
     if (profile.hasFast) labels.push("Rápido Nacional · 4–7 días");
-    if (profile.hasShip) labels.push("Libéralo Nacional · 14–28 días");
+    if (profile.hasShip) labels.push("Libéralo · 14–28 días");
     return labels.join(" + ") || "Entrega";
   }
 
@@ -1609,7 +1610,7 @@ img{display:block;max-width:100%}
       const quote = groups.find(group => group?.type === "L");
       rows.push({
         key: "L",
-        label: "Libéralo Nacional · 14–28 días",
+        label: "Libéralo · 14–28 días",
         fee: Number(quote?.fee || 0),
         resolved: Boolean(quote),
         pending: "Se calcula con Envia"
@@ -1657,7 +1658,7 @@ img{display:block;max-width:100%}
       const row = document.createElement("div");
       row.className = "deliveryQuoteRow";
       const label = document.createElement("span");
-      label.textContent = type === "R" ? "Entrega Rápido (R)" : "Entrega Libérala (L)";
+      label.textContent = type === "R" ? "Entrega Rápido (R)" : "Entrega Libéralo (L)";
       const amount = document.createElement("span");
       amount.textContent = quoteReady && quoted
         ? money(Number(quoted.fee || 0))
@@ -2245,7 +2246,7 @@ img{display:block;max-width:100%}
     const groups=[
       {mode:"pickup",label:prontoLabel,time:prontoTime},
       {mode:"fast",label:"Rápido Nacional",time:"4–7 días · Ver cálculo al ingresar la dirección"},
-      {mode:"ship",label:"Libéralo Nacional",time:"14–28 días · Ver cálculo al ingresar la dirección"}
+      {mode:"ship",label:"Libéralo",time:"14–28 días · Ver cálculo al ingresar la dirección"}
     ].filter(group=>counts[group.mode]>0);
     const garmentCount=cart.items.reduce((total,item)=>total+Math.max(1,Math.floor(Number(item.quantity||1))),0);
     $("bagDeliverySummary").hidden=groups.length===0;
@@ -2302,6 +2303,7 @@ img{display:block;max-width:100%}
     const outsideCartagena = Boolean(city) && !isCartagena;
     const wrongDepartment = departmentSelected && !selectedDepartmentIsBolivar();
     const validateMotoLocation =
+      deliveryDestinationActive &&
       selectedDelivery === "moto" &&
       addressConfirmed &&
       Boolean(city) &&
@@ -2997,6 +2999,7 @@ img{display:block;max-width:100%}
     }
 
     activeStep = step;
+    if (step === "payment") deliveryDestinationActive = true;
 
     document
       .querySelector(".checkoutApp")
@@ -3246,6 +3249,16 @@ img{display:block;max-width:100%}
       syncPaymentInBackground();
       return deliveryQuote;
     }
+    if (!deliveryDestinationActive) {
+      quoteRequestVersion += 1;
+      deliveryQuote = null;
+      deliveryQuotePending = false;
+      deliveryQuoteError = "";
+      quoteDestinationKey = "";
+      incompatibleProntoItemIds.clear();
+      renderPaymentTotals();
+      return null;
+    }
     const addressRequired = profile.hasNational || (profile.hasPronto && selectedDelivery === "moto");
     const address = $("deliveryAddress")?.value.trim();
     const nationalReady = !profile.hasNational || (
@@ -3254,6 +3267,9 @@ img{display:block;max-width:100%}
       $("deliveryDepartment")?.value
     );
     if ((addressRequired && !address) || !nationalReady) {
+      if (addressRequired && !address) {
+        setDeliveryFieldStatus("address", "Ingresa la dirección principal para calcular la entrega.");
+      }
       quoteRequestVersion += 1;
       deliveryQuote = null;
       deliveryQuotePending = false;
@@ -4247,6 +4263,12 @@ img{display:block;max-width:100%}
     "pageshow",
     () => {
       window.CajaModaBagPreview?.close();
+      deliveryDestinationActive = false;
+      incompatibleProntoItemIds.clear();
+      deliveryQuote = null;
+      deliveryQuotePending = false;
+      deliveryQuoteError = "";
+      quoteDestinationKey = "";
       loadCustomer({ restoreLocation: deliveryLocationsReady });
       renderCart();
 

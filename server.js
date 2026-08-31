@@ -1392,9 +1392,23 @@ function fullColombiaAddress(street, city, state = "Bolívar", postalCode = "") 
   return [street, city, state, postalCode, "Colombia"].filter(Boolean).join(", ");
 }
 
+function completeDeliveryStreet(delivery = {}) {
+  const explicitLine = safeText(delivery?.addressLine1, 180);
+  if (!explicitLine) return safeText(delivery?.address, 250);
+  const neighborhood = safeText(delivery?.neighborhood, 100);
+  const complement = safeText(delivery?.complement, 120);
+  const references = safeText(delivery?.references, 180);
+  return safeText([
+    explicitLine,
+    neighborhood ? `Barrio ${neighborhood}` : "",
+    complement,
+    references ? `Referencia: ${references}` : ""
+  ].filter(Boolean).join(", "), 250);
+}
+
 async function quoteMotoDelivery(delivery) {
   requireDeliveryEnvironment("moto");
-  const destination = safeText(delivery?.address, 250);
+  const destination = completeDeliveryStreet(delivery);
   if (!destination) throw new Error("Ingresa la dirección para calcular la moto.");
   const cacheKey = destination.toLocaleLowerCase("es-CO").replace(/\s+/g, " ");
   const cached = motoQuoteCache.get(cacheKey);
@@ -1473,6 +1487,27 @@ function locationNamesMatch(left, right) {
     second &&
     (first === second || first.includes(second) || second.includes(first))
   );
+}
+
+async function validateDeliveryMunicipality(delivery = {}) {
+  const daneCode = safeText(delivery?.cityDaneCode, 8);
+  if (!daneCode) return null;
+  const municipality = (await colombiaMunicipalities())
+    .find(item => safeText(item?.daneCode, 8) === daneCode);
+  if (!municipality) throw new Error("El municipio seleccionado no es válido.");
+  if (
+    safeText(delivery?.city, 100) &&
+    !locationNamesMatch(delivery.city, municipality.name)
+  ) {
+    throw new Error("La ciudad no corresponde al municipio seleccionado.");
+  }
+  if (
+    safeText(delivery?.stateName, 100) &&
+    !locationNamesMatch(delivery.stateName, municipality.departmentName)
+  ) {
+    throw new Error("El municipio no corresponde al departamento seleccionado.");
+  }
+  return municipality;
 }
 
 async function locateColombiaCity(city, state) {
@@ -1606,10 +1641,13 @@ async function quoteNationalDelivery(delivery, customer, declaredValue) {
   requireDeliveryEnvironment("national");
   const city = safeText(delivery?.city, 100);
   const state = safeText(delivery?.state, 5).toUpperCase();
-  const street = safeText(delivery?.address, 250);
+  const street = completeDeliveryStreet(delivery);
+  const neighborhood = safeText(delivery?.neighborhood, 100);
   const postalCode = safeText(delivery?.postalCode, 20);
   if (!city || !state || !street) throw new Error("Completa la ciudad, departamento y dirección de entrega.");
-  const located = await locateColombiaCity(city, state);
+  if (!neighborhood) throw new Error("Ingresa el barrio de entrega.");
+  const municipality = await validateDeliveryMunicipality(delivery);
+  const located = await locateColombiaCity(municipality?.name || city, state);
   const selectedAddress = await validateSelectedGoogleAddress(delivery);
   const verifiedPostalCode = await validateColombiaPostalCode(
     postalCode || selectedAddress?.postalCode,
@@ -1889,7 +1927,10 @@ async function checkoutDelivery(body, lines = []) {
   const method = quote.method;
   const addressLine = method === "pickup"
     ? CARTAGENA_PICKUP_ADDRESS
-    : safeText(body?.delivery?.address || body?.customer?.deliveryAddress, 250);
+    : completeDeliveryStreet({
+        ...(body?.delivery || {}),
+        address: body?.delivery?.address || body?.customer?.deliveryAddress
+      });
   const city = method === "pickup" ? "Cartagena" : profile.city;
   if (method !== "pickup" && !addressLine) throw new Error("Ingresa la dirección de entrega.");
   if (profile.hasNational && !safeText(body?.delivery?.state, 5)) {
@@ -1901,6 +1942,12 @@ async function checkoutDelivery(body, lines = []) {
     addressLine,
     city,
     state: safeText(body?.delivery?.state, 5),
+    stateName: safeText(body?.delivery?.stateName, 100),
+    cityDaneCode: safeText(body?.delivery?.cityDaneCode, 8),
+    addressLine1: safeText(body?.delivery?.addressLine1, 180),
+    neighborhood: safeText(body?.delivery?.neighborhood, 100),
+    complement: safeText(body?.delivery?.complement, 120),
+    references: safeText(body?.delivery?.references, 180),
     postalCode: safeText(body?.delivery?.postalCode, 20),
     fee: quote.fee,
     title: quote.title,

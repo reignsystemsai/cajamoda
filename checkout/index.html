@@ -1497,9 +1497,8 @@ img{display:block;max-width:100%}
   let stripeSessionId = "";
   let stripeCanConfirm = false;
   let stripeInitializing = false;
-  let stripeSessionUpdate = Promise.resolve();
   let stripeSessionCartKey = "";
-  let stripeSessionUpdating = false;
+  let stripeVerifiedAmountTotal = 0;
   let deliveryQuote = { method: "pickup", prontoMethod: "pickup", fee: 10000, title: "Pronto · Recoger" };
   let deliveryQuotePending = false;
   let deliveryQuoteError = "";
@@ -3469,10 +3468,9 @@ img{display:block;max-width:100%}
       checkoutActions &&
       paymentElement &&
       stripeCanConfirm &&
-      !stripeSessionUpdating &&
-      stripeSessionCartKey === currentDeliveryQuoteKey() &&
       cardCheckoutDetailsReady() &&
-      deliveryQuoteMatchesCart()
+      deliveryQuoteMatchesCart() &&
+      stripeVerifiedAmountTotal === Math.round(checkoutTotal() * 100)
     );
     $("stripePayButton").disabled = !ready;
   }
@@ -3511,43 +3509,20 @@ img{display:block;max-width:100%}
     return address;
   }
 
-  function syncStripeCheckoutSession() {
-    if (!checkoutElements || !stripeSessionId || typeof checkoutElements.runServerUpdate !== "function") {
-      return Promise.resolve();
-    }
-    const synchronizedKey = currentDeliveryQuoteKey();
-    const expectedAmountTotal = Math.round(checkoutTotal() * 100);
-    let returnedAmountTotal = null;
+  function resetStripeCheckoutSession() {
+    stripeCanConfirm = false;
+    stripeVerifiedAmountTotal = 0;
+    stripeSessionId = "";
     stripeSessionCartKey = "";
+    try {
+      if (typeof paymentElement?.destroy === "function") paymentElement.destroy();
+      else if (typeof paymentElement?.unmount === "function") paymentElement.unmount();
+    } catch {}
+    checkoutElements = null;
+    checkoutActions = null;
+    paymentElement = null;
+    $("paymentElement")?.replaceChildren();
     updateStripePayAvailability();
-    const update = async () => {
-      const response = await fetch(`${STORE_API_URL}/api/stripe/checkout/update`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ ...checkoutPayload(), sessionId: stripeSessionId })
-      });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok || result?.ok !== true) throw paymentPreparationFailure(result);
-      returnedAmountTotal = Number(result.amountTotal);
-      if (!Number.isFinite(returnedAmountTotal) || returnedAmountTotal !== expectedAmountTotal) {
-        throw new Error("El total de Stripe no coincide con el pedido.");
-      }
-    };
-    stripeSessionUpdate = stripeSessionUpdate.catch(() => {}).then(async () => {
-      stripeSessionUpdating = true;
-      updateStripePayAvailability();
-      try {
-        const result = await checkoutElements.runServerUpdate(update);
-        if (result?.type === "error") throw new Error(result?.error?.message || PAYMENT_PREPARATION_ERROR);
-        if (synchronizedKey === currentDeliveryQuoteKey()) {
-          stripeSessionCartKey = synchronizedKey;
-        }
-      } finally {
-        stripeSessionUpdating = false;
-        updateStripePayAvailability();
-      }
-    });
-    return stripeSessionUpdate;
   }
 
   function prepareStripeInBackground() {
@@ -3564,15 +3539,15 @@ img{display:block;max-width:100%}
 
   function syncPaymentInBackground() {
     if (activeStep !== "payment" || selectedPayment !== "stripe" || !deliveryQuoteMatchesCart()) return;
-    if (!checkoutElements || !stripeSessionId) {
-      prepareStripeInBackground();
-      return;
+    const expectedAmountTotal = Math.round(checkoutTotal() * 100);
+    const currentSessionKey = currentDeliveryQuoteKey();
+    if (
+      checkoutElements &&
+      (stripeSessionCartKey !== currentSessionKey || stripeVerifiedAmountTotal !== expectedAmountTotal)
+    ) {
+      resetStripeCheckoutSession();
     }
-    void syncStripeCheckoutSession().catch(error => {
-      console.error("[CajaModa] Stripe Checkout update error:", error);
-      $("stripeError").textContent = PAYMENT_PREPARATION_ERROR;
-      updateStripePayAvailability();
-    });
+    prepareStripeInBackground();
   }
 
   async function initializeStripePaymentElement() {
@@ -3603,10 +3578,12 @@ img{display:block;max-width:100%}
         throw paymentPreparationFailure(result);
       }
       const expectedAmountTotal = Math.round(checkoutTotal() * 100);
-      if (Number(result.amountTotal) !== expectedAmountTotal) {
+      const returnedAmountTotal = Number(result.amountTotal);
+      if (!Number.isFinite(returnedAmountTotal) || returnedAmountTotal !== expectedAmountTotal) {
         throw new Error("El total inicial de Stripe no coincide con el pedido.");
       }
       stripeSessionCartKey = currentDeliveryQuoteKey();
+      stripeVerifiedAmountTotal = returnedAmountTotal;
       unavailableProductIds.clear();
       incompatibleProntoItemIds.clear();
       saveJson("cajamoda-pending-checkout", payload);
@@ -3626,7 +3603,8 @@ img{display:block;max-width:100%}
       checkoutActions = loaded.actions;
       paymentElement = checkoutElements.createPaymentElement({
         layout: "accordion",
-        fields: { billingDetails: "never" }
+        fields: { billingDetails: "never" },
+        wallets: { link: "never" }
       });
       paymentElement.mount("#paymentElement");
       stripeCanConfirm = false;
@@ -3648,7 +3626,7 @@ img{display:block;max-width:100%}
       paymentElement = null;
       stripeSessionId = "";
       stripeSessionCartKey = "";
-      stripeSessionUpdating = false;
+      stripeVerifiedAmountTotal = 0;
       console.error("[CajaModa] Stripe Payment Element error:", error);
       status.hidden = true;
       errorBox.textContent = [CART_ITEM_UNAVAILABLE_CODE, PRONTO_LOCATION_UNAVAILABLE_CODE].includes(error?.code)
@@ -3670,7 +3648,14 @@ img{display:block;max-width:100%}
       if (!checkoutElements || !checkoutActions || !paymentElement) throw new Error("El formulario de Stripe todavía está cargando.");
       if (!validatePaymentDetails()) throw new Error("Completa tus datos de contacto y entrega.");
       await refreshDeliveryQuote({ required: true });
-      await syncStripeCheckoutSession();
+      const expectedAmountTotal = Math.round(checkoutTotal() * 100);
+      if (
+        stripeSessionCartKey !== currentDeliveryQuoteKey() ||
+        stripeVerifiedAmountTotal !== expectedAmountTotal
+      ) {
+        syncPaymentInBackground();
+        throw new Error("El total cambió. Espera un momento y vuelve a ingresar la tarjeta.");
+      }
       const firstName = $("customerFirstName")?.value.trim();
       const lastName = $("customerLastName")?.value.trim();
       const result = await checkoutActions.confirm({

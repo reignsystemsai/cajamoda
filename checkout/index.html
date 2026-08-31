@@ -2118,6 +2118,7 @@ img{display:block;max-width:100%}
 
     renderCart();
     if (normalized.items.length) {
+      prepareStripeInBackground();
       scheduleDeliveryQuote();
     } else {
       quoteRequestVersion += 1;
@@ -3551,13 +3552,13 @@ img{display:block;max-width:100%}
   }
 
   function prepareStripeInBackground() {
+    const cart = readCart();
     if (
-      activeStep !== "payment" ||
-      selectedPayment !== "stripe" ||
       checkoutElements ||
       stripeInitializing ||
       !stripePublishableKey ||
-      !deliveryQuoteMatchesCart()
+      !cart.items.length ||
+      !deliverySelectionsComplete(cart)
     ) return;
     void initializeStripePaymentElement();
   }
@@ -3576,7 +3577,8 @@ img{display:block;max-width:100%}
   }
 
   async function initializeStripePaymentElement() {
-    if (checkoutElements || stripeInitializing || !deliveryQuoteMatchesCart()) return;
+    const cart = readCart();
+    if (checkoutElements || stripeInitializing || !cart.items.length || !deliverySelectionsComplete(cart)) return;
     stripeInitializing = true;
     const errorBox = $("stripeError");
     const status = $("stripeStatus");
@@ -3592,7 +3594,7 @@ img{display:block;max-width:100%}
       if (typeof stripeClient.initCheckoutElementsSdk !== "function") {
         throw new Error("No se pudo cargar la versión actual del formulario de Stripe.");
       }
-      const payload = checkoutPayload();
+      const payload = { ...checkoutPayload(), prepareOnly: true };
       const response = await fetch(`${STORE_API_URL}/api/stripe/checkout`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -3602,11 +3604,11 @@ img{display:block;max-width:100%}
       if (!response.ok || !result?.clientSecret || !result?.sessionId) {
         throw paymentPreparationFailure(result);
       }
-      const expectedAmountTotal = Math.round(checkoutTotal() * 100);
+      const expectedAmountTotal = Math.round(readCart().total * 100);
       if (Number(result.amountTotal) !== expectedAmountTotal) {
-        throw new Error("El total inicial de Stripe no coincide con el pedido.");
+        throw new Error("El subtotal inicial de Stripe no coincide con el pedido.");
       }
-      stripeSessionCartKey = currentDeliveryQuoteKey();
+      stripeSessionCartKey = "";
       unavailableProductIds.clear();
       incompatibleProntoItemIds.clear();
       saveJson("cajamoda-pending-checkout", payload);
@@ -4427,7 +4429,7 @@ img{display:block;max-width:100%}
   loadCustomer({ restoreLocation: false });
   renderCart();
   syncBillingAddressMode();
-  loadCheckoutConfig().then(syncPaymentInBackground);
+  loadCheckoutConfig().then(prepareStripeInBackground);
   loadDeliveryDepartments();
 
   window.postMessage({

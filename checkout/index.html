@@ -1041,8 +1041,15 @@ img{display:block;max-width:100%}
 .stripeStatus{padding:12px 0;color:#737373;text-align:center;font-size:8.5px}.stripeStatus[hidden]{display:none}.billingPickupNote{margin:10px 1px 0;color:#666;font-size:8px;line-height:1.45}.billingPickupNote[hidden]{display:none}
 .paymentSummary{margin-top:16px;padding:16px 18px}
 @media(max-width:390px){.deliveryChoices,.nequiActions,.deliveryDetails{grid-template-columns:1fr}.deliveryDetails .wide{grid-column:auto}.billingFields{grid-template-columns:1fr}.billingFields .wide{grid-column:auto}}
-.cityInput{padding-right:38px}
-.cityInput::-webkit-calendar-picker-indicator{margin-right:10px}
+.autocompleteField{position:relative;min-width:0}
+.autocompleteMenu{position:absolute;z-index:140;top:calc(100% + 6px);left:0;right:0;max-height:260px;overflow-y:auto;border:1px solid rgba(0,0,0,.12);border-radius:15px;background:rgba(255,255,255,.98);box-shadow:0 18px 42px rgba(0,0,0,.16);padding:6px;backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}
+.autocompleteMenu[hidden]{display:none}
+.autocompleteOption{width:100%;min-height:48px;padding:10px 12px;border-radius:11px;display:block;text-align:left}
+.autocompleteOption:active,.autocompleteOption:focus{background:#f2f2f2;outline:none}
+.autocompletePrimary{display:block;font-size:10px;font-weight:700;line-height:1.35}
+.autocompleteSecondary{display:block;margin-top:3px;color:#737373;font-size:8px;line-height:1.35}
+.autocompleteMessage{padding:12px;color:#666;font-size:8.5px;line-height:1.45}
+.cityInput{padding-right:16px}
 .phoneInputGroup{display:grid;grid-template-columns:110px 1fr;gap:10px}.phoneInputGroup .compactInput{min-width:0}
 .cartItem.isUnavailable{border-color:rgba(163,25,25,.28);background:rgba(255,246,244,.76)}
 .cartUnavailableNotice{margin-top:10px;padding:11px 12px;border:1px solid rgba(163,25,25,.18);border-radius:12px;background:#fff5f3;color:#8e211b;font-size:8.5px;line-height:1.45}
@@ -1235,13 +1242,11 @@ img{display:block;max-width:100%}
               <input id="customerPhone" name="phone" class="compactInput" autocomplete="tel-national" inputmode="tel" placeholder="Número de teléfono">
             </div>
             <label><select id="deliveryDepartment" class="compactInput" autocomplete="address-level1"><option value="">Departamento</option></select></label>
-            <label><input id="deliveryCity" name="city" class="compactInput cityInput" autocomplete="address-level2" list="colombiaCities" aria-label="Ciudad de entrega" placeholder="Selecciona el departamento primero"></label>
-            <datalist id="colombiaCities"></datalist>
-            <label class="wide"><input id="deliveryAddress" class="compactInput" autocomplete="shipping street-address" list="deliveryAddressSuggestions" placeholder="Dirección"></label>
-            <datalist id="deliveryAddressSuggestions"></datalist>
+            <div class="autocompleteField"><input id="deliveryCity" name="city" class="compactInput cityInput" autocomplete="address-level2" aria-autocomplete="list" aria-controls="citySuggestionPanel" aria-expanded="false" aria-label="Ciudad de entrega" placeholder="Selecciona el departamento primero"><div id="citySuggestionPanel" class="autocompleteMenu" role="listbox" hidden></div></div>
+            <div class="wide autocompleteField"><input id="deliveryAddress" class="compactInput" autocomplete="shipping street-address" aria-autocomplete="list" aria-controls="addressSuggestionPanel" aria-expanded="false" aria-label="Dirección de entrega" placeholder="Dirección"><div id="addressSuggestionPanel" class="autocompleteMenu" role="listbox" hidden></div></div>
             <input id="deliveryAddressPlaceId" type="hidden">
             <label class="wide"><input id="deliveryPostalCode" class="compactInput" autocomplete="shipping postal-code" inputmode="numeric" placeholder="Código postal (opcional)"></label>
-            <p id="addressSuggestionSource" class="deliveryNote wide" hidden>Direcciones sugeridas por Google</p>
+            <p id="addressSuggestionSource" class="deliveryNote wide" role="status" aria-live="polite" hidden>Direcciones sugeridas por Google</p>
           </div>
           <div id="prontoReceivingChoice">
             <div class="deliveryDivider"></div>
@@ -1274,7 +1279,8 @@ img{display:block;max-width:100%}
             </div>
             <div class="nequiPriceBreakdown" aria-label="Desglose del precio final">
               <div class="nequiPriceLine"><span>Precio de los artículos</span><span id="nequiSubtotal">$0</span></div>
-              <div class="nequiPriceLine"><span>Entrega</span><span id="nequiDeliveryFee">$0</span></div>
+              <div id="nequiShipmentCharges"></div>
+              <div class="nequiPriceLine"><span>Total entrega</span><span id="nequiDeliveryFee">$0</span></div>
               <div class="nequiPriceLine nequiFinalLine">
                 <span class="nequiFinalLabel">Precio final</span>
                 <span id="nequiAmount" class="paymentAmount">$0 COP</span>
@@ -1335,8 +1341,9 @@ img{display:block;max-width:100%}
                 <span>Precio de los artículos</span>
                 <span id="subtotalValue" class="summaryValue">$0</span>
               </div>
+              <div id="stripeShipmentCharges"></div>
               <div class="summaryLine">
-                <span>Entrega</span>
+                <span>Total entrega</span>
                 <span id="deliverySummary" class="summaryValue">Pronto · Por calcular</span>
               </div>
               <div class="summaryDivider"></div>
@@ -1462,6 +1469,7 @@ img{display:block;max-width:100%}
   let quoteRequestVersion = 0;
   let quoteTimer = null;
   let cityRequestVersion = 0;
+  let deliveryCities = [];
   let addressSuggestionVersion = 0;
   let addressSuggestionTimer = null;
   let postalLookupTimer = null;
@@ -1536,6 +1544,28 @@ img{display:block;max-width:100%}
     return readCart().total + checkoutDeliveryFee();
   }
 
+  function renderShipmentCharges(containerId, quoteReady) {
+    const container = $(containerId);
+    if (!container) return;
+    container.innerHTML = "";
+    const groups = quoteReady && Array.isArray(deliveryQuote?.groups)
+      ? deliveryQuote.groups.filter(group => group?.type === "R" || group?.type === "L")
+      : [];
+    groups.forEach(group => {
+      const row = document.createElement("div");
+      row.className = containerId === "nequiShipmentCharges" ? "nequiPriceLine" : "summaryLine";
+      const label = document.createElement("span");
+      label.textContent = group.type === "R"
+        ? "Rápido Nacional · 4–7 días"
+        : "Libéralo · 14–28 días";
+      const amount = document.createElement("span");
+      amount.textContent = money(Number(group.fee || 0));
+      if (containerId !== "nequiShipmentCharges") amount.className = "summaryValue";
+      row.append(label, amount);
+      container.append(row);
+    });
+  }
+
   function renderPaymentTotals() {
     const cart = readCart();
     const subtotal = cart.total;
@@ -1547,6 +1577,8 @@ img{display:block;max-width:100%}
     if ($("nequiAmount")) $("nequiAmount").textContent = `${money(total)} COP`;
     if ($("nequiSubtotal")) $("nequiSubtotal").textContent = money(subtotal);
     if ($("nequiDeliveryFee")) $("nequiDeliveryFee").textContent = quoteReady ? money(deliveryFee) : "Por calcular";
+    renderShipmentCharges("nequiShipmentCharges", quoteReady);
+    renderShipmentCharges("stripeShipmentCharges", quoteReady);
     if ($("stripePayButton")) $("stripePayButton").textContent = `Pagar ${money(total)} COP`;
     if ($("deliverySummary")) $("deliverySummary").textContent = deliveryQuotePending ? "Calculando…" : quoteReady ? money(deliveryFee) : "Por calcular";
     const profile = checkoutFulfillmentProfile(cart);
@@ -3374,15 +3406,83 @@ img{display:block;max-width:100%}
     return $("deliveryDepartment")?.selectedOptions?.[0]?.textContent || "";
   }
 
+  function setAutocompleteExpanded(inputId, panelId, expanded) {
+    const input = $(inputId);
+    const panel = $(panelId);
+    if (input) input.setAttribute("aria-expanded", String(Boolean(expanded)));
+    if (panel) panel.hidden = !expanded;
+  }
+
+  function clearAutocompletePanel(inputId, panelId) {
+    const panel = $(panelId);
+    if (panel) panel.innerHTML = "";
+    setAutocompleteExpanded(inputId, panelId, false);
+  }
+
+  function renderAutocompleteMessage(inputId, panelId, message) {
+    const panel = $(panelId);
+    if (!panel) return;
+    panel.innerHTML = "";
+    const status = document.createElement("div");
+    status.className = "autocompleteMessage";
+    status.textContent = message;
+    panel.append(status);
+    setAutocompleteExpanded(inputId, panelId, true);
+  }
+
+  function selectDeliveryCity(city) {
+    $("deliveryCity").value = city.name;
+    clearAutocompletePanel("deliveryCity", "citySuggestionPanel");
+    clearAddressVerification();
+    saveCustomer();
+    renderCart();
+    syncDeliveryControls();
+    updateStripePayAvailability();
+    scheduleDeliveryQuote();
+    syncPanelHeight();
+  }
+
+  function renderCitySuggestions() {
+    const input = $("deliveryCity");
+    const panel = $("citySuggestionPanel");
+    if (!input || !panel || !$("deliveryDepartment")?.value) {
+      clearAutocompletePanel("deliveryCity", "citySuggestionPanel");
+      return;
+    }
+    const query = normalizeLocationChoice(input.value);
+    const matches = deliveryCities
+      .filter(city => !query || normalizeLocationChoice(city.name).includes(query))
+      .slice(0, 8);
+    panel.innerHTML = "";
+    if (!matches.length) {
+      renderAutocompleteMessage("deliveryCity", "citySuggestionPanel", "No encontramos una ciudad con ese nombre.");
+      return;
+    }
+    matches.forEach(city => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "autocompleteOption";
+      button.setAttribute("role", "option");
+      const name = document.createElement("span");
+      name.className = "autocompletePrimary";
+      name.textContent = city.name;
+      button.append(name);
+      button.addEventListener("pointerdown", event => event.preventDefault());
+      button.addEventListener("click", () => selectDeliveryCity(city));
+      panel.append(button);
+    });
+    setAutocompleteExpanded("deliveryCity", "citySuggestionPanel", true);
+  }
+
   async function loadDeliveryCities({ preserveCity = false } = {}) {
     const select = $("deliveryDepartment");
     const cityInput = $("deliveryCity");
-    const list = $("colombiaCities");
     const state = select?.value || "";
     const stateName = selectedDepartmentName();
     const previousCity = preserveCity ? cityInput?.value.trim() || "" : "";
     const requestVersion = ++cityRequestVersion;
-    list.innerHTML = "";
+    deliveryCities = [];
+    clearAutocompletePanel("deliveryCity", "citySuggestionPanel");
     if (!state || !stateName) {
       cityInput.value = "";
       cityInput.placeholder = "Selecciona el departamento primero";
@@ -3399,22 +3499,19 @@ img{display:block;max-width:100%}
       if (!response.ok || !Array.isArray(result?.cities)) {
         throw new Error("No pudimos cargar las ciudades.");
       }
-      result.cities.forEach(city => {
-        const option = document.createElement("option");
-        option.value = city.name;
-        option.dataset.daneCode = city.daneCode || "";
-        list.append(option);
-      });
-      const matchingCity = result.cities.find(city =>
+      deliveryCities = result.cities;
+      const matchingCity = deliveryCities.find(city =>
         normalizeLocationChoice(city.name) === normalizeLocationChoice(previousCity)
       );
       cityInput.value = matchingCity?.name || previousCity;
-      cityInput.placeholder = "Ciudad";
-      return result.cities;
+      cityInput.placeholder = "Escribe tu ciudad";
+      return deliveryCities;
     } catch (error) {
       if (requestVersion !== cityRequestVersion) return [];
       cityInput.value = preserveCity ? previousCity : "";
       cityInput.placeholder = "Escribe tu ciudad";
+      renderAutocompleteMessage("deliveryCity", "citySuggestionPanel", "No pudimos cargar las ciudades. Inténtalo nuevamente.");
+      showToast("No pudimos cargar las ciudades.");
       console.error("[CajaModa] Cities error:", error);
       return [];
     }
@@ -3424,16 +3521,11 @@ img{display:block;max-width:100%}
     if ($("deliveryAddressPlaceId")) $("deliveryAddressPlaceId").value = "";
   }
 
-  function matchingAddressSuggestion() {
-    const value = $("deliveryAddress")?.value.trim() || "";
-    return [...($("deliveryAddressSuggestions")?.options || [])]
-      .find(option => option.value === value) || null;
-  }
-
-  async function applyAddressSuggestion(option) {
-    const placeId = option?.dataset?.placeId || "";
+  async function applyAddressSuggestion(suggestion) {
+    const placeId = suggestion?.placeId || "";
     if (!placeId) return;
     applyingAddressSuggestion = true;
+    clearAutocompletePanel("deliveryAddress", "addressSuggestionPanel");
     try {
       const response = await fetch(`${STORE_API_URL}/api/delivery/address-details`, {
         method: "POST",
@@ -3454,34 +3546,61 @@ img{display:block;max-width:100%}
       if (details.address) $("deliveryAddress").value = details.address;
       if (details.postalCode) $("deliveryPostalCode").value = details.postalCode;
       $("deliveryAddressPlaceId").value = details.placeId || placeId;
+      $("addressSuggestionSource").textContent = "Dirección verificada por Google";
+      $("addressSuggestionSource").hidden = false;
       saveCustomer();
       renderCart();
-      scheduleDeliveryQuote();
+      syncDeliveryControls();
+      updateStripePayAvailability();
+      await refreshDeliveryQuote();
     } catch (error) {
       clearAddressVerification();
+      $("addressSuggestionSource").textContent = "Google no pudo completar esta dirección. Escribe la dirección completa o inténtalo nuevamente.";
+      $("addressSuggestionSource").hidden = false;
       showToast(error?.message || "No pudimos completar la dirección.");
     } finally {
       applyingAddressSuggestion = false;
     }
   }
 
+  function renderAddressSuggestions(suggestions) {
+    const panel = $("addressSuggestionPanel");
+    if (!panel) return;
+    panel.innerHTML = "";
+    if (!suggestions.length) {
+      renderAutocompleteMessage("deliveryAddress", "addressSuggestionPanel", "No encontramos direcciones. Continúa escribiendo o verifica la ciudad.");
+      return;
+    }
+    suggestions.forEach(suggestion => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "autocompleteOption";
+      button.setAttribute("role", "option");
+      const primary = document.createElement("span");
+      primary.className = "autocompletePrimary";
+      primary.textContent = suggestion.mainText || suggestion.text;
+      const secondary = document.createElement("span");
+      secondary.className = "autocompleteSecondary";
+      secondary.textContent = suggestion.secondaryText || suggestion.text;
+      button.append(primary, secondary);
+      button.addEventListener("pointerdown", event => event.preventDefault());
+      button.addEventListener("click", () => applyAddressSuggestion(suggestion));
+      panel.append(button);
+    });
+    setAutocompleteExpanded("deliveryAddress", "addressSuggestionPanel", true);
+  }
+
   function scheduleAddressSuggestions() {
     clearTimeout(addressSuggestionTimer);
     const requestVersion = ++addressSuggestionVersion;
     const input = $("deliveryAddress")?.value.trim() || "";
-    const list = $("deliveryAddressSuggestions");
-    const source = $("addressSuggestionSource");
-    const exact = matchingAddressSuggestion();
-    if (exact) {
-      applyAddressSuggestion(exact);
-      return;
-    }
     clearAddressVerification();
+    $("addressSuggestionSource").hidden = true;
     if (input.length < 3) {
-      list.innerHTML = "";
-      source.hidden = true;
+      clearAutocompletePanel("deliveryAddress", "addressSuggestionPanel");
       return;
     }
+    renderAutocompleteMessage("deliveryAddress", "addressSuggestionPanel", "Buscando direcciones…");
     addressSuggestionTimer = setTimeout(async () => {
       try {
         const response = await fetch(`${STORE_API_URL}/api/delivery/address-suggestions`, {
@@ -3496,19 +3615,14 @@ img{display:block;max-width:100%}
         });
         const result = await response.json().catch(() => ({}));
         if (requestVersion !== addressSuggestionVersion) return;
-        list.innerHTML = "";
-        (result?.suggestions || []).forEach(suggestion => {
-          const option = document.createElement("option");
-          option.value = suggestion.mainText || suggestion.text;
-          option.label = suggestion.secondaryText || suggestion.text;
-          option.dataset.placeId = suggestion.placeId;
-          list.append(option);
-        });
-        source.hidden = !list.options.length;
+        if (!response.ok) throw new Error(result?.error || "Google no devolvió direcciones.");
+        renderAddressSuggestions(Array.isArray(result?.suggestions) ? result.suggestions : []);
       } catch (error) {
         if (requestVersion !== addressSuggestionVersion) return;
-        list.innerHTML = "";
-        source.hidden = true;
+        renderAutocompleteMessage("deliveryAddress", "addressSuggestionPanel", "No pudimos consultar Google. Escribe la dirección completa o inténtalo nuevamente.");
+        $("addressSuggestionSource").textContent = "No pudimos consultar Google en este momento.";
+        $("addressSuggestionSource").hidden = false;
+        showToast("No pudimos cargar las direcciones sugeridas.");
         console.error("[CajaModa] Address suggestions error:", error);
       }
     }, 350);
@@ -3622,18 +3736,30 @@ img{display:block;max-width:100%}
     };
   });
 
-  $("deliveryCity").onchange = () => {
+  $("deliveryCity")?.addEventListener("focus", renderCitySuggestions);
+  $("deliveryCity")?.addEventListener("input", () => {
+    renderCitySuggestions();
+    clearAddressVerification();
     renderCart();
     syncDeliveryControls();
     updateStripePayAvailability();
     scheduleDeliveryQuote();
     syncPanelHeight();
-  };
-  ["deliveryAddress", "deliveryCity", "deliveryPostalCode"].forEach(id => {
+  });
+  ["deliveryAddress", "deliveryPostalCode"].forEach(id => {
     $(id)?.addEventListener("input", scheduleDeliveryQuote);
   });
   $("deliveryAddress")?.addEventListener("input", () => {
     if (!applyingAddressSuggestion) scheduleAddressSuggestions();
+  });
+  $("deliveryAddress")?.addEventListener("focus", () => {
+    if ($("deliveryAddress")?.value.trim().length >= 3) scheduleAddressSuggestions();
+  });
+  document.addEventListener("pointerdown", event => {
+    if (!event.target.closest(".autocompleteField")) {
+      clearAutocompletePanel("deliveryCity", "citySuggestionPanel");
+      clearAutocompletePanel("deliveryAddress", "addressSuggestionPanel");
+    }
   });
   $("deliveryPostalCode")?.addEventListener("input", schedulePostalLookup);
   $("deliveryDepartment")?.addEventListener("change", async () => {

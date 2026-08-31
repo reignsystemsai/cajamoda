@@ -1498,6 +1498,8 @@ img{display:block;max-width:100%}
   let stripeCanConfirm = false;
   let stripeInitializing = false;
   let stripeSessionUpdate = Promise.resolve();
+  let stripeSessionCartKey = "";
+  let stripeSessionUpdating = false;
   let deliveryQuote = { method: "pickup", prontoMethod: "pickup", fee: 10000, title: "Pronto · Recoger" };
   let deliveryQuotePending = false;
   let deliveryQuoteError = "";
@@ -1545,13 +1547,25 @@ img{display:block;max-width:100%}
     const dates = deliveryDateRanges();
     const labels = [];
     if (profile.hasPronto) labels.push(selectedDelivery === "moto" ? "Pronto a domicilio · 24–48 h" : "Pronto: Recoger en punto · 24–48 h");
-    if (profile.hasFast) labels.push(`Rápido Nacional · ${dates.fast}`);
-    if (profile.hasShip) labels.push(`Libéralo · ${dates.ship}`);
+    if (profile.hasFast) labels.push(`Rápido Nacional · Llega ${dates.fast}`);
+    if (profile.hasShip) labels.push(`Libéralo · Llega ${dates.ship}`);
     return labels.join(" + ") || "Entrega";
   }
 
   function currentDeliveryQuoteKey(cart = readCart()) {
+    const cartFingerprint = (Array.isArray(cart?.items) ? cart.items : [])
+      .map(item => [
+        item?.id || "",
+        item?.productId || "",
+        item?.variantId || "",
+        Math.max(1, Math.floor(Number(item?.quantity || 1))),
+        normalizeDeliveryMode(item?.selectedDeliveryMode || item?.deliveryMode)
+      ].join(":"))
+      .sort()
+      .join(",");
     return [
+      Number(cart?.revision || 0),
+      cartFingerprint,
       checkoutDeliveryMethod(cart),
       selectedDelivery,
       completeDeliveryAddress().toLowerCase(),
@@ -1565,14 +1579,11 @@ img{display:block;max-width:100%}
 
   function deliveryQuoteMatchesCart(cart = readCart()) {
     const profile = checkoutFulfillmentProfile(cart);
-    const destinationQuoteRequired =
-      profile.hasNational ||
-      (profile.hasPronto && selectedDelivery === "moto");
     return Boolean(
       deliveryQuote &&
       deliveryQuote.method === checkoutDeliveryMethod(cart) &&
       (!profile.hasPronto || deliveryQuote.prontoMethod === selectedDelivery) &&
-      (!destinationQuoteRequired || quoteDestinationKey === currentDeliveryQuoteKey(cart))
+      quoteDestinationKey === currentDeliveryQuoteKey(cart)
     );
   }
 
@@ -1607,7 +1618,7 @@ img{display:block;max-width:100%}
       const quote = groups.find(group => group?.type === "R");
       rows.push({
         key: "R",
-        label: `Rápido Nacional · ${dates.fast}`,
+        label: `Rápido Nacional · Llega ${dates.fast}`,
         fee: Number(quote?.fee || 0),
         resolved: Boolean(quote),
         pending: "Se calcula con Envia"
@@ -1617,7 +1628,7 @@ img{display:block;max-width:100%}
       const quote = groups.find(group => group?.type === "L");
       rows.push({
         key: "L",
-        label: `Libéralo · ${dates.ship}`,
+        label: `Libéralo · Llega ${dates.ship}`,
         fee: Number(quote?.fee || 0),
         resolved: Boolean(quote),
         pending: "Se calcula con Envia"
@@ -2106,6 +2117,18 @@ img{display:block;max-width:100%}
     }
 
     renderCart();
+    if (normalized.items.length) {
+      scheduleDeliveryQuote();
+    } else {
+      quoteRequestVersion += 1;
+      clearTimeout(quoteTimer);
+      deliveryQuote = null;
+      deliveryQuotePending = false;
+      deliveryQuoteError = "";
+      quoteDestinationKey = "";
+      stripeSessionCartKey = "";
+      updateStripePayAvailability();
+    }
 
     return normalized;
   }
@@ -2292,8 +2315,8 @@ img{display:block;max-width:100%}
     const dates=deliveryDateRanges();
     const groups=[
       {mode:"pickup",label:prontoLabel,time:prontoTime},
-      {mode:"fast",label:`Rápido Nacional · ${dates.fast}`,time:"Ver cálculo al ingresar la dirección"},
-      {mode:"ship",label:`Libéralo · ${dates.ship}`,time:"Ver cálculo al ingresar la dirección"}
+      {mode:"fast",label:`Rápido Nacional · Llega ${dates.fast}`,time:"Ver cálculo al ingresar la dirección"},
+      {mode:"ship",label:`Libéralo · Llega ${dates.ship}`,time:"Ver cálculo al ingresar la dirección"}
     ].filter(group=>counts[group.mode]>0);
     const garmentCount=cart.items.reduce((total,item)=>total+Math.max(1,Math.floor(Number(item.quantity||1))),0);
     $("bagDeliverySummary").hidden=groups.length===0;
@@ -3144,7 +3167,7 @@ img{display:block;max-width:100%}
     }
     if ($("promiseTime")) {
       const dates = deliveryDateRanges();
-      const nationalPromises = [profile.hasFast ? `Rápido Nacional · ${dates.fast}` : "", profile.hasShip ? `Libéralo · ${dates.ship}` : ""].filter(Boolean);
+      const nationalPromises = [profile.hasFast ? `Rápido Nacional · Llega ${dates.fast}` : "", profile.hasShip ? `Libéralo · Llega ${dates.ship}` : ""].filter(Boolean);
       $("promiseTime").textContent = profile.hasPronto && profile.hasNational
         ? `Pronto Cartagena + ${nationalPromises.join(" + ")}`
         : profile.hasPronto
@@ -3291,8 +3314,8 @@ img{display:block;max-width:100%}
       quoteRequestVersion += 1;
       deliveryQuotePending = false;
       deliveryQuoteError = "";
-      quoteDestinationKey = "";
       deliveryQuote = { method: "pickup", prontoMethod: "pickup", fee: PICKUP_FEE_COP, title: "Pronto: Recoger en punto · 24–48 h" };
+      quoteDestinationKey = currentDeliveryQuoteKey();
       renderPaymentTotals();
       syncPaymentInBackground();
       return deliveryQuote;
@@ -3387,7 +3410,8 @@ img{display:block;max-width:100%}
       : null;
     deliveryQuotePending = !pickupOnly;
     deliveryQuoteError = "";
-    quoteDestinationKey = "";
+    quoteDestinationKey = pickupOnly ? currentDeliveryQuoteKey() : "";
+    stripeSessionCartKey = "";
     renderPaymentTotals();
     syncPaymentInBackground();
     quoteTimer = setTimeout(refreshDeliveryQuote, 650);
@@ -3445,6 +3469,8 @@ img{display:block;max-width:100%}
       checkoutActions &&
       paymentElement &&
       stripeCanConfirm &&
+      !stripeSessionUpdating &&
+      stripeSessionCartKey === currentDeliveryQuoteKey() &&
       cardCheckoutDetailsReady() &&
       deliveryQuoteMatchesCart()
     );
@@ -3489,6 +3515,11 @@ img{display:block;max-width:100%}
     if (!checkoutElements || !stripeSessionId || typeof checkoutElements.runServerUpdate !== "function") {
       return Promise.resolve();
     }
+    const synchronizedKey = currentDeliveryQuoteKey();
+    const expectedAmountTotal = Math.round(checkoutTotal() * 100);
+    let returnedAmountTotal = null;
+    stripeSessionCartKey = "";
+    updateStripePayAvailability();
     const update = async () => {
       const response = await fetch(`${STORE_API_URL}/api/stripe/checkout/update`, {
         method: "POST",
@@ -3497,10 +3528,24 @@ img{display:block;max-width:100%}
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok || result?.ok !== true) throw paymentPreparationFailure(result);
+      returnedAmountTotal = Number(result.amountTotal);
+      if (!Number.isFinite(returnedAmountTotal) || returnedAmountTotal !== expectedAmountTotal) {
+        throw new Error("El total de Stripe no coincide con el pedido.");
+      }
     };
     stripeSessionUpdate = stripeSessionUpdate.catch(() => {}).then(async () => {
-      const result = await checkoutElements.runServerUpdate(update);
-      if (result?.type === "error") throw new Error(result?.error?.message || PAYMENT_PREPARATION_ERROR);
+      stripeSessionUpdating = true;
+      updateStripePayAvailability();
+      try {
+        const result = await checkoutElements.runServerUpdate(update);
+        if (result?.type === "error") throw new Error(result?.error?.message || PAYMENT_PREPARATION_ERROR);
+        if (synchronizedKey === currentDeliveryQuoteKey()) {
+          stripeSessionCartKey = synchronizedKey;
+        }
+      } finally {
+        stripeSessionUpdating = false;
+        updateStripePayAvailability();
+      }
     });
     return stripeSessionUpdate;
   }
@@ -3557,6 +3602,11 @@ img{display:block;max-width:100%}
       if (!response.ok || !result?.clientSecret || !result?.sessionId) {
         throw paymentPreparationFailure(result);
       }
+      const expectedAmountTotal = Math.round(checkoutTotal() * 100);
+      if (Number(result.amountTotal) !== expectedAmountTotal) {
+        throw new Error("El total inicial de Stripe no coincide con el pedido.");
+      }
+      stripeSessionCartKey = currentDeliveryQuoteKey();
       unavailableProductIds.clear();
       incompatibleProntoItemIds.clear();
       saveJson("cajamoda-pending-checkout", payload);
@@ -3597,6 +3647,8 @@ img{display:block;max-width:100%}
       checkoutActions = null;
       paymentElement = null;
       stripeSessionId = "";
+      stripeSessionCartKey = "";
+      stripeSessionUpdating = false;
       console.error("[CajaModa] Stripe Payment Element error:", error);
       status.hidden = true;
       errorBox.textContent = [CART_ITEM_UNAVAILABLE_CODE, PRONTO_LOCATION_UNAVAILABLE_CODE].includes(error?.code)
@@ -4331,11 +4383,16 @@ img{display:block;max-width:100%}
     }
   );
 
+  function handleExternalCartUpdate() {
+    renderCart();
+    scheduleDeliveryQuote();
+  }
+
   window.addEventListener("storage", event => {
-    if(event.key === "cajamoda-cart") renderCart();
+    if(event.key === "cajamoda-cart") handleExternalCartUpdate();
   });
 
-  window.addEventListener("cajamoda:cart-updated", renderCart);
+  window.addEventListener("cajamoda:cart-updated", handleExternalCartUpdate);
 
   let deliveryDateRefreshTimer = 0;
   function scheduleDeliveryDateRefresh() {

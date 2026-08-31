@@ -2993,7 +2993,6 @@ img{
   .productQuickView .quickEditActions button{min-width:0}
   .productQuickView .quickEditActions .primaryButton{grid-column:1/-1}
 }
-.checkoutErrorToolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.checkoutErrorList{display:grid;gap:10px}.checkoutErrorCard{padding:14px 16px;border:1px solid rgba(155,36,29,.18);border-left:4px solid #9b241d;border-radius:14px;background:rgba(255,255,255,.72)}.checkoutErrorTop{display:flex;justify-content:space-between;gap:12px;margin-bottom:7px}.checkoutErrorReference{font-weight:800;letter-spacing:.08em}.checkoutErrorTime{color:#777;font-size:10px}.checkoutErrorStage{display:inline-block;margin-bottom:7px;padding:4px 8px;border-radius:999px;background:rgba(155,36,29,.09);color:#8b1d18;font-size:9px;font-weight:750}.checkoutErrorMessage{font-size:12px;line-height:1.45}.checkoutErrorMeta{margin-top:8px;color:#666;font-size:10px;line-height:1.5}.checkoutErrorFailed{margin-top:6px;color:#8b1d18;font-size:10px}.checkoutErrorEmpty{padding:28px;text-align:center;color:#777}
 </style>
 
 </head>
@@ -3111,14 +3110,6 @@ img{
     >
       <span class="navIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 7h12l1 14H5z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg></span>
       Pedidos
-    </button>
-
-    <button
-      class="tabButton"
-      data-tab="errors"
-    >
-      <span class="navIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 2.8 20h18.4z"/><path d="M12 9v5"/><path d="M12 17h.01"/></svg></span>
-      Errores
     </button>
 
   </nav>
@@ -3489,26 +3480,6 @@ img{
 
 </section>
 
-<section
-  id="panel-errors"
-  class="panel"
->
-  <div class="pageHeadingRow">
-    <div>
-      <h1 class="pageTitle">Errores de checkout</h1>
-      <p class="pageIntro">Busca el código que ve el cliente para identificar exactamente dónde falló el pago.</p>
-    </div>
-    <button id="refreshCheckoutErrors" class="secondaryButton" type="button">Actualizar log</button>
-  </div>
-  <div class="sectionBlock">
-    <div class="checkoutErrorToolbar">
-      <strong id="checkoutErrorCount">0 errores registrados</strong>
-      <span>Los datos de tarjeta, correo, teléfono y dirección no se guardan.</span>
-    </div>
-    <div id="checkoutErrorList" class="checkoutErrorList"></div>
-  </div>
-</section>
-
 </main>
 
 </div>
@@ -3753,7 +3724,6 @@ img{
 
   let ownerProfile = null;
   let ownerSummary = null;
-  let checkoutErrors = [];
 
   async function apiRequest(
     path,
@@ -3846,54 +3816,6 @@ img{
     }
 
     return data;
-  }
-
-  function renderCheckoutErrors(){
-    const list = $("checkoutErrorList");
-    if(!list) return;
-    $("checkoutErrorCount").textContent = `${checkoutErrors.length} error${checkoutErrors.length === 1 ? "" : "es"} registrado${checkoutErrors.length === 1 ? "" : "s"}`;
-    if(!checkoutErrors.length){
-      list.innerHTML = '<div class="checkoutErrorEmpty">No hay errores de checkout registrados desde el último reinicio del servidor.</div>';
-      return;
-    }
-    const readinessLabels = {
-      cartHasItems:"bolsa",
-      deliverySelections:"entrega por producto",
-      contact:"contacto",
-      citySelected:"ciudad",
-      addressPresent:"dirección",
-      deliveryQuote:"cotización",
-      stripeLoaded:"Stripe cargado",
-      cardComplete:"tarjeta completa",
-      stripeSynchronized:"Stripe sincronizado"
-    };
-    list.innerHTML = checkoutErrors.map(entry => {
-      const failed = Object.entries(entry.readiness || {})
-        .filter(([key,value]) => key !== "stripeUpdating" && !value)
-        .map(([key]) => readinessLabels[key] || key);
-      const time = new Date(entry.createdAt).toLocaleString("es-CO", { dateStyle:"medium", timeStyle:"short" });
-      return `<article class="checkoutErrorCard">
-        <div class="checkoutErrorTop"><span class="checkoutErrorReference">${escapeHtml(entry.reference || "SIN-CÓDIGO")}</span><span class="checkoutErrorTime">${escapeHtml(time)}</span></div>
-        <span class="checkoutErrorStage">${escapeHtml(entry.stage || "checkout.unknown")}</span>
-        <div class="checkoutErrorMessage">${escapeHtml(entry.message || "Error de checkout")}</div>
-        <div class="checkoutErrorMeta">${escapeHtml(entry.code || "CHECKOUT_FAILED")} · ${Number(entry.itemCount || 0)} producto(s) · ${money(entry.totalCop || 0)} · ${escapeHtml(entry.deliveryMethod || "sin entrega")}</div>
-        ${failed.length ? `<div class="checkoutErrorFailed">Falló: ${failed.map(escapeHtml).join(", ")}</div>` : ""}
-      </article>`;
-    }).join("");
-  }
-
-  async function loadCheckoutErrors(){
-    const button = $("refreshCheckoutErrors");
-    if(button) button.disabled = true;
-    try{
-      const result = await apiRequest("/api/checkout/errors");
-      checkoutErrors = Array.isArray(result.errors) ? result.errors : [];
-      renderCheckoutErrors();
-    }catch(error){
-      showToast(error?.message || "No pudimos cargar el log de checkout.");
-    }finally{
-      if(button) button.disabled = false;
-    }
   }
 
   /* ============================================================
@@ -4416,12 +4338,6 @@ if(
 
   loadRealInventory();
 }
-if(
-  tab ===
-  "errors"
-){
-  loadCheckoutErrors();
-}
           };
 
       }
@@ -4455,8 +4371,6 @@ if(
           "add"
         );
       };
-
-  $("refreshCheckoutErrors").onclick = loadCheckoutErrors;
 
   $("cancelAddProduct")
     .onclick =
@@ -6562,8 +6476,6 @@ function renderInventory(){
     renderInventory();
 
     renderOrders();
-
-    renderCheckoutErrors();
 
   }
 

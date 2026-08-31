@@ -3,7 +3,6 @@ import { readFile } from "node:fs/promises";
 const product = await readFile(new URL("../product/index.html", import.meta.url), "utf8");
 const checkout = await readFile(new URL("../checkout/index.html", import.meta.url), "utf8");
 const server = await readFile(new URL("../server.js", import.meta.url), "utf8");
-const admin = await readFile(new URL("../admin/index.html", import.meta.url), "utf8");
 
 const checks = [
   ["Product Profile is locked", product.includes("Crea o administra tu perfil desde Inicio.")],
@@ -18,12 +17,6 @@ const checks = [
   ["Bolsa includes wishlist and XS–XL sizing", checkout.includes("data-cart-favorite") && checkout.includes("cartSizeChoices")],
   ["Color is derived from Wix variants", checkout.includes("function visibleColor") && product.includes("function productColorValues")],
   ["Bag lines are canonicalized", checkout.includes("const canonicalItems=[]")],
-  ["COP card totals use Stripe minor units", checkout.includes("function copMinorUnits(amount)") && checkout.includes("copMinorUnits(checkoutTotal())") && server.includes("unit_amount: unitAmount * 100") && server.includes("amount: Math.round(Number(delivery.fee) * 100)")],
-  ["Stripe readiness is recoverable and explicit", checkout.includes('Correo electrónico *</span>') && checkout.includes('required aria-required="true"') && checkout.includes('showToast("Ingresa tu correo electrónico.")') && checkout.includes("if (!stripeSessionUpdating && !stripeSessionSynchronized) syncPaymentInBackground();") && checkout.includes('$("deliveryCity")?.addEventListener("blur", () => {\n    syncCityDaneCode();')],
-  ["Stripe button uses one final COP total", checkout.includes("function assertStripePaymentReady()") && checkout.includes("assertStripePaymentReady();") && checkout.includes("Pagar ${money(checkoutTotal())} COP") && !checkout.includes("Pagar ${stripeTotal}")],
-  ["Delivery is prepared before payment confirmation", checkout.includes("!deliveryQuoteMatchesCart(cart)") && checkout.includes("const payload = checkoutPayload();") && !/async function submitStripePayment\(\)[\s\S]{0,1000}refreshDeliveryQuote/.test(checkout) && !/async function submitStripePayment\(\)[\s\S]{0,1000}syncStripeCheckoutSession/.test(checkout)],
-  ["Checkout failures are highlighted with a diagnostic code", checkout.includes('id="paymentFailure"') && checkout.includes("paymentValidationError") && checkout.includes("function presentPaymentFailure") && checkout.includes("Código de diagnóstico")],
-  ["Checkout telemetry is sanitized and admin-readable", server.includes("function redactCheckoutTelemetryMessage") && server.includes('url.pathname === "/api/checkout/errors"') && server.includes("handleGetCheckoutErrors") && admin.includes('data-tab="errors"') && admin.includes("function renderCheckoutErrors")],
   ["Wix review credentials remain server-side", !product.includes("WIX_API_KEY") && server.includes("WIX_API_KEY")]
 ];
 

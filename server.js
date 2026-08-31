@@ -1392,8 +1392,15 @@ function fullColombiaAddress(street, city, state = "Bolívar", postalCode = "") 
   return [street, city, state, postalCode, "Colombia"].filter(Boolean).join(", ");
 }
 
+function normalizeColombianStreetAddress(value) {
+  return safeText(value, 180)
+    .replace(/^\s*(?:kr|cra|cr|carrera)\.?\s*/i, "Carrera ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function completeDeliveryStreet(delivery = {}) {
-  const explicitLine = safeText(delivery?.addressLine1, 180);
+  const explicitLine = normalizeColombianStreetAddress(delivery?.addressLine1);
   if (!explicitLine) return safeText(delivery?.address, 250);
   const neighborhood = safeText(delivery?.neighborhood, 100);
   const complement = safeText(delivery?.complement, 120);
@@ -1785,8 +1792,15 @@ async function calculateDeliveryQuote(body, lines = []) {
 
 async function handleDeliveryQuote(request, response) {
   const body = await readBody(request);
-  const quote = await calculateDeliveryQuote(body);
-  sendJson(response, 200, { ok: true, quote });
+  try {
+    const quote = await calculateDeliveryQuote(body);
+    sendJson(response, 200, { ok: true, quote });
+  } catch (error) {
+    if (error instanceof CartItemUnavailableError || error instanceof ProntoLocationUnavailableError) {
+      throw error;
+    }
+    sendError(response, 422, safeText(error?.message, 300) || "No pudimos calcular el envío con Envia.");
+  }
 }
 
 async function handleDeliveryCities(_request, response, url) {

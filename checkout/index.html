@@ -522,6 +522,8 @@ img{display:block;max-width:100%}
   font-size:18px;
   font-weight:600
 }
+.deliverySummaryTitle{display:flex;align-items:center;gap:8px}
+.bagDeliveryInfoButton{width:22px;height:22px;border:1px solid rgba(0,0,0,.35);border-radius:50%;display:grid;place-items:center;font-family:Georgia,serif;font-size:11px;line-height:1}
 .summaryTotalValue{
   font-size:15px;
   font-weight:800
@@ -1182,9 +1184,9 @@ img{display:block;max-width:100%}
 
         <section id="bagDeliverySummary" class="summaryCard glassCard" aria-label="Entrega de tu pedido" hidden>
           <div class="deliverySummaryHeader">
-            <div>
+            <div class="deliverySummaryTitle">
               <div class="summaryTotalLabel">Entrega de tu pedido</div>
-              <button id="bagDeliveryInfoButton" class="editDelivery" type="button">Ver tipos de entrega</button>
+              <button id="bagDeliveryInfoButton" class="bagDeliveryInfoButton" type="button" aria-label="Ver tipos de entrega">i</button>
             </div>
             <span id="deliveryGarmentCount" class="deliveryGarmentCount">0 prendas</span>
           </div>
@@ -1540,10 +1542,11 @@ img{display:block;max-width:100%}
 
   function deliverySummaryLabel(cart = readCart()) {
     const profile = checkoutFulfillmentProfile(cart);
+    const dates = deliveryDateRanges();
     const labels = [];
     if (profile.hasPronto) labels.push(selectedDelivery === "moto" ? "Pronto a domicilio · 24–48 h" : "Pronto: Recoger en punto · 24–48 h");
-    if (profile.hasFast) labels.push("Rápido Nacional · 4–7 días");
-    if (profile.hasShip) labels.push("Libéralo · 14–28 días");
+    if (profile.hasFast) labels.push(`Rápido Nacional · ${dates.fast}`);
+    if (profile.hasShip) labels.push(`Libéralo · ${dates.ship}`);
     return labels.join(" + ") || "Entrega";
   }
 
@@ -1583,6 +1586,7 @@ img{display:block;max-width:100%}
 
   function selectedShipmentChargeRows(cart = readCart()) {
     const profile = checkoutFulfillmentProfile(cart);
+    const dates = deliveryDateRanges();
     const quoteReady = deliveryQuoteMatchesCart(cart);
     const groups = quoteReady && Array.isArray(deliveryQuote?.groups) ? deliveryQuote.groups : [];
     const rows = [];
@@ -1603,7 +1607,7 @@ img{display:block;max-width:100%}
       const quote = groups.find(group => group?.type === "R");
       rows.push({
         key: "R",
-        label: "Rápido Nacional · 4–7 días",
+        label: `Rápido Nacional · ${dates.fast}`,
         fee: Number(quote?.fee || 0),
         resolved: Boolean(quote),
         pending: "Se calcula con Envia"
@@ -1613,7 +1617,7 @@ img{display:block;max-width:100%}
       const quote = groups.find(group => group?.type === "L");
       rows.push({
         key: "L",
-        label: "Libéralo · 14–28 días",
+        label: `Libéralo · ${dates.ship}`,
         fee: Number(quote?.fee || 0),
         resolved: Boolean(quote),
         pending: "Se calcula con Envia"
@@ -1814,6 +1818,45 @@ img{display:block;max-width:100%}
       currency: "COP",
       maximumFractionDigits: 0
     }).format(Number(amount || 0));
+  }
+
+  const DELIVERY_MONTH_ABBREVIATIONS = [
+    "ene.", "feb.", "mar.", "abr.", "may.", "jun.",
+    "jul.", "ago.", "sep.", "oct.", "nov.", "dic."
+  ];
+
+  function deliveryDateRanges(now = new Date()) {
+    const parts = Object.fromEntries(
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Bogota",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      }).formatToParts(now).filter(part => part.type !== "literal").map(part => [part.type, part.value])
+    );
+    const base = new Date(Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day)));
+    const addDays = days => {
+      const date = new Date(base);
+      date.setUTCDate(date.getUTCDate() + days);
+      return date;
+    };
+    const formatRange = (startDays, endDays) => {
+      const start = addDays(startDays);
+      const end = addDays(endDays);
+      const startDay = start.getUTCDate();
+      const endDay = end.getUTCDate();
+      const startMonth = DELIVERY_MONTH_ABBREVIATIONS[start.getUTCMonth()];
+      const endMonth = DELIVERY_MONTH_ABBREVIATIONS[end.getUTCMonth()];
+      const startYear = start.getUTCFullYear();
+      const endYear = end.getUTCFullYear();
+      if (startYear !== endYear) return `${startDay} ${startMonth} ${startYear}–${endDay} ${endMonth} ${endYear}`;
+      if (start.getUTCMonth() !== end.getUTCMonth()) return `${startDay} ${startMonth}–${endDay} ${endMonth}`;
+      return `${startDay}–${endDay} ${startMonth}`;
+    };
+    return {
+      fast: formatRange(4, 7),
+      ship: formatRange(14, 28)
+    };
   }
 
   function showToast(message) {
@@ -2246,10 +2289,11 @@ img{display:block;max-width:100%}
       : selectedDelivery==="moto"
         ? "24–48 h · Ver cálculo al ingresar la dirección"
         : "Elige recoger en punto o moto";
+    const dates=deliveryDateRanges();
     const groups=[
       {mode:"pickup",label:prontoLabel,time:prontoTime},
-      {mode:"fast",label:"Rápido Nacional",time:"4–7 días · Ver cálculo al ingresar la dirección"},
-      {mode:"ship",label:"Libéralo",time:"14–28 días · Ver cálculo al ingresar la dirección"}
+      {mode:"fast",label:`Rápido Nacional · ${dates.fast}`,time:"Ver cálculo al ingresar la dirección"},
+      {mode:"ship",label:`Libéralo · ${dates.ship}`,time:"Ver cálculo al ingresar la dirección"}
     ].filter(group=>counts[group.mode]>0);
     const garmentCount=cart.items.reduce((total,item)=>total+Math.max(1,Math.floor(Number(item.quantity||1))),0);
     $("bagDeliverySummary").hidden=groups.length===0;
@@ -3099,7 +3143,8 @@ img{display:block;max-width:100%}
             : "Libéralo";
     }
     if ($("promiseTime")) {
-      const nationalPromises = [profile.hasFast ? "Rápido Nacional · 4–7 días" : "", profile.hasShip ? "Libéralo · 14–28 días" : ""].filter(Boolean);
+      const dates = deliveryDateRanges();
+      const nationalPromises = [profile.hasFast ? `Rápido Nacional · ${dates.fast}` : "", profile.hasShip ? `Libéralo · ${dates.ship}` : ""].filter(Boolean);
       $("promiseTime").textContent = profile.hasPronto && profile.hasNational
         ? `Pronto Cartagena + ${nationalPromises.join(" + ")}`
         : profile.hasPronto
@@ -4291,6 +4336,32 @@ img{display:block;max-width:100%}
   });
 
   window.addEventListener("cajamoda:cart-updated", renderCart);
+
+  let deliveryDateRefreshTimer = 0;
+  function scheduleDeliveryDateRefresh() {
+    clearTimeout(deliveryDateRefreshTimer);
+    const parts = Object.fromEntries(
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Bogota",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hourCycle: "h23"
+      }).formatToParts(new Date()).filter(part => part.type !== "literal").map(part => [part.type, part.value])
+    );
+    const elapsed = (Number(parts.hour) * 3600) + (Number(parts.minute) * 60) + Number(parts.second);
+    deliveryDateRefreshTimer = setTimeout(() => {
+      renderCart();
+      scheduleDeliveryDateRefresh();
+    }, ((24 * 3600) - elapsed + 1) * 1000);
+  }
+  window.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      renderCart();
+      scheduleDeliveryDateRefresh();
+    }
+  });
+  scheduleDeliveryDateRefresh();
 
   document.fonts?.ready?.then(
     syncPanelHeight

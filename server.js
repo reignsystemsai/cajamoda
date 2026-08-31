@@ -1491,7 +1491,7 @@ function locationNamesMatch(left, right) {
 
 async function validateDeliveryMunicipality(delivery = {}) {
   const daneCode = safeText(delivery?.cityDaneCode, 8);
-  if (!daneCode) return null;
+  if (!daneCode) throw new Error("Selecciona una ciudad o municipio válido.");
   const municipality = (await colombiaMunicipalities())
     .find(item => safeText(item?.daneCode, 8) === daneCode);
   if (!municipality) throw new Error("El municipio seleccionado no es válido.");
@@ -1642,10 +1642,8 @@ async function quoteNationalDelivery(delivery, customer, declaredValue) {
   const city = safeText(delivery?.city, 100);
   const state = safeText(delivery?.state, 5).toUpperCase();
   const street = completeDeliveryStreet(delivery);
-  const neighborhood = safeText(delivery?.neighborhood, 100);
   const postalCode = safeText(delivery?.postalCode, 20);
   if (!city || !state || !street) throw new Error("Completa la ciudad, departamento y dirección de entrega.");
-  if (!neighborhood) throw new Error("Ingresa el barrio de entrega.");
   const municipality = await validateDeliveryMunicipality(delivery);
   const located = await locateColombiaCity(municipality?.name || city, state);
   const selectedAddress = await validateSelectedGoogleAddress(delivery);

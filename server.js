@@ -1642,8 +1642,10 @@ async function quoteNationalDelivery(delivery, customer, declaredValue) {
   const city = safeText(delivery?.city, 100);
   const state = safeText(delivery?.state, 5).toUpperCase();
   const street = completeDeliveryStreet(delivery);
+  const neighborhood = safeText(delivery?.neighborhood, 100);
   const postalCode = safeText(delivery?.postalCode, 20);
   if (!city || !state || !street) throw new Error("Completa la ciudad, departamento y dirección de entrega.");
+  if (!neighborhood) throw new Error("Ingresa el barrio de entrega.");
   const municipality = await validateDeliveryMunicipality(delivery);
   const located = await locateColombiaCity(municipality?.name || city, state);
   const selectedAddress = await validateSelectedGoogleAddress(delivery);

@@ -1627,7 +1627,12 @@ img{display:block;max-width:100%}
       const label = document.createElement("span");
       label.textContent = charge.label;
       const amount = document.createElement("span");
-      amount.textContent = charge.resolved ? money(charge.fee) : charge.pending;
+      const bagNeedsAddress = containerId === "bagShipmentCharges" && charge.key !== "pickup";
+      amount.textContent = bagNeedsAddress
+        ? "Ver cálculo al ingresar la dirección"
+        : charge.resolved
+          ? money(charge.fee)
+          : charge.pending;
       if (containerId !== "nequiShipmentCharges") amount.className = "summaryValue";
       row.append(label, amount);
       container.append(row);
@@ -1676,6 +1681,10 @@ img{display:block;max-width:100%}
       .filter(charge => charge.resolved)
       .reduce((sum, charge) => sum + Math.max(0, Number(charge.fee || 0)), 0);
     const total = subtotal + deliveryFee;
+    const bagKnownDeliveryFee = chargeRows
+      .filter(charge => charge.key === "pickup" && charge.resolved)
+      .reduce((sum, charge) => sum + Math.max(0, Number(charge.fee || 0)), 0);
+    const bagTotal = subtotal + bagKnownDeliveryFee;
     const quoteReady = deliveryQuoteMatchesCart(cart) &&
       deliveryPlanSelectionsComplete(cart) &&
       chargeRows.length > 0 &&
@@ -1683,7 +1692,7 @@ img{display:block;max-width:100%}
     const profile = checkoutFulfillmentProfile(cart);
     if ($("subtotalValue")) $("subtotalValue").textContent = money(subtotal);
     if ($("totalValue")) $("totalValue").textContent = money(total);
-    if ($("bagTotalValue")) $("bagTotalValue").textContent = money(total);
+    if ($("bagTotalValue")) $("bagTotalValue").textContent = money(bagTotal);
     if ($("headerTotal")) $("headerTotal").textContent = money(total);
     if ($("nequiAmount")) $("nequiAmount").textContent = `${money(total)} COP`;
     if ($("nequiSubtotal")) $("nequiSubtotal").textContent = money(subtotal);
@@ -2222,19 +2231,15 @@ img{display:block;max-width:100%}
       if(group?.type==="R"){nationalQuoteFees.fast=Number(group.fee||0)}
       if(group?.type==="L"){nationalQuoteFees.ship=Number(group.fee||0)}
     });
-    const prontoQuote=(Array.isArray(deliveryQuote?.groups)?deliveryQuote.groups:[])
-      .find(group=>group?.fulfillment==="pronto");
     const prontoTime=selectedDelivery==="pickup"
       ? `Recoger en punto · ${money(PICKUP_FEE_COP)}`
       : selectedDelivery==="moto"
-        ? prontoQuote
-          ? `Moto · ${money(Number(prontoQuote.fee||0))}`
-          : "Moto · Se calcula con la dirección"
+        ? "Moto · Ver cálculo al ingresar la dirección"
         : "Elige recoger en punto o moto";
     const groups=[
       {mode:"pickup",label:"Pronto",time:prontoTime},
-      {mode:"fast",label:"Rápido Nacional",time:Number.isFinite(nationalQuoteFees.fast)?`4–7 días · ${money(nationalQuoteFees.fast)}`:"4–7 días · Se calcula con Envia"},
-      {mode:"ship",label:"Libéralo",time:Number.isFinite(nationalQuoteFees.ship)?`14–28 días · ${money(nationalQuoteFees.ship)}`:"14–28 días · Se calcula con Envia"}
+      {mode:"fast",label:"Rápido Nacional",time:"4–7 días · Ver cálculo al ingresar la dirección"},
+      {mode:"ship",label:"Libéralo",time:"14–28 días · Ver cálculo al ingresar la dirección"}
     ].filter(group=>counts[group.mode]>0);
     const garmentCount=cart.items.reduce((total,item)=>total+Math.max(1,Math.floor(Number(item.quantity||1))),0);
     $("bagDeliverySummary").hidden=groups.length===0;

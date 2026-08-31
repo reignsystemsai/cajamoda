@@ -3975,8 +3975,7 @@ img{display:block;max-width:100%}
     button.onclick = () => {
       if (!checkoutFulfillmentProfile().hasPronto) return;
       selectedDelivery = button.dataset.prontoDelivery;
-      syncDeliveryControls();
-      renderBagDeliverySummary();
+      renderCart();
       syncBillingAddressMode();
       scheduleDeliveryQuote();
       syncPanelHeight();

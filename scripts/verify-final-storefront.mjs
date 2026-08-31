@@ -17,6 +17,7 @@ const checks = [
   ["Bolsa includes wishlist and XS–XL sizing", checkout.includes("data-cart-favorite") && checkout.includes("cartSizeChoices")],
   ["Color is derived from Wix variants", checkout.includes("function visibleColor") && product.includes("function productColorValues")],
   ["Bag lines are canonicalized", checkout.includes("const canonicalItems=[]")],
+  ["COP card totals use Stripe minor units", checkout.includes("function copMinorUnits(amount)") && checkout.includes("copMinorUnits(readCart().total)") && checkout.includes("copMinorUnits(checkoutTotal())") && server.includes("unit_amount: unitAmount * 100") && server.includes("unit_amount: Math.round(Number(delivery.fee) * 100)")],
   ["Wix review credentials remain server-side", !product.includes("WIX_API_KEY") && server.includes("WIX_API_KEY")]
 ];
 

@@ -1300,8 +1300,8 @@ img{display:block;max-width:100%}
         </section>
 
         <h2 class="paymentSectionTitle">Finaliza tu pago</h2>
-        <section id="paymentGlass" class="paymentGlass">
-          <div id="nequiPane" class="nequiPane">
+        <section id="paymentGlass" class="paymentGlass isStripe">
+          <div id="nequiPane" class="nequiPane" hidden>
             <div class="nequiSteps">
               <div class="nequiStepsTitle">Paga con Nequi en 3 pasos</div>
               <ol>
@@ -1333,7 +1333,7 @@ img{display:block;max-width:100%}
             <p class="pendingNote">Verificaremos el pago antes de confirmar tu pedido.</p>
           </div>
 
-          <div id="stripePane" class="stripePane" hidden>
+          <div id="stripePane" class="stripePane">
             <div class="stripeTop">
               <div class="stripeTitle">Tarjeta</div>
               <div class="stripeSecure"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Pago seguro</div>
@@ -1482,7 +1482,7 @@ img{display:block;max-width:100%}
     "Sumapaz", "Teusaquillo", "Tunjuelito", "Usaquén", "Usme"
   ];
   let selectedDelivery = "";
-  let selectedPayment = "nequi";
+  let selectedPayment = "stripe";
   let nequiPhone = "";
   let stripePublishableKey = "";
   let stripeClient = null;
@@ -2291,7 +2291,8 @@ img{display:block;max-width:100%}
   function syncProntoLocationWarnings(cart = readCart()) {
     const city = normalizeChoice($("deliveryCity")?.value);
     const departmentSelected = Boolean($("deliveryDepartment")?.value);
-    const outsideCartagena = Boolean(city) && city !== "cartagena";
+    const isCartagena = city === "cartagena" || city === "cartagena de indias";
+    const outsideCartagena = Boolean(city) && !isCartagena;
     const wrongDepartment = departmentSelected && !selectedDepartmentIsBolivar();
     incompatibleProntoItemIds = new Set(
       outsideCartagena || wrongDepartment
@@ -3980,7 +3981,16 @@ img{display:block;max-width:100%}
       };
     });
 
-  $("toDeliveryButton").onclick = () => goToStep("payment");
+  $("toDeliveryButton").onclick = async () => {
+    selectedPayment = "stripe";
+    $("nequiPane").hidden = true;
+    $("stripePane").hidden = false;
+    $("paymentGlass").classList.add("isStripe");
+    goToStep("payment");
+    syncBillingAddressMode();
+    await initializeStripePaymentElement();
+    syncPanelHeight();
+  };
 
   $("guestCheckoutButton")?.addEventListener("click", () => {
     $("email").value = "";
@@ -4003,10 +4013,16 @@ img{display:block;max-width:100%}
     button.onclick = () => {
       if (!checkoutFulfillmentProfile().hasPronto) return;
       selectedDelivery = button.dataset.prontoDelivery;
+      const scrollToPayment = selectedDelivery === "moto";
       renderCart();
       syncBillingAddressMode();
       scheduleDeliveryQuote();
       syncPanelHeight();
+      if (scrollToPayment) {
+        requestAnimationFrame(() => {
+          $("toDeliveryButton")?.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+      }
     };
   });
 

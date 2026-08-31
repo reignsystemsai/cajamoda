@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#faf9f7">
+  <title>Finalizar compra · CajaModa</title>
+  <link rel="stylesheet" href="./checkout.css">
+  <script src="https://js.stripe.com/clover/stripe.js"></script>
+</head>
+<body>
+  <header class="siteHeader">
+    <a class="brand" href="/" aria-label="CajaModa inicio">CAJAMODA <small>COLOMBIA</small></a>
+    <span class="secure">Pago seguro</span>
+  </header>
+
+  <main class="checkout" id="checkoutRoot">
+    <section class="intro">
+      <p class="eyebrow">FINALIZAR COMPRA</p>
+      <h1>Revisa, elige la entrega y paga.</h1>
+      <p>El valor de la entrega se calcula antes de habilitar el pago.</p>
+    </section>
+
+    <div class="layout">
+      <div class="forms">
+        <section class="panel" id="productsPanel">
+          <div class="panelHeading"><span>1</span><div><h2>Tu bolsa</h2><p id="itemCount"></p></div></div>
+          <div id="cartItems" class="cartItems"></div>
+          <div id="prontoChoice" class="choiceBlock" hidden>
+            <h3>Productos Pronto</h3>
+            <div class="choiceGrid">
+              <button type="button" class="choice" data-pronto="pickup"><strong>Recoger</strong><small>En el punto CajaModa</small></button>
+              <button type="button" class="choice" data-pronto="moto"><strong>Moto</strong><small>Entrega en Cartagena</small></button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" id="contactPanel">
+          <div class="panelHeading"><span>2</span><div><h2>Información de contacto</h2><p>Para confirmar y entregar tu pedido.</p></div></div>
+          <div class="fieldGrid two">
+            <label>Nombre<input id="firstName" autocomplete="given-name" required></label>
+            <label>Apellido<input id="lastName" autocomplete="family-name" required></label>
+            <label>Correo electrónico<input id="email" type="email" autocomplete="email" required></label>
+            <label>Celular<input id="phone" type="tel" inputmode="tel" autocomplete="tel" required></label>
+          </div>
+        </section>
+
+        <section class="panel" id="deliveryPanel">
+          <div class="panelHeading"><span>3</span><div><h2>Entrega</h2><p>Envia calcula este valor automáticamente.</p></div></div>
+          <div id="deliveryFields" class="fieldGrid two">
+            <label>Departamento<select id="department" required><option value="">Selecciona</option></select></label>
+            <label>Ciudad<select id="city" required disabled><option value="">Selecciona</option></select></label>
+            <input id="cityDaneCode" type="hidden">
+            <label class="wide">Dirección<input id="address" autocomplete="shipping street-address" placeholder="Carrera 13 #60-20" required></label>
+            <label>Barrio<input id="neighborhood" autocomplete="shipping address-level3"></label>
+            <label>Código postal<input id="postalCode" inputmode="numeric" autocomplete="shipping postal-code"></label>
+            <label class="wide">Apartamento, conjunto o referencia<input id="complement" autocomplete="shipping address-line2"></label>
+          </div>
+          <div class="inlineStatus" id="deliveryStatus">Selecciona la entrega de cada producto.</div>
+        </section>
+
+        <section class="panel" id="billingPanel">
+          <div class="panelHeading"><span>4</span><div><h2>Dirección de facturación</h2><p>Se enviará a Stripe con el pago.</p></div></div>
+          <label class="check"><input id="billingSame" type="checkbox" checked><span>Es igual a la dirección de entrega</span></label>
+          <div id="billingFields" class="fieldGrid two" hidden>
+            <label class="wide">Dirección<input id="billingAddress" autocomplete="billing street-address"></label>
+            <label>Ciudad<input id="billingCity" autocomplete="billing address-level2"></label>
+            <label>Departamento<input id="billingDepartment" autocomplete="billing address-level1"></label>
+            <label>Código postal<input id="billingPostalCode" autocomplete="billing postal-code"></label>
+          </div>
+        </section>
+
+        <section class="panel" id="paymentPanel">
+          <div class="panelHeading"><span>5</span><div><h2>Pago</h2><p>El cobro usa el total confirmado que aparece en el resumen.</p></div></div>
+          <div class="paymentTabs" role="tablist">
+            <button type="button" class="paymentTab active" data-payment="card">Tarjeta</button>
+            <button type="button" class="paymentTab" data-payment="nequi">Nequi</button>
+          </div>
+          <div id="cardPayment">
+            <div class="stripeBox" id="stripeBox"><div id="paymentElement"></div></div>
+            <div class="inlineStatus" id="paymentStatus">Completa los pasos anteriores para preparar el pago.</div>
+          </div>
+          <div id="nequiPayment" hidden>
+            <p>Envía el total al número <strong id="nequiNumber">—</strong> y escribe la referencia del comprobante.</p>
+            <label>Referencia Nequi<input id="nequiReference" inputmode="numeric"></label>
+          </div>
+          <div class="errorBox" id="checkoutError" hidden><strong id="errorTitle">No pudimos continuar</strong><span id="errorMessage"></span><small id="errorCode"></small></div>
+        </section>
+      </div>
+
+      <aside class="summary panel" aria-label="Resumen del pedido">
+        <h2>Resumen</h2>
+        <div class="summaryRow"><span>Productos</span><strong id="subtotal">—</strong></div>
+        <div class="summaryRow"><span>Entrega</span><strong id="deliveryFee">Por calcular</strong></div>
+        <div class="summaryRow total"><span>Total</span><strong id="finalTotal">—</strong></div>
+        <button id="payButton" class="payButton" type="button" disabled><span id="payLabel">Pagar</span><i id="paySpinner" hidden></i></button>
+        <button id="nequiButton" class="payButton" type="button" hidden disabled>Registrar pago Nequi</button>
+        <p class="buttonNote">Este botón solo confirma el pago preparado.</p>
+        <a class="back" href="/cart/">Volver a la bolsa</a>
+      </aside>
+    </div>
+  </main>
+  <script type="module" src="./checkout.js"></script>
+</body>
+</html>

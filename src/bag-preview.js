@@ -976,7 +976,7 @@
       }
 
       location.href =
-        "/checkout/";
+        "/checkout-3/";
     };
 
   const bagSelector = [

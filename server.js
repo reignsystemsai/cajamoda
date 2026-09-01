@@ -1816,7 +1816,9 @@ async function quoteNationalDelivery(delivery, customer, declaredValue) {
   const street = completeDeliveryStreet(delivery);
   const postalCode = safeText(delivery?.postalCode, 20);
   if (!city || !state || !street) throw new Error("Completa la ciudad, departamento y dirección de entrega.");
-  const municipality = await validateDeliveryMunicipality(delivery);
+  const municipality = safeText(delivery?.cityDaneCode, 8)
+    ? await validateDeliveryMunicipality(delivery)
+    : null;
   const located = await locateColombiaCity(municipality?.name || city, state);
   const selectedAddress = await validateSelectedGoogleAddress(delivery);
   const verifiedPostalCode = await validateColombiaPostalCode(

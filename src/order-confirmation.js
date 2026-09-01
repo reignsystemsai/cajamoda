@@ -31,6 +31,31 @@ if (confirmationQuery.has("stripeSessionId") || confirmationQuery.has("paymentIn
 }
 
 let confirmation = null;
+const shareButtons = Array.from(document.querySelectorAll("[data-share-channel]"));
+
+function displayOrderNumber(order) {
+  const wixNumber = String(order?.number ?? "").replace(/^#/, "").trim();
+  const stableId = String(order?.id ?? "").replace(/[^a-z0-9]/gi, "");
+  const value = wixNumber && wixNumber !== "0"
+    ? wixNumber
+    : stableId
+      ? stableId.slice(-8).toUpperCase()
+      : "SIN-ID";
+  return value.startsWith("CM-") ? value : `CM-${value}`;
+}
+
+function renderOrderNumber(order) {
+  $("orderNumber").textContent = `Pedido #${displayOrderNumber(order)}`;
+}
+
+function setReferralAvailable(available) {
+  $("shareIcons").hidden = !available;
+  shareButtons.forEach(button => { button.disabled = !available; });
+}
+
+function setShareBusy(busy) {
+  shareButtons.forEach(button => { button.disabled = busy; });
+}
 
 function setStatus(message, error = false) {
   $("statusText").textContent = message;
@@ -106,11 +131,11 @@ function renderShipmentCards(shipments) {
 async function loadConfirmation() {
   if (nequiOrderNumber) {
     $("confirmationTitle").textContent = "PEDIDO RECIBIDO";
-    $("orderNumber").textContent = `Pedido #${nequiOrderNumber}`;
+    renderOrderNumber({ number: nequiOrderNumber });
     $("paymentStatus").textContent = "Pago Nequi por confirmar";
     $("deliveryMethod").textContent = "Entrega CajaModa";
     $("deliveryMessage").textContent = "Confirmaremos el pago y te enviaremos la información de entrega.";
-    $("shareButton").hidden = true;
+    setReferralAvailable(false);
     setStatus("Tu pedido está reservado mientras verificamos el pago.");
     try { localStorage.removeItem("cajamoda-pending-nequi-order"); } catch {}
     return;
@@ -127,11 +152,11 @@ async function loadConfirmation() {
     confirmation = payload.order;
     renderShipmentCards(confirmation.shipments);
     $("confirmationTitle").textContent = confirmation.paid ? "COMPRA CONFIRMADA" : "PAGO AUTORIZADO";
-    $("orderNumber").textContent = `Pedido #${confirmation.number}`;
+    renderOrderNumber(confirmation);
     $("paymentStatus").textContent = confirmation.payment;
     $("deliveryMethod").textContent = confirmation.delivery?.method || "Entrega CajaModa";
     $("deliveryMessage").textContent = confirmation.delivery?.message || "Te enviaremos actualizaciones por correo.";
-    $("shareButton").hidden = true;
+    setReferralAvailable(Boolean(checkoutId));
     try { localStorage.removeItem("cajamoda-pending-stripe-intent"); } catch {}
     return;
   }
@@ -147,11 +172,11 @@ async function loadConfirmation() {
     confirmation = payload.order;
     renderShipmentCards(confirmation.shipments);
     $("confirmationTitle").textContent = confirmation.paid ? "COMPRA CONFIRMADA" : "PAGO AUTORIZADO";
-    $("orderNumber").textContent = `Pedido #${confirmation.number}`;
+    renderOrderNumber(confirmation);
     $("paymentStatus").textContent = confirmation.payment;
     $("deliveryMethod").textContent = confirmation.delivery?.method || "Entrega CajaModa";
     $("deliveryMessage").textContent = confirmation.delivery?.message || "Te enviaremos actualizaciones por correo.";
-    $("shareButton").hidden = true;
+    setReferralAvailable(Boolean(checkoutId));
     return;
   }
   if (!checkoutId) throw new Error("No encontramos el identificador de tu compra.");
@@ -166,18 +191,17 @@ async function loadConfirmation() {
   confirmation = payload.order;
   renderShipmentCards(confirmation.shipments);
   $("confirmationTitle").textContent = "COMPRA CONFIRMADA";
-  $("orderNumber").textContent = `Pedido #${confirmation.number}`;
+  renderOrderNumber(confirmation);
   $("paymentStatus").textContent = confirmation.payment;
   $("deliveryMethod").textContent = confirmation.delivery?.method || "Método de entrega confirmado";
   $("deliveryMessage").textContent = confirmation.delivery?.message || "Te enviaremos actualizaciones sobre tu pedido.";
-  $("shareButton").disabled = false;
-  $("shareButton").textContent = "Compartir descuento";
+  setReferralAvailable(true);
   try { localStorage.removeItem("cajamoda-pending-checkout"); } catch {}
 }
 
-async function createReferral() {
-  if (!confirmation) return;
-  $("shareButton").disabled = true;
+async function createReferral(channel) {
+  if (!confirmation || !checkoutId) return;
+  setShareBusy(true);
   setStatus("Preparando el descuento…");
 
   try {
@@ -189,22 +213,30 @@ async function createReferral() {
     const payload = await response.json();
     if (!response.ok || !payload?.ok) throw new Error(payload?.error || "No pudimos preparar el descuento.");
 
+    $("referralCode").hidden = false;
+    $("referralCode").textContent = `Código ${payload.code} · un solo uso`;
     const shareText = `Te regalo 10% en CajaModa. Usa el código ${payload.code}: ${payload.url}`;
-    if (navigator.share) {
+
+    if (channel === "whatsapp") {
+      window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, "_blank", "noopener,noreferrer");
+      setStatus(`Código ${payload.code} listo para compartir.`);
+    } else if (navigator.share) {
       await navigator.share({ title: "10% en CajaModa", text: shareText, url: payload.url });
-      setStatus("Descuento listo para tu amiga.");
+      setStatus(`Código ${payload.code} listo para tu amiga.`);
     } else {
       await navigator.clipboard.writeText(shareText);
-      setStatus("Enlace y código copiados.");
+      setStatus(`Código ${payload.code} y enlace copiados.`);
     }
   } catch (error) {
     if (error?.name !== "AbortError") setStatus(error?.message || "No pudimos compartir el descuento.", true);
   } finally {
-    $("shareButton").disabled = false;
+    setShareBusy(false);
   }
 }
 
-$("shareButton").addEventListener("click", createReferral);
+shareButtons.forEach(button => {
+  button.addEventListener("click", () => createReferral(button.dataset.shareChannel || ""));
+});
 
 loadConfirmation().catch(error => {
   $("confirmationTitle").textContent = "COMPRA RECIBIDA";

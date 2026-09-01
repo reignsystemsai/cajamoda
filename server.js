@@ -111,6 +111,7 @@ const googlePlaceDetailsCache = new Map();
 const DELIVERY_REFERENCE_CACHE_TTL = 24 * 60 * 60 * 1000;
 const GOOGLE_PLACE_CACHE_TTL = 30 * 60 * 1000;
 const stripeIntentSyncLocks = new Map();
+const stripeSessionSyncLocks = new Map();
 const nequiConfirmationLocks = new Map();
 const enviaLabelLocks = new Map();
 const enviaWebhookProcessing = new Set();
@@ -821,7 +822,11 @@ async function handleCreateStripeCheckout(request, response) {
     ui_mode: "elements",
     payment_method_types: ["card"],
     payment_intent_data: {
-      capture_method: stripeCaptureMethod(catalogLines)
+      capture_method: stripeCaptureMethod(catalogLines),
+      metadata: {
+        source: "cajamoda-checkout-session",
+        storeId: STORE_ID
+      }
     },
     line_items: lineItems,
     customer_email: customerEmail || undefined,
@@ -943,6 +948,13 @@ async function handleStripeConfirmation(request, response, url) {
     : null;
   const authorized = intent?.status === "requires_capture";
   const paid = intent?.status === "succeeded" || session.payment_status === "paid";
+  if (paid) {
+    try {
+      await syncCompletedStripeSession(session);
+    } catch (error) {
+      console.error(`[Stripe] Confirmation Wix synchronization failed for ${session.id}:`, error);
+    }
+  }
   sendJson(response, 200, {
     ok: true,
     order: {
@@ -1097,22 +1109,63 @@ async function decrementStripeInventory(lines) {
 }
 
 async function syncCompletedStripeSession(session) {
-  if (!wix) throw new Error("Wix no está configurado para recibir el pedido.");
-  if (session.payment_status !== "paid") return;
-  if (session?.metadata?.wixSync === "complete") return;
+  const existingSync = stripeSessionSyncLocks.get(session.id);
+  if (existingSync) return existingSync;
+  const sync = (async () => {
+    if (!wix) throw new Error("Wix no está configurado para recibir el pedido.");
+    if (session.payment_status !== "paid") return;
+    if (session?.metadata?.wixSync === "complete") return;
 
-  const lines = await getStripePurchasedLines(session);
-  const imported = await importStripeOrderIntoWix(session, lines);
-  if (imported.created) {
-    await decrementStripeInventory(lines);
-  }
-  await stripe.checkout.sessions.update(session.id, {
-    metadata: {
-      ...session.metadata,
-      wixSync: "complete",
-      wixOrderId: safeText(imported?.order?._id || imported?.order?.id, 80)
+    const lines = await getStripePurchasedLines(session);
+    const imported = await importStripeOrderIntoWix(session, lines);
+    if (imported.created) {
+      await decrementStripeInventory(lines);
     }
+    await stripe.checkout.sessions.update(session.id, {
+      metadata: {
+        ...session.metadata,
+        wixSync: "complete",
+        wixOrderId: safeText(imported?.order?._id || imported?.order?.id, 80)
+      }
+    });
+  })();
+  stripeSessionSyncLocks.set(session.id, sync);
+  try {
+    return await sync;
+  } finally {
+    stripeSessionSyncLocks.delete(session.id);
+  }
+}
+
+async function findCajaModaCheckoutSession(intentId) {
+  const result = await stripe.checkout.sessions.list({
+    payment_intent: intentId,
+    limit: 1
   });
+  return result.data.find(session =>
+    safeText(session?.metadata?.source, 80) === "cajamoda-storefront"
+  ) || null;
+}
+
+async function syncPendingStripeCheckoutSessions() {
+  if (!stripe || !wix) return;
+  const result = await stripe.checkout.sessions.list({
+    status: "complete",
+    created: { gte: Math.floor(Date.now() / 1000) - (30 * 24 * 60 * 60) },
+    limit: 100
+  });
+  const pending = result.data.filter(session =>
+    session.payment_status === "paid" &&
+    safeText(session?.metadata?.source, 80) === "cajamoda-storefront" &&
+    session?.metadata?.wixSync !== "complete"
+  );
+  for (const session of pending) {
+    try {
+      await syncCompletedStripeSession(session);
+    } catch (error) {
+      console.error(`[Stripe] Pending Wix synchronization failed for ${session.id}:`, error);
+    }
+  }
 }
 
 function encodedNationalDeliveryPlan(delivery) {
@@ -1346,6 +1399,12 @@ async function importStripeIntentIntoWix(intent, lines) {
 }
 
 async function syncSucceededStripeIntent(paymentIntent) {
+  const checkoutSession = await findCajaModaCheckoutSession(paymentIntent.id);
+  if (checkoutSession) {
+    const latestSession = await stripe.checkout.sessions.retrieve(checkoutSession.id);
+    await syncCompletedStripeSession(latestSession);
+    return;
+  }
   const existingSync = stripeIntentSyncLocks.get(paymentIntent.id);
   if (existingSync) return existingSync;
   const sync = (async () => {
@@ -5231,8 +5290,7 @@ async function getWixOrders() {
     );
 }
 
-function normalizeStripeAuthorization(intent) {
-  const lines = stripeIntentLines(intent);
+function normalizeStripeAuthorization(intent, lines = stripeIntentLines(intent)) {
   const deliveryMethod = safeText(intent?.metadata?.deliveryMethod, 20) || "pickup";
   return {
     id: intent.id,
@@ -5287,10 +5345,45 @@ function isCajaModaStripeIntent(intent) {
 
 async function getStripeAuthorizations() {
   if (!stripe) return [];
-  const result = await stripe.paymentIntents.list({ limit: 100 });
-  return result.data
+  const [intentResult, sessionResult] = await Promise.all([
+    stripe.paymentIntents.list({ limit: 100 }),
+    stripe.checkout.sessions.list({ status: "complete", limit: 100 })
+  ]);
+  const pendingById = new Map(
+    intentResult.data
+      .filter(intent => intent.status === "requires_capture")
+      .map(intent => [intent.id, intent])
+  );
+  const authorizations = intentResult.data
     .filter(intent => intent.status === "requires_capture" && isCajaModaStripeIntent(intent))
     .map(normalizeStripeAuthorization);
+  const included = new Set(authorizations.map(order => order.id));
+
+  for (const session of sessionResult.data) {
+    const intentId = typeof session?.payment_intent === "string"
+      ? session.payment_intent
+      : session?.payment_intent?.id;
+    const intent = pendingById.get(intentId);
+    if (
+      !intent ||
+      included.has(intent.id) ||
+      safeText(session?.metadata?.source, 80) !== "cajamoda-storefront"
+    ) continue;
+    const lines = await getStripePurchasedLines(session);
+    const customer = session?.customer_details || {};
+    authorizations.push(normalizeStripeAuthorization({
+      ...intent,
+      metadata: {
+        ...intent.metadata,
+        ...session.metadata,
+        customerName: safeText(session?.metadata?.customerName || customer?.name, 160),
+        customerPhone: safeText(session?.metadata?.customerPhone || customer?.phone, 80),
+        customerEmail: safeText(customer?.email || session?.customer_email, 250)
+      }
+    }, lines));
+    included.add(intent.id);
+  }
+  return authorizations;
 }
 
 async function handleCaptureStripeAuthorization(request, response, intentId) {
@@ -5300,11 +5393,19 @@ async function handleCaptureStripeAuthorization(request, response, intentId) {
   if (!/^pi_[A-Za-z0-9]+$/.test(intentId)) return sendError(response, 400, "La autorización no es válida.");
 
   let intent = await stripe.paymentIntents.retrieve(intentId);
-  if (!isCajaModaStripeIntent(intent)) return sendError(response, 403, "La autorización no pertenece a CajaModa.");
+  const checkoutSession = await findCajaModaCheckoutSession(intent.id);
+  if (!isCajaModaStripeIntent(intent) && !checkoutSession) {
+    return sendError(response, 403, "La autorización no pertenece a CajaModa.");
+  }
   if (intent.status === "requires_capture") intent = await stripe.paymentIntents.capture(intent.id);
   if (intent.status !== "succeeded") return sendError(response, 409, "Stripe no pudo capturar esta autorización.");
 
-  await syncSucceededStripeIntent(intent);
+  if (checkoutSession) {
+    const latestSession = await stripe.checkout.sessions.retrieve(checkoutSession.id);
+    await syncCompletedStripeSession(latestSession);
+  } else {
+    await syncSucceededStripeIntent(intent);
+  }
   sendJson(response, 200, { ok: true, status: intent.status });
 }
 
@@ -5315,7 +5416,10 @@ async function handleCancelStripeAuthorization(request, response, intentId) {
   if (!/^pi_[A-Za-z0-9]+$/.test(intentId)) return sendError(response, 400, "La autorización no es válida.");
 
   const intent = await stripe.paymentIntents.retrieve(intentId);
-  if (!isCajaModaStripeIntent(intent)) return sendError(response, 403, "La autorización no pertenece a CajaModa.");
+  const checkoutSession = await findCajaModaCheckoutSession(intent.id);
+  if (!isCajaModaStripeIntent(intent) && !checkoutSession) {
+    return sendError(response, 403, "La autorización no pertenece a CajaModa.");
+  }
   if (intent.status === "canceled") return sendJson(response, 200, { ok: true, status: intent.status });
   if (intent.status !== "requires_capture") return sendError(response, 409, "Esta autorización ya no se puede cancelar.");
 
@@ -5346,6 +5450,7 @@ async function handleGetOrders(
   }
 
   const session = getAuthorizedSession(request);
+  await syncPendingStripeCheckoutSessions();
   const [orderList, stripeAuthorizations] = await Promise.all([
     getWixOrders(),
     getStripeAuthorizations()

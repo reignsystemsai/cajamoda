@@ -2993,6 +2993,71 @@ img{
   .productQuickView .quickEditActions button{min-width:0}
   .productQuickView .quickEditActions .primaryButton{grid-column:1/-1}
 }
+
+/* Approved complete order workspace */
+#panel-orders .orderList{gap:12px!important}
+#panel-orders .orderCard{padding:0!important;overflow:hidden;border-radius:18px!important}
+#panel-orders .orderCardMain{
+  display:grid!important;
+  grid-template-columns:minmax(150px,.85fr) minmax(170px,1fr) minmax(250px,1.45fr) 105px 105px minmax(130px,.8fr)!important;
+  gap:18px!important;
+  align-items:center!important;
+  min-height:78px!important;
+  padding:14px 18px!important;
+  list-style:none;
+  cursor:pointer
+}
+#panel-orders .orderCardMain::-webkit-details-marker{display:none}
+.orderIdentity,.orderClientCell,.orderItemPreview,.orderPaymentCell,.orderStateCell{min-width:0}
+.orderNumber{font-size:13px!important;font-weight:800}
+.orderDate{margin-top:4px;font-size:10px!important;color:#777168}
+.orderClientCell strong,.orderItemCopy strong{display:block;overflow:hidden;color:#111;font-size:12px;white-space:nowrap;text-overflow:ellipsis}
+.orderClientCell span,.orderItemCopy span,.orderStateMeta{display:block;margin-top:4px;color:#777168;font-size:9px;line-height:1.35}
+.orderItemPreview{display:flex;align-items:center;gap:10px}
+.orderItemThumb,.orderItemThumbFallback{width:48px;height:58px;flex:0 0 48px;border-radius:10px;border:1px solid rgba(0,0,0,.08);background:#eee8de;object-fit:cover}
+.orderItemThumbFallback{display:grid;place-items:center;color:#8b8278;font-size:10px;font-weight:800}
+.orderPaymentCell{display:grid;gap:5px;justify-items:start}
+.orderMethodPill,.orderStatusPill{display:inline-flex!important;align-items:center;justify-content:center;width:max-content;min-width:0!important;padding:6px 10px!important;border-radius:999px;font-size:9px!important;font-weight:800}
+.orderMethodPill{border:1px solid rgba(0,0,0,.1);background:rgba(255,255,255,.72);color:#333}
+.orderMethodPill.nequi{border-color:rgba(77,11,183,.16);color:#4d0bb7}
+.orderPaymentState{color:#6f6961;font-size:9px;font-weight:650}
+.orderTotal{font-size:14px;font-weight:800;white-space:nowrap}
+.orderStateCell{justify-self:start}
+.orderStateMeta{white-space:normal}
+.orderExpanded{padding:0 18px 18px;border-top:1px solid rgba(0,0,0,.06)}
+.orderExpandedGrid{display:grid;grid-template-columns:1.05fr 1fr 1fr;gap:14px;padding-top:16px}
+.orderInfoPanel{min-width:0;padding:16px;border:1px solid rgba(0,0,0,.1);border-radius:15px;background:rgba(255,255,255,.56)}
+.orderInfoTitle{margin-bottom:13px;color:#28241f;font-size:10px;font-weight:800}
+.orderLineItem{display:grid;grid-template-columns:72px minmax(0,1fr);gap:13px;align-items:start}
+.orderLineItem + .orderLineItem{margin-top:13px;padding-top:13px;border-top:1px solid rgba(0,0,0,.07)}
+.orderLineItem .orderItemThumb,.orderLineItem .orderItemThumbFallback{width:72px;height:88px;flex-basis:72px}
+.orderLineDetails strong{display:block;font-size:12px}
+.orderLineDetails dl{display:grid;grid-template-columns:auto 1fr;gap:5px 8px;margin:10px 0 0;font-size:9px}
+.orderLineDetails dt{font-weight:750}.orderLineDetails dd{margin:0;color:#6f6961}
+.orderDeliveryPill{display:inline-flex;margin-top:10px;padding:6px 9px;border-radius:999px;background:#edf5e9;color:#2f6b31;font-size:9px;font-weight:800}
+.orderAddressName{font-size:12px;font-weight:800}
+.orderAddressLines{margin-top:10px;color:#625d56;font-size:10px;line-height:1.65}
+.orderAddressContact{margin-top:14px;color:#625d56;font-size:10px;line-height:1.55}
+.orderTrackingPrimary{font-size:12px;font-weight:800}
+.orderTrackingSecondary{margin-top:6px;color:#777168;font-size:10px;line-height:1.45}
+.orderOperationalActions{margin-top:14px}
+#panel-orders .orderActions{margin:0!important;border:0!important}
+#panel-orders .orderActions > summary{display:none!important}
+#panel-orders .orderTableHead{display:grid!important;grid-template-columns:minmax(150px,.85fr) minmax(170px,1fr) minmax(250px,1.45fr) 105px 105px minmax(130px,.8fr)!important;gap:18px!important;padding:10px 18px!important}
+@media(max-width:1180px) and (min-width:900px){
+  #panel-orders .orderCardMain,#panel-orders .orderTableHead{grid-template-columns:130px 145px minmax(205px,1.3fr) 88px 95px 115px!important;gap:10px!important}
+  .orderExpandedGrid{grid-template-columns:1fr 1fr}.orderInfoPanel:last-child{grid-column:1 / -1}
+}
+@media(max-width:899px){
+  #panel-orders .orderTableHead{display:none!important}
+  #panel-orders .orderCardMain{grid-template-columns:1fr auto!important;gap:10px!important;padding:14px!important}
+  #panel-orders .orderCardMain > *{grid-column:auto!important}
+  #panel-orders .orderItemPreview{grid-column:1 / -1!important}
+  #panel-orders .orderPaymentCell{justify-self:start}
+  #panel-orders .orderStateCell{justify-self:end}
+  .orderExpanded{padding:0 12px 12px}.orderExpandedGrid{grid-template-columns:1fr}
+}
+
 </style>
 
 </head>
@@ -4251,17 +4316,29 @@ function formatOrderDate(
     return value;
   }
 
-  return date
-    .toLocaleDateString(
-      "es-CO"
-    );
+  return new Intl.DateTimeFormat(
+    "es-CO",
+    {
+      day:"2-digit",
+      month:"short",
+      year:"numeric",
+      hour:"numeric",
+      minute:"2-digit"
+    }
+  )
+    .format(date)
+    .replace(",", " ·");
 }
 
 function displayOrderNumber(order){
   const wixNumber = String(order?.number ?? "").replace(/^#/, "").trim();
-  if(wixNumber && wixNumber !== "0") return wixNumber;
   const stableId = String(order?.id ?? "").replace(/[^a-z0-9]/gi, "");
-  return stableId ? stableId.slice(-8).toUpperCase() : "SIN-ID";
+  const value = wixNumber && wixNumber !== "0"
+    ? wixNumber
+    : stableId
+      ? stableId.slice(-8).toUpperCase()
+      : "SIN-ID";
+  return value.startsWith("CM-") ? value : `CM-${value}`;
 }
 
   /* ============================================================
@@ -6016,6 +6093,114 @@ function renderInventory(){
     `;
   }
 
+  function orderItemsForDisplay(order){
+    const items = Array.isArray(order?.items) ? order.items.filter(Boolean) : [];
+    if(items.length) return items;
+    return [{
+      name: order?.products || "Pedido registrado",
+      image: "",
+      sku: "",
+      size: "",
+      color: "",
+      delivery: order?.delivery || "",
+      quantity: 1
+    }];
+  }
+
+  function orderPaymentMethodLabel(order){
+    return order?.paymentMethod === "nequi" ? "Nequi" : "Tarjeta";
+  }
+
+  function orderPaymentStateLabel(order){
+    if(order?.canConfirmPayment) return "Por verificar";
+    const status = String(order?.paymentStatus || "").toUpperCase();
+    if(status === "AUTHORIZED") return "Autorizado";
+    if(status === "PAID" || status === "PARTIALLY_PAID") return "Pagado";
+    return status ? status.replaceAll("_", " ") : "Registrado";
+  }
+
+  function orderFulfillmentLabel(order){
+    if(order?.canConfirmPayment) return "Por verificar";
+    const status = String(order?.status || "new").toLowerCase();
+    if(status === "delivered") return "Entregado";
+    if(status === "shipped") return "Enviado";
+    if(status === "processing") return "Procesando";
+    if(status === "authorized") return "Autorizado";
+    return String(order?.fulfillmentStatus || "").toUpperCase() === "FULFILLED"
+      ? "Preparado"
+      : "Sin preparar";
+  }
+
+  function orderFulfillmentClass(order){
+    return order?.canConfirmPayment || ["new", "authorized"].includes(String(order?.status || "new").toLowerCase())
+      ? "pending"
+      : "";
+  }
+
+  function orderAddressLines(order){
+    const address = order?.shippingAddress || {};
+    const locality = [
+      address.city,
+      address.state,
+      address.postalCode
+    ].filter(Boolean).join(", ");
+    return [
+      address.addressLine1,
+      address.addressLine2,
+      locality,
+      address.country && address.country !== "CO" ? address.country : ""
+    ].filter(Boolean);
+  }
+
+  function orderTrackingPrimary(order){
+    if(order?.trackingNumber){
+      return [order.carrier || "Transportadora", order.trackingNumber].filter(Boolean).join(" · ");
+    }
+    return Array.isArray(order?.nationalShipments) && order.nationalShipments.length
+      ? "Guía pendiente"
+      : "Seguimiento pendiente";
+  }
+
+  function orderTrackingSecondary(order){
+    if(order?.trackingNumber) return trackingLabels[order.status || "shipped"] || "Enviado";
+    return Array.isArray(order?.nationalShipments) && order.nationalShipments.length
+      ? "Se añadirá al crear el envío"
+      : "Actualiza el estado de la entrega";
+  }
+
+  function renderOrderThumbnail(item){
+    return item?.image
+      ? `<img class="orderItemThumb" src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name || "Producto")}">`
+      : `<div class="orderItemThumbFallback" aria-hidden="true">CM</div>`;
+  }
+
+  function orderItemMeta(item){
+    return [
+      item?.sku ? `SKU: ${item.sku}` : "",
+      item?.size ? `Talla ${item.size}` : "",
+      item?.color ? item.color : "",
+      `${Math.max(1, Number(item?.quantity || 1))} ud.`
+    ].filter(Boolean).join(" · ");
+  }
+
+  function renderExpandedOrderItems(order){
+    return orderItemsForDisplay(order).map(item => `
+      <div class="orderLineItem">
+        ${renderOrderThumbnail(item)}
+        <div class="orderLineDetails">
+          <strong>${escapeHtml(item.name || "Producto")}</strong>
+          <dl>
+            ${item.sku ? `<dt>SKU</dt><dd>${escapeHtml(item.sku)}</dd>` : ""}
+            ${item.size ? `<dt>Talla</dt><dd>${escapeHtml(item.size)}</dd>` : ""}
+            ${item.color ? `<dt>Color</dt><dd>${escapeHtml(item.color)}</dd>` : ""}
+            <dt>Cantidad</dt><dd>${Math.max(1, Number(item.quantity || 1))}</dd>
+          </dl>
+          <span class="orderDeliveryPill">${escapeHtml(item.delivery || order.delivery || "Entrega CajaModa")}</span>
+        </div>
+      </div>
+    `).join("");
+  }
+
   function renderOrders(){
 
     if(
@@ -6056,157 +6241,140 @@ function renderInventory(){
     const html =
       pageOrders
         .map(
-          order => {
+          (order, index) => {
+            const items = orderItemsForDisplay(order);
+            const firstItem = items[0] || {};
+            const addressLines = orderAddressLines(order);
+            const hasNationalShipments = Array.isArray(order.nationalShipments) && order.nationalShipments.length;
             return `
 
               <article
                 class="orderCard"
-                data-order="${order.id}"
+                data-order="${escapeHtml(order.id)}"
               >
-                <div class="orderCardMain">
-                  <div><div class="orderNumber">#${escapeHtml(displayOrderNumber(order))}</div><div class="orderDate">${escapeHtml(formatOrderDate(order.date))}</div></div>
-                  <div><div class="orderCustomer">${escapeHtml(order.customer || "Cliente")}</div><div class="orderProducts">${escapeHtml(order.products || "")}</div></div>
-                  <div class="orderProducts">${order.paymentMethod === "nequi" ? "Nequi" : "Tarjeta"}</div>
-                  <div class="orderMoney"><strong>${money(order.total)}</strong></div>
-                  <div><span class="orderStatusPill ${order.canConfirmPayment ? "pending" : ""}">${order.canConfirmPayment ? "Por verificar" : escapeHtml(trackingLabels[order.status || "new"] || "Registrado")}</span></div>
-                </div>
+                <details class="orderDisclosure" ${index === 0 ? "open" : ""}>
+                  <summary class="orderCardMain">
+                    <div class="orderIdentity">
+                      <div class="orderNumber">#${escapeHtml(displayOrderNumber(order))}</div>
+                      <div class="orderDate">${escapeHtml(formatOrderDate(order.date))}</div>
+                    </div>
 
-                <details class="orderActions">
-                  <summary>Actualizar</summary>
+                    <div class="orderClientCell">
+                      <strong>${escapeHtml(order.customer || "Cliente")}</strong>
+                      <span>${escapeHtml(order.phone || order.email || "Sin contacto")}</span>
+                    </div>
 
-                ${order.paymentMethod === "nequi" ? `
-                  <div style="margin:12px 0;padding:12px 14px;border:1px solid rgba(77,11,183,.18);border-radius:14px;background:rgba(255,255,255,.62)">
-                    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-                      <div>
-                        <strong style="color:#4d0bb7">Nequi</strong>
-                        <div style="margin-top:3px;font-size:11px;color:#6f6f6f">Referencia Nequi: <strong>${escapeHtml(order.nequiReference || "Sin referencia")}</strong></div>
+                    <div class="orderItemPreview">
+                      ${renderOrderThumbnail(firstItem)}
+                      <div class="orderItemCopy">
+                        <strong>${escapeHtml(firstItem.name || "Pedido registrado")}</strong>
+                        <span>${escapeHtml(orderItemMeta(firstItem))}${items.length > 1 ? ` · +${items.length - 1} artículo${items.length > 2 ? "s" : ""}` : ""}</span>
                       </div>
-                      ${order.canConfirmPayment ? `
-                        <button type="button" data-confirm-nequi="${escapeHtml(order.id)}" style="padding:10px 14px;border:0;border-radius:999px;background:#080808;color:#fff;font-weight:700;cursor:pointer">Confirmar pago</button>
-                      ` : `<span style="font-size:11px;font-weight:750">Pago confirmado</span>`}
+                    </div>
+
+                    <div class="orderPaymentCell">
+                      <span class="orderMethodPill ${order.paymentMethod === "nequi" ? "nequi" : ""}">
+                        ${escapeHtml(orderPaymentMethodLabel(order))}
+                      </span>
+                      <span class="orderPaymentState">${escapeHtml(orderPaymentStateLabel(order))}</span>
+                    </div>
+
+                    <div class="orderTotal">${money(order.total)}</div>
+
+                    <div class="orderStateCell">
+                      <span class="orderStatusPill ${orderFulfillmentClass(order)}">
+                        ${escapeHtml(orderFulfillmentLabel(order))}
+                      </span>
+                      <span class="orderStateMeta">${escapeHtml(orderTrackingPrimary(order))}</span>
+                    </div>
+                  </summary>
+
+                  <div class="orderExpanded">
+                    <div class="orderExpandedGrid">
+                      <section class="orderInfoPanel">
+                        <div class="orderInfoTitle">Artículo${items.length === 1 ? "" : "s"}</div>
+                        ${renderExpandedOrderItems(order)}
+                      </section>
+
+                      <section class="orderInfoPanel">
+                        <div class="orderInfoTitle">Entrega</div>
+                        <div class="orderAddressName">${escapeHtml(order.customer || "Cliente")}</div>
+                        <div class="orderAddressLines">
+                          ${addressLines.length
+                            ? addressLines.map(line => `<div>${escapeHtml(line)}</div>`).join("")
+                            : "<div>Dirección pendiente</div>"}
+                        </div>
+                        <div class="orderAddressContact">
+                          ${order.phone ? `<div>${escapeHtml(order.phone)}</div>` : ""}
+                          ${order.email ? `<div>${escapeHtml(order.email)}</div>` : ""}
+                        </div>
+                      </section>
+
+                      <section class="orderInfoPanel">
+                        <div class="orderInfoTitle">Seguimiento</div>
+                        <div class="orderTrackingPrimary">${escapeHtml(orderTrackingPrimary(order))}</div>
+                        <div class="orderTrackingSecondary">${escapeHtml(orderTrackingSecondary(order))}</div>
+                        <div style="margin-top:14px">
+                          <span class="orderStatusPill ${orderFulfillmentClass(order)}">
+                            ${escapeHtml(orderFulfillmentLabel(order))}
+                          </span>
+                        </div>
+                      </section>
+                    </div>
+
+                    <div class="orderOperationalActions">
+                      ${order.paymentMethod === "nequi" ? `
+                        <div style="margin:12px 0;padding:12px 14px;border:1px solid rgba(77,11,183,.18);border-radius:14px;background:rgba(255,255,255,.62)">
+                          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+                            <div>
+                              <strong style="color:#4d0bb7">Nequi</strong>
+                              <div style="margin-top:3px;font-size:11px;color:#6f6f6f">Referencia Nequi: <strong>${escapeHtml(order.nequiReference || "Sin referencia")}</strong></div>
+                            </div>
+                            ${order.canConfirmPayment ? `
+                              <button type="button" data-confirm-nequi="${escapeHtml(order.id)}" style="padding:10px 14px;border:0;border-radius:999px;background:#080808;color:#fff;font-weight:700;cursor:pointer">Confirmar pago</button>
+                            ` : `<span style="font-size:11px;font-weight:750">Pago confirmado</span>`}
+                          </div>
+                        </div>
+                      ` : ""}
+
+                      ${order.source === "stripeAuthorization" ? `
+                        <div style="margin:12px 0;padding:12px 14px;border:1px solid rgba(0,0,0,.14);border-radius:14px;background:rgba(255,255,255,.62)">
+                          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+                            <div>
+                              <strong>Tarjeta autorizada</strong>
+                              <div style="margin-top:3px;font-size:11px;color:#6f6f6f">El pago está retenido. Captura para confirmar el pedido.</div>
+                            </div>
+                            ${order.canCapturePayment || order.canCancelPayment ? `<div style="display:flex;gap:8px">
+                              <button type="button" data-cancel-stripe="${escapeHtml(order.id)}" style="padding:10px 14px;border:1px solid #080808;border-radius:999px;background:#fff;color:#080808;font-weight:700;cursor:pointer">Cancelar</button>
+                              <button type="button" data-capture-stripe="${escapeHtml(order.id)}" style="padding:10px 14px;border:0;border-radius:999px;background:#080808;color:#fff;font-weight:700;cursor:pointer">Capturar pago</button>
+                            </div>` : `<span style="font-size:11px;font-weight:750">Administración de CajaModa revisará esta autorización</span>`}
+                          </div>
+                        </div>
+                      ` : ""}
+
+                      ${renderNationalShipmentCards(order)}
+
+                      ${order.source !== "stripeAuthorization" && !hasNationalShipments ? `<div class="trackingBlock">
+                        <div class="trackingSteps">
+                          ${renderTrackingSteps(order.status || "new")}
+                        </div>
+                        <div class="trackingInputs">
+                          <select data-order-status="${escapeHtml(order.id)}">
+                            <option value="new" ${order.status === "new" ? "selected" : ""}>Nuevo</option>
+                            <option value="processing" ${order.status === "processing" ? "selected" : ""}>Procesando</option>
+                            <option value="shipped" ${order.status === "shipped" ? "selected" : ""}>Enviado</option>
+                            <option value="delivered" ${order.status === "delivered" ? "selected" : ""}>Entregado</option>
+                          </select>
+                          <input type="text" placeholder="Transportadora" value="${escapeHtml(order.carrier || "")}" data-order-carrier="${escapeHtml(order.id)}">
+                        </div>
+                        <div class="trackingInputs" style="margin-top:7px">
+                          <input type="text" placeholder="Número de rastreo" value="${escapeHtml(order.trackingNumber || "")}" data-order-tracking="${escapeHtml(order.id)}">
+                          <button class="secondaryButton" type="button" data-save-tracking="${escapeHtml(order.id)}">Guardar</button>
+                        </div>
+                      </div>` : ""}
                     </div>
                   </div>
-                ` : ""}
-
-                ${order.source === "stripeAuthorization" ? `
-                  <div style="margin:12px 0;padding:12px 14px;border:1px solid rgba(0,0,0,.14);border-radius:14px;background:rgba(255,255,255,.62)">
-                    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-                      <div>
-                        <strong>Tarjeta autorizada</strong>
-                        <div style="margin-top:3px;font-size:11px;color:#6f6f6f">El pago está retenido. Captura para confirmar el pedido.</div>
-                      </div>
-                      ${order.canCapturePayment || order.canCancelPayment ? `<div style="display:flex;gap:8px">
-                        <button type="button" data-cancel-stripe="${escapeHtml(order.id)}" style="padding:10px 14px;border:1px solid #080808;border-radius:999px;background:#fff;color:#080808;font-weight:700;cursor:pointer">Cancelar</button>
-                        <button type="button" data-capture-stripe="${escapeHtml(order.id)}" style="padding:10px 14px;border:0;border-radius:999px;background:#080808;color:#fff;font-weight:700;cursor:pointer">Capturar pago</button>
-                      </div>` : `<span style="font-size:11px;font-weight:750">Administración de CajaModa revisará esta autorización</span>`}
-                    </div>
-                  </div>
-                ` : ""}
-
-                ${renderNationalShipmentCards(order)}
-
-                ${order.source !== "stripeAuthorization" && !(Array.isArray(order.nationalShipments) && order.nationalShipments.length) ? `<div class="trackingBlock">
-
-                  <div class="trackingSteps">
-
-                    ${renderTrackingSteps(
-                      order.status ||
-                      "new"
-                    )}
-
-                  </div>
-
-                  <div class="trackingInputs">
-
-                    <select
-                      data-order-status="${order.id}"
-                    >
-
-                      <option
-                        value="new"
-                        ${
-                          order.status ===
-                          "new"
-                            ?"selected"
-                            :""
-                        }
-                      >
-                        Nuevo
-                      </option>
-
-                      <option
-                        value="processing"
-                        ${
-                          order.status ===
-                          "processing"
-                            ?"selected"
-                            :""
-                        }
-                      >
-                        Procesando
-                      </option>
-
-                      <option
-                        value="shipped"
-                        ${
-                          order.status ===
-                          "shipped"
-                            ?"selected"
-                            :""
-                        }
-                      >
-                        Enviado
-                      </option>
-
-                      <option
-                        value="delivered"
-                        ${
-                          order.status ===
-                          "delivered"
-                            ?"selected"
-                            :""
-                        }
-                      >
-                        Entregado
-                      </option>
-
-                    </select>
-
-                    <input
-                      type="text"
-                      placeholder="Transportadora"
-                      value="${escapeHtml(order.carrier || "")}"
-                      data-order-carrier="${order.id}"
-                    >
-
-                  </div>
-
-                  <div
-                    class="trackingInputs"
-                    style="margin-top:7px"
-                  >
-
-                    <input
-                      type="text"
-                      placeholder="Número de rastreo"
-                      value="${escapeHtml(order.trackingNumber || "")}"
-                      data-order-tracking="${order.id}"
-                    >
-
-                    <button
-                      class="secondaryButton"
-                      type="button"
-                      data-save-tracking="${order.id}"
-                    >
-                      Guardar
-                    </button>
-
-                  </div>
-
-                </div>` : ""}
-
                 </details>
-
               </article>
 
             `;
@@ -6225,7 +6393,7 @@ function renderInventory(){
         <div class="orderSummaryCard"><div class="orderSummaryLabel">Promedio por pedido</div><div class="orderSummaryValue">${money(average)}</div></div>
         <div class="orderSummaryCard"><div class="orderSummaryLabel">Últimos 30 días</div><div class="orderSummaryValue">${lastThirtyDays.length}</div></div>
       </div>
-      <div class="orderTableHead"><span>Pedido</span><span>Cliente / producto</span><span>Pago</span><span>Total</span><span>Estado</span></div>
+      <div class="orderTableHead"><span>Pedido</span><span>Cliente</span><span>Artículo</span><span>Pago</span><span>Total</span><span>Estado</span></div>
       ${html}
       <div class="orderPager">
         <span>Mostrando ${pageStart + 1}–${Math.min(pageStart + ordersPerPage, orders.length)} de ${orders.length}</span>

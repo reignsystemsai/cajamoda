@@ -5530,14 +5530,14 @@ function rawOrderNationalShipment(order, type) {
 
 function orderNationalDelivery(order) {
   const destination = order?.shippingInfo?.logistics?.shippingDestination || {};
-  const address = destination?.address || {};
+  const address = getOrderShippingAddress(order);
   const contact = destination?.contactDetails || getContactDetails(order);
   return {
     delivery: {
-      address: safeText(address?.addressLine || address?.streetAddress?.value || address?.streetAddress, 250),
-      city: safeText(address?.city, 100),
-      state: safeText(address?.subdivision || address?.state, 10),
-      postalCode: safeText(address?.postalCode, 20)
+      address: safeText([address.addressLine1, address.addressLine2].filter(Boolean).join(", "), 250),
+      city: address.city,
+      state: address.state,
+      postalCode: address.postalCode
     },
     customer: {
       name: getOrderCustomerName(order),

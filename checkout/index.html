@@ -1297,14 +1297,15 @@ img{display:block;max-width:100%}
             </div>
             <div id="pickupAddress" class="pickupAddress"><strong>Punto de recogida · 10.000 COP</strong><br>Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar.</div>
           </div>
-          <p id="deliveryQuoteStatus" class="deliveryNote" role="status" aria-live="polite">El costo se calcula según tu ubicación.</p>
+          <button id="confirmDeliveryButton" class="confirmPayment" type="button">Confirmar entrega</button>
+          <p id="deliveryQuoteStatus" class="deliveryNote" role="status" aria-live="polite">Completa tus datos y confirma la entrega.</p>
           <div id="deliveryQuoteBreakdown" class="deliveryQuoteBreakdown" aria-live="polite" hidden>
             <div id="deliveryQuoteGroups"></div>
             <div class="deliveryQuoteRow deliveryQuoteTotal"><span>Total con entrega</span><span id="deliveryQuoteTotal">Por calcular</span></div>
           </div>
         </section>
 
-        <h2 class="paymentSectionTitle">Finaliza tu pago</h2>
+        <h2 id="paymentSectionTitle" class="paymentSectionTitle">Finaliza tu pago</h2>
         <section id="paymentGlass" class="paymentGlass isStripe">
           <div id="nequiPane" class="nequiPane" hidden>
             <div class="nequiSteps">
@@ -1344,7 +1345,7 @@ img{display:block;max-width:100%}
               <div class="stripeSecure"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Pago seguro</div>
             </div>
               <div class="customCardShell">
-              <div id="stripeStatus" class="stripeStatus">Preparando el formulario seguro de Stripe…</div>
+              <div id="stripeStatus" class="stripeStatus">Confirma la entrega para preparar el pago con tarjeta.</div>
               <div id="paymentElement"></div>
             </div>
             <section class="billingGlass" aria-labelledby="billingTitle">
@@ -1499,6 +1500,7 @@ img{display:block;max-width:100%}
   let stripeInitializing = false;
   let stripeSessionCartKey = "";
   let stripeVerifiedAmountTotal = 0;
+  let deliveryQuoteToken = "";
   let deliveryQuote = { method: "pickup", prontoMethod: "pickup", fee: 10000, title: "Pronto · Recoger" };
   let deliveryQuotePending = false;
   let deliveryQuoteError = "";
@@ -1742,6 +1744,7 @@ img{display:block;max-width:100%}
             : deliveryQuoteError;
       }
     }
+    syncDeliveryConfirmationUi();
     updateStripePayAvailability();
     updateNequiConfirmAvailability();
   }
@@ -2124,6 +2127,7 @@ img{display:block;max-width:100%}
       deliveryQuote = null;
       deliveryQuotePending = false;
       deliveryQuoteError = "";
+      deliveryQuoteToken = "";
       quoteDestinationKey = "";
       stripeSessionCartKey = "";
       updateStripePayAvailability();
@@ -3265,6 +3269,7 @@ img{display:block;max-width:100%}
         stateName: $("deliveryDepartment")?.selectedOptions?.[0]?.textContent || "",
         postalCode: $("deliveryPostalCode")?.value.trim() || "",
         fee: checkoutDeliveryFee(),
+        quoteToken: deliveryQuoteToken,
         address: completeDeliveryAddress(),
         addressLine1: $("deliveryAddress")?.value.trim() || "",
         neighborhood: [locality, neighborhood].filter(Boolean).join(", "),
@@ -3307,12 +3312,78 @@ img{display:block;max-width:100%}
     return `Envia no pudo calcular el envío: ${text}`;
   }
 
+  function deliveryQuoteRequiresConfirmation(cart = readCart()) {
+    const profile = checkoutFulfillmentProfile(cart);
+    return profile.hasNational || (profile.hasPronto && selectedDelivery === "moto");
+  }
+
+  function syncDeliveryConfirmationUi() {
+    const button = $("confirmDeliveryButton");
+    const paymentTitle = $("paymentSectionTitle");
+    const paymentGlass = $("paymentGlass");
+    if (!button || !paymentTitle || !paymentGlass) return;
+    const awaitingConfirmation =
+      deliveryQuoteRequiresConfirmation() &&
+      !deliveryQuoteMatchesCart();
+    button.hidden = !awaitingConfirmation;
+    button.disabled = deliveryQuotePending;
+    button.textContent = deliveryQuotePending ? "Confirmando entrega…" : "Confirmar entrega";
+    paymentTitle.hidden = awaitingConfirmation;
+    paymentGlass.hidden = awaitingConfirmation;
+    const quoteStatus = $("deliveryQuoteStatus");
+    const hasFieldError = Boolean(document.querySelector(".shippingFields .deliveryField.hasError"));
+    if (awaitingConfirmation && quoteStatus && !deliveryQuotePending) {
+      quoteStatus.hidden = hasFieldError;
+      if (!hasFieldError) {
+        quoteStatus.textContent = deliveryQuoteError ||
+          "Completa tus datos y selecciona Confirmar entrega.";
+      }
+    }
+    syncPanelHeight();
+  }
+
+  function validateDeliveryConfirmationFields() {
+    if (!deliveryQuoteRequiresConfirmation()) return true;
+    if (!$("deliveryDepartment")?.value) {
+      setDeliveryFieldStatus("department", "Selecciona el departamento de entrega.");
+      $("deliveryDepartment")?.focus();
+      return false;
+    }
+    if (
+      !$("deliveryCity")?.value.trim() ||
+      !$("deliveryCityDaneCode")?.value
+    ) {
+      setDeliveryFieldStatus("city", "Selecciona una ciudad, municipio o localidad de la lista.");
+      $("deliveryCity")?.focus();
+      return false;
+    }
+    if (!$("deliveryAddress")?.value.trim()) {
+      setDeliveryFieldStatus("address", "Ingresa la dirección principal de entrega.");
+      $("deliveryAddress")?.focus();
+      return false;
+    }
+    return true;
+  }
+
+  async function confirmDeliveryQuote() {
+    if (!validateDeliveryConfirmationFields()) {
+      syncDeliveryConfirmationUi();
+      return;
+    }
+    clearTimeout(quoteTimer);
+    try {
+      await refreshDeliveryQuote({ required: true });
+    } catch {}
+    syncDeliveryConfirmationUi();
+  }
+
   async function refreshDeliveryQuote(options = {}) {
     const profile = checkoutFulfillmentProfile();
     if (profile.hasPronto && !profile.hasNational && selectedDelivery === "pickup") {
       quoteRequestVersion += 1;
       deliveryQuotePending = false;
       deliveryQuoteError = "";
+      deliveryQuoteToken = "";
       deliveryQuote = { method: "pickup", prontoMethod: "pickup", fee: PICKUP_FEE_COP, title: "Pronto: Recoger en punto · 24–48 h" };
       quoteDestinationKey = currentDeliveryQuoteKey();
       renderPaymentTotals();
@@ -3324,6 +3395,7 @@ img{display:block;max-width:100%}
       deliveryQuote = null;
       deliveryQuotePending = false;
       deliveryQuoteError = "";
+      deliveryQuoteToken = "";
       quoteDestinationKey = "";
       incompatibleProntoItemIds.clear();
       renderPaymentTotals();
@@ -3344,6 +3416,7 @@ img{display:block;max-width:100%}
       deliveryQuote = null;
       deliveryQuotePending = false;
       deliveryQuoteError = "";
+      deliveryQuoteToken = "";
       quoteDestinationKey = "";
       renderPaymentTotals();
       if (options.required) throw new Error("Completa la dirección para calcular la entrega.");
@@ -3353,6 +3426,7 @@ img{display:block;max-width:100%}
     const destinationKey = currentDeliveryQuoteKey();
     deliveryQuotePending = true;
     deliveryQuoteError = "";
+    deliveryQuoteToken = "";
     deliveryQuote = null;
     quoteDestinationKey = "";
     renderPaymentTotals();
@@ -3372,6 +3446,7 @@ img{display:block;max-width:100%}
       }
       deliveryQuotePending = false;
       deliveryQuoteError = "";
+      deliveryQuoteToken = String(result.quoteToken || "");
       deliveryQuote = result.quote;
       const resolvedPostalCode = deliveryQuote?.groups
         ?.find(group => /^\d{6}$/.test(String(group?.postalCode || "")))
@@ -3390,6 +3465,7 @@ img{display:block;max-width:100%}
       if (requestVersion !== quoteRequestVersion) return null;
       deliveryQuote = null;
       deliveryQuotePending = false;
+      deliveryQuoteToken = "";
       quoteDestinationKey = "";
       deliveryQuoteError = reportDeliveryQuoteError(error?.message);
       renderPaymentTotals();
@@ -3407,13 +3483,13 @@ img{display:block;max-width:100%}
     deliveryQuote = pickupOnly
       ? { method: "pickup", prontoMethod: "pickup", fee: PICKUP_FEE_COP, title: "Pronto: Recoger en punto · 24–48 h" }
       : null;
-    deliveryQuotePending = !pickupOnly;
+    deliveryQuotePending = false;
     deliveryQuoteError = "";
+    deliveryQuoteToken = "";
     quoteDestinationKey = pickupOnly ? currentDeliveryQuoteKey() : "";
     stripeSessionCartKey = "";
     renderPaymentTotals();
     syncPaymentInBackground();
-    quoteTimer = setTimeout(refreshDeliveryQuote, 650);
   }
 
   function renderBillingAddressSummary() {
@@ -3525,6 +3601,16 @@ img{display:block;max-width:100%}
     updateStripePayAvailability();
   }
 
+  function primeStripeInBackground() {
+    if (
+      activeStep !== "payment" ||
+      selectedPayment !== "stripe" ||
+      !stripePublishableKey ||
+      typeof window.Stripe !== "function"
+    ) return;
+    stripeClient ||= window.Stripe(stripePublishableKey);
+  }
+
   function prepareStripeInBackground() {
     if (
       activeStep !== "payment" ||
@@ -3534,6 +3620,7 @@ img{display:block;max-width:100%}
       !stripePublishableKey ||
       !deliveryQuoteMatchesCart()
     ) return;
+    primeStripeInBackground();
     void initializeStripePaymentElement();
   }
 
@@ -3684,7 +3771,9 @@ img{display:block;max-width:100%}
     button.disabled = true;
     button.textContent = "Registrando pedido…";
     try {
-      await refreshDeliveryQuote({ required: true });
+      if (!deliveryQuoteMatchesCart()) {
+        throw new Error("Confirma la entrega antes de registrar el pago.");
+      }
       const response = await fetch(`${STORE_API_URL}/api/nequi/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -3954,7 +4043,7 @@ img{display:block;max-width:100%}
       renderCart();
       syncDeliveryControls();
       updateStripePayAvailability();
-      await refreshDeliveryQuote();
+      scheduleDeliveryQuote();
     } catch (error) {
       clearAddressVerification();
       setDeliveryFieldStatus("address", "No pudimos completar esta sugerencia. Puedes escribir la dirección manualmente.");
@@ -4116,6 +4205,7 @@ img{display:block;max-width:100%}
         if (!deliveryQuoteMatchesCart()) scheduleDeliveryQuote();
         if (selectedPayment === "stripe" && tab.dataset.method === "stripe") {
           syncBillingAddressMode();
+          primeStripeInBackground();
           syncPaymentInBackground();
           syncPanelHeight();
         }
@@ -4129,6 +4219,7 @@ img{display:block;max-width:100%}
     $("paymentGlass").classList.add("isStripe");
     if (!goToStep("payment")) return;
     syncBillingAddressMode();
+    primeStripeInBackground();
     if (!deliveryQuoteMatchesCart()) scheduleDeliveryQuote();
     syncPaymentInBackground();
     syncPanelHeight();
@@ -4145,6 +4236,7 @@ img{display:block;max-width:100%}
   };
 
   $("confirmNequiButton").onclick = submitNequiPayment;
+  $("confirmDeliveryButton").onclick = confirmDeliveryQuote;
   $("nequiReference")?.addEventListener("input", updateNequiConfirmAvailability);
   $("stripePayButton").onclick = submitStripePayment;
   $("billingSame")?.addEventListener("change", () => {
@@ -4354,6 +4446,7 @@ img{display:block;max-width:100%}
       deliveryQuote = null;
       deliveryQuotePending = false;
       deliveryQuoteError = "";
+      deliveryQuoteToken = "";
       quoteDestinationKey = "";
       loadCustomer({ restoreLocation: deliveryLocationsReady });
       renderCart();
@@ -4412,7 +4505,10 @@ img{display:block;max-width:100%}
   loadCustomer({ restoreLocation: false });
   renderCart();
   syncBillingAddressMode();
-  loadCheckoutConfig().then(syncPaymentInBackground);
+  loadCheckoutConfig().then(() => {
+    primeStripeInBackground();
+    syncPaymentInBackground();
+  });
   loadDeliveryDepartments();
 
   window.postMessage({

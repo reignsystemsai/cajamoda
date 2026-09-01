@@ -1806,11 +1806,91 @@ async function calculateDeliveryQuote(body, lines = []) {
   };
 }
 
+function deliveryQuoteFingerprint(body, lines = []) {
+  const delivery = body?.delivery || {};
+  const cart = lines.map(line => {
+    const metadata = line?.price_data?.product_data?.metadata || {};
+    return {
+      cartLineId: safeText(line?.cartLineId, 80),
+      productId: safeText(metadata.productId || line?.productId, 80),
+      variantId: safeText(metadata.variantId || line?.variantId, 80),
+      quantity: Math.max(1, Math.floor(Number(line?.quantity || 1))),
+      selectedDeliveryMode: safeText(line?.selectedDeliveryMode, 20).toLowerCase()
+    };
+  });
+  const destination = {
+    method: safeText(delivery.method, 20),
+    prontoMethod: safeText(delivery.prontoMethod, 20),
+    city: safeText(delivery.city, 100),
+    cityDaneCode: safeText(delivery.cityDaneCode, 8),
+    state: safeText(delivery.state, 5),
+    stateName: safeText(delivery.stateName, 100),
+    postalCode: safeText(delivery.postalCode, 20),
+    address: safeText(delivery.address, 500),
+    addressLine1: safeText(delivery.addressLine1, 180),
+    neighborhood: safeText(delivery.neighborhood, 160),
+    complement: safeText(delivery.complement, 120),
+    references: safeText(delivery.references, 180)
+  };
+  return crypto
+    .createHash("sha256")
+    .update(JSON.stringify({ cart, destination }))
+    .digest("hex");
+}
+
+function createDeliveryQuoteToken(body, lines, quote) {
+  const encoded = Buffer.from(JSON.stringify({
+    expiresAt: Date.now() + (30 * 60 * 1000),
+    fingerprint: deliveryQuoteFingerprint(body, lines),
+    quote
+  })).toString("base64url");
+  const signature = crypto
+    .createHmac("sha256", ENVIA_API_TOKEN)
+    .update(encoded)
+    .digest("base64url");
+  return `${encoded}.${signature}`;
+}
+
+function verifiedDeliveryQuoteToken(body, lines) {
+  const token = safeText(body?.delivery?.quoteToken, 20000);
+  if (!token) return null;
+  const parts = token.split(".");
+  if (parts.length !== 2) throw new Error("Confirma nuevamente la entrega.");
+  const [encoded, signature] = parts;
+  const expected = crypto
+    .createHmac("sha256", ENVIA_API_TOKEN)
+    .update(encoded)
+    .digest();
+  const received = Buffer.from(signature, "base64url");
+  if (received.length !== expected.length || !crypto.timingSafeEqual(received, expected)) {
+    throw new Error("Confirma nuevamente la entrega.");
+  }
+  let payload;
+  try {
+    payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8"));
+  } catch {
+    throw new Error("Confirma nuevamente la entrega.");
+  }
+  if (
+    Number(payload?.expiresAt || 0) < Date.now() ||
+    payload?.fingerprint !== deliveryQuoteFingerprint(body, lines) ||
+    !payload?.quote ||
+    !Number.isFinite(Number(payload.quote.fee))
+  ) {
+    throw new Error("Confirma nuevamente la entrega.");
+  }
+  return payload.quote;
+}
+
 async function handleDeliveryQuote(request, response) {
   const body = await readBody(request);
   try {
-    const quote = await calculateDeliveryQuote(body);
-    sendJson(response, 200, { ok: true, quote });
+    const items = Array.isArray(body?.cart?.items) ? body.cart.items.slice(0, 50) : [];
+    if (!items.length) return sendError(response, 400, "Tu bolsa está vacía.");
+    const catalogLines = await verifiedCheckoutCatalogItems(items);
+    const quote = await calculateDeliveryQuote(body, catalogLines);
+    const quoteToken = createDeliveryQuoteToken(body, catalogLines, quote);
+    sendJson(response, 200, { ok: true, quote, quoteToken });
   } catch (error) {
     if (error instanceof CartItemUnavailableError || error instanceof ProntoLocationUnavailableError) {
       throw error;
@@ -1951,7 +2031,7 @@ function checkoutCustomer(body) {
 
 async function checkoutDelivery(body, lines = []) {
   const profile = checkoutFulfillmentProfile(body, lines);
-  const quote = await calculateDeliveryQuote(body, lines);
+  const quote = verifiedDeliveryQuoteToken(body, lines) || await calculateDeliveryQuote(body, lines);
   const method = quote.method;
   const addressLine = method === "pickup"
     ? CARTAGENA_PICKUP_ADDRESS

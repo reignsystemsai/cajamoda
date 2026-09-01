@@ -92,8 +92,8 @@ const ENVIA_API_BASE = ENVIA_ENV === "sandbox" ? "https://api-test.envia.com" : 
 const ENVIA_QUERIES_BASE = ENVIA_ENV === "sandbox" ? "https://queries-test.envia.com" : "https://queries.envia.com";
 const ENVIA_GEOCODES_BASE = "https://geocodes.envia.com";
 const COLOMBIA_MUNICIPALITIES_URL = "https://www.datos.gov.co/resource/gdxc-w37w.json?$select=cod_dpto,dpto,cod_mpio,nom_mpio&$limit=2000";
-const ENVIA_PRINT_FORMAT = safeEnv(process.env.ENVIA_PRINT_FORMAT);
-const ENVIA_PRINT_SIZE = safeEnv(process.env.ENVIA_PRINT_SIZE);
+const ENVIA_PRINT_FORMAT = safeEnv(process.env.ENVIA_PRINT_FORMAT) || "PDF";
+const ENVIA_PRINT_SIZE = safeEnv(process.env.ENVIA_PRINT_SIZE) || "PAPER_4X6";
 const ENVIA_WEBHOOK_SECRET = safeEnv(process.env.ENVIA_WEBHOOK_SECRET);
 const ENVIA_ORIGIN_NAME = safeEnv(process.env.ENVIA_ORIGIN_NAME);
 const ENVIA_ORIGIN_PHONE = safeEnv(process.env.ENVIA_ORIGIN_PHONE);

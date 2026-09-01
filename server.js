@@ -660,6 +660,10 @@ async function stripeLineItemFromCartItem(item) {
   }
 
   const fulfillmentSku = safeText(variant?.sku || product?.sku, 100).toUpperCase();
+  const checkoutSize = existingVariantSize(variant);
+  const checkoutColor = checkoutVariantChoice(variant, ["color", "colour"]);
+  const checkoutImage = getProductImageUrl(product);
+  const checkoutImageId = wixMediaId(checkoutImage);
   const fulfillmentSegments = fulfillmentSku.split("-").filter(Boolean);
   const fulfillmentCode = [...fulfillmentSegments].reverse().find(segment =>
     ["P", "PR", "RP", "R", "L", "PL", "LP", "RL", "LR", "PRL"].includes(segment)
@@ -693,6 +697,10 @@ async function stripeLineItemFromCartItem(item) {
     quantity,
     fulfillmentCode: normalizedFulfillmentCode,
     selectedDeliveryMode,
+    sku: fulfillmentSku,
+    size: checkoutSize,
+    color: checkoutColor,
+    image: checkoutImage,
     price_data: {
       currency: "cop",
       // Stripe treats COP as a two-decimal currency in API requests.
@@ -700,7 +708,16 @@ async function stripeLineItemFromCartItem(item) {
       product_data: {
         name: safeText(product?.name, 80) || "Producto CajaModa",
         description: stripeChoiceText(item) || undefined,
-        metadata: { productId, variantId, fulfillmentCode: normalizedFulfillmentCode, selectedDeliveryMode }
+        metadata: {
+          productId,
+          variantId,
+          fulfillmentCode: normalizedFulfillmentCode,
+          selectedDeliveryMode,
+          sku: fulfillmentSku,
+          size: checkoutSize,
+          color: checkoutColor,
+          imageId: checkoutImageId
+        }
       }
     }
   };
@@ -719,6 +736,58 @@ function selectedDeliveryLabel(value) {
   return "Rápido Nacional";
 }
 
+function checkoutVariantChoice(variant, names = []) {
+  const accepted = new Set(names.map(name => String(name).toLowerCase()));
+  for (const choice of Array.isArray(variant?.choices) ? variant.choices : []) {
+    const values = choice?.optionChoiceNames || choice?.choiceNames || choice;
+    const optionName = safeText(values?.optionName || values?.name, 50).toLowerCase();
+    const choiceName = safeText(values?.choiceName || values?.value, 100);
+    if (accepted.has(optionName) && choiceName) return choiceName;
+  }
+  return "";
+}
+
+function importedOrderNumber(externalId) {
+  const digest = crypto.createHash("sha256").update(String(externalId || "")).digest("hex").slice(0, 12);
+  const numeric = (BigInt(`0x${digest || "1"}`) % 900000000000n) + 100000000000n;
+  return numeric.toString();
+}
+
+function wixOrderDescriptionLines(line) {
+  return [
+    ["SKU", safeText(line?.sku, 100).toUpperCase()],
+    ["Talla", safeText(line?.size, 50)],
+    ["Color", safeText(line?.color, 100)],
+    ["Entrega", selectedDeliveryLabel(line?.selectedDeliveryMode)]
+  ]
+    .filter(([, value]) => value)
+    .map(([name, value]) => ({
+      name: { original: name },
+      plainText: { original: value }
+    }));
+}
+
+function wixOrderLineItem(line) {
+  const image = safeText(line?.image, 1500);
+  return {
+    productName: { original: line.name },
+    descriptionLines: wixOrderDescriptionLines(line),
+    quantity: line.quantity,
+    price: { amount: String(line.amount) },
+    itemType: { preset: "PHYSICAL" },
+    image: image ? { url: image } : undefined,
+    physicalProperties: {
+      shippable: true,
+      sku: safeText(line?.sku, 100).toUpperCase()
+    },
+    catalogReference: {
+      appId: WIX_STORES_APP_ID,
+      catalogItemId: line.productId,
+      options: { variantId: line.variantId }
+    }
+  };
+}
+
 async function handleCreateStripeCheckout(request, response) {
   if (!stripe) {
     sendError(response, 503, "Stripe todavía no está configurado en el servidor.");
@@ -733,7 +802,16 @@ async function handleCreateStripeCheckout(request, response) {
   const catalogLines = await verifiedCheckoutCatalogItems(items);
   // Keep CajaModa fulfillment data server-side. Stripe only accepts documented
   // line item properties, so never forward fulfillmentCode at this level.
-  const lineItems = catalogLines.map(({ cartLineId, fulfillmentCode, selectedDeliveryMode, ...line }) => line);
+  const lineItems = catalogLines.map(({
+    cartLineId,
+    fulfillmentCode,
+    selectedDeliveryMode,
+    sku,
+    size,
+    color,
+    image,
+    ...line
+  }) => line);
   const customerEmail = safeText(body?.customer?.email, 250);
   const delivery = await checkoutDelivery(body, catalogLines);
   const deliveryMethod = delivery.method;
@@ -803,7 +881,16 @@ async function handleUpdateStripeCheckout(request, response) {
     return;
   }
   const catalogLines = await verifiedCheckoutCatalogItems(items);
-  const lineItems = catalogLines.map(({ cartLineId, fulfillmentCode, selectedDeliveryMode, ...line }) => line);
+  const lineItems = catalogLines.map(({
+    cartLineId,
+    fulfillmentCode,
+    selectedDeliveryMode,
+    sku,
+    size,
+    color,
+    image,
+    ...line
+  }) => line);
   const delivery = await checkoutDelivery(body, catalogLines);
   const updated = await stripe.checkout.sessions.update(sessionId, {
     line_items: lineItems,
@@ -875,7 +962,7 @@ function stripeAddressToWix(address = {}) {
     subdivision: safeText(address.state, 100),
     city: safeText(address.city, 100),
     postalCode: safeText(address.postal_code, 40),
-    addressLine: safeText(address.line1, 250),
+    addressLine1: safeText(address.line1, 250),
     addressLine2: safeText(address.line2, 250)
   };
 }
@@ -911,7 +998,13 @@ async function getStripePurchasedLines(session) {
       amount,
       name: safeText(line?.description || stripeProduct?.name, 300) || "Producto CajaModa",
       fulfillmentCode: safeText(stripeProduct?.metadata?.fulfillmentCode, 10).toUpperCase(),
-      selectedDeliveryMode: safeText(stripeProduct?.metadata?.selectedDeliveryMode, 20).toLowerCase()
+      selectedDeliveryMode: safeText(stripeProduct?.metadata?.selectedDeliveryMode, 20).toLowerCase(),
+      sku: safeText(stripeProduct?.metadata?.sku, 100).toUpperCase(),
+      size: safeText(stripeProduct?.metadata?.size, 50),
+      color: safeText(stripeProduct?.metadata?.color, 100),
+      image: safeText(stripeProduct?.metadata?.imageId, 300)
+        ? `https://static.wixstatic.com/media/${safeText(stripeProduct.metadata.imageId, 300)}`
+        : ""
     };
   });
 }
@@ -933,19 +1026,20 @@ async function importStripeOrderIntoWix(session, lines) {
   const name = splitCustomerName(shipping?.name || customer?.name || session?.metadata?.customerName);
   const stripeAddress = stripeAddressToWix(shipping?.address || customer?.address || {});
   const address = session?.metadata?.deliveryMethod === "pickup"
-    ? { country: "CO", city: "Cartagena", addressLine: CARTAGENA_PICKUP_ADDRESS }
+    ? { country: "CO", city: "Cartagena", addressLine1: CARTAGENA_PICKUP_ADDRESS }
     : {
         ...stripeAddress,
         country: "CO",
         city: safeText(session?.metadata?.deliveryCity, 100) || stripeAddress.city,
         subdivision: safeText(session?.metadata?.deliveryState, 100) || stripeAddress.subdivision,
         postalCode: safeText(session?.metadata?.deliveryPostalCode, 40) || stripeAddress.postalCode,
-        addressLine: safeText(session?.metadata?.deliveryAddress, 250) || stripeAddress.addressLine
+        addressLine1: safeText(session?.metadata?.deliveryAddress, 250) || stripeAddress.addressLine1
       };
   const subtotal = lines.reduce((sum, line) => sum + line.amount * line.quantity, 0);
   const total = Number(session?.amount_total || 0) / 100;
 
   const imported = await wix.orders.importOrder({
+    number: importedOrderNumber(session.id),
     status: "APPROVED",
     paymentStatus: "PAID",
     fulfillmentStatus: "NOT_FULFILLED",
@@ -977,22 +1071,7 @@ async function importStripeOrderIntoWix(session, lines) {
         }
       }
     },
-    lineItems: lines.map(line => ({
-      productName: { original: line.name },
-      descriptionLines: [{
-        name: { original: "Entrega" },
-        plainText: { original: selectedDeliveryLabel(line.selectedDeliveryMode) }
-      }],
-      quantity: line.quantity,
-      price: { amount: String(line.amount) },
-      itemType: { preset: "PHYSICAL" },
-      physicalProperties: { shippable: true },
-      catalogReference: {
-        appId: WIX_STORES_APP_ID,
-        catalogItemId: line.productId,
-        options: { variantId: line.variantId }
-      }
-    })),
+    lineItems: lines.map(wixOrderLineItem),
     priceSummary: {
       subtotal: { amount: String(subtotal) },
       shipping: { amount: String(Math.max(0, total - subtotal)) },
@@ -1098,7 +1177,11 @@ function stripeIntentMetadata(lines, body, delivery) {
       a: line.amount,
       n: safeText(line.name, 180),
       f: safeText(line.fulfillmentCode, 10).toUpperCase(),
-      d: safeText(line.selectedDeliveryMode, 20).toLowerCase()
+      d: safeText(line.selectedDeliveryMode, 20).toLowerCase(),
+      s: safeText(line.sku, 100).toUpperCase(),
+      z: safeText(line.size, 50),
+      c: safeText(line.color, 100),
+      i: wixMediaId(line.image)
     })).toString("base64url");
   });
   return metadata;
@@ -1116,7 +1199,13 @@ function stripeIntentLines(intent) {
       amount: Number(item.a || 0),
       name: safeText(item.n, 300) || "Producto CajaModa",
       fulfillmentCode: safeText(item.f, 10).toUpperCase(),
-      selectedDeliveryMode: safeText(item.d, 20).toLowerCase()
+      selectedDeliveryMode: safeText(item.d, 20).toLowerCase(),
+      sku: safeText(item.s, 100).toUpperCase(),
+      size: safeText(item.z, 50),
+      color: safeText(item.c, 100),
+      image: safeText(item.i, 300)
+        ? `https://static.wixstatic.com/media/${safeText(item.i, 300)}`
+        : ""
     };
   }).filter(line => line.productId && line.variantId && Number.isFinite(line.amount) && line.amount >= 1);
 }
@@ -1139,7 +1228,11 @@ async function handleCreateStripePaymentIntent(request, response) {
     amount: Number(line?.price_data?.unit_amount || 0) / 100,
     name: safeText(line?.price_data?.product_data?.name, 300) || "Producto CajaModa",
     fulfillmentCode: safeText(line?.fulfillmentCode, 10).toUpperCase(),
-    selectedDeliveryMode: safeText(line?.selectedDeliveryMode, 20).toLowerCase()
+    selectedDeliveryMode: safeText(line?.selectedDeliveryMode, 20).toLowerCase(),
+    sku: safeText(line?.sku, 100).toUpperCase(),
+    size: safeText(line?.size, 50),
+    color: safeText(line?.color, 100),
+    image: safeText(line?.image, 1500)
   }));
   const captureMethod = stripeCaptureMethod(lines);
   const delivery = await checkoutDelivery(body, lines);
@@ -1203,17 +1296,18 @@ async function importStripeIntentIntoWix(intent, lines) {
   const name = splitCustomerName(billing.name || intent.metadata.customerName);
   const deliveryMethod = safeText(intent.metadata.deliveryMethod, 20) || "pickup";
   const address = deliveryMethod === "pickup"
-    ? { country: "CO", city: "Cartagena", subdivision: "BL", postalCode: "130001", addressLine: CARTAGENA_PICKUP_ADDRESS }
+    ? { country: "CO", city: "Cartagena", subdivision: "BL", postalCode: "130001", addressLine1: CARTAGENA_PICKUP_ADDRESS }
     : {
         country: "CO",
         city: safeText(intent.metadata.deliveryCity, 100),
         subdivision: safeText(intent.metadata.deliveryState, 100),
         postalCode: safeText(intent.metadata.deliveryPostalCode, 40),
-        addressLine: safeText(intent.metadata.deliveryAddress, 250)
+        addressLine1: safeText(intent.metadata.deliveryAddress, 250)
       };
   const subtotal = lines.reduce((sum, line) => sum + line.amount * line.quantity, 0);
   const total = Number(intent.amount_received || intent.amount || 0) / 100;
   const imported = await wix.orders.importOrder({
+    number: importedOrderNumber(intent.id),
     status: "APPROVED",
     paymentStatus: "PAID",
     fulfillmentStatus: "NOT_FULFILLED",
@@ -1239,12 +1333,7 @@ async function importStripeIntentIntoWix(intent, lines) {
         phone: safeText(intent.metadata.customerPhone, 80)
       } } }
     },
-    lineItems: lines.map(line => ({
-      productName: { original: line.name }, quantity: line.quantity,
-      price: { amount: String(line.amount) }, itemType: { preset: "PHYSICAL" },
-      physicalProperties: { shippable: true },
-      catalogReference: { appId: WIX_STORES_APP_ID, catalogItemId: line.productId, options: { variantId: line.variantId } }
-    })),
+    lineItems: lines.map(wixOrderLineItem),
     priceSummary: {
       subtotal: { amount: String(subtotal) }, shipping: { amount: String(Math.max(0, total - subtotal)) },
       tax: { amount: "0" }, discount: { amount: "0" }, total: { amount: String(total) }
@@ -2076,7 +2165,11 @@ async function verifiedCheckoutLines(items) {
     name: line.price_data.product_data.name,
     description: line.price_data.product_data.description || "",
     fulfillmentCode: safeText(line.fulfillmentCode, 10).toUpperCase(),
-    selectedDeliveryMode: safeText(line.selectedDeliveryMode, 20).toLowerCase()
+    selectedDeliveryMode: safeText(line.selectedDeliveryMode, 20).toLowerCase(),
+    sku: safeText(line.sku, 100).toUpperCase(),
+    size: safeText(line.size, 50),
+    color: safeText(line.color, 100),
+    image: safeText(line.image, 1500)
   }));
 }
 
@@ -2139,10 +2232,11 @@ async function handleCreateNequiOrder(request, response) {
     city: delivery.city,
     subdivision: delivery.state,
     postalCode: delivery.postalCode,
-    addressLine: delivery.addressLine
+    addressLine1: delivery.addressLine
   };
 
   const imported = await wix.orders.importOrder({
+    number: importedOrderNumber(externalOrderId),
     status: "APPROVED",
     paymentStatus: "PENDING_MERCHANT",
     fulfillmentStatus: "NOT_FULFILLED",
@@ -2164,18 +2258,7 @@ async function handleCreateNequiOrder(request, response) {
         }
       }
     },
-    lineItems: lines.map(line => ({
-      productName: { original: line.name },
-      descriptionLines: [{
-        name: { original: "Entrega" },
-        plainText: { original: selectedDeliveryLabel(line.selectedDeliveryMode) }
-      }],
-      quantity: line.quantity,
-      price: { amount: String(line.amount) },
-      itemType: { preset: "PHYSICAL" },
-      physicalProperties: { shippable: true },
-      catalogReference: { appId: WIX_STORES_APP_ID, catalogItemId: line.productId, options: { variantId: line.variantId } }
-    })),
+    lineItems: lines.map(wixOrderLineItem),
     priceSummary: {
       subtotal: { amount: String(subtotal) },
       shipping: { amount: String(delivery.fee) },
@@ -4698,6 +4781,57 @@ function getLineItemName(
   );
 }
 
+function getOrderLineDescription(item, label) {
+  const target = safeText(label, 50).toLowerCase();
+  for (const line of Array.isArray(item?.descriptionLines) ? item.descriptionLines : []) {
+    const name = safeText(
+      line?.name?.translated || line?.name?.original || line?.name,
+      100
+    ).toLowerCase();
+    if (name !== target) continue;
+    return safeText(
+      line?.plainText?.translated ||
+      line?.plainText?.original ||
+      line?.plainText ||
+      line?.colorInfo?.translated ||
+      line?.colorInfo?.original,
+      300
+    );
+  }
+  return "";
+}
+
+function getOrderLineItemImage(item) {
+  const raw = safeText(
+    item?.image?.url ||
+    item?.image?.id ||
+    item?.media?.url ||
+    item?.media?.id,
+    1500
+  );
+  if (!raw) return "";
+  const mediaId = wixMediaId(raw);
+  return mediaId ? `https://static.wixstatic.com/media/${mediaId}` : raw;
+}
+
+function normalizeWixOrderLineItem(item) {
+  return {
+    id: safeText(item?._id || item?.id, 150),
+    name: getLineItemName(item),
+    image: getOrderLineItemImage(item),
+    sku: safeText(
+      item?.physicalProperties?.sku || getOrderLineDescription(item, "SKU"),
+      100
+    ).toUpperCase(),
+    size: getOrderLineDescription(item, "Talla"),
+    color: getOrderLineDescription(item, "Color"),
+    delivery: getOrderLineDescription(item, "Entrega"),
+    quantity: Math.max(1, Number(item?.quantity || 1)),
+    productId: safeText(item?.catalogReference?.catalogItemId, 100),
+    variantId: safeText(item?.catalogReference?.options?.variantId, 100)
+  };
+}
+
 function getOrderProductsText(
   order
 ) {
@@ -4728,6 +4862,21 @@ function getOrderProductsText(
       }
     )
     .join(", ");
+}
+
+function getOrderShippingAddress(order) {
+  const address =
+    order?.shippingInfo?.logistics?.shippingDestination?.address ||
+    order?.billingInfo?.address ||
+    {};
+  return {
+    addressLine1: safeText(address?.addressLine1 || address?.addressLine, 300),
+    addressLine2: safeText(address?.addressLine2, 300),
+    city: safeText(address?.city, 150),
+    state: safeText(address?.subdivision || address?.state, 150),
+    postalCode: safeText(address?.postalCode, 50),
+    country: safeText(address?.country, 10)
+  };
 }
 
 function getOrderTotal(
@@ -4937,6 +5086,19 @@ function normalizeWixOrder(
         250
       ),
 
+    phone:
+      safeText(
+        getContactDetails(order)?.phone,
+        80
+      ),
+
+    shippingAddress:
+      getOrderShippingAddress(order),
+
+    items:
+      (Array.isArray(order?.lineItems) ? order.lineItems : [])
+        .map(normalizeWixOrderLineItem),
+
     products:
       getOrderProductsText(
         order
@@ -5000,6 +5162,13 @@ function normalizeWixOrder(
         trackingInfo
           ?.trackingNumber,
         300
+      ),
+
+    trackingLink:
+      safeText(
+        trackingInfo
+          ?.trackingLink,
+        500
       )
   };
 }
@@ -5067,6 +5236,27 @@ function normalizeStripeAuthorization(intent) {
     date: new Date(Number(intent.created || 0) * 1000).toISOString(),
     customer: safeText(intent?.metadata?.customerName, 160) || "Cliente CajaModa",
     email: safeText(intent?.metadata?.customerEmail, 250),
+    phone: safeText(intent?.metadata?.customerPhone, 80),
+    shippingAddress: {
+      addressLine1: safeText(intent?.metadata?.deliveryAddress, 300),
+      addressLine2: "",
+      city: safeText(intent?.metadata?.deliveryCity, 150),
+      state: safeText(intent?.metadata?.deliveryState, 150),
+      postalCode: safeText(intent?.metadata?.deliveryPostalCode, 50),
+      country: "CO"
+    },
+    items: lines.map(line => ({
+      id: `${line.productId}:${line.variantId}`,
+      name: line.name,
+      image: safeText(line.image, 1500),
+      sku: safeText(line.sku, 100).toUpperCase(),
+      size: safeText(line.size, 50),
+      color: safeText(line.color, 100),
+      delivery: selectedDeliveryLabel(line.selectedDeliveryMode),
+      quantity: line.quantity,
+      productId: line.productId,
+      variantId: line.variantId
+    })),
     products: lines.map(line => `${line.quantity} × ${line.name}`).join(", "),
     total: Number(intent.amount || 0) / 100,
     status: "authorized",

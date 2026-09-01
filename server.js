@@ -5648,6 +5648,31 @@ async function handleGenerateEnviaLabel(request, response, orderId, shipmentType
     const trackingLink = safeText(label?.trackUrl || label?.trackingLink || label?.tracking_url, 1000);
     const shipmentId = safeText(label?.shipmentId || label?.shipment_id || label?.id, 100);
     if (!trackingNumber || !labelUrl) {
+      console.error("[Envia] Label generation response missing required fields", JSON.stringify({
+        type,
+        carrier: quote.carrier,
+        service: quote.service,
+        meta: safeText(generated?.meta, 100),
+        errorCode: safeText(generated?.error?.code || label?.error?.code || label?.code, 100),
+        errorMessage: safeText(
+          (typeof generated?.error === "string" ? generated.error : "") ||
+          generated?.error?.message ||
+          generated?.error?.description ||
+          generated?.errors?.[0]?.message ||
+          generated?.message ||
+          (typeof label?.error === "string" ? label.error : "") ||
+          label?.error?.message ||
+          label?.error?.description ||
+          label?.errors?.[0]?.message ||
+          label?.message,
+          500
+        ),
+        responseKeys: generated && typeof generated === "object" ? Object.keys(generated) : [],
+        dataKeys: label && typeof label === "object" ? Object.keys(label) : [],
+        dataLength: Array.isArray(generated?.data) ? generated.data.length : null,
+        hasTrackingNumber: Boolean(trackingNumber),
+        hasLabelUrl: Boolean(labelUrl)
+      }));
       return sendError(response, 502, "Envia no devolvió la guía y el número de rastreo.");
     }
 

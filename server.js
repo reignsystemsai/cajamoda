@@ -4864,9 +4864,11 @@ function getOrderLineDescription(item, label) {
 }
 
 function getOrderLineItemImage(item) {
+  const rawImage = typeof item?.image === "string" ? item.image : "";
   const raw = safeText(
     item?.image?.url ||
     item?.image?.id ||
+    rawImage ||
     item?.media?.url ||
     item?.media?.id,
     1500

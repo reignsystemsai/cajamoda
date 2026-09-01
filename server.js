@@ -5069,6 +5069,7 @@ function normalizeWixOrder(
 
     date:
       safeText(
+        order?._createdDate ||
         order?.createdDate,
         100
       ),

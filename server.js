@@ -820,6 +820,9 @@ async function handleCreateStripeCheckout(request, response) {
     mode: "payment",
     ui_mode: "elements",
     payment_method_types: ["card"],
+    payment_intent_data: {
+      capture_method: stripeCaptureMethod(catalogLines)
+    },
     line_items: lineItems,
     customer_email: customerEmail || undefined,
     shipping_options: [{

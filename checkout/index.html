@@ -3648,7 +3648,6 @@ img{display:block;max-width:100%}
     try {
       if (!checkoutElements || !checkoutActions || !paymentElement) throw new Error("El formulario de Stripe todavía está cargando.");
       if (!validatePaymentDetails()) throw new Error("Completa tus datos de contacto y entrega.");
-      await refreshDeliveryQuote({ required: true });
       const expectedAmountTotal = Math.round(checkoutTotal() * 100);
       if (
         stripeSessionCartKey !== currentDeliveryQuoteKey() ||

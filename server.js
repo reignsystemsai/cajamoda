@@ -990,6 +990,171 @@ function splitCustomerName(value) {
   };
 }
 
+
+function cajaModaOrderNumber(order) {
+  const value = safeText(order?.number, 100).replace(/^#/, "").trim();
+  return value.startsWith("CM-") ? value : "CM-" + value;
+}
+
+function orderConfirmationIdempotencyKey(order) {
+  const seed = safeText(order?._id || order?.id || order?.number, 200);
+  const bytes = crypto
+    .createHash("sha256")
+    .update("cajamoda-order-confirmation:" + seed)
+    .digest()
+    .subarray(0, 16);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = bytes.toString("hex");
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20, 32)
+  ].join("-");
+}
+
+function formatCop(value) {
+  return new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0
+  }).format(Number(value || 0));
+}
+
+function orderConfirmationEmailHtml(order) {
+  const normalized = normalizeWixOrder(order);
+  const orderNumber = cajaModaOrderNumber(order);
+  const customerName = normalized.customer || "Cliente CajaModa";
+  const delivery = getConfirmationDelivery(order);
+  const address = normalized.shippingAddress || {};
+  const addressText = [
+    address.addressLine1,
+    address.addressLine2,
+    address.city,
+    address.state,
+    address.postalCode
+  ].filter(Boolean).join(", ");
+  const itemRows = normalized.items.map(item => {
+    const details = [
+      item.sku ? "SKU " + item.sku : "",
+      item.size ? "Talla " + item.size : "",
+      item.color ? "Color " + item.color : "",
+      "Cantidad " + item.quantity
+    ].filter(Boolean).join(" · ");
+    const image = item.image
+      ? "<img src='" + escapeHtml(item.image) + "' alt='' width='84' height='104' style='display:block;width:84px;height:104px;object-fit:cover;border-radius:16px;border:1px solid #e4ddd3;'>"
+      : "<div style='width:84px;height:104px;border-radius:16px;background:#eee9e1;text-align:center;line-height:104px;font-family:Georgia,serif;font-size:18px;color:#6f685f;'>CM</div>";
+    return [
+      "<tr>",
+      "<td style='padding:18px 14px 18px 0;vertical-align:top;width:84px;'>", image, "</td>",
+      "<td style='padding:22px 0;vertical-align:top;border-bottom:1px solid #e9e2d9;'>",
+      "<div style='font-family:Arial,sans-serif;font-size:18px;font-weight:700;color:#171513;'>", escapeHtml(item.name), "</div>",
+      "<div style='margin-top:7px;font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#756f67;'>", escapeHtml(details), "</div>",
+      "<div style='margin-top:7px;font-family:Arial,sans-serif;font-size:14px;color:#46643c;'>", escapeHtml(item.delivery || delivery.method), "</div>",
+      "</td>",
+      "</tr>"
+    ].join("");
+  }).join("");
+
+  return [
+    "<!doctype html><html><body style='margin:0;padding:0;background:#eee7dc;'>",
+    "<table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='background:#eee7dc;padding:34px 12px;'>",
+    "<tr><td align='center'>",
+    "<table role='presentation' width='640' cellspacing='0' cellpadding='0' style='width:100%;max-width:640px;background:#fbfaf7;border:1px solid rgba(255,255,255,.86);border-radius:30px;box-shadow:0 18px 50px rgba(61,48,31,.13);overflow:hidden;'>",
+    "<tr><td style='padding:34px 34px 26px;text-align:center;background:rgba(255,255,255,.70);border-bottom:1px solid #e3dcd2;'>",
+    "<div style='font-family:Didot,Bodoni MT,Times New Roman,serif;font-size:60px;line-height:.82;letter-spacing:-9px;color:#111;'>CM</div>",
+    "<div style='margin-top:12px;font-family:Georgia,serif;font-size:17px;letter-spacing:9px;color:#111;'>CAJAMODA</div>",
+    "<div style='margin-top:8px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:6px;color:#5f5a54;'>COLOMBIA</div>",
+    "</td></tr>",
+    "<tr><td style='padding:38px 42px 12px;text-align:center;'>",
+    "<div style='display:inline-block;width:54px;height:54px;border:1px solid #201d19;border-radius:50%;font-family:Arial,sans-serif;font-size:27px;line-height:54px;color:#171513;'>✓</div>",
+    "<h1 style='margin:24px 0 8px;font-family:Arial,sans-serif;font-size:30px;letter-spacing:7px;color:#151311;'>COMPRA CONFIRMADA</h1>",
+    "<p style='margin:0;font-family:Arial,sans-serif;font-size:18px;color:#5e5851;'>Gracias por tu compra, ", escapeHtml(customerName), ".</p>",
+    "<div style='margin:24px auto 0;padding:13px 18px;display:inline-block;border:1px solid #dcd3c8;border-radius:999px;background:rgba(255,255,255,.82);font-family:Arial,sans-serif;font-size:15px;color:#37322d;'>Pedido #", escapeHtml(orderNumber), " · Pago confirmado</div>",
+    "</td></tr>",
+    "<tr><td style='padding:18px 42px 0;'>",
+    "<table role='presentation' width='100%' cellspacing='0' cellpadding='0'>", itemRows, "</table>",
+    "</td></tr>",
+    "<tr><td style='padding:26px 42px;'>",
+    "<table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='background:rgba(255,255,255,.76);border:1px solid #ded7ce;border-radius:22px;'>",
+    "<tr><td style='padding:22px 24px;border-bottom:1px solid #e7e0d7;'>",
+    "<div style='font-family:Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;color:#777067;'>ENTREGA</div>",
+    "<div style='margin-top:7px;font-family:Arial,sans-serif;font-size:17px;font-weight:700;color:#181512;'>", escapeHtml(delivery.method), "</div>",
+    "<div style='margin-top:5px;font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#6e675f;'>", escapeHtml(addressText), "</div>",
+    "</td></tr>",
+    "<tr><td style='padding:22px 24px;'>",
+    "<div style='font-family:Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;color:#777067;'>SEGUIMIENTO</div>",
+    "<div style='margin-top:7px;font-family:Arial,sans-serif;font-size:17px;font-weight:700;color:#181512;'>Guía pendiente</div>",
+    "<div style='margin-top:5px;font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#6e675f;'>Te enviaremos otro correo con la transportadora y el número de rastreo cuando tu pedido sea despachado.</div>",
+    "</td></tr></table>",
+    "</td></tr>",
+    "<tr><td style='padding:0 42px 34px;'>",
+    "<table role='presentation' width='100%' cellspacing='0' cellpadding='0'>",
+    "<tr><td style='font-family:Arial,sans-serif;font-size:15px;color:#6e675f;'>Total</td>",
+    "<td align='right' style='font-family:Arial,sans-serif;font-size:22px;font-weight:700;color:#171513;'>", escapeHtml(formatCop(normalized.total)), "</td></tr>",
+    "</table>",
+    "<div style='margin-top:28px;text-align:center;'>",
+    "<a href='https://www.cajamoda.com/' style='display:inline-block;padding:15px 28px;border-radius:999px;background:#171513;color:#fff;text-decoration:none;font-family:Arial,sans-serif;font-size:15px;font-weight:700;'>Seguir comprando</a>",
+    "</div>",
+    "<p style='margin:30px 0 0;text-align:center;font-family:Arial,sans-serif;font-size:12px;line-height:1.6;color:#817970;'>Conserva tu número de pedido si necesitas ayuda con tu compra.</p>",
+    "</td></tr>",
+    "</table>",
+    "</td></tr></table>",
+    "</body></html>"
+  ].join("");
+}
+
+async function sendOrderConfirmationEmail(order) {
+  if (!WIX_API_KEY || !WIX_SITE_ID) throw new Error("Wix Email no está configurado.");
+  const customerEmail = safeText(order?.buyerInfo?.email, 250).toLowerCase();
+  if (!customerEmail) throw new Error("El pedido confirmado no tiene correo del cliente.");
+
+  const orderNumber = cajaModaOrderNumber(order);
+  const result = await fetch(
+    "https://www.wixapis.com/email-transmissions/v1/email-transmissions/send",
+    {
+      method: "POST",
+      headers: {
+        "Authorization": WIX_API_KEY,
+        "wix-site-id": WIX_SITE_ID,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        emailTransmission: {
+          emailSubject: "Tu pedido CajaModa está confirmado — #" + orderNumber,
+          emailHtmlContent: orderConfirmationEmailHtml(order),
+          senderName: "CajaModa",
+          toRecipients: [{ emailAddress: customerEmail }],
+          type: "TRANSACTIONAL",
+          metadata: {
+            order: orderNumber.replace(/[^a-z0-9]/gi, ""),
+            source: "CajaModa"
+          }
+        },
+        idempotencyKey: orderConfirmationIdempotencyKey(order)
+      })
+    }
+  );
+  const payload = await result.json().catch(() => ({}));
+  if (!result.ok) {
+    const message = safeText(
+      payload?.details?.applicationError?.description ||
+      payload?.message ||
+      payload?.error,
+      300
+    );
+    throw new Error(message || "Wix Email rechazó la confirmación del pedido.");
+  }
+  console.log(
+    "[Wix Email] Order confirmation accepted:",
+    orderNumber,
+    safeText(payload?.emailTransmission?.id, 100)
+  );
+  return payload?.emailTransmission;
+}
+
 async function getStripePurchasedLines(session) {
   const result = await stripe.checkout.sessions.listLineItems(session.id, {
     limit: 100,
@@ -1121,6 +1286,7 @@ async function syncCompletedStripeSession(session) {
     if (imported.created) {
       await decrementStripeInventory(lines);
     }
+    await sendOrderConfirmationEmail(imported.order);
     await stripe.checkout.sessions.update(session.id, {
       metadata: {
         ...session.metadata,
@@ -1416,6 +1582,7 @@ async function syncSucceededStripeIntent(paymentIntent) {
     if (!lines.length) throw new Error("Stripe devolvió un pedido sin productos verificables.");
     const imported = await importStripeIntentIntoWix(latest, lines);
     if (imported.created) await decrementStripeInventory(lines);
+    await sendOrderConfirmationEmail(imported.order);
     await stripe.paymentIntents.update(latest.id, { metadata: {
       ...latest.metadata,
       wixSync: "complete",
@@ -2360,7 +2527,10 @@ async function handleConfirmNequiOrder(request, response, orderId) {
   const confirmation = (async () => {
     const order = await wix.orders.getOrder(orderId);
     if (!isNequiOrder(order)) throw new Error("Este no es un pedido Nequi.");
-    if (String(order.paymentStatus).toUpperCase() === "PAID") return order;
+    if (String(order.paymentStatus).toUpperCase() === "PAID") {
+      await sendOrderConfirmationEmail(order);
+      return order;
+    }
 
     const lines = (Array.isArray(order?.lineItems) ? order.lineItems : [])
       .map(line => ({
@@ -2373,7 +2543,9 @@ async function handleConfirmNequiOrder(request, response, orderId) {
 
     const updated = await wix.orders.importOrder({ ...order, paymentStatus: "PAID" });
     await decrementStripeInventory(lines);
-    return updated?.order || updated;
+    const confirmed = updated?.order || updated;
+    await sendOrderConfirmationEmail(confirmed);
+    return confirmed;
   })();
 
   nequiConfirmationLocks.set(orderId, confirmation);

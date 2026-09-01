@@ -776,7 +776,7 @@ function wixOrderLineItem(line) {
     quantity: line.quantity,
     price: { amount: String(line.amount) },
     itemType: { preset: "PHYSICAL" },
-    image: image ? { url: image } : undefined,
+    image: image || undefined,
     physicalProperties: {
       shippable: true,
       sku: safeText(line?.sku, 100).toUpperCase()

@@ -1525,6 +1525,13 @@ async function externalJson(url, options = {}, timeoutMs = 12000) {
   }
 }
 
+function enviaAddressNumber(value) {
+  const street = safeText(value, 250);
+  const labeled = street.match(/(?:#|(?:casa|lote|nro|no\.?)\s*)([A-Z0-9]+(?:[-/][A-Z0-9]+)*)/i)?.[1];
+  const numbers = street.match(/\d+[A-Z]?(?:[-/]\d+[A-Z]?)?/gi);
+  return safeText(labeled || numbers?.at(-1) || "S/N", 30);
+}
+
 function fullColombiaAddress(street, city, state = "Bolívar", postalCode = "") {
   return [street, city, state, postalCode, "Colombia"].filter(Boolean).join(", ");
 }
@@ -5634,6 +5641,8 @@ async function handleGenerateEnviaLabel(request, response, orderId, shipmentType
       printFormat: ENVIA_PRINT_FORMAT,
       printSize: ENVIA_PRINT_SIZE
     });
+    payload.origin.number = enviaAddressNumber(payload.origin.street);
+    payload.destination.number = enviaAddressNumber(payload.destination.street);
     const generated = await externalJson(`${ENVIA_API_BASE}/ship/generate/`, {
       method: "POST",
       headers: {

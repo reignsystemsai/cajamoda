@@ -3085,6 +3085,7 @@ img{
 .analyticsStatus{min-height:18px;color:#777c87;font-size:11px;text-align:right}
 .analyticsGrid{display:grid;gap:16px}
 .analyticsKpis{grid-template-columns:repeat(6,minmax(0,1fr))}
+.analyticsMetricGroups{display:grid;gap:12px}.analyticsMetricGroup{border:1px solid rgba(255,255,255,.1);border-radius:18px;background:rgba(255,255,255,.035);overflow:hidden}.analyticsMetricGroup summary{cursor:pointer;padding:16px 18px;color:#f4f4f5;font-size:13px;font-weight:800;letter-spacing:.02em;list-style:none}.analyticsMetricGroup summary::-webkit-details-marker{display:none}.analyticsMetricGroup summary::after{content:"+";float:right;color:#8f949f}.analyticsMetricGroup[open] summary::after{content:"−"}.analyticsMetricGroupGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;padding:0 14px 14px}
 .analyticsCard{position:relative;min-width:0;border:1px solid rgba(255,255,255,.105);border-radius:22px;background:linear-gradient(145deg,rgba(255,255,255,.085),rgba(255,255,255,.035));box-shadow:0 24px 70px rgba(0,0,0,.24);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);overflow:hidden;transition:transform .28s ease,border-color .28s ease,background .28s ease}
 .analyticsCard::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,.09),transparent 28%)}
 .analyticsCard:hover{transform:translateY(-5px);border-color:rgba(255,255,255,.2);background:linear-gradient(145deg,rgba(255,255,255,.11),rgba(255,255,255,.045))}
@@ -3127,13 +3128,14 @@ img{
 .analyticsLiveHead{display:flex;align-items:center;gap:8px}.analyticsLiveCount{display:inline-flex;min-width:24px;height:24px;align-items:center;justify-content:center;border-radius:999px;background:rgba(85,245,180,.12);color:#70f7c0;font-size:11px;font-weight:800}
 .analyticsLiveList{position:relative;display:grid;gap:9px;max-height:420px;overflow:auto}.analyticsLiveRow{display:grid;grid-template-columns:110px 85px minmax(120px,1fr) 110px 80px;gap:10px;align-items:center;padding:12px 13px;border:1px solid rgba(255,255,255,.065);border-radius:13px;background:rgba(255,255,255,.025);font-size:10px;color:#a4a8b1}.analyticsLiveRow strong{color:#f1f2f4;font-size:10px;overflow:hidden;text-overflow:ellipsis}.analyticsSessionId{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#777d89}.analyticsEmpty{position:relative;padding:34px 12px;text-align:center;color:#696e79;font-size:12px}
 .analyticsCampaignList{position:relative;display:grid;gap:9px;max-height:420px;overflow:auto}.analyticsCampaign{display:grid;grid-template-columns:76px minmax(0,1fr) 54px 94px;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:10px}.analyticsCampaignChannel{color:#8e94a0;text-transform:capitalize}.analyticsCampaignName{color:#e3e5e8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.analyticsCampaignValue{text-align:right;color:#8e94a0}.analyticsCampaignRevenue{text-align:right;color:#fff;font-weight:760}
-.chatShell{max-width:980px;margin:0 auto;display:grid;grid-template-columns:250px 1fr;min-height:620px;border:1px solid #ddd;border-radius:22px;overflow:hidden;background:#fff}.chatRoster{padding:24px;background:#f7f5ef;border-right:1px solid #ddd}.chatRosterTitle{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.chatPerson{margin-top:20px;padding:14px;border-radius:14px;background:#090909;color:#fff}.chatPresence{margin-top:6px;font-size:11px;color:#999}.chatPresence.active{color:#36b985}.chatConversation{display:grid;grid-template-rows:auto 1fr auto;min-width:0}.chatHead{padding:20px 22px;border-bottom:1px solid #eee;font-weight:800}.chatMessages{padding:22px;overflow:auto;display:flex;flex-direction:column;gap:10px}.chatMessage{max-width:75%;padding:11px 13px;border-radius:14px;background:#f1f1f1;font-size:13px;line-height:1.45}.chatMessage.mine{align-self:flex-end;background:#090909;color:#fff}.chatMessage time{display:block;margin-top:5px;font-size:9px;opacity:.55}.chatComposer{display:flex;gap:10px;padding:16px;border-top:1px solid #eee}.chatComposer input{flex:1;height:44px;border:1px solid #ddd;border-radius:12px;padding:0 14px;font-size:14px}.chatComposer button{border:0;border-radius:12px;background:#090909;color:#fff;padding:0 20px;font-weight:800}@media(max-width:760px){.chatShell{grid-template-columns:1fr}.chatRoster{border-right:0;border-bottom:1px solid #ddd}}
+.chatBubble{position:fixed;right:28px;bottom:28px;z-index:1200;width:58px;height:58px;border:0;border-radius:50%;background:#090909;color:#fff;box-shadow:0 14px 38px rgba(0,0,0,.3);cursor:pointer}.chatBubble svg{width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:1.8}.chatUnread{position:absolute;right:-3px;top:-3px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#e85050;color:#fff;font:800 10px/20px Inter,sans-serif}.chatUnread[hidden]{display:none}.chatShell{position:fixed;right:28px;bottom:98px;z-index:1199;width:min(390px,calc(100vw - 32px));height:560px;display:none;grid-template-rows:auto 1fr auto;border:1px solid #ddd;border-radius:20px;overflow:hidden;background:#fff;box-shadow:0 22px 70px rgba(0,0,0,.3)}.chatShell.open{display:grid}.chatHead{padding:18px 20px;border-bottom:1px solid #eee;font-weight:800}.chatHeadMeta{display:flex;justify-content:space-between;align-items:center}.chatPresence{font-size:11px;color:#999}.chatPresence.active{color:#36b985}.chatMessages{padding:18px;overflow:auto;display:flex;flex-direction:column;gap:10px}.chatMessage{max-width:78%;padding:11px 13px;border-radius:14px;background:#f1f1f1;font-size:13px;line-height:1.45}.chatMessage.mine{align-self:flex-end;background:#090909;color:#fff}.chatMessage time{display:block;margin-top:5px;font-size:9px;opacity:.55}.chatComposer{display:flex;gap:8px;padding:14px;border-top:1px solid #eee}.chatComposer input{flex:1;min-width:0;height:42px;border:1px solid #ddd;border-radius:12px;padding:0 12px;font-size:14px}.chatComposer button{border:0;border-radius:12px;background:#090909;color:#fff;padding:0 16px;font-weight:800}.chatStatus{padding:0 14px 8px;color:#a44;font-size:10px}
 @keyframes analyticsPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(.72)}}
 @keyframes analyticsSpin{to{transform:rotate(360deg)}}
 @keyframes analyticsGrow{from{transform:scaleX(0)}}
 @media(max-width:1320px){.analyticsKpis{grid-template-columns:repeat(3,1fr)}.analyticsThreeCol{grid-template-columns:1fr 1fr}.analyticsThreeCol>.analyticsCard:last-child{grid-column:1/-1}}
 @media(max-width:960px){#panel-analytics{margin:-18px;padding:20px;border-radius:22px}.analyticsTopbar{flex-direction:column}.analyticsControls{justify-content:flex-start}.analyticsTwoCol,.analyticsBottom,.analyticsThreeCol{grid-template-columns:1fr}.analyticsThreeCol>.analyticsCard:last-child{grid-column:auto}.analyticsLiveRow{grid-template-columns:100px 72px minmax(100px,1fr)}.analyticsLiveRow>:nth-child(4),.analyticsLiveRow>:nth-child(5){display:none}}
 @media(max-width:620px){#panel-analytics{margin:-12px;padding:16px}.analyticsKpis{grid-template-columns:1fr 1fr}.analyticsKpi{min-height:116px}.analyticsKpiValue{font-size:24px}.analyticsCanvasWrap,.analyticsDonutWrap{height:230px}.analyticsPanel{padding:17px}.analyticsFunnelRow{grid-template-columns:82px 1fr 40px}}
+@media(max-width:900px){.analyticsMetricGroupGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.analyticsMetricGroupGrid{grid-template-columns:1fr}.chatBubble{right:16px;bottom:16px}.chatShell{right:16px;bottom:84px}}
 
 </style>
 
@@ -3263,10 +3265,6 @@ img{
       <span class="navIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V9"/><path d="M10 19V5"/><path d="M16 19v-7"/><path d="M22 19H2"/></svg></span>
       Network Management
     </button>
-    <button class="tabButton" data-tab="chat">
-      <span class="navIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg></span>
-      Chat
-    </button>
 
   </nav>
 
@@ -3390,12 +3388,12 @@ img{
 
 </section>
 
-<section id="panel-chat" class="panel">
-  <div class="chatShell">
-    <aside class="chatRoster"><div class="chatRosterTitle">Store Loaders</div><div class="chatPerson"><strong id="chatPeerName">Karolay</strong><div id="chatPeerPresence" class="chatPresence">Inactive</div></div></aside>
-    <div class="chatConversation"><div id="chatHead" class="chatHead">Private chat</div><div id="chatMessages" class="chatMessages"></div><form id="chatComposer" class="chatComposer"><input id="chatInput" maxlength="1000" autocomplete="off" placeholder="Write a message"><button type="submit">Send</button></form></div>
-  </div>
-</section>
+<button id="chatBubble" class="chatBubble" type="button" aria-label="Open private chat"><svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg><span id="chatUnread" class="chatUnread" hidden>0</span></button>
+<div id="chatShell" class="chatShell" aria-label="Private Store Loader chat">
+  <div class="chatHead"><div class="chatHeadMeta"><span id="chatHead">Private chat</span><span id="chatPeerPresence" class="chatPresence">Inactive</span></div></div>
+  <div id="chatMessages" class="chatMessages"></div>
+  <div><div id="chatStatus" class="chatStatus"></div><form id="chatComposer" class="chatComposer"><input id="chatInput" maxlength="1000" autocomplete="off" placeholder="Write a message"><button type="submit">Send</button></form></div>
+</div>
 
 <!-- ==========================================================
      OWNER EVENT ANALYTICS
@@ -3416,18 +3414,14 @@ img{
       </div>
       <div>
         <div class="analyticsControls">
-          <div class="analyticsRange" aria-label="Analytics date range">
-            <button class="analyticsRangeButton" type="button" data-analytics-days="7">7D</button>
-            <button class="analyticsRangeButton active" type="button" data-analytics-days="30">30D</button>
-            <button class="analyticsRangeButton" type="button" data-analytics-days="90">90D</button>
-          </div>
+          <input id="analyticsMonth" type="month" aria-label="Dashboard month" style="height:36px;border:1px solid rgba(255,255,255,.11);border-radius:10px;background:rgba(255,255,255,.055);color:#fff;padding:0 12px">
           <button id="analyticsRefresh" class="analyticsRefresh" type="button"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0 2 5"/><path d="M20 4v7h-7"/></svg>Refresh</button>
         </div>
         <div id="analyticsStatus" class="analyticsStatus">Waiting for live data…</div>
       </div>
     </div>
 
-    <div class="analyticsGrid analyticsKpis">
+    <div class="analyticsGrid analyticsKpis" id="analyticsKpis">
       <article class="analyticsCard analyticsKpi live"><div class="analyticsKpiLabel">Live now</div><div id="analyticsLiveVisitors" class="analyticsKpiValue">—</div><div class="analyticsKpiMeta">active in the last 45 seconds</div></article>
       <article class="analyticsCard analyticsKpi"><div class="analyticsKpiLabel">Product views</div><div id="analyticsViews" class="analyticsKpiValue">—</div><div class="analyticsKpiMeta">real product detail views</div></article>
       <article class="analyticsCard analyticsKpi"><div class="analyticsKpiLabel">Add to cart</div><div id="analyticsCart" class="analyticsKpiValue">—</div><div class="analyticsKpiMeta">successful cart additions</div></article>
@@ -3448,19 +3442,19 @@ img{
 
     <div class="analyticsGrid analyticsTwoCol">
       <article class="analyticsCard analyticsPanel">
-        <div class="analyticsPanelHead"><div><div class="analyticsPanelTitle">Store activity</div><div class="analyticsPanelMeta">The line redraws as live events arrive.</div></div><div class="analyticsLegend"><span><i style="background:#7f8dff"></i>Views</span><span><i style="background:#55f5b4"></i>Checkout</span><span><i style="background:#ffbf69"></i>Purchase</span></div></div>
-        <div class="analyticsCanvasWrap"><canvas id="analyticsTrendCanvas"></canvas></div>
+        <div class="analyticsPanelHead"><div><div class="analyticsPanelTitle">Marketing performance</div><div class="analyticsPanelMeta">WhatsApp, Instagram, TikTok, and direct.</div></div></div>
+        <div class="analyticsDonutWrap"><canvas id="analyticsDonutCanvas"></canvas><div class="analyticsDonutCenter"><strong id="analyticsSessionTotal">—</strong><span>sessions</span></div></div>
       </article>
       <article class="analyticsCard analyticsPanel">
-        <div class="analyticsPanelHead"><div><div class="analyticsPanelTitle">Session mix</div><div class="analyticsPanelMeta">WhatsApp, Instagram, TikTok, and direct.</div></div></div>
-        <div class="analyticsDonutWrap"><canvas id="analyticsDonutCanvas"></canvas><div class="analyticsDonutCenter"><strong id="analyticsSessionTotal">—</strong><span>sessions</span></div></div>
+        <div class="analyticsPanelHead"><div><div class="analyticsPanelTitle">Store activity</div><div class="analyticsPanelMeta">The line redraws as live events arrive.</div></div><div class="analyticsLegend"><span><i style="background:#7f8dff"></i>Views</span><span><i style="background:#55f5b4"></i>Checkout</span><span><i style="background:#ffbf69"></i>Purchase</span></div></div>
+        <div class="analyticsCanvasWrap"><canvas id="analyticsTrendCanvas"></canvas></div>
       </article>
     </div>
 
     <div class="analyticsGrid analyticsThreeCol">
       <article class="analyticsCard analyticsPanel"><div class="analyticsPanelHead"><div><div class="analyticsPanelTitle">Commerce funnel</div><div class="analyticsPanelMeta">Unique sessions at each step.</div></div></div><div id="analyticsFunnel" class="analyticsFunnel"></div></article>
       <article class="analyticsCard analyticsPanel"><div class="analyticsPanelHead"><div><div class="analyticsPanelTitle">Channel performance</div><div class="analyticsPanelMeta">Sessions, purchases, revenue, and ROAS.</div></div></div><div id="analyticsChannels" class="analyticsChannelList"></div></article>
-      <article class="analyticsCard analyticsPanel"><div class="analyticsPanelHead"><div><div class="analyticsPanelTitle">Business inputs</div><div class="analyticsPanelMeta">Advertising and inventory investment.</div></div></div><div class="analyticsSettings"><div class="analyticsSetting"><label for="analyticsSpendWhatsapp">WhatsApp ads</label><input id="analyticsSpendWhatsapp" type="number" min="0" step="1000"></div><div class="analyticsSetting"><label for="analyticsSpendInstagram">Instagram ads</label><input id="analyticsSpendInstagram" type="number" min="0" step="1000"></div><div class="analyticsSetting"><label for="analyticsSpendTiktok">TikTok ads</label><input id="analyticsSpendTiktok" type="number" min="0" step="1000"></div><div class="analyticsSetting"><label for="analyticsInventoryInput">Inventory spend</label><input id="analyticsInventoryInput" type="number" min="0" step="1000"></div><button id="analyticsSaveSettings" class="analyticsSave" type="button">Save business inputs</button><div id="analyticsBusinessReadout" class="analyticsPanelMeta"></div></div></article>
+      <article class="analyticsCard analyticsPanel"><div class="analyticsPanelHead"><div><div class="analyticsPanelTitle">Monthly inputs</div><div class="analyticsPanelMeta">Advertising and inventory investment for the selected month.</div></div></div><div class="analyticsSettings"><div class="analyticsSetting"><label for="analyticsSpendWhatsapp">WhatsApp ads</label><input id="analyticsSpendWhatsapp" type="number" min="0" step="1000"></div><div class="analyticsSetting"><label for="analyticsSpendInstagram">Instagram ads</label><input id="analyticsSpendInstagram" type="number" min="0" step="1000"></div><div class="analyticsSetting"><label for="analyticsSpendTiktok">TikTok ads</label><input id="analyticsSpendTiktok" type="number" min="0" step="1000"></div><div class="analyticsSetting"><label for="analyticsInventoryInput">Inventory spend</label><input id="analyticsInventoryInput" type="number" min="0" step="1000"></div><button id="analyticsSaveSettings" class="analyticsSave" type="button">Save Monthly Inputs</button><div id="analyticsBusinessReadout" class="analyticsPanelMeta"></div></div></article>
     </div>
 
     <article class="analyticsCard analyticsTableCard">

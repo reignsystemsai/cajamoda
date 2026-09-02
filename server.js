@@ -1182,14 +1182,7 @@ function orderShipmentEmailHtml(order, carrier, trackingNumber, trackingLink = "
   const normalized = normalizeWixOrder(order);
   const orderNumber = cajaModaOrderNumber(order);
   const customerName = normalized.customer || "Cliente CajaModa";
-  const address = normalized.shippingAddress || {};
-  const addressText = [
-    address.addressLine1,
-    address.addressLine2,
-    address.city,
-    address.state,
-    address.postalCode
-  ].filter(Boolean).join(", ");
+  const addressText = "Cl. 35 #10-22 piso 1 local 1, San Diego, Cartagena de Indias, Bolívar, Colombia";
   const itemRows = normalized.items.map(item => {
     const details = [
       item.sku ? "SKU " + item.sku : "",

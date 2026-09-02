@@ -3074,7 +3074,6 @@ body:not(.storefrontLoading) .storefrontLoader{
     <input id="trackingEmail" class="profileInput" type="email" autocomplete="email" placeholder="tu@email.com">
     <button id="trackingSubmit" class="contactButton" type="button">Consultar pedido</button>
     <div id="trackingResult" class="supportResult" aria-live="polite"></div>
-    <button id="trackingProfile" class="profileButton primary" type="button">Completa tu perfil y recibe 10% de descuento</button>
   </section>
 </div>
 
@@ -6238,16 +6237,10 @@ scheduleBagAutoClose();
     location.href = `mailto:${CONFIG.supportEmail}?subject=${encodeURIComponent("Ayuda CajaModa")}`;
   }
 
-  function updateTrackingProfileAction(){
-    const profile = readJson("cajamoda-member-profile",{});
-    $("trackingProfile").classList.toggle("hidden",Boolean(profile?.email));
-  }
-
   function openTrack(){
     closeOverlay($("plusOverlay"),false);
     const profile = readJson("cajamoda-member-profile",{});
     if(profile?.email) $("trackingEmail").value = profile.email;
-    updateTrackingProfileAction();
     $("trackingResult").innerHTML = "";
     openOverlay($("trackingOverlay"));
   }
@@ -6776,11 +6769,6 @@ scheduleBagAutoClose();
     if(event.target === $("trackingOverlay")) closeOverlay($("trackingOverlay"));
   };
   $("trackingSubmit").onclick = submitTracking;
-  $("trackingProfile").onclick = () => {
-    closeOverlay($("trackingOverlay"),false);
-    loadProfile();
-    openOverlay($("profileOverlay"));
-  };
   $("helpClose").onclick = () => closeOverlay($("helpOverlay"));
   $("helpOverlay").onclick = event => {
     if(event.target === $("helpOverlay")) closeOverlay($("helpOverlay"));

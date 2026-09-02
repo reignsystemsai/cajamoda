@@ -2464,9 +2464,74 @@ svg{
 #navBag svg{width:23px;height:23px;stroke-width:1.45}
 #navBag .navBagBadge{top:-2px;right:-2px;min-width:18px;height:18px;padding:0 4px;border:2px solid #fff;font-size:8px}
 </style>
+<style>
+.storefrontLoading #app,
+.storefrontLoading #bottomNav{
+  visibility:hidden;
+}
+
+.storefrontLoader{
+  position:fixed;
+  inset:0;
+  z-index:10000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#fff;
+  color:#090909;
+  text-align:center;
+}
+
+body:not(.storefrontLoading) .storefrontLoader{
+  display:none;
+}
+
+.storefrontLoaderMark{
+  font-family:Georgia,serif;
+  font-size:70px;
+  line-height:.8;
+  letter-spacing:-12px;
+  margin-left:-12px;
+}
+
+.storefrontLoaderWord{
+  margin-top:18px;
+  font-size:15px;
+  letter-spacing:7px;
+}
+
+.storefrontLoaderStatus{
+  margin-top:18px;
+  color:#777;
+  font-size:12px;
+}
+
+.storefrontLoaderRetry{
+  display:none;
+  margin:18px auto 0;
+  border:1px solid #111;
+  border-radius:999px;
+  padding:10px 20px;
+  background:#111;
+  color:#fff;
+}
+
+.storefrontLoader.error .storefrontLoaderRetry{
+  display:block;
+}
+</style>
 </head>
 
-<body>
+<body class="storefrontLoading">
+
+<div id="storefrontLoader" class="storefrontLoader" role="status" aria-live="polite">
+  <div>
+    <div class="storefrontLoaderMark">CM</div>
+    <div class="storefrontLoaderWord">CAJAMODA</div>
+    <div id="storefrontLoaderStatus" class="storefrontLoaderStatus">Cargando la colección…</div>
+    <button id="storefrontLoaderRetry" class="storefrontLoaderRetry" type="button">Intentar de nuevo</button>
+  </div>
+</div>
 
 <div
   id="app"
@@ -4774,6 +4839,24 @@ svg{
   }
 
   let initialProductRevealDone = false;
+  let storefrontCatalogReady = false;
+  let storefrontLoadTimer = null;
+
+  function revealStorefront(){
+    if(!storefrontCatalogReady || !initialProductRevealDone) return;
+    clearTimeout(storefrontLoadTimer);
+    document.body.classList.remove("storefrontLoading");
+    $("storefrontLoader").classList.remove("error");
+  }
+
+  function startStorefrontLoadTimeout(){
+    clearTimeout(storefrontLoadTimer);
+    storefrontLoadTimer = setTimeout(() => {
+      if(!document.body.classList.contains("storefrontLoading")) return;
+      $("storefrontLoader").classList.add("error");
+      $("storefrontLoaderStatus").textContent = "No pudimos cargar la colección.";
+    },8000);
+  }
 
   async function revealInitialProductCards(){
     if(initialProductRevealDone) return;
@@ -4790,6 +4873,8 @@ svg{
         images.push(image);
       });
     });
+
+    if(!images.length) return;
 
     const ready = images.map(image => {
       if(image.complete && image.naturalWidth) return Promise.resolve();
@@ -4810,7 +4895,10 @@ svg{
     ]);
 
     initialProductRevealDone = true;
-    requestAnimationFrame(() => home.classList.remove("initialProductSync"));
+    requestAnimationFrame(() => {
+      home.classList.remove("initialProductSync");
+      revealStorefront();
+    });
   }
 
   function renderSections(){
@@ -6271,6 +6359,8 @@ scheduleBagAutoClose();
                   normalizeProduct
                 );
 
+            storefrontCatalogReady = state.products.length > 0;
+
             saveJson(
               "cajamoda-catalog",
               state.products
@@ -6985,6 +7075,8 @@ scheduleBagAutoClose();
       cachedCatalog.map(
         normalizeProduct
       );
+
+    storefrontCatalogReady = state.products.length > 0;
   }
 
   renderAnchors();
@@ -7009,6 +7101,9 @@ scheduleBagAutoClose();
   setNavActive(
     "home"
   );
+
+  $("storefrontLoaderRetry").onclick = () => location.reload();
+  startStorefrontLoadTimeout();
 
   sendBridge(
     "READY",

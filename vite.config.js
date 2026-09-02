@@ -9,9 +9,18 @@ export default defineConfig({
       writeBundle(options) {
         const outputDirectory = resolve(import.meta.dirname, options.dir || "dist");
         mkdirSync(resolve(outputDirectory, "startup"), { recursive: true });
+        mkdirSync(resolve(outputDirectory, "analytics"), { recursive: true });
         copyFileSync(
           resolve(outputDirectory, "admin/index.html"),
           resolve(outputDirectory, "startup/index.html"),
+        );
+        copyFileSync(
+          resolve(import.meta.dirname, "analytics/client.js"),
+          resolve(outputDirectory, "analytics/client.js"),
+        );
+        copyFileSync(
+          resolve(import.meta.dirname, "analytics/admin.js"),
+          resolve(outputDirectory, "analytics/admin.js"),
         );
       },
     },

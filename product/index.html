@@ -3075,6 +3075,7 @@ svg{
   class="toast"
 ></div>
 
+<script src="/analytics/client.js"></script>
 <script>
 
 (() => {
@@ -3440,6 +3441,19 @@ svg{
     eventType,
     payload={}
   ){
+
+    window.CajaModaAnalytics
+      ?.track(
+        eventType,
+        {
+          page:"product",
+          productId:state.product?.id || null,
+          productName:state.product?.name || "",
+          productImage:getMedia(state.product)[0] || state.product?.image || "",
+          categoryId:state.categoryId,
+          ...payload
+        }
+      );
 
     sendBridge(
       "TRACK_EVENT",
@@ -4074,6 +4088,15 @@ svg{
     );
 
     updateUrlWithoutReload();
+
+    if(state.lastTrackedProductId !== String(product.id)){
+      state.lastTrackedProductId = String(product.id);
+      track("PRODUCT_VIEW",{
+        value:normalizePrice(product.price),
+        productName:product.name,
+        productImage:media[0] || product.image || ""
+      });
+    }
 
     loadProductReviews();
   }
@@ -5637,7 +5660,19 @@ price:
         addBagLocked = true;
         $("addBagButton").disabled = true;
 
-        syncSelectionToBag();
+        const savedCart = syncSelectionToBag();
+
+        track("ADD_TO_CART",{
+          productId:state.product?.id,
+          productName:state.product?.name,
+          productImage:getMedia(state.product)[0] || state.product?.image || "",
+          quantity:Number(state.selectedQuantity || 1),
+          value:normalizePrice(state.product?.price),
+          size:state.selectedSize,
+          color:state.selectedColor,
+          cartCount:savedCart?.count || 0,
+          cartTotal:savedCart?.total || 0
+        });
 
         animateBag();
 
@@ -6248,6 +6283,12 @@ function closeWishList(){
 
     const payload =
       getSharePayload();
+
+    track("SHARE",{
+      network,
+      productId:state.product?.id,
+      productName:state.product?.name
+    });
 
     if(
       network ===

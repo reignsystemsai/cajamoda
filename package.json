@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@wix/categories_categories": "1.0.53",
+    "@wix/data": "1.0.514",
     "@wix/ecom": "1.0.2357",
     "@wix/media": "1.0.270",
     "@wix/redirects": "^1.0.112",

@@ -37,6 +37,15 @@ import {
 import * as categoriesV3
   from "@wix/categories_categories";
 
+import {
+  items as wixDataItems,
+  collections as wixDataCollections
+} from "@wix/data";
+
+import {
+  createAnalyticsService
+} from "./analytics/server.js";
+
 /* ============================================================
    STORE LOADER BACKEND
    ------------------------------------------------------------
@@ -196,6 +205,12 @@ const wix =
           categoriesV3,
           files,
 
+          dataItems:
+            wixDataItems,
+
+          dataCollections:
+            wixDataCollections,
+
           orders:
             ecomOrders,
 
@@ -204,6 +219,13 @@ const wix =
       })
 
     : null;
+
+const analytics =
+  createAnalyticsService({
+    wix,
+    getOrders:
+      getWixOrdersForAnalytics
+  });
 
 /* ============================================================
    TEMPORARY STORE LOADER SESSIONS
@@ -825,7 +847,8 @@ async function handleCreateStripeCheckout(request, response) {
       capture_method: stripeCaptureMethod(catalogLines),
       metadata: {
         source: "cajamoda-checkout-session",
-        storeId: STORE_ID
+        storeId: STORE_ID,
+        ...analytics.stripeMetadataFromContext(body?.analytics)
       }
     },
     line_items: lineItems,
@@ -854,7 +877,8 @@ async function handleCreateStripeCheckout(request, response) {
       deliveryAddress: delivery.addressLine,
       deliveryCity: delivery.city,
       deliveryState: delivery.state,
-      deliveryPostalCode: delivery.postalCode
+      deliveryPostalCode: delivery.postalCode,
+      ...analytics.stripeMetadataFromContext(body?.analytics)
     }
   }, {
     idempotencyKey: safeText(body?.requestId, 100) || undefined
@@ -924,7 +948,8 @@ async function handleUpdateStripeCheckout(request, response) {
       deliveryAddress: delivery.addressLine,
       deliveryCity: delivery.city,
       deliveryState: delivery.state,
-      deliveryPostalCode: delivery.postalCode
+      deliveryPostalCode: delivery.postalCode,
+      ...analytics.stripeMetadataFromContext(body?.analytics)
     }
   });
   sendJson(response, 200, { ok: true, sessionId: updated.id, amountTotal: updated.amount_total });
@@ -1447,6 +1472,22 @@ async function syncCompletedStripeSession(session) {
       await decrementStripeInventory(lines);
     }
     await sendOrderConfirmationEmail(imported.order);
+    await analytics.recordPurchase({
+      externalId: session.id,
+      order: imported.order,
+      stripeMetadata: session.metadata,
+      items: lines.map(line => ({
+        productId: line.productId,
+        productName: line.name,
+        productImage: line.image,
+        quantity: line.quantity,
+        value: line.amount
+      })),
+      value: Number(session.amount_total || 0) / 100,
+      paymentMethod: "card"
+    }).catch(error => {
+      console.error("[Analytics] Stripe purchase recording failed:", error);
+    });
     await stripe.checkout.sessions.update(session.id, {
       metadata: {
         ...session.metadata,
@@ -1549,7 +1590,8 @@ function stripeIntentMetadata(lines, body, delivery) {
     deliveryState: safeText(delivery.state, 100),
     deliveryPostalCode: safeText(delivery.postalCode, 40),
     deliveryFee: String(Math.max(0, Number(delivery.fee || 0))),
-    deliveryPlan: safeText(encodedNationalDeliveryPlan(delivery), 500)
+    deliveryPlan: safeText(encodedNationalDeliveryPlan(delivery), 500),
+    ...analytics.stripeMetadataFromContext(body?.analytics)
   };
   lines.forEach((line, index) => {
     metadata[`item${index}`] = Buffer.from(JSON.stringify({
@@ -1743,6 +1785,22 @@ async function syncSucceededStripeIntent(paymentIntent) {
     const imported = await importStripeIntentIntoWix(latest, lines);
     if (imported.created) await decrementStripeInventory(lines);
     await sendOrderConfirmationEmail(imported.order);
+    await analytics.recordPurchase({
+      externalId: latest.id,
+      order: imported.order,
+      stripeMetadata: latest.metadata,
+      items: lines.map(line => ({
+        productId: line.productId,
+        productName: line.name,
+        productImage: line.image,
+        quantity: line.quantity,
+        value: line.amount
+      })),
+      value: Number(latest.amount || 0) / 100,
+      paymentMethod: "card"
+    }).catch(error => {
+      console.error("[Analytics] Stripe intent purchase recording failed:", error);
+    });
     await stripe.paymentIntents.update(latest.id, { metadata: {
       ...latest.metadata,
       wixSync: "complete",
@@ -2611,6 +2669,16 @@ async function handleCreateNequiOrder(request, response) {
   });
   const existing = existingResult?.orders?.[0];
   if (existing) {
+    await analytics.recordOrderContext({
+      externalId: externalOrderId,
+      order: existing,
+      analyticsContext: body?.analytics,
+      items,
+      value: getOrderTotal(existing),
+      paymentMethod: "nequi"
+    }).catch(error => {
+      console.error("[Analytics] Existing Nequi order attribution failed:", error);
+    });
     return sendJson(response, 200, {
       ok: true,
       orderId: existing._id || existing.id,
@@ -2667,6 +2735,22 @@ async function handleCreateNequiOrder(request, response) {
   });
 
   const order = imported?.order || imported;
+  await analytics.recordOrderContext({
+    externalId: externalOrderId,
+    order,
+    analyticsContext: body?.analytics,
+    items: lines.map(line => ({
+      productId: line.productId,
+      productName: line.name,
+      productImage: line.image,
+      quantity: line.quantity,
+      value: line.amount
+    })),
+    value: subtotal + delivery.fee,
+    paymentMethod: "nequi"
+  }).catch(error => {
+    console.error("[Analytics] Nequi order attribution failed:", error);
+  });
   sendJson(response, 201, {
     ok: true,
     orderId: order?._id || order?.id,
@@ -2711,6 +2795,23 @@ async function handleConfirmNequiOrder(request, response, orderId) {
   nequiConfirmationLocks.set(orderId, confirmation);
   try {
     const confirmed = await confirmation;
+    await analytics.recordPurchase({
+      externalId: "nequi-" + orderId,
+      order: confirmed,
+      items: (Array.isArray(confirmed?.lineItems) ? confirmed.lineItems : [])
+        .map(normalizeWixOrderLineItem)
+        .map(line => ({
+          productId: line.productId,
+          productName: line.name,
+          productImage: line.image,
+          quantity: line.quantity,
+          value: 0
+        })),
+      value: getOrderTotal(confirmed),
+      paymentMethod: "nequi"
+    }).catch(error => {
+      console.error("[Analytics] Nequi purchase recording failed:", error);
+    });
     sendJson(response, 200, { ok: true, order: normalizeWixOrder(confirmed) });
   } finally {
     nequiConfirmationLocks.delete(orderId);
@@ -5633,6 +5734,33 @@ async function getWixOrders() {
     );
 }
 
+async function getWixOrdersForAnalytics() {
+  if (!wix) {
+    throw new Error("El servidor todavía no está conectado a Wix.");
+  }
+
+  const orders = [];
+  let cursor = undefined;
+
+  do {
+    const result = await wix.orders.searchOrders({
+      sort: [{ fieldName: "createdDate", order: "DESC" }],
+      cursorPaging: {
+        limit: 100,
+        ...(cursor ? { cursor } : {})
+      }
+    });
+
+    orders.push(...(Array.isArray(result?.orders) ? result.orders : []));
+    cursor = safeText(result?.pagingMetadata?.cursors?.next, 500) || undefined;
+  } while (cursor && orders.length < 500);
+
+  return orders
+    .slice(0, 500)
+    .map(normalizeWixOrder)
+    .filter(order => order.id);
+}
+
 function normalizeStripeAuthorization(intent, lines = stripeIntentLines(intent)) {
   const deliveryMethod = safeText(intent?.metadata?.deliveryMethod, 20) || "pickup";
   return {
@@ -5817,6 +5945,49 @@ async function handleGetOrders(
         }))
     }
   );
+}
+
+async function handleAnalyticsEvents(request, response) {
+  try {
+    const body = await readBody(request);
+    const result = await analytics.ingestClientEvents(request, body?.events);
+    sendJson(response, 202, { ok: true, ...result });
+  } catch (error) {
+    console.error("[Analytics] Event ingestion failed:", error);
+    sendError(
+      response,
+      Number(error?.statusCode || 500),
+      Number(error?.statusCode || 500) >= 500
+        ? "Analytics storage is temporarily unavailable."
+        : safeText(error?.message, 250) || "The analytics event was rejected."
+    );
+  }
+}
+
+async function handleStoreOwnerAnalytics(request, response, url) {
+  if (!isAuthorized(request)) {
+    return sendError(response, 401, "Sign in to Store Loader.");
+  }
+  if (!isPlatformAdmin(request)) {
+    return sendError(response, 403, "Analytics is reserved for CajaModa administration.");
+  }
+
+  const days = Number(url.searchParams.get("days") || 30);
+  const result = await analytics.dashboard(days);
+  sendJson(response, 200, result);
+}
+
+async function handleStoreOwnerAnalyticsSettings(request, response) {
+  if (!isAuthorized(request)) {
+    return sendError(response, 401, "Sign in to Store Loader.");
+  }
+  if (!isPlatformAdmin(request)) {
+    return sendError(response, 403, "Analytics settings are reserved for CajaModa administration.");
+  }
+
+  const body = await readBody(request);
+  const settings = await analytics.saveSettings(body || {});
+  sendJson(response, 200, { ok: true, settings });
 }
 
 async function handleStoreOwnerProfile(request, response) {
@@ -7130,6 +7301,11 @@ const server =
           return;
         }
 
+        if(request.method === "POST" && url.pathname === "/api/analytics/events"){
+          await handleAnalyticsEvents(request,response);
+          return;
+        }
+
         if(request.method === "POST" && url.pathname === "/api/stripe/checkout"){
           await protectCheckoutOperation(response,"Stripe",() => handleCreateStripeCheckout(request,response));
           return;
@@ -7242,6 +7418,16 @@ const server =
 
         if (request.method === "GET" && url.pathname === "/api/store-owner/summary") {
           await handleStoreOwnerSummary(request, response);
+          return;
+        }
+
+        if (request.method === "GET" && url.pathname === "/api/store-owner/analytics") {
+          await handleStoreOwnerAnalytics(request, response, url);
+          return;
+        }
+
+        if (request.method === "POST" && url.pathname === "/api/store-owner/analytics/settings") {
+          await handleStoreOwnerAnalyticsSettings(request, response);
           return;
         }
 

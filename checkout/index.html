@@ -3338,8 +3338,8 @@ img{display:block;max-width:100%}
     button.hidden = !awaitingConfirmation;
     button.disabled = deliveryQuotePending;
     button.textContent = deliveryQuotePending ? "Confirmando entrega…" : "Confirmar entrega";
-    paymentTitle.hidden = awaitingConfirmation;
-    paymentGlass.hidden = awaitingConfirmation;
+    paymentTitle.hidden = false;
+    paymentGlass.hidden = false;
     const quoteStatus = $("deliveryQuoteStatus");
     const hasFieldError = Boolean(document.querySelector(".shippingFields .deliveryField.hasError"));
     if (awaitingConfirmation && quoteStatus && !deliveryQuotePending) {

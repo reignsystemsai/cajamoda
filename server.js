@@ -6282,8 +6282,10 @@ async function handleSaveOrderTracking(request, response, orderId) {
   const completed = status === "delivered";
   const listed = await wix.orderFulfillments.listFulfillmentsForSingleOrder(orderId);
   const existing = listed?.orderWithFulfillments?.fulfillments?.[0];
+  const trackingLink =
+    `https://envia.com/es-CO/rastreo?label=${encodeURIComponent(trackingNumber)}`;
   const fulfillment = {
-    trackingInfo: { trackingNumber, shippingProvider: carrier },
+    trackingInfo: { trackingNumber, shippingProvider: carrier, trackingLink },
     status: fulfillmentStatus,
     completed
   };

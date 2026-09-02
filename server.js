@@ -64,6 +64,13 @@ const WIX_API_KEY =
 const WIX_SITE_ID =
   process.env.WIX_SITE_ID;
 
+const PUBLIC_WHATSAPP_NUMBER =
+  safeEnv(
+    process.env.WHATSAPP_NUMBER ||
+    process.env.WHATSAPP_PHONE_NUMBER ||
+    process.env.WHATSAPP_PHONE
+  ).replace(/\D/g, "");
+
 const LOADER_PASSWORD =
   process.env.LOADER_PASSWORD;
 
@@ -6670,6 +6677,9 @@ async function handleTrackOrder(
         trackingNumber:
           order.trackingNumber,
 
+        trackingLink:
+          order.trackingLink,
+
         shipments:
           order.nationalShipments
       }
@@ -6828,6 +6838,56 @@ async function handleCreateReferral(request, response) {
 
   const code = await ensureReferralCoupon(order);
   sendJson(response, 200, { ok: true, code, url: "https://www.cajamoda.com/" });
+}
+
+async function ensureProfileCoupon(email, name) {
+  const code = `CAJA${crypto.createHash("sha256").update(email).digest("hex").slice(0, 8).toUpperCase()}`;
+  const queried = await wixCouponsRequest("/stores/v2/coupons/query", {
+    query: {
+      filter: { "specification.code": code },
+      paging: { limit: 1 }
+    }
+  });
+  const existing = (queried?.coupons || []).find(
+    coupon => coupon?.specification?.code === code
+  );
+
+  if (!existing) {
+    await wixCouponsRequest("/stores/v2/coupons", {
+      specification: {
+        name: `Perfil CajaModa · ${safeText(name, 100) || email}`,
+        code,
+        percentOffRate: 10,
+        scope: { namespace: "stores", group: { name: "product" } },
+        startTime: new Date().toISOString(),
+        expirationTime: new Date(Date.now() + 30 * 86400000).toISOString(),
+        usageLimit: 1,
+        limitPerCustomer: 1,
+        active: true
+      }
+    });
+  }
+
+  return code;
+}
+
+async function handleProfileCoupon(request, response) {
+  const body = await readBody(request);
+  const name = safeText(body?.name, 100).trim();
+  const email = safeText(body?.email, 250).trim().toLowerCase();
+
+  if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    sendError(response, 400, "Completa tu nombre y correo electrónico.");
+    return;
+  }
+
+  const code = await ensureProfileCoupon(email, name);
+  sendJson(response, 200, {
+    ok: true,
+    code,
+    discountPercent: 10,
+    singleUse: true
+  });
 }
 
 /* ============================================================
@@ -7343,6 +7403,20 @@ const server =
 
         if(request.method === "POST" && url.pathname === "/api/referrals"){
           await handleCreateReferral(request,response);
+          return;
+        }
+
+        if(request.method === "POST" && url.pathname === "/api/profile-coupon"){
+          await handleProfileCoupon(request,response);
+          return;
+        }
+
+        if(request.method === "GET" && url.pathname === "/api/public-config"){
+          sendJson(response,200,{
+            ok:true,
+            whatsappNumber:PUBLIC_WHATSAPP_NUMBER,
+            supportEmail:"ayuda@cajamoda.com"
+          });
           return;
         }
 

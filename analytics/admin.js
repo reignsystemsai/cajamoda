@@ -15,6 +15,8 @@
   let loading = false;
   let drawToken = 0;
   let chatTimer = null;
+  let chatOpen = false;
+  let lastPeerMessageId = "";
 
   const $ = id => document.getElementById(id);
   const qsa = selector => [...document.querySelectorAll(selector)];
@@ -303,6 +305,7 @@
   }
 
   function populateSettings(settings) {
+    if ($("analyticsMonth") && settings?.month) $("analyticsMonth").value = settings.month;
     [
       ["analyticsSpendWhatsapp", settings?.adSpendWhatsapp],
       ["analyticsSpendInstagram", settings?.adSpendInstagram],
@@ -347,9 +350,6 @@
       "Live · " + number(data.storage?.eventCount) + " stored events · updated " +
       new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" }).format(new Date(data.generatedAt))
     );
-    qsa("[data-analytics-days]").forEach(button => {
-      button.classList.toggle("active", Number(button.dataset.analyticsDays) === days);
-    });
     drawTrend(data.timeseries || []);
     drawDonut(data.channels || []);
     renderFunnel(data.funnel || []);
@@ -367,7 +367,8 @@
     $("analyticsRefresh")?.classList.add("loading");
     setText("analyticsStatus", "Refreshing live data…");
     try {
-      render(await request("/api/store-owner/analytics?days=" + days));
+      const month = $("analyticsMonth")?.value || new Date().toISOString().slice(0, 7);
+      render(await request("/api/store-owner/analytics?month=" + encodeURIComponent(month)));
     } catch (error) {
       setText("analyticsStatus", error?.message || "Analytics could not be loaded.");
     } finally {
@@ -404,6 +405,7 @@
           adSpendInstagram: Number($("analyticsSpendInstagram")?.value || 0),
           adSpendTiktok: Number($("analyticsSpendTiktok")?.value || 0),
           inventorySpend: Number($("analyticsInventoryInput")?.value || 0)
+          ,month: $("analyticsMonth")?.value || new Date().toISOString().slice(0, 7)
         }
       });
       await load(true);
@@ -412,17 +414,15 @@
     } finally {
       if (button) {
         button.disabled = false;
-        button.textContent = "Save business inputs";
+        button.textContent = "Save Monthly Inputs";
       }
     }
   }
 
-  qsa("[data-analytics-days]").forEach(button => {
-    button.addEventListener("click", () => {
-      days = Number(button.dataset.analyticsDays || 30);
-      load(true);
-    });
-  });
+  if ($("analyticsMonth")) {
+    $("analyticsMonth").value = new Date().toISOString().slice(0, 7);
+    $("analyticsMonth").addEventListener("change", () => load(true));
+  }
   qsa("[data-product-sort]").forEach(header => {
     header.addEventListener("click", () => {
       sortKey = header.dataset.productSort || "views";
@@ -432,10 +432,40 @@
   $("analyticsRefresh")?.addEventListener("click", () => load(true));
   $("analyticsSaveSettings")?.addEventListener("click", saveSettings);
 
+  function organizeMetrics() {
+    const root = $("analyticsKpis");
+    if (!root || root.dataset.organized) return;
+    root.dataset.organized = "true";
+    root.className = "analyticsMetricGroups";
+    const groups = [
+      ["Marketing", ["analyticsShares"]],
+      ["Sales and Revenue", ["analyticsPurchases", "analyticsRevenue", "analyticsAov", "analyticsGrowth"]],
+      ["Customers and Conversion", ["analyticsCheckouts", "analyticsConversion", "analyticsAbandoned"]],
+      ["Inventory and Profit", ["analyticsInventorySpend", "analyticsCogs", "analyticsInventoryValue", "analyticsGrossProfit"]],
+      ["Product Performance", ["analyticsViews", "analyticsFavorites", "analyticsCart"]],
+      ["Live Activity", ["analyticsLiveVisitors"]]
+    ];
+    groups.forEach(([label, ids], index) => {
+      const details = document.createElement("details");
+      details.className = "analyticsMetricGroup";
+      if (index < 2) details.open = true;
+      const summary = document.createElement("summary");
+      summary.textContent = label;
+      const grid = document.createElement("div");
+      grid.className = "analyticsMetricGroupGrid";
+      ids.forEach(id => {
+        const card = $(id)?.closest(".analyticsKpi");
+        if (card) grid.appendChild(card);
+      });
+      details.append(summary, grid);
+      root.appendChild(details);
+    });
+  }
+  organizeMetrics();
+
   function renderChat(data) {
     const selfAdmin = data.self === "admin";
-    setText("chatPeerName", selfAdmin ? "Karolay" : "Network Owner");
-    setText("chatHead", "Private chat · " + (selfAdmin ? "Karolay" : "Network Owner"));
+    setText("chatHead", selfAdmin ? "Karolay" : "Reign");
     const presence = $("chatPeerPresence");
     if (presence) {
       presence.textContent = data.peerActive ? "Active" : "Inactive";
@@ -443,6 +473,16 @@
     }
     const root = $("chatMessages");
     if (!root) return;
+    const peerMessages = (data.messages || []).filter(item => item.sender !== data.self);
+    const newestPeer = peerMessages[peerMessages.length - 1];
+    if (!chatOpen && newestPeer?.id && newestPeer.id !== lastPeerMessageId) {
+      const badge = $("chatUnread");
+      if (badge) {
+        badge.hidden = false;
+        badge.textContent = "1";
+      }
+    }
+    if (newestPeer?.id) lastPeerMessageId = newestPeer.id;
     root.innerHTML = (data.messages || []).map(item =>
       '<div class="chatMessage ' + (item.sender === data.self ? 'mine' : '') + '">' +
       escapeHtml(item.message) + '<time>' +
@@ -454,7 +494,12 @@
 
   async function loadChat() {
     if (!token()) return;
-    try { renderChat(await request("/api/store-owner/chat")); } catch {}
+    try {
+      renderChat(await request("/api/store-owner/chat"));
+      setText("chatStatus", "");
+    } catch (error) {
+      setText("chatStatus", error?.message || "Chat could not be loaded.");
+    }
   }
 
   $("chatComposer")?.addEventListener("submit", async event => {
@@ -462,14 +507,31 @@
     const input = $("chatInput");
     const message = String(input?.value || "").trim();
     if (!message) return;
-    if (input) input.value = "";
-    renderChat(await request("/api/store-owner/chat", {method:"POST", body:{message}}));
+    try {
+      const data = await request("/api/store-owner/chat", {method:"POST", body:{message}});
+      if (input) input.value = "";
+      renderChat(data);
+      setText("chatStatus", "");
+    } catch (error) {
+      setText("chatStatus", error?.message || "Message was not sent.");
+    }
   });
-  document.querySelector('[data-tab="chat"]')?.addEventListener("click", () => {
+  $("chatBubble")?.addEventListener("click", () => {
+    chatOpen = !chatOpen;
+    $("chatShell")?.classList.toggle("open", chatOpen);
+    if (chatOpen) {
+      if ($("chatUnread")) $("chatUnread").hidden = true;
+      loadChat();
+      $("chatInput")?.focus();
+    }
+  });
+  clearInterval(chatTimer);
+  chatTimer = setInterval(loadChat, 8000);
+  window.addEventListener("focus", loadChat);
+  window.addEventListener("storage", loadChat);
+  setTimeout(() => {
     loadChat();
-    clearInterval(chatTimer);
-    chatTimer = setInterval(loadChat, 8000);
-  });
+  }, 1000);
   window.addEventListener("resize", () => {
     clearTimeout(window.__cajaAnalyticsResize);
     window.__cajaAnalyticsResize = window.setTimeout(() => {

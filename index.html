@@ -3067,20 +3067,13 @@ body:not(.storefrontLoading) .storefrontLoader{
       <div><div class="panelEyebrow">CAJAMODA</div><div class="panelHeadTitle">Rastrear mi pedido</div></div>
       <button id="trackingClose" class="closeCircle" aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m7 7 10 10M17 7 7 17"/></svg></button>
     </header>
+    <div class="contactText">Ingresa el número de tu pedido y el mismo correo electrónico que utilizaste al comprar. Te mostraremos el estado actual y, cuando esté disponible, tu número y enlace de rastreo.</div>
     <label class="fieldLabel" for="trackingOrder">Número de pedido</label>
     <input id="trackingOrder" class="profileInput" type="text" autocomplete="off" placeholder="Ej. 10001">
     <label class="fieldLabel" for="trackingEmail">Correo electrónico</label>
     <input id="trackingEmail" class="profileInput" type="email" autocomplete="email" placeholder="tu@email.com">
     <button id="trackingSubmit" class="contactButton" type="button">Consultar pedido</button>
     <div id="trackingResult" class="supportResult" aria-live="polite"></div>
-    <div class="supportShare">
-      <div class="fieldLabel">Comparte CajaModa</div>
-      <div class="supportShareButtons">
-        <button type="button" data-track-share="whatsapp">WhatsApp</button>
-        <button type="button" data-track-share="instagram">Instagram</button>
-        <button type="button" data-track-share="tiktok">TikTok</button>
-      </div>
-    </div>
     <button id="trackingProfile" class="profileButton primary" type="button">Completa tu perfil y recibe 10% de descuento</button>
   </section>
 </div>
@@ -6290,18 +6283,6 @@ scheduleBagAutoClose();
     }
   }
 
-  async function shareCajaModa(channel){
-    const text = "Descubre CajaModa: https://www.cajamoda.com/";
-    if(channel === "whatsapp"){
-      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`,"_blank","noopener,noreferrer");
-      return;
-    }
-    if(navigator.share){
-      try{await navigator.share({title:"CajaModa",text:"Descubre CajaModa",url:"https://www.cajamoda.com/"});return;}catch{}
-    }
-    try{await navigator.clipboard.writeText(text);showToast("Enlace de CajaModa copiado.");}catch{showToast("Comparte cajamoda.com");}
-  }
-
   function openHelp(){
     closeOverlay($("plusOverlay"),false);
     openOverlay($("helpOverlay"));
@@ -6800,10 +6781,6 @@ scheduleBagAutoClose();
     loadProfile();
     openOverlay($("profileOverlay"));
   };
-  qsa("[data-track-share]").forEach(button => {
-    button.onclick = () => shareCajaModa(button.dataset.trackShare);
-  });
-
   $("helpClose").onclick = () => closeOverlay($("helpOverlay"));
   $("helpOverlay").onclick = event => {
     if(event.target === $("helpOverlay")) closeOverlay($("helpOverlay"));

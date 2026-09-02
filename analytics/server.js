@@ -4,6 +4,7 @@ const COLLECTION_ID = "CajaModaAnalyticsEvents";
 const SETTINGS_ID = "cajamoda-analytics-settings";
 const ACTIVE_WINDOW_MS = 45 * 1000;
 const MAX_QUERY_ITEMS = 20000;
+const LOADER_ACTIVE_WINDOW_MS = 45 * 1000;
 const ALLOWED_EVENTS = new Set([
   "page_view",
   "product_view",
@@ -91,6 +92,24 @@ function monthBounds(reference = new Date()) {
   const previousStart = new Date(Date.UTC(reference.getUTCFullYear(), reference.getUTCMonth() - 1, 1));
   const nextStart = new Date(Date.UTC(reference.getUTCFullYear(), reference.getUTCMonth() + 1, 1));
   return { currentStart, previousStart, nextStart };
+}
+
+function monthKey(value = new Date()) {
+  const match = safeText(value, 20).match(/^(\d{4})-(\d{2})$/);
+  if (match) return match[1] + "-" + match[2];
+  const date = eventDate(value);
+  return date.getUTCFullYear() + "-" + String(date.getUTCMonth() + 1).padStart(2, "0");
+}
+
+function selectedMonthBounds(value) {
+  const key = monthKey(value);
+  const [year, month] = key.split("-").map(Number);
+  return {
+    key,
+    start: new Date(Date.UTC(year, month - 1, 1)),
+    end: new Date(Date.UTC(year, month, 1)),
+    days: new Date(Date.UTC(year, month, 0)).getUTCDate()
+  };
 }
 
 function paidOrder(order) {
@@ -257,6 +276,7 @@ export function createAnalyticsService({ wix, getOrders }) {
         ["adSpendInstagram", "NUMBER"],
         ["adSpendTiktok", "NUMBER"],
         ["inventorySpend", "NUMBER"],
+        ["month", "TEXT"],
         ["grossMarginPercent", "NUMBER"]
       ].map(([key, type]) => ({
         key,
@@ -436,10 +456,12 @@ export function createAnalyticsService({ wix, getOrders }) {
     return { accepted };
   }
 
-  async function readSettings() {
+  async function readSettings(month = monthKey()) {
     await ensureCollection();
-    const item = await wix.dataItems.get(COLLECTION_ID, SETTINGS_ID).catch(() => null);
+    const key = monthKey(month);
+    const item = await wix.dataItems.get(COLLECTION_ID, SETTINGS_ID + "-" + key).catch(() => null);
     return {
+      month: key,
       adSpendWhatsapp: boundedNumber(item?.adSpendWhatsapp, 0, 1000000000000, 0),
       adSpendInstagram: boundedNumber(item?.adSpendInstagram, 0, 1000000000000, 0),
       adSpendTiktok: boundedNumber(item?.adSpendTiktok, 0, 1000000000000, 0),
@@ -451,7 +473,9 @@ export function createAnalyticsService({ wix, getOrders }) {
 
   async function saveSettings(input = {}) {
     await ensureCollection();
+    const month = monthKey(input.month);
     const settings = {
+      month,
       adSpendWhatsapp: boundedNumber(input.adSpendWhatsapp, 0, 1000000000000, 0),
       adSpendInstagram: boundedNumber(input.adSpendInstagram, 0, 1000000000000, 0),
       adSpendTiktok: boundedNumber(input.adSpendTiktok, 0, 1000000000000, 0),
@@ -459,15 +483,15 @@ export function createAnalyticsService({ wix, getOrders }) {
       grossMarginPercent: boundedNumber(input.grossMarginPercent, 0, 100, 0)
     };
     await wix.dataItems.save(COLLECTION_ID, {
-      _id: SETTINGS_ID,
-      eventId: SETTINGS_ID,
+      _id: SETTINGS_ID + "-" + month,
+      eventId: SETTINGS_ID + "-" + month,
       eventType: "settings",
       occurredAt: new Date(),
       receivedAt: new Date(),
       serverVerified: true,
       ...settings
     });
-    return readSettings();
+    return readSettings(month);
   }
 
   async function queryEvents(since) {
@@ -621,16 +645,18 @@ export function createAnalyticsService({ wix, getOrders }) {
     return result.sort((left, right) => right.lastSeenAt.localeCompare(left.lastSeenAt));
   }
 
-  async function dashboard(daysInput = 30) {
-    const days = [7, 30, 90].includes(Number(daysInput)) ? Number(daysInput) : 30;
-    const since = startOfUtcDay(Date.now() - (days - 1) * 24 * 60 * 60 * 1000);
-    const [events, allOrders, settings] = await Promise.all([
+  async function dashboard(daysInput = 30, monthInput = monthKey()) {
+    const selected = selectedMonthBounds(monthInput);
+    const days = selected.days;
+    const since = selected.start;
+    const [rawEvents, allOrders, settings] = await Promise.all([
       queryEvents(since),
       getOrders(),
-      readSettings()
+      readSettings(selected.key)
     ]);
+    const events = rawEvents.filter(event => eventDate(event.occurredAt) < selected.end);
     const orders = (Array.isArray(allOrders) ? allOrders : [])
-      .filter(order => paidOrder(order) && eventDate(order.date).getTime() >= since.getTime());
+      .filter(order => paidOrder(order) && eventDate(order.date) >= since && eventDate(order.date) < selected.end);
     const eventCounts = new Map();
     for (const event of events) {
       eventCounts.set(event.eventType, (eventCounts.get(event.eventType) || 0) + 1);
@@ -851,7 +877,9 @@ export function createAnalyticsService({ wix, getOrders }) {
     const remainingInventoryValue = Math.max(0, inventorySpend - costOfGoodsSold);
     const grossProfit = revenue - costOfGoodsSold;
     const grossMarginPercent = revenue > 0 ? grossProfit / revenue * 100 : 0;
-    const { currentStart, previousStart, nextStart } = monthBounds();
+    const currentStart = selected.start;
+    const nextStart = selected.end;
+    const previousStart = new Date(Date.UTC(currentStart.getUTCFullYear(), currentStart.getUTCMonth() - 1, 1));
     const currentMonthRevenue = allOrders
       .filter(order => paidOrder(order) && eventDate(order.date) >= currentStart && eventDate(order.date) < nextStart)
       .reduce((sum, order) => sum + finiteNumber(order.total, 0), 0);
@@ -948,7 +976,7 @@ export function createAnalyticsService({ wix, getOrders }) {
     return {
       self,
       peer,
-      peerActive: finiteNumber(loaderPresence.get(peer), 0) > Date.now() - 45000,
+      peerActive: finiteNumber(loaderPresence.get(peer), 0) > Date.now() - LOADER_ACTIVE_WINDOW_MS,
       messages: messages.filter(item =>
         (item.sender === self && item.recipient === peer) ||
         (item.sender === peer && item.recipient === self)

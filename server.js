@@ -6003,8 +6003,14 @@ async function handleStoreOwnerAnalytics(request, response, url) {
   }
 
   const days = Number(url.searchParams.get("days") || 30);
-  const result = await analytics.dashboard(days);
-  sendJson(response, 200, result);
+  const month = safeText(url.searchParams.get("month"), 20);
+  try {
+    const result = await analytics.dashboard(days, month);
+    sendJson(response, 200, result);
+  } catch (error) {
+    console.error("[Analytics] Dashboard load failed:", error);
+    sendError(response, 503, "Wix Data permission is required for Network Management.");
+  }
 }
 
 async function handleStoreOwnerAnalyticsSettings(request, response) {

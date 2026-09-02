@@ -1020,6 +1020,10 @@ svg{
    TARJETAS
    ============================================================ */
 
+.initialProductSync .productCard:not(.placeholderCard){
+  visibility:hidden;
+}
+
 .productCard{
   min-width:0;
 
@@ -4769,7 +4773,51 @@ svg{
     `;
   }
 
+  let initialProductRevealDone = false;
+
+  async function revealInitialProductCards(){
+    if(initialProductRevealDone) return;
+
+    const home = $("homeSections");
+    const images = [];
+
+    home.querySelectorAll(".productRail").forEach(rail => {
+      Array.from(
+        rail.querySelectorAll(".productCard:not(.placeholderCard) img")
+      ).slice(0,3).forEach(image => {
+        image.loading = "eager";
+        image.fetchPriority = "high";
+        images.push(image);
+      });
+    });
+
+    const ready = images.map(image => {
+      if(image.complete && image.naturalWidth) return Promise.resolve();
+      return image.decode
+        ? image.decode().catch(() => new Promise(resolve => {
+            image.addEventListener("load",resolve,{once:true});
+            image.addEventListener("error",resolve,{once:true});
+          }))
+        : new Promise(resolve => {
+            image.addEventListener("load",resolve,{once:true});
+            image.addEventListener("error",resolve,{once:true});
+          });
+    });
+
+    await Promise.race([
+      Promise.allSettled(ready),
+      new Promise(resolve => setTimeout(resolve,1800))
+    ]);
+
+    initialProductRevealDone = true;
+    requestAnimationFrame(() => home.classList.remove("initialProductSync"));
+  }
+
   function renderSections(){
+
+    if(!initialProductRevealDone){
+      $("homeSections").classList.add("initialProductSync");
+    }
 
     const searching =
       !!normalizeText(
@@ -4899,6 +4947,7 @@ svg{
     bindProductCards();
     bindRails();
     renderSearchStatus();
+    revealInitialProductCards();
   }
 
   function productUrl(product){

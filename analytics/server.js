@@ -30,6 +30,7 @@ const ALLOWED_EVENTS = new Set([
   "profile_open",
   "size_selected",
   "sold_out_selected"
+  ,"chat_message"
 ]);
 
 function safeText(value, limit = 300) {
@@ -198,6 +199,7 @@ export function createAnalyticsService({ wix, getOrders }) {
   let collectionReady = null;
   const activeSessions = new Map();
   const rateLimits = new Map();
+  const loaderPresence = new Map();
 
   function requireWix() {
     if (!wix?.dataItems || !wix?.dataCollections) {
@@ -254,6 +256,7 @@ export function createAnalyticsService({ wix, getOrders }) {
         ["adSpendWhatsapp", "NUMBER"],
         ["adSpendInstagram", "NUMBER"],
         ["adSpendTiktok", "NUMBER"],
+        ["inventorySpend", "NUMBER"],
         ["grossMarginPercent", "NUMBER"]
       ].map(([key, type]) => ({
         key,
@@ -440,6 +443,7 @@ export function createAnalyticsService({ wix, getOrders }) {
       adSpendWhatsapp: boundedNumber(item?.adSpendWhatsapp, 0, 1000000000000, 0),
       adSpendInstagram: boundedNumber(item?.adSpendInstagram, 0, 1000000000000, 0),
       adSpendTiktok: boundedNumber(item?.adSpendTiktok, 0, 1000000000000, 0),
+      inventorySpend: boundedNumber(item?.inventorySpend, 0, 1000000000000, 0),
       grossMarginPercent: boundedNumber(item?.grossMarginPercent, 0, 100, 0),
       updatedAt: item?._updatedDate || null
     };
@@ -451,6 +455,7 @@ export function createAnalyticsService({ wix, getOrders }) {
       adSpendWhatsapp: boundedNumber(input.adSpendWhatsapp, 0, 1000000000000, 0),
       adSpendInstagram: boundedNumber(input.adSpendInstagram, 0, 1000000000000, 0),
       adSpendTiktok: boundedNumber(input.adSpendTiktok, 0, 1000000000000, 0),
+      inventorySpend: boundedNumber(input.inventorySpend, 0, 1000000000000, 0),
       grossMarginPercent: boundedNumber(input.grossMarginPercent, 0, 100, 0)
     };
     await wix.dataItems.save(COLLECTION_ID, {
@@ -838,6 +843,14 @@ export function createAnalyticsService({ wix, getOrders }) {
       ).filter(Boolean)
     );
     const adSpend = settings.adSpendWhatsapp + settings.adSpendInstagram + settings.adSpendTiktok;
+    const costOfGoodsSold = orders.reduce((sum, order) =>
+      sum + (order.items || []).reduce((itemSum, item) =>
+        itemSum + Math.max(0, finiteNumber(item.cost, 0)) * Math.max(1, finiteNumber(item.quantity, 1)), 0
+      ), 0);
+    const inventorySpend = finiteNumber(settings.inventorySpend, 0);
+    const remainingInventoryValue = Math.max(0, inventorySpend - costOfGoodsSold);
+    const grossProfit = revenue - costOfGoodsSold;
+    const grossMarginPercent = revenue > 0 ? grossProfit / revenue * 100 : 0;
     const { currentStart, previousStart, nextStart } = monthBounds();
     const currentMonthRevenue = allOrders
       .filter(order => paidOrder(order) && eventDate(order.date) >= currentStart && eventDate(order.date) < nextStart)
@@ -885,8 +898,11 @@ export function createAnalyticsService({ wix, getOrders }) {
         averageOrderValue: orders.length ? revenue / orders.length : 0,
         adSpend,
         customerAcquisitionCost: customerKeys.size ? adSpend / customerKeys.size : 0,
-        grossMarginPercent: settings.grossMarginPercent,
-        grossProfit: revenue * settings.grossMarginPercent / 100,
+        inventorySpend,
+        costOfGoodsSold,
+        remainingInventoryValue,
+        grossMarginPercent,
+        grossProfit,
         monthlyGrowth,
         conversionRate: sessionMap.size ? orders.length / sessionMap.size : 0
       },
@@ -908,15 +924,68 @@ export function createAnalyticsService({ wix, getOrders }) {
     };
   }
 
+  function touchLoader(role) {
+    loaderPresence.set(role === "admin" ? "admin" : "owner", Date.now());
+  }
+
+  async function chat(role) {
+    const self = role === "admin" ? "admin" : "owner";
+    touchLoader(self);
+    await ensureCollection();
+    const result = await wix.dataItems.query(COLLECTION_ID)
+      .eq("eventType", "chat_message")
+      .descending("occurredAt")
+      .limit(200)
+      .find();
+    const messages = [...result.items].reverse().map(item => ({
+      id: item._id,
+      sender: safeText(item.properties?.sender, 20),
+      recipient: safeText(item.properties?.recipient, 20),
+      message: safeText(item.properties?.message, 1000),
+      sentAt: eventDate(item.occurredAt).toISOString()
+    }));
+    const peer = self === "admin" ? "owner" : "admin";
+    return {
+      self,
+      peer,
+      peerActive: finiteNumber(loaderPresence.get(peer), 0) > Date.now() - 45000,
+      messages: messages.filter(item =>
+        (item.sender === self && item.recipient === peer) ||
+        (item.sender === peer && item.recipient === self)
+      )
+    };
+  }
+
+  async function sendChatMessage(role, message) {
+    const sender = role === "admin" ? "admin" : "owner";
+    const recipient = sender === "admin" ? "owner" : "admin";
+    const text = safeText(message, 1000);
+    if (!text) {
+      const error = new Error("Write a message first.");
+      error.statusCode = 400;
+      throw error;
+    }
+    touchLoader(sender);
+    await writeEvents([{
+      eventId: "chat-" + crypto.randomUUID(),
+      eventType: "chat_message",
+      occurredAt: new Date(),
+      sessionId: "loader-" + sender,
+      properties: { sender, recipient, message: text }
+    }], true);
+    return chat(sender);
+  }
+
   return {
     ensureCollection,
     ingestClientEvents,
     dashboard,
     saveSettings,
+    chat,
+    sendChatMessage,
     recordOrderContext,
     recordPurchase,
     stripeMetadataFromContext,
     contextFromStripeMetadata
   };
 }
-

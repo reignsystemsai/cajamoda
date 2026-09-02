@@ -2520,6 +2520,20 @@ body:not(.storefrontLoading) .storefrontLoader{
   display:block;
 }
 </style>
+<style>
+.supportResult{min-height:24px;margin:16px 0;font-size:13px;line-height:1.55;color:#444}
+.supportResult strong{display:block;color:#080808;font-size:16px;margin-bottom:5px}
+.supportResult a{display:inline-flex;margin-top:10px;padding:10px 15px;border-radius:999px;background:#080808;color:#fff;text-decoration:none;font-weight:700}
+.supportShare{margin:18px 0}
+.supportShareButtons{display:flex;gap:7px;flex-wrap:wrap}
+.supportShareButtons button{padding:9px 12px;border:1px solid rgba(0,0,0,.12);border-radius:999px;background:rgba(255,255,255,.55);font-size:12px;font-weight:700}
+.helpList{display:grid;gap:10px;margin:8px 0 18px}
+.helpList article{padding:13px 14px;border:1px solid rgba(0,0,0,.08);border-radius:15px;background:rgba(255,255,255,.42)}
+.helpList strong,.helpList span{display:block}
+.helpList span{margin-top:4px;color:#555;font-size:13px;line-height:1.45}
+.supportLink{text-decoration:none;display:flex;align-items:center;justify-content:center}
+.supportWhatsApp{margin-top:8px;background:#25D366}
+</style>
 </head>
 
 <body class="storefrontLoading">
@@ -2931,11 +2945,11 @@ body:not(.storefrontLoading) .storefrontLoader{
 
           <svg
             viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
+            fill="currentColor"
+            aria-hidden="true"
+            style="color:#25D366"
           >
-            <path d="M5 19l1-3a8 8 0 1 1 3 3l-4 0Z"/>
-            <path d="M9 9c.8 2 2 3.3 4 4"/>
+            <path d="M12.04 2a9.84 9.84 0 0 0-8.42 14.92L2 22l5.22-1.58A9.92 9.92 0 1 0 12.04 2Zm0 17.97a8.04 8.04 0 0 1-4.1-1.12l-.3-.18-3.1.94.98-3.02-.2-.31a8.1 8.1 0 1 1 6.72 3.69Zm4.44-6.08c-.24-.12-1.44-.71-1.66-.79-.22-.08-.38-.12-.54.12-.16.24-.62.79-.76.95-.14.16-.28.18-.52.06-.24-.12-1.02-.38-1.94-1.2-.72-.64-1.2-1.43-1.34-1.67-.14-.24-.02-.37.1-.49.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.19-.47-.39-.4-.54-.41h-.46c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.69 2.58 4.1 3.62.57.25 1.02.4 1.37.51.58.18 1.1.16 1.51.1.46-.07 1.44-.59 1.64-1.16.2-.57.2-1.06.14-1.16-.06-.1-.22-.16-.46-.28Z"/>
           </svg>
 
         </span>
@@ -3041,6 +3055,55 @@ body:not(.storefrontLoading) .storefrontLoader{
 
   </section>
 
+</div>
+
+<!-- ============================================================
+     RASTREAR PEDIDO
+     ============================================================ -->
+
+<div id="trackingOverlay" class="overlay">
+  <section class="contactPanel glassStrong">
+    <header class="panelHead">
+      <div><div class="panelEyebrow">CAJAMODA</div><div class="panelHeadTitle">Rastrear mi pedido</div></div>
+      <button id="trackingClose" class="closeCircle" aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m7 7 10 10M17 7 7 17"/></svg></button>
+    </header>
+    <label class="fieldLabel" for="trackingOrder">Número de pedido</label>
+    <input id="trackingOrder" class="profileInput" type="text" autocomplete="off" placeholder="Ej. 10001">
+    <label class="fieldLabel" for="trackingEmail">Correo electrónico</label>
+    <input id="trackingEmail" class="profileInput" type="email" autocomplete="email" placeholder="tu@email.com">
+    <button id="trackingSubmit" class="contactButton" type="button">Consultar pedido</button>
+    <div id="trackingResult" class="supportResult" aria-live="polite"></div>
+    <div class="supportShare">
+      <div class="fieldLabel">Comparte CajaModa</div>
+      <div class="supportShareButtons">
+        <button type="button" data-track-share="whatsapp">WhatsApp</button>
+        <button type="button" data-track-share="instagram">Instagram</button>
+        <button type="button" data-track-share="tiktok">TikTok</button>
+      </div>
+    </div>
+    <button id="trackingProfile" class="profileButton primary" type="button">Completa tu perfil y recibe 10% de descuento</button>
+  </section>
+</div>
+
+<!-- ============================================================
+     AYUDA
+     ============================================================ -->
+
+<div id="helpOverlay" class="overlay">
+  <section class="contactPanel glassStrong">
+    <header class="panelHead">
+      <div><div class="panelEyebrow">CAJAMODA</div><div class="panelHeadTitle">Ayuda</div></div>
+      <button id="helpClose" class="closeCircle" aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m7 7 10 10M17 7 7 17"/></svg></button>
+    </header>
+    <div class="helpList">
+      <article><strong>Pick Ahora</strong><span>Recogida el mismo día.</span></article>
+      <article><strong>Rápido</strong><span>Entrega en 4–7 días.</span></article>
+      <article><strong>Libérala</strong><span>Entrega en 14–28 días.</span></article>
+      <article><strong>Política de devoluciones</strong><span>Todas las ventas son finales. No aceptamos devoluciones ni cambios.</span></article>
+    </div>
+    <a id="helpEmail" class="contactButton supportLink" href="mailto:ayuda@cajamoda.com?subject=Ayuda%20CajaModa">ayuda@cajamoda.com</a>
+    <button id="helpWhatsApp" class="contactButton supportWhatsApp" type="button">WhatsApp</button>
+  </section>
 </div>
 
 <!-- ============================================================
@@ -3491,6 +3554,9 @@ body:not(.storefrontLoading) .storefrontLoader{
 
       whatsappNumber:
         "",
+
+      supportEmail:
+        "ayuda@cajamoda.com",
 
       welcomePromoCode:
         "CAJA10"
@@ -5976,7 +6042,7 @@ scheduleBagAutoClose();
         false;
   }
 
-  function submitProfile(
+  async function submitProfile(
     mode
   ){
 
@@ -6052,29 +6118,29 @@ scheduleBagAutoClose();
     );
 
     if(isNewMember){
+      try{
+        const response = await fetch("/api/profile-coupon",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          credentials:"same-origin",
+          body:JSON.stringify({name,email})
+        });
+        const payload = await response.json();
+        if(!response.ok) throw new Error(payload?.message || "No pudimos crear tu cupón.");
 
-      saveJson(
-        "cajamoda-promo",
-        {
-          code:
-            CONFIG.welcomePromoCode,
-
-          discountPercent:
-            10,
-
-          purpose:
-            "FIRST_ORDER",
-
-          createdAt:
-            new Date()
-              .toISOString()
-        }
-      );
-
-      showToast(
-        `Bienvenida · Código ${CONFIG.welcomePromoCode}`
-      );
-
+        profile.welcomePromo = payload.code;
+        saveJson("cajamoda-member-profile",profile);
+        saveJson("cajamoda-promo",{
+          code:payload.code,
+          discountPercent:10,
+          purpose:"FIRST_ORDER",
+          createdAt:new Date().toISOString()
+        });
+        showToast(`Bienvenida · Código ${payload.code}`);
+      }catch(error){
+        showToast(error?.message || "No pudimos crear tu cupón.");
+        return;
+      }
     }else{
 
       showToast(
@@ -6104,6 +6170,17 @@ scheduleBagAutoClose();
      MENÚ +
      ============================================================ */
 
+  let publicWhatsAppNumber = "";
+
+  async function loadPublicSupportConfig(){
+    try{
+      const response = await fetch("/api/public-config",{credentials:"same-origin"});
+      if(!response.ok) return;
+      const payload = await response.json();
+      publicWhatsAppNumber = String(payload?.whatsappNumber || "").replace(/\D/g,"");
+    }catch{}
+  }
+
   function openWhatsApp(){
 
     closeOverlay(
@@ -6131,11 +6208,8 @@ scheduleBagAutoClose();
     );
 
     const number =
-      CONFIG.whatsappNumber
-        .replace(
-          /\D/g,
-          ""
-        );
+      publicWhatsAppNumber ||
+      CONFIG.whatsappNumber.replace(/\D/g,"");
 
     const url =
       number
@@ -6166,63 +6240,71 @@ scheduleBagAutoClose();
   }
 
   function contactMessage(){
+    closeOverlay($("contactOverlay"),false);
+    setNavActive("home");
+    location.href = `mailto:${CONFIG.supportEmail}?subject=${encodeURIComponent("Ayuda CajaModa")}`;
+  }
 
-    closeOverlay(
-      $("contactOverlay"),
-      false
-    );
-
-    setNavActive(
-      "home"
-    );
-
-    sendBridge(
-      "OPEN_CONTACT",
-      {
-        page:"home",
-
-        cartCount:
-          cartCount()
-      }
-    );
-
-    showToast(
-      "Abriendo contacto CajaModa…"
-    );
+  function updateTrackingProfileAction(){
+    const profile = readJson("cajamoda-member-profile",{});
+    $("trackingProfile").classList.toggle("hidden",Boolean(profile?.email));
   }
 
   function openTrack(){
+    closeOverlay($("plusOverlay"),false);
+    const profile = readJson("cajamoda-member-profile",{});
+    if(profile?.email) $("trackingEmail").value = profile.email;
+    updateTrackingProfileAction();
+    $("trackingResult").innerHTML = "";
+    openOverlay($("trackingOverlay"));
+  }
 
-    closeOverlay(
-      $("plusOverlay"),
-      false
-    );
+  async function submitTracking(){
+    const order = $("trackingOrder").value.trim();
+    const email = $("trackingEmail").value.trim().toLowerCase();
+    if(!order || !email){
+      $("trackingResult").textContent = "Ingresa tu número de pedido y correo electrónico.";
+      return;
+    }
 
-    location.href =
-      `${CONFIG.checkoutPage}?track=1`;
+    $("trackingResult").textContent = "Consultando tu pedido…";
+    try{
+      const response = await fetch(
+        `/api/track-order?order=${encodeURIComponent(order)}&email=${encodeURIComponent(email)}`,
+        {credentials:"same-origin"}
+      );
+      const payload = await response.json();
+      if(!response.ok) throw new Error(payload?.message || "No pudimos encontrar tu pedido.");
+
+      const tracked = payload.order || {};
+      const shipment = (tracked.shipments || []).find(item => item.trackingNumber) || {};
+      const trackingNumber = shipment.trackingNumber || tracked.trackingNumber || "";
+      const trackingLink = shipment.trackingLink || tracked.trackingLink || "";
+      const status = tracked.fulfillmentStatus || tracked.status || "Procesando";
+
+      $("trackingResult").innerHTML = trackingNumber
+        ? `<strong>Pedido ${escapeHtml(tracked.number)} · ${escapeHtml(status)}</strong><div>${escapeHtml(shipment.carrier || tracked.carrier || "Transportadora")} · ${escapeHtml(trackingNumber)}</div>${trackingLink ? `<a href="${escapeHtml(trackingLink)}" target="_blank" rel="noopener">Rastrear pedido</a>` : ""}`
+        : `<strong>Pedido ${escapeHtml(tracked.number)} · ${escapeHtml(status)}</strong><div>Tu pedido se está preparando. Vuelve pronto para consultar tu número de rastreo.</div>`;
+    }catch(error){
+      $("trackingResult").textContent = error?.message || "No pudimos consultar tu pedido.";
+    }
+  }
+
+  async function shareCajaModa(channel){
+    const text = "Descubre CajaModa: https://www.cajamoda.com/";
+    if(channel === "whatsapp"){
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`,"_blank","noopener,noreferrer");
+      return;
+    }
+    if(navigator.share){
+      try{await navigator.share({title:"CajaModa",text:"Descubre CajaModa",url:"https://www.cajamoda.com/"});return;}catch{}
+    }
+    try{await navigator.clipboard.writeText(text);showToast("Enlace de CajaModa copiado.");}catch{showToast("Comparte cajamoda.com");}
   }
 
   function openHelp(){
-
-    closeOverlay(
-      $("plusOverlay"),
-      false
-    );
-
-    setNavActive(
-      "home"
-    );
-
-    sendBridge(
-      "OPEN_HELP",
-      {
-        page:"home"
-      }
-    );
-
-    showToast(
-      "Abriendo ayuda…"
-    );
+    closeOverlay($("plusOverlay"),false);
+    openOverlay($("helpOverlay"));
   }
 
   /* ============================================================
@@ -6708,6 +6790,26 @@ scheduleBagAutoClose();
     .onclick =
       contactMessage;
 
+  $("trackingClose").onclick = () => closeOverlay($("trackingOverlay"));
+  $("trackingOverlay").onclick = event => {
+    if(event.target === $("trackingOverlay")) closeOverlay($("trackingOverlay"));
+  };
+  $("trackingSubmit").onclick = submitTracking;
+  $("trackingProfile").onclick = () => {
+    closeOverlay($("trackingOverlay"),false);
+    loadProfile();
+    openOverlay($("profileOverlay"));
+  };
+  qsa("[data-track-share]").forEach(button => {
+    button.onclick = () => shareCajaModa(button.dataset.trackShare);
+  });
+
+  $("helpClose").onclick = () => closeOverlay($("helpOverlay"));
+  $("helpOverlay").onclick = event => {
+    if(event.target === $("helpOverlay")) closeOverlay($("helpOverlay"));
+  };
+  $("helpWhatsApp").onclick = openWhatsApp;
+
   /* ============================================================
      FAVORITOS
      ============================================================ */
@@ -7104,6 +7206,7 @@ scheduleBagAutoClose();
 
   $("storefrontLoaderRetry").onclick = () => location.reload();
   startStorefrontLoadTimeout();
+  loadPublicSupportConfig();
 
   sendBridge(
     "READY",

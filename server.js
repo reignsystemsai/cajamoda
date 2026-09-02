@@ -5755,10 +5755,40 @@ async function getWixOrdersForAnalytics() {
     cursor = safeText(result?.pagingMetadata?.cursors?.next, 500) || undefined;
   } while (cursor && orders.length < 500);
 
-  return orders
+  const normalized = orders
     .slice(0, 500)
     .map(normalizeWixOrder)
     .filter(order => order.id);
+
+  const productIds = [...new Set(
+    normalized.flatMap(order => order.items || []).map(item => item.productId).filter(Boolean)
+  )];
+  const productCosts = new Map();
+  for (let index = 0; index < productIds.length; index += 10) {
+    const batch = await Promise.all(productIds.slice(index, index + 10).map(async productId => {
+      const result = await wix.productsV3.getProduct(productId, { fields: ["CURRENCY"] }).catch(() => null);
+      const product = result?.product || result;
+      const variants = Array.isArray(product?.variantsInfo?.variants) ? product.variantsInfo.variants : [];
+      return [productId, variants];
+    }));
+    batch.forEach(([productId, variants]) => {
+      productCosts.set(productId, new Map(variants.map(variant => [
+        safeText(variant?._id || variant?.id || variant?.variantId, 150),
+        Math.max(0, Number(variant?.revenueDetails?.cost?.amount || 0))
+      ])));
+    });
+  }
+
+  return normalized.map(order => ({
+    ...order,
+    items: (order.items || []).map(item => {
+      const costs = productCosts.get(item.productId);
+      return {
+        ...item,
+        cost: Number(costs?.get(item.variantId) || [...(costs?.values() || [])][0] || 0)
+      };
+    })
+  }));
 }
 
 function normalizeStripeAuthorization(intent, lines = stripeIntentLines(intent)) {
@@ -5988,6 +6018,15 @@ async function handleStoreOwnerAnalyticsSettings(request, response) {
   const body = await readBody(request);
   const settings = await analytics.saveSettings(body || {});
   sendJson(response, 200, { ok: true, settings });
+}
+
+async function handleStoreChat(request, response) {
+  const session = getAuthorizedSession(request);
+  if (!session) return sendError(response, 401, "Sign in to Store Loader.");
+  const result = request.method === "POST"
+    ? await analytics.sendChatMessage(session.role, (await readBody(request))?.message)
+    : await analytics.chat(session.role);
+  sendJson(response, 200, { ok: true, ...result });
 }
 
 async function handleStoreOwnerProfile(request, response) {
@@ -7428,6 +7467,11 @@ const server =
 
         if (request.method === "POST" && url.pathname === "/api/store-owner/analytics/settings") {
           await handleStoreOwnerAnalyticsSettings(request, response);
+          return;
+        }
+
+        if (["GET", "POST"].includes(request.method) && url.pathname === "/api/store-owner/chat") {
+          await handleStoreChat(request, response);
           return;
         }
 

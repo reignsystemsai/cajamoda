@@ -14,6 +14,7 @@
   let pollTimer = null;
   let loading = false;
   let drawToken = 0;
+  let chatTimer = null;
 
   const $ = id => document.getElementById(id);
   const qsa = selector => [...document.querySelectorAll(selector)];
@@ -306,7 +307,7 @@
       ["analyticsSpendWhatsapp", settings?.adSpendWhatsapp],
       ["analyticsSpendInstagram", settings?.adSpendInstagram],
       ["analyticsSpendTiktok", settings?.adSpendTiktok],
-      ["analyticsMargin", settings?.grossMarginPercent]
+      ["analyticsInventoryInput", settings?.inventorySpend]
     ].forEach(([id, value]) => {
       const input = $(id);
       if (input && document.activeElement !== input) input.value = Number(value || 0);
@@ -329,6 +330,11 @@
     setText("analyticsAov", money(overview.averageOrderValue));
     setText("analyticsAbandoned", number(overview.abandonedCarts));
     setText("analyticsGrowth", percent(overview.monthlyGrowth));
+    setText("analyticsInventorySpend", money(overview.inventorySpend));
+    setText("analyticsCogs", money(overview.costOfGoodsSold));
+    setText("analyticsInventoryValue", money(overview.remainingInventoryValue));
+    setText("analyticsGrossProfit", money(overview.grossProfit));
+    setText("analyticsGrossMargin", percent(Number(overview.grossMarginPercent || 0) / 100) + " gross margin");
     setText("analyticsSessionTotal", number(overview.sessions));
     setText(
       "analyticsBusinessReadout",
@@ -397,7 +403,7 @@
           adSpendWhatsapp: Number($("analyticsSpendWhatsapp")?.value || 0),
           adSpendInstagram: Number($("analyticsSpendInstagram")?.value || 0),
           adSpendTiktok: Number($("analyticsSpendTiktok")?.value || 0),
-          grossMarginPercent: Number($("analyticsMargin")?.value || 0)
+          inventorySpend: Number($("analyticsInventoryInput")?.value || 0)
         }
       });
       await load(true);
@@ -425,6 +431,45 @@
   });
   $("analyticsRefresh")?.addEventListener("click", () => load(true));
   $("analyticsSaveSettings")?.addEventListener("click", saveSettings);
+
+  function renderChat(data) {
+    const selfAdmin = data.self === "admin";
+    setText("chatPeerName", selfAdmin ? "Karolay" : "Network Owner");
+    setText("chatHead", "Private chat · " + (selfAdmin ? "Karolay" : "Network Owner"));
+    const presence = $("chatPeerPresence");
+    if (presence) {
+      presence.textContent = data.peerActive ? "Active" : "Inactive";
+      presence.classList.toggle("active", Boolean(data.peerActive));
+    }
+    const root = $("chatMessages");
+    if (!root) return;
+    root.innerHTML = (data.messages || []).map(item =>
+      '<div class="chatMessage ' + (item.sender === data.self ? 'mine' : '') + '">' +
+      escapeHtml(item.message) + '<time>' +
+      new Intl.DateTimeFormat("en-US", {hour:"numeric",minute:"2-digit"}).format(new Date(item.sentAt)) +
+      '</time></div>'
+    ).join("") || '<div class="analyticsEmpty">No messages yet.</div>';
+    root.scrollTop = root.scrollHeight;
+  }
+
+  async function loadChat() {
+    if (!token()) return;
+    try { renderChat(await request("/api/store-owner/chat")); } catch {}
+  }
+
+  $("chatComposer")?.addEventListener("submit", async event => {
+    event.preventDefault();
+    const input = $("chatInput");
+    const message = String(input?.value || "").trim();
+    if (!message) return;
+    if (input) input.value = "";
+    renderChat(await request("/api/store-owner/chat", {method:"POST", body:{message}}));
+  });
+  document.querySelector('[data-tab="chat"]')?.addEventListener("click", () => {
+    loadChat();
+    clearInterval(chatTimer);
+    chatTimer = setInterval(loadChat, 8000);
+  });
   window.addEventListener("resize", () => {
     clearTimeout(window.__cajaAnalyticsResize);
     window.__cajaAnalyticsResize = window.setTimeout(() => {

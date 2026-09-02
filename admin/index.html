@@ -3127,6 +3127,7 @@ img{
 .analyticsLiveHead{display:flex;align-items:center;gap:8px}.analyticsLiveCount{display:inline-flex;min-width:24px;height:24px;align-items:center;justify-content:center;border-radius:999px;background:rgba(85,245,180,.12);color:#70f7c0;font-size:11px;font-weight:800}
 .analyticsLiveList{position:relative;display:grid;gap:9px;max-height:420px;overflow:auto}.analyticsLiveRow{display:grid;grid-template-columns:110px 85px minmax(120px,1fr) 110px 80px;gap:10px;align-items:center;padding:12px 13px;border:1px solid rgba(255,255,255,.065);border-radius:13px;background:rgba(255,255,255,.025);font-size:10px;color:#a4a8b1}.analyticsLiveRow strong{color:#f1f2f4;font-size:10px;overflow:hidden;text-overflow:ellipsis}.analyticsSessionId{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#777d89}.analyticsEmpty{position:relative;padding:34px 12px;text-align:center;color:#696e79;font-size:12px}
 .analyticsCampaignList{position:relative;display:grid;gap:9px;max-height:420px;overflow:auto}.analyticsCampaign{display:grid;grid-template-columns:76px minmax(0,1fr) 54px 94px;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:10px}.analyticsCampaignChannel{color:#8e94a0;text-transform:capitalize}.analyticsCampaignName{color:#e3e5e8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.analyticsCampaignValue{text-align:right;color:#8e94a0}.analyticsCampaignRevenue{text-align:right;color:#fff;font-weight:760}
+.chatShell{max-width:980px;margin:0 auto;display:grid;grid-template-columns:250px 1fr;min-height:620px;border:1px solid #ddd;border-radius:22px;overflow:hidden;background:#fff}.chatRoster{padding:24px;background:#f7f5ef;border-right:1px solid #ddd}.chatRosterTitle{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.chatPerson{margin-top:20px;padding:14px;border-radius:14px;background:#090909;color:#fff}.chatPresence{margin-top:6px;font-size:11px;color:#999}.chatPresence.active{color:#36b985}.chatConversation{display:grid;grid-template-rows:auto 1fr auto;min-width:0}.chatHead{padding:20px 22px;border-bottom:1px solid #eee;font-weight:800}.chatMessages{padding:22px;overflow:auto;display:flex;flex-direction:column;gap:10px}.chatMessage{max-width:75%;padding:11px 13px;border-radius:14px;background:#f1f1f1;font-size:13px;line-height:1.45}.chatMessage.mine{align-self:flex-end;background:#090909;color:#fff}.chatMessage time{display:block;margin-top:5px;font-size:9px;opacity:.55}.chatComposer{display:flex;gap:10px;padding:16px;border-top:1px solid #eee}.chatComposer input{flex:1;height:44px;border:1px solid #ddd;border-radius:12px;padding:0 14px;font-size:14px}.chatComposer button{border:0;border-radius:12px;background:#090909;color:#fff;padding:0 20px;font-weight:800}@media(max-width:760px){.chatShell{grid-template-columns:1fr}.chatRoster{border-right:0;border-bottom:1px solid #ddd}}
 @keyframes analyticsPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(.72)}}
 @keyframes analyticsSpin{to{transform:rotate(360deg)}}
 @keyframes analyticsGrow{from{transform:scaleX(0)}}
@@ -3262,6 +3263,10 @@ img{
       <span class="navIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V9"/><path d="M10 19V5"/><path d="M16 19v-7"/><path d="M22 19H2"/></svg></span>
       Network Management
     </button>
+    <button class="tabButton" data-tab="chat">
+      <span class="navIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg></span>
+      Chat
+    </button>
 
   </nav>
 
@@ -3385,6 +3390,13 @@ img{
 
 </section>
 
+<section id="panel-chat" class="panel">
+  <div class="chatShell">
+    <aside class="chatRoster"><div class="chatRosterTitle">Store Loaders</div><div class="chatPerson"><strong id="chatPeerName">Karolay</strong><div id="chatPeerPresence" class="chatPresence">Inactive</div></div></aside>
+    <div class="chatConversation"><div id="chatHead" class="chatHead">Private chat</div><div id="chatMessages" class="chatMessages"></div><form id="chatComposer" class="chatComposer"><input id="chatInput" maxlength="1000" autocomplete="off" placeholder="Write a message"><button type="submit">Send</button></form></div>
+  </div>
+</section>
+
 <!-- ==========================================================
      OWNER EVENT ANALYTICS
      ========================================================== -->
@@ -3428,6 +3440,10 @@ img{
       <article class="analyticsCard analyticsKpi"><div class="analyticsKpiLabel">Average order</div><div id="analyticsAov" class="analyticsKpiValue">—</div><div class="analyticsKpiMeta">verified revenue / orders</div></article>
       <article class="analyticsCard analyticsKpi"><div class="analyticsKpiLabel">Abandoned carts</div><div id="analyticsAbandoned" class="analyticsKpiValue">—</div><div class="analyticsKpiMeta">checkout idle for 30+ minutes</div></article>
       <article class="analyticsCard analyticsKpi"><div class="analyticsKpiLabel">Monthly growth</div><div id="analyticsGrowth" class="analyticsKpiValue">—</div><div class="analyticsKpiMeta">current vs previous month</div></article>
+      <article class="analyticsCard analyticsKpi"><div class="analyticsKpiLabel">Inventory spend</div><div id="analyticsInventorySpend" class="analyticsKpiValue">—</div><div class="analyticsKpiMeta">cash invested in inventory</div></article>
+      <article class="analyticsCard analyticsKpi"><div class="analyticsKpiLabel">Cost of goods sold</div><div id="analyticsCogs" class="analyticsKpiValue">—</div><div class="analyticsKpiMeta">Wix item cost × quantity sold</div></article>
+      <article class="analyticsCard analyticsKpi"><div class="analyticsKpiLabel">Inventory value</div><div id="analyticsInventoryValue" class="analyticsKpiValue">—</div><div class="analyticsKpiMeta">inventory spend remaining after COGS</div></article>
+      <article class="analyticsCard analyticsKpi"><div class="analyticsKpiLabel">Gross profit</div><div id="analyticsGrossProfit" class="analyticsKpiValue">—</div><div id="analyticsGrossMargin" class="analyticsKpiMeta">revenue − COGS</div></article>
     </div>
 
     <div class="analyticsGrid analyticsTwoCol">
@@ -3444,7 +3460,7 @@ img{
     <div class="analyticsGrid analyticsThreeCol">
       <article class="analyticsCard analyticsPanel"><div class="analyticsPanelHead"><div><div class="analyticsPanelTitle">Commerce funnel</div><div class="analyticsPanelMeta">Unique sessions at each step.</div></div></div><div id="analyticsFunnel" class="analyticsFunnel"></div></article>
       <article class="analyticsCard analyticsPanel"><div class="analyticsPanelHead"><div><div class="analyticsPanelTitle">Channel performance</div><div class="analyticsPanelMeta">Sessions, purchases, revenue, and ROAS.</div></div></div><div id="analyticsChannels" class="analyticsChannelList"></div></article>
-      <article class="analyticsCard analyticsPanel"><div class="analyticsPanelHead"><div><div class="analyticsPanelTitle">Business inputs</div><div class="analyticsPanelMeta">Monthly spend and your gross margin.</div></div></div><div class="analyticsSettings"><div class="analyticsSetting"><label for="analyticsSpendWhatsapp">WhatsApp ads</label><input id="analyticsSpendWhatsapp" type="number" min="0" step="1000"></div><div class="analyticsSetting"><label for="analyticsSpendInstagram">Instagram ads</label><input id="analyticsSpendInstagram" type="number" min="0" step="1000"></div><div class="analyticsSetting"><label for="analyticsSpendTiktok">TikTok ads</label><input id="analyticsSpendTiktok" type="number" min="0" step="1000"></div><div class="analyticsSetting"><label for="analyticsMargin">Gross margin %</label><input id="analyticsMargin" type="number" min="0" max="100" step="0.1"></div><button id="analyticsSaveSettings" class="analyticsSave" type="button">Save business inputs</button><div id="analyticsBusinessReadout" class="analyticsPanelMeta"></div></div></article>
+      <article class="analyticsCard analyticsPanel"><div class="analyticsPanelHead"><div><div class="analyticsPanelTitle">Business inputs</div><div class="analyticsPanelMeta">Advertising and inventory investment.</div></div></div><div class="analyticsSettings"><div class="analyticsSetting"><label for="analyticsSpendWhatsapp">WhatsApp ads</label><input id="analyticsSpendWhatsapp" type="number" min="0" step="1000"></div><div class="analyticsSetting"><label for="analyticsSpendInstagram">Instagram ads</label><input id="analyticsSpendInstagram" type="number" min="0" step="1000"></div><div class="analyticsSetting"><label for="analyticsSpendTiktok">TikTok ads</label><input id="analyticsSpendTiktok" type="number" min="0" step="1000"></div><div class="analyticsSetting"><label for="analyticsInventoryInput">Inventory spend</label><input id="analyticsInventoryInput" type="number" min="0" step="1000"></div><button id="analyticsSaveSettings" class="analyticsSave" type="button">Save business inputs</button><div id="analyticsBusinessReadout" class="analyticsPanelMeta"></div></div></article>
     </div>
 
     <article class="analyticsCard analyticsTableCard">

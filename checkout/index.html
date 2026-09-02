@@ -1474,6 +1474,7 @@ img{display:block;max-width:100%}
   role="status"
   aria-live="polite"
 ></div>
+<script src="/analytics/client.js"></script>
 <script>
 (() => {
   "use strict";
@@ -3255,9 +3256,18 @@ img{display:block;max-width:100%}
     const profile = checkoutFulfillmentProfile(cart);
     const locality = $("deliveryLocality")?.value.trim() || "";
     const neighborhood = $("deliveryNeighborhood")?.value.trim() || "";
+    const analyticsLocation = window.CajaModaAnalytics?.setLocation({
+      city: $("deliveryMunicipalityName")?.value.trim() || $("deliveryCity")?.value.trim() || "",
+      region: $("deliveryDepartment")?.selectedOptions?.[0]?.textContent || $("deliveryDepartment")?.value || "",
+      country: "CO"
+    });
     return {
       requestId: createId(),
       cart,
+      analytics: {
+        ...(window.CajaModaAnalytics?.context?.() || {}),
+        location: analyticsLocation || window.CajaModaAnalytics?.context?.()?.location || {}
+      },
       customer: collectCustomer(),
       delivery: {
         method: checkoutDeliveryMethod(cart),

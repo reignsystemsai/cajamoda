@@ -3058,6 +3058,81 @@ img{
   .orderExpanded{padding:0 12px 12px}.orderExpandedGrid{grid-template-columns:1fr}
 }
 
+/* ============================================================
+   OWNER EVENT ANALYTICS — CLEAR FROST
+   ============================================================ */
+
+[data-admin-only][hidden]{display:none!important}
+#panel-analytics{margin:-28px;padding:30px;min-height:calc(100vh - 42px);border-radius:28px;background:
+  radial-gradient(circle at 12% 4%,rgba(94,118,255,.18),transparent 26%),
+  radial-gradient(circle at 88% 18%,rgba(34,220,170,.11),transparent 22%),
+  #050506;color:#f7f7f8;overflow:hidden}
+.analyticsShell{display:grid;gap:24px;max-width:1540px;margin:0 auto}
+.analyticsTopbar{display:flex;align-items:flex-start;justify-content:space-between;gap:20px}
+.analyticsEyebrow{display:flex;align-items:center;gap:9px;color:#aaaeb8;font-size:12px;font-weight:760;letter-spacing:.13em;text-transform:uppercase}
+.analyticsLiveDot{width:8px;height:8px;border-radius:50%;background:#55f5b4;box-shadow:0 0 0 7px rgba(85,245,180,.1),0 0 20px rgba(85,245,180,.55);animation:analyticsPulse 1.8s ease-in-out infinite}
+.analyticsTitle{margin:10px 0 0;color:#fff;font-family:Inter,Arial,sans-serif;font-size:clamp(30px,4vw,52px);font-weight:760;letter-spacing:-.055em;line-height:.96}
+.analyticsSub{margin:10px 0 0;color:#8e929c;font-size:14px;line-height:1.5}
+.analyticsControls{display:flex;align-items:center;gap:9px;flex-wrap:wrap;justify-content:flex-end}
+.analyticsRange{display:flex;padding:4px;border:1px solid rgba(255,255,255,.11);border-radius:14px;background:rgba(255,255,255,.055);backdrop-filter:blur(18px)}
+.analyticsRangeButton,.analyticsRefresh,.analyticsSave{height:36px;border:0;border-radius:10px;color:#9ea2ac;background:transparent;padding:0 14px;font-size:12px;font-weight:760;cursor:pointer;transition:.22s ease}
+.analyticsRangeButton.active{color:#080809;background:#fff;box-shadow:0 8px 20px rgba(0,0,0,.26)}
+.analyticsRefresh{display:flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.11);background:rgba(255,255,255,.055);color:#e7e8eb}
+.analyticsRefresh:hover,.analyticsSave:hover{transform:translateY(-2px);background:rgba(255,255,255,.1)}
+.analyticsRefresh svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8}
+.analyticsRefresh.loading svg{animation:analyticsSpin .9s linear infinite}
+.analyticsStatus{min-height:18px;color:#777c87;font-size:11px;text-align:right}
+.analyticsGrid{display:grid;gap:16px}
+.analyticsKpis{grid-template-columns:repeat(6,minmax(0,1fr))}
+.analyticsCard{position:relative;min-width:0;border:1px solid rgba(255,255,255,.105);border-radius:22px;background:linear-gradient(145deg,rgba(255,255,255,.085),rgba(255,255,255,.035));box-shadow:0 24px 70px rgba(0,0,0,.24);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);overflow:hidden;transition:transform .28s ease,border-color .28s ease,background .28s ease}
+.analyticsCard::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,.09),transparent 28%)}
+.analyticsCard:hover{transform:translateY(-5px);border-color:rgba(255,255,255,.2);background:linear-gradient(145deg,rgba(255,255,255,.11),rgba(255,255,255,.045))}
+.analyticsKpi{padding:19px 18px 17px;min-height:132px}
+.analyticsKpiLabel{position:relative;color:#8f949f;font-size:11px;font-weight:720;text-transform:uppercase;letter-spacing:.09em}
+.analyticsKpiValue{position:relative;margin-top:14px;color:#fff;font-size:clamp(23px,2.5vw,36px);font-weight:780;letter-spacing:-.05em;white-space:nowrap}
+.analyticsKpiMeta{position:relative;margin-top:8px;color:#6f7480;font-size:10px;line-height:1.35}
+.analyticsKpi.live .analyticsKpiValue{color:#70f7c0;text-shadow:0 0 25px rgba(112,247,192,.23)}
+.analyticsTwoCol{grid-template-columns:minmax(0,1.75fr) minmax(310px,.75fr)}
+.analyticsPanel{padding:22px}
+.analyticsPanelHead{position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
+.analyticsPanelTitle{color:#f6f7f8;font-size:15px;font-weight:780;letter-spacing:-.02em}
+.analyticsPanelMeta{margin-top:5px;color:#777c87;font-size:11px}
+.analyticsLegend{display:flex;align-items:center;gap:13px;flex-wrap:wrap;color:#8b909a;font-size:10px}
+.analyticsLegend span{display:flex;align-items:center;gap:6px}.analyticsLegend i{width:7px;height:7px;border-radius:50%}
+.analyticsCanvasWrap{position:relative;height:286px}.analyticsCanvasWrap canvas{width:100%;height:100%;display:block}
+.analyticsDonutWrap{position:relative;height:286px}.analyticsDonutWrap canvas{width:100%;height:100%}
+.analyticsDonutCenter{position:absolute;inset:0;display:grid;place-content:center;text-align:center;pointer-events:none}
+.analyticsDonutCenter strong{font-size:28px;letter-spacing:-.05em}.analyticsDonutCenter span{margin-top:3px;color:#777c87;font-size:10px;text-transform:uppercase;letter-spacing:.1em}
+.analyticsThreeCol{grid-template-columns:minmax(300px,.8fr) minmax(0,1.25fr) minmax(300px,.8fr)}
+.analyticsFunnel{position:relative;display:grid;gap:13px}
+.analyticsFunnelRow{display:grid;grid-template-columns:100px minmax(0,1fr) 50px;gap:10px;align-items:center}
+.analyticsFunnelLabel{color:#a4a8b1;font-size:11px}.analyticsFunnelTrack{height:30px;border-radius:9px;background:rgba(255,255,255,.045);overflow:hidden}
+.analyticsFunnelFill{height:100%;min-width:2px;border-radius:9px;background:linear-gradient(90deg,#6d82ff,#55f5b4);box-shadow:0 0 24px rgba(109,130,255,.24);transform-origin:left;animation:analyticsGrow .65s ease both}
+.analyticsFunnelValue{color:#fff;font-size:12px;font-weight:780;text-align:right}
+.analyticsChannelList{position:relative;display:grid;gap:12px}
+.analyticsChannelRow{display:grid;grid-template-columns:90px minmax(0,1fr) auto;gap:11px;align-items:center}
+.analyticsChannelName{color:#d5d7dc;font-size:11px;text-transform:capitalize}.analyticsChannelTrack{height:7px;border-radius:999px;background:rgba(255,255,255,.055);overflow:hidden}
+.analyticsChannelFill{height:100%;border-radius:inherit;background:linear-gradient(90deg,#8a77ff,#5de2ff);transform-origin:left;animation:analyticsGrow .7s ease both}.analyticsChannelValue{color:#a7abb4;font-size:10px;text-align:right}
+.analyticsSettings{position:relative;display:grid;gap:12px}.analyticsSetting{display:grid;grid-template-columns:1fr 112px;align-items:center;gap:10px}
+.analyticsSetting label{color:#9da1ab;font-size:11px;line-height:1.3}.analyticsSetting input{height:38px;width:100%;border:1px solid rgba(255,255,255,.11);border-radius:11px;background:rgba(0,0,0,.26);color:#fff;padding:0 11px;font-size:12px;text-align:right;outline:0}
+.analyticsSetting input:focus{border-color:rgba(109,130,255,.75);box-shadow:0 0 0 3px rgba(109,130,255,.13)}
+.analyticsSave{margin-top:4px;background:#fff;color:#080809;width:100%}
+.analyticsTableCard{padding:0}.analyticsTableHeader{padding:22px 22px 15px}.analyticsTableScroll{position:relative;overflow:auto;max-height:520px}
+.analyticsTable{width:100%;border-collapse:collapse;min-width:900px}.analyticsTable th{position:sticky;top:0;z-index:2;background:rgba(10,10,12,.94);backdrop-filter:blur(20px);color:#747985;font-size:10px;font-weight:740;text-transform:uppercase;letter-spacing:.07em;text-align:right;padding:12px 13px;border-top:1px solid rgba(255,255,255,.065);border-bottom:1px solid rgba(255,255,255,.075);cursor:pointer;white-space:nowrap}
+.analyticsTable th:first-child{text-align:left;padding-left:22px}.analyticsTable th.sorted{color:#fff}.analyticsTable td{padding:13px;border-bottom:1px solid rgba(255,255,255,.055);color:#afb3bc;font-size:11px;text-align:right;white-space:nowrap}.analyticsTable td:first-child{text-align:left;padding-left:22px}
+.analyticsProduct{display:flex;align-items:center;gap:11px;min-width:260px}.analyticsProduct img,.analyticsProductFallback{width:40px;height:49px;border-radius:10px;object-fit:cover;background:linear-gradient(145deg,#272a32,#101115);border:1px solid rgba(255,255,255,.09)}.analyticsProductFallback{display:grid;place-items:center;color:#7c818c;font-size:10px;font-weight:800}.analyticsProduct strong{display:block;max-width:245px;color:#f2f3f4;font-size:11px;overflow:hidden;text-overflow:ellipsis}.analyticsProduct span{display:block;margin-top:4px;color:#676c76;font-size:9px}
+.analyticsTable tbody tr{transition:background .2s ease}.analyticsTable tbody tr:hover{background:rgba(255,255,255,.04)}
+.analyticsBottom{grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr)}
+.analyticsLiveHead{display:flex;align-items:center;gap:8px}.analyticsLiveCount{display:inline-flex;min-width:24px;height:24px;align-items:center;justify-content:center;border-radius:999px;background:rgba(85,245,180,.12);color:#70f7c0;font-size:11px;font-weight:800}
+.analyticsLiveList{position:relative;display:grid;gap:9px;max-height:420px;overflow:auto}.analyticsLiveRow{display:grid;grid-template-columns:110px 85px minmax(120px,1fr) 110px 80px;gap:10px;align-items:center;padding:12px 13px;border:1px solid rgba(255,255,255,.065);border-radius:13px;background:rgba(255,255,255,.025);font-size:10px;color:#a4a8b1}.analyticsLiveRow strong{color:#f1f2f4;font-size:10px;overflow:hidden;text-overflow:ellipsis}.analyticsSessionId{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#777d89}.analyticsEmpty{position:relative;padding:34px 12px;text-align:center;color:#696e79;font-size:12px}
+.analyticsCampaignList{position:relative;display:grid;gap:9px;max-height:420px;overflow:auto}.analyticsCampaign{display:grid;grid-template-columns:76px minmax(0,1fr) 54px 94px;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:10px}.analyticsCampaignChannel{color:#8e94a0;text-transform:capitalize}.analyticsCampaignName{color:#e3e5e8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.analyticsCampaignValue{text-align:right;color:#8e94a0}.analyticsCampaignRevenue{text-align:right;color:#fff;font-weight:760}
+@keyframes analyticsPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(.72)}}
+@keyframes analyticsSpin{to{transform:rotate(360deg)}}
+@keyframes analyticsGrow{from{transform:scaleX(0)}}
+@media(max-width:1320px){.analyticsKpis{grid-template-columns:repeat(3,1fr)}.analyticsThreeCol{grid-template-columns:1fr 1fr}.analyticsThreeCol>.analyticsCard:last-child{grid-column:1/-1}}
+@media(max-width:960px){#panel-analytics{margin:-18px;padding:20px;border-radius:22px}.analyticsTopbar{flex-direction:column}.analyticsControls{justify-content:flex-start}.analyticsTwoCol,.analyticsBottom,.analyticsThreeCol{grid-template-columns:1fr}.analyticsThreeCol>.analyticsCard:last-child{grid-column:auto}.analyticsLiveRow{grid-template-columns:100px 72px minmax(100px,1fr)}.analyticsLiveRow>:nth-child(4),.analyticsLiveRow>:nth-child(5){display:none}}
+@media(max-width:620px){#panel-analytics{margin:-12px;padding:16px}.analyticsKpis{grid-template-columns:1fr 1fr}.analyticsKpi{min-height:116px}.analyticsKpiValue{font-size:24px}.analyticsCanvasWrap,.analyticsDonutWrap{height:230px}.analyticsPanel{padding:17px}.analyticsFunnelRow{grid-template-columns:82px 1fr 40px}}
+
 </style>
 
 </head>
@@ -3175,6 +3250,16 @@ img{
     >
       <span class="navIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 7h12l1 14H5z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg></span>
       Pedidos
+    </button>
+
+    <button
+      class="tabButton"
+      data-tab="analytics"
+      data-admin-only
+      hidden
+    >
+      <span class="navIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V9"/><path d="M10 19V5"/><path d="M16 19v-7"/><path d="M22 19H2"/></svg></span>
+      Analytics
     </button>
 
   </nav>
@@ -3297,6 +3382,80 @@ img{
 
   </div>
 
+</section>
+
+<!-- ==========================================================
+     OWNER EVENT ANALYTICS
+     ========================================================== -->
+
+<section
+  id="panel-analytics"
+  class="panel"
+  data-admin-only
+  hidden
+>
+  <div class="analyticsShell">
+    <div class="analyticsTopbar">
+      <div>
+        <div class="analyticsEyebrow"><span class="analyticsLiveDot"></span>Live commerce signal</div>
+        <h1 class="analyticsTitle">Event Analytics</h1>
+        <p class="analyticsSub">Storefront behavior, verified orders, and paid-social attribution in one live view.</p>
+      </div>
+      <div>
+        <div class="analyticsControls">
+          <div class="analyticsRange" aria-label="Analytics date range">
+            <button class="analyticsRangeButton" type="button" data-analytics-days="7">7D</button>
+            <button class="analyticsRangeButton active" type="button" data-analytics-days="30">30D</button>
+            <button class="analyticsRangeButton" type="button" data-analytics-days="90">90D</button>
+          </div>
+          <button id="analyticsRefresh" class="analyticsRefresh" type="button"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0 2 5"/><path d="M20 4v7h-7"/></svg>Refresh</button>
+        </div>
+        <div id="analyticsStatus" class="analyticsStatus">Waiting for live data…</div>
+      </div>
+    </div>
+
+    <div class="analyticsGrid analyticsKpis">
+      <article class="analyticsCard analyticsKpi live"><div class="analyticsKpiLabel">Live now</div><div id="analyticsLiveVisitors" class="analyticsKpiValue">—</div><div class="analyticsKpiMeta">active in the last 45 seconds</div></article>
+      <article class="analyticsCard analyticsKpi"><div class="analyticsKpiLabel">Product views</div><div id="analyticsViews" class="analyticsKpiValue">—</div><div class="analyticsKpiMeta">real product detail views</div></article>
+      <article class="analyticsCard analyticsKpi"><div class="analyticsKpiLabel">Add to cart</div><div id="analyticsCart" class="analyticsKpiValue">—</div><div class="analyticsKpiMeta">successful cart additions</div></article>
+      <article class="analyticsCard analyticsKpi"><div class="analyticsKpiLabel">Checkouts</div><div id="analyticsCheckouts" class="analyticsKpiValue">—</div><div class="analyticsKpiMeta">unique checkout sessions</div></article>
+      <article class="analyticsCard analyticsKpi"><div class="analyticsKpiLabel">Purchases</div><div id="analyticsPurchases" class="analyticsKpiValue">—</div><div class="analyticsKpiMeta">verified paid orders</div></article>
+      <article class="analyticsCard analyticsKpi"><div class="analyticsKpiLabel">Revenue</div><div id="analyticsRevenue" class="analyticsKpiValue">—</div><div id="analyticsRevenueMeta" class="analyticsKpiMeta">Stripe + Nequi</div></article>
+      <article class="analyticsCard analyticsKpi"><div class="analyticsKpiLabel">Favorites</div><div id="analyticsFavorites" class="analyticsKpiValue">—</div><div class="analyticsKpiMeta">products saved</div></article>
+      <article class="analyticsCard analyticsKpi"><div class="analyticsKpiLabel">Shares</div><div id="analyticsShares" class="analyticsKpiValue">—</div><div class="analyticsKpiMeta">share actions completed</div></article>
+      <article class="analyticsCard analyticsKpi"><div class="analyticsKpiLabel">Conversion</div><div id="analyticsConversion" class="analyticsKpiValue">—</div><div class="analyticsKpiMeta">sessions to purchase</div></article>
+      <article class="analyticsCard analyticsKpi"><div class="analyticsKpiLabel">Average order</div><div id="analyticsAov" class="analyticsKpiValue">—</div><div class="analyticsKpiMeta">verified revenue / orders</div></article>
+      <article class="analyticsCard analyticsKpi"><div class="analyticsKpiLabel">Abandoned carts</div><div id="analyticsAbandoned" class="analyticsKpiValue">—</div><div class="analyticsKpiMeta">checkout idle for 30+ minutes</div></article>
+      <article class="analyticsCard analyticsKpi"><div class="analyticsKpiLabel">Monthly growth</div><div id="analyticsGrowth" class="analyticsKpiValue">—</div><div class="analyticsKpiMeta">current vs previous month</div></article>
+    </div>
+
+    <div class="analyticsGrid analyticsTwoCol">
+      <article class="analyticsCard analyticsPanel">
+        <div class="analyticsPanelHead"><div><div class="analyticsPanelTitle">Store activity</div><div class="analyticsPanelMeta">The line redraws as live events arrive.</div></div><div class="analyticsLegend"><span><i style="background:#7f8dff"></i>Views</span><span><i style="background:#55f5b4"></i>Checkout</span><span><i style="background:#ffbf69"></i>Purchase</span></div></div>
+        <div class="analyticsCanvasWrap"><canvas id="analyticsTrendCanvas"></canvas></div>
+      </article>
+      <article class="analyticsCard analyticsPanel">
+        <div class="analyticsPanelHead"><div><div class="analyticsPanelTitle">Session mix</div><div class="analyticsPanelMeta">WhatsApp, Instagram, TikTok, and direct.</div></div></div>
+        <div class="analyticsDonutWrap"><canvas id="analyticsDonutCanvas"></canvas><div class="analyticsDonutCenter"><strong id="analyticsSessionTotal">—</strong><span>sessions</span></div></div>
+      </article>
+    </div>
+
+    <div class="analyticsGrid analyticsThreeCol">
+      <article class="analyticsCard analyticsPanel"><div class="analyticsPanelHead"><div><div class="analyticsPanelTitle">Commerce funnel</div><div class="analyticsPanelMeta">Unique sessions at each step.</div></div></div><div id="analyticsFunnel" class="analyticsFunnel"></div></article>
+      <article class="analyticsCard analyticsPanel"><div class="analyticsPanelHead"><div><div class="analyticsPanelTitle">Channel performance</div><div class="analyticsPanelMeta">Sessions, purchases, revenue, and ROAS.</div></div></div><div id="analyticsChannels" class="analyticsChannelList"></div></article>
+      <article class="analyticsCard analyticsPanel"><div class="analyticsPanelHead"><div><div class="analyticsPanelTitle">Business inputs</div><div class="analyticsPanelMeta">Monthly spend and your gross margin.</div></div></div><div class="analyticsSettings"><div class="analyticsSetting"><label for="analyticsSpendWhatsapp">WhatsApp ads</label><input id="analyticsSpendWhatsapp" type="number" min="0" step="1000"></div><div class="analyticsSetting"><label for="analyticsSpendInstagram">Instagram ads</label><input id="analyticsSpendInstagram" type="number" min="0" step="1000"></div><div class="analyticsSetting"><label for="analyticsSpendTiktok">TikTok ads</label><input id="analyticsSpendTiktok" type="number" min="0" step="1000"></div><div class="analyticsSetting"><label for="analyticsMargin">Gross margin %</label><input id="analyticsMargin" type="number" min="0" max="100" step="0.1"></div><button id="analyticsSaveSettings" class="analyticsSave" type="button">Save business inputs</button><div id="analyticsBusinessReadout" class="analyticsPanelMeta"></div></div></article>
+    </div>
+
+    <article class="analyticsCard analyticsTableCard">
+      <div class="analyticsTableHeader"><div class="analyticsPanelTitle">Top products</div><div class="analyticsPanelMeta">Click any metric to rank the top 10 by that action.</div></div>
+      <div class="analyticsTableScroll"><table class="analyticsTable"><thead><tr><th data-product-sort="name">Product</th><th class="sorted" data-product-sort="views">Views</th><th data-product-sort="favorites">Favorites</th><th data-product-sort="shares">Shares</th><th data-product-sort="addToCart">Add to cart</th><th data-product-sort="checkouts">Checkout</th><th data-product-sort="purchases">Purchase</th></tr></thead><tbody id="analyticsProductRows"></tbody></table></div>
+    </article>
+
+    <div class="analyticsGrid analyticsBottom">
+      <article class="analyticsCard analyticsPanel"><div class="analyticsPanelHead"><div><div class="analyticsLiveHead"><span class="analyticsLiveDot"></span><div class="analyticsPanelTitle">Live visitor tracker</div><span id="analyticsLiveCount" class="analyticsLiveCount">0</span></div><div class="analyticsPanelMeta">Refreshes every 8 seconds. Unknown locations stay unknown.</div></div></div><div id="analyticsLiveRows" class="analyticsLiveList"></div></article>
+      <article class="analyticsCard analyticsPanel"><div class="analyticsPanelHead"><div><div class="analyticsPanelTitle">Campaign pulse</div><div class="analyticsPanelMeta">UTM campaign activity and verified revenue.</div></div></div><div id="analyticsCampaigns" class="analyticsCampaignList"></div></article>
+    </div>
+  </div>
 </section>
 
 <!-- ==========================================================
@@ -3790,6 +3949,24 @@ img{
   let ownerProfile = null;
   let ownerSummary = null;
 
+  function loadAnalytics(force=false){
+    return window.CajaModaAdminAnalytics?.load(force);
+  }
+
+  function startAnalyticsPolling(){
+    window.CajaModaAdminAnalytics?.start();
+  }
+
+  function syncAnalyticsAccess(){
+    const allowed = ownerProfile?.role === "admin";
+    qsa("[data-admin-only]").forEach(element => {
+      element.hidden = !allowed;
+    });
+    if(!allowed && $("panel-analytics")?.classList.contains("active")){
+      showPanel("dashboard");
+    }
+  }
+
   async function apiRequest(
     path,
     options={}
@@ -3991,6 +4168,8 @@ img{
 
       ownerProfile = result.profile || null;
 
+      syncAnalyticsAccess();
+
       saveToken(
         authToken
       );
@@ -4051,6 +4230,8 @@ await loadOwnerWorkspace();
           "";
 
         clearToken();
+
+        window.CajaModaAdminAnalytics?.stop();
 
         showLogin();
 
@@ -4115,6 +4296,7 @@ async function loadOwnerWorkspace(){
   ]);
   ownerProfile = profileResult.profile;
   ownerSummary = summaryResult.summary;
+  syncAnalyticsAccess();
   store = {
     ...store,
     id: ownerProfile.storeId,
@@ -4349,6 +4531,10 @@ function displayOrderNumber(order){
     name
   ){
 
+    if(name === "analytics" && ownerProfile?.role !== "admin"){
+      return;
+    }
+
     qsa(
       ".panel"
     )
@@ -4383,6 +4569,13 @@ function displayOrderNumber(order){
       top:0,
       behavior:"smooth"
     });
+
+    if(name === "analytics"){
+      loadAnalytics();
+      startAnalyticsPolling();
+    }else{
+      window.CajaModaAdminAnalytics?.stop();
+    }
   }
 
   qsa(
@@ -6673,6 +6866,8 @@ if(
 })();
 
 </script>
+
+<script src="/analytics/admin.js"></script>
 
 </body>
 

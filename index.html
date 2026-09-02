@@ -3382,6 +3382,7 @@ svg{
   class="toast"
 ></div>
 
+<script src="/analytics/client.js"></script>
 <script>
 (() => {
 
@@ -4294,6 +4295,15 @@ svg{
     eventType,
     payload={}
   ){
+
+    window.CajaModaAnalytics
+      ?.track(
+        eventType,
+        {
+          page:"home",
+          ...payload
+        }
+      );
 
     sendBridge(
       "TRACK_EVENT",

@@ -1499,7 +1499,9 @@ img{display:block;max-width:100%}
   let stripeSessionId = "";
   let stripeCanConfirm = false;
   let stripeInitializing = false;
+  let stripeSessionUpdate = Promise.resolve();
   let stripeSessionCartKey = "";
+  let stripeSessionUpdating = false;
   let stripeVerifiedAmountTotal = 0;
   let deliveryQuoteToken = "";
   let deliveryQuote = { method: "pickup", prontoMethod: "pickup", fee: 10000, title: "Pronto · Recoger" };
@@ -2121,6 +2123,7 @@ img{display:block;max-width:100%}
 
     renderCart();
     if (normalized.items.length) {
+      prepareStripeInBackground();
       scheduleDeliveryQuote();
     } else {
       quoteRequestVersion += 1;
@@ -3554,9 +3557,10 @@ img{display:block;max-width:100%}
       checkoutActions &&
       paymentElement &&
       stripeCanConfirm &&
+      !stripeSessionUpdating &&
+      stripeSessionCartKey === currentDeliveryQuoteKey() &&
       cardCheckoutDetailsReady() &&
-      deliveryQuoteMatchesCart() &&
-      stripeVerifiedAmountTotal === Math.round(checkoutTotal() * 100)
+      deliveryQuoteMatchesCart()
     );
     $("stripePayButton").disabled = !ready;
   }
@@ -3611,44 +3615,73 @@ img{display:block;max-width:100%}
     updateStripePayAvailability();
   }
 
-  function primeStripeInBackground() {
-    if (
-      activeStep !== "payment" ||
-      selectedPayment !== "stripe" ||
-      !stripePublishableKey ||
-      typeof window.Stripe !== "function"
-    ) return;
-    stripeClient ||= window.Stripe(stripePublishableKey);
+  function syncStripeCheckoutSession() {
+    if (!checkoutElements || !stripeSessionId || typeof checkoutElements.runServerUpdate !== "function") {
+      return Promise.resolve();
+    }
+    const synchronizedKey = currentDeliveryQuoteKey();
+    const expectedAmountTotal = Math.round(checkoutTotal() * 100);
+    let returnedAmountTotal = null;
+    stripeSessionCartKey = "";
+    updateStripePayAvailability();
+    const update = async () => {
+      const response = await fetch(`${STORE_API_URL}/api/stripe/checkout/update`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ ...checkoutPayload(), sessionId: stripeSessionId })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result?.ok !== true) throw paymentPreparationFailure(result);
+      returnedAmountTotal = Number(result.amountTotal);
+      if (!Number.isFinite(returnedAmountTotal) || returnedAmountTotal !== expectedAmountTotal) {
+        throw new Error("El total de Stripe no coincide con el pedido.");
+      }
+    };
+    stripeSessionUpdate = stripeSessionUpdate.catch(() => {}).then(async () => {
+      stripeSessionUpdating = true;
+      updateStripePayAvailability();
+      try {
+        const result = await checkoutElements.runServerUpdate(update);
+        if (result?.type === "error") throw new Error(result?.error?.message || PAYMENT_PREPARATION_ERROR);
+        if (synchronizedKey === currentDeliveryQuoteKey()) {
+          stripeSessionCartKey = synchronizedKey;
+        }
+      } finally {
+        stripeSessionUpdating = false;
+        updateStripePayAvailability();
+      }
+    });
+    return stripeSessionUpdate;
   }
 
   function prepareStripeInBackground() {
+    const cart = readCart();
     if (
-      activeStep !== "payment" ||
-      selectedPayment !== "stripe" ||
       checkoutElements ||
       stripeInitializing ||
       !stripePublishableKey ||
-      !deliveryQuoteMatchesCart()
+      !cart.items.length ||
+      !deliverySelectionsComplete(cart)
     ) return;
-    primeStripeInBackground();
     void initializeStripePaymentElement();
   }
 
   function syncPaymentInBackground() {
     if (activeStep !== "payment" || selectedPayment !== "stripe" || !deliveryQuoteMatchesCart()) return;
-    const expectedAmountTotal = Math.round(checkoutTotal() * 100);
-    const currentSessionKey = currentDeliveryQuoteKey();
-    if (
-      checkoutElements &&
-      (stripeSessionCartKey !== currentSessionKey || stripeVerifiedAmountTotal !== expectedAmountTotal)
-    ) {
-      resetStripeCheckoutSession();
+    if (!checkoutElements || !stripeSessionId) {
+      prepareStripeInBackground();
+      return;
     }
-    prepareStripeInBackground();
+    void syncStripeCheckoutSession().catch(error => {
+      console.error("[CajaModa] Stripe Checkout update error:", error);
+      $("stripeError").textContent = PAYMENT_PREPARATION_ERROR;
+      updateStripePayAvailability();
+    });
   }
 
   async function initializeStripePaymentElement() {
-    if (checkoutElements || stripeInitializing || !deliveryQuoteMatchesCart()) return;
+    const cart = readCart();
+    if (checkoutElements || stripeInitializing || !cart.items.length || !deliverySelectionsComplete(cart)) return;
     stripeInitializing = true;
     const errorBox = $("stripeError");
     const status = $("stripeStatus");
@@ -3664,7 +3697,7 @@ img{display:block;max-width:100%}
       if (typeof stripeClient.initCheckoutElementsSdk !== "function") {
         throw new Error("No se pudo cargar la versión actual del formulario de Stripe.");
       }
-      const payload = checkoutPayload();
+      const payload = { ...checkoutPayload(), prepareOnly: true };
       const response = await fetch(`${STORE_API_URL}/api/stripe/checkout`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -3672,16 +3705,13 @@ img{display:block;max-width:100%}
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok || !result?.clientSecret || !result?.sessionId) {
-        console.error("[CajaModa] Stripe preparation response:", JSON.stringify(result));
         throw paymentPreparationFailure(result);
       }
-      const expectedAmountTotal = Math.round(checkoutTotal() * 100);
-      const returnedAmountTotal = Number(result.amountTotal);
-      if (!Number.isFinite(returnedAmountTotal) || returnedAmountTotal !== expectedAmountTotal) {
-        throw new Error("El total inicial de Stripe no coincide con el pedido.");
+      const expectedAmountTotal = Math.round(readCart().total * 100);
+      if (Number(result.amountTotal) !== expectedAmountTotal) {
+        throw new Error("El subtotal inicial de Stripe no coincide con el pedido.");
       }
-      stripeSessionCartKey = currentDeliveryQuoteKey();
-      stripeVerifiedAmountTotal = returnedAmountTotal;
+      stripeSessionCartKey = "";
       unavailableProductIds.clear();
       incompatibleProntoItemIds.clear();
       saveJson("cajamoda-pending-checkout", payload);
@@ -3701,8 +3731,7 @@ img{display:block;max-width:100%}
       checkoutActions = loaded.actions;
       paymentElement = checkoutElements.createPaymentElement({
         layout: "accordion",
-        fields: { billingDetails: "never" },
-        wallets: { link: "never" }
+        fields: { billingDetails: "never" }
       });
       paymentElement.mount("#paymentElement");
       stripeCanConfirm = false;
@@ -3724,7 +3753,7 @@ img{display:block;max-width:100%}
       paymentElement = null;
       stripeSessionId = "";
       stripeSessionCartKey = "";
-      stripeVerifiedAmountTotal = 0;
+      stripeSessionUpdating = false;
       console.error("[CajaModa] Stripe Payment Element error:", error);
       status.hidden = true;
       errorBox.textContent = [CART_ITEM_UNAVAILABLE_CODE, PRONTO_LOCATION_UNAVAILABLE_CODE].includes(error?.code)
@@ -3745,14 +3774,8 @@ img{display:block;max-width:100%}
     try {
       if (!checkoutElements || !checkoutActions || !paymentElement) throw new Error("El formulario de Stripe todavía está cargando.");
       if (!validatePaymentDetails()) throw new Error("Completa tus datos de contacto y entrega.");
-      const expectedAmountTotal = Math.round(checkoutTotal() * 100);
-      if (
-        stripeSessionCartKey !== currentDeliveryQuoteKey() ||
-        stripeVerifiedAmountTotal !== expectedAmountTotal
-      ) {
-        syncPaymentInBackground();
-        throw new Error("El total cambió. Espera un momento y vuelve a ingresar la tarjeta.");
-      }
+      await refreshDeliveryQuote({ required: true });
+      await syncStripeCheckoutSession();
       const firstName = $("customerFirstName")?.value.trim();
       const lastName = $("customerLastName")?.value.trim();
       const result = await checkoutActions.confirm({
@@ -4515,10 +4538,7 @@ img{display:block;max-width:100%}
   loadCustomer({ restoreLocation: false });
   renderCart();
   syncBillingAddressMode();
-  loadCheckoutConfig().then(() => {
-    primeStripeInBackground();
-    syncPaymentInBackground();
-  });
+  loadCheckoutConfig().then(prepareStripeInBackground);
   loadDeliveryDepartments();
 
   window.postMessage({

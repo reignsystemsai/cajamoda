@@ -1345,7 +1345,7 @@ img{display:block;max-width:100%}
               <div class="stripeSecure"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Pago seguro</div>
             </div>
               <div class="customCardShell">
-              <div id="stripeStatus" class="stripeStatus">Preparando el formulario seguro de Stripe…</div>
+              <div id="stripeStatus" class="stripeStatus">Confirma la entrega para preparar el pago con tarjeta.</div>
               <div id="paymentElement"></div>
             </div>
             <section class="billingGlass" aria-labelledby="billingTitle">
@@ -3611,6 +3611,15 @@ img{display:block;max-width:100%}
     updateStripePayAvailability();
   }
 
+  function primeStripeInBackground() {
+    if (
+      activeStep !== "payment" ||
+      selectedPayment !== "stripe" ||
+      !stripePublishableKey ||
+      typeof window.Stripe !== "function"
+    ) return;
+    stripeClient ||= window.Stripe(stripePublishableKey);
+  }
 
   function prepareStripeInBackground() {
     if (
@@ -3621,6 +3630,7 @@ img{display:block;max-width:100%}
       !stripePublishableKey ||
       !deliveryQuoteMatchesCart()
     ) return;
+    primeStripeInBackground();
     void initializeStripePaymentElement();
   }
 
@@ -4205,7 +4215,8 @@ img{display:block;max-width:100%}
         if (!deliveryQuoteMatchesCart()) scheduleDeliveryQuote();
         if (selectedPayment === "stripe" && tab.dataset.method === "stripe") {
           syncBillingAddressMode();
-                syncPaymentInBackground();
+          primeStripeInBackground();
+          syncPaymentInBackground();
           syncPanelHeight();
         }
       };
@@ -4218,6 +4229,7 @@ img{display:block;max-width:100%}
     $("paymentGlass").classList.add("isStripe");
     if (!goToStep("payment")) return;
     syncBillingAddressMode();
+    primeStripeInBackground();
     if (!deliveryQuoteMatchesCart()) scheduleDeliveryQuote();
     syncPaymentInBackground();
     syncPanelHeight();
@@ -4504,6 +4516,7 @@ img{display:block;max-width:100%}
   renderCart();
   syncBillingAddressMode();
   loadCheckoutConfig().then(() => {
+    primeStripeInBackground();
     syncPaymentInBackground();
   });
   loadDeliveryDepartments();

@@ -3551,16 +3551,7 @@ img{display:block;max-width:100%}
   }
 
   function updateStripePayAvailability() {
-    const ready = Boolean(
-      checkoutElements &&
-      checkoutActions &&
-      paymentElement &&
-      !stripeSessionUpdating &&
-      stripeSessionCartKey === currentDeliveryQuoteKey() &&
-      cardCheckoutDetailsReady() &&
-      deliveryQuoteMatchesCart()
-    );
-    $("stripePayButton").disabled = !ready;
+    $("stripePayButton").disabled = !stripeCanConfirm;
   }
 
   function billingAddress() {

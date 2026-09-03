@@ -1345,7 +1345,7 @@ img{display:block;max-width:100%}
               <div class="stripeSecure"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Pago seguro</div>
             </div>
               <div class="customCardShell">
-              <div id="stripeStatus" class="stripeStatus">Confirma la entrega para preparar el pago con tarjeta.</div>
+              <div id="stripeStatus" class="stripeStatus">Preparando el formulario seguro de Stripe…</div>
               <div id="paymentElement"></div>
             </div>
             <section class="billingGlass" aria-labelledby="billingTitle">
@@ -1502,7 +1502,6 @@ img{display:block;max-width:100%}
   let stripeSessionUpdate = Promise.resolve();
   let stripeSessionCartKey = "";
   let stripeSessionUpdating = false;
-  let stripeVerifiedAmountTotal = 0;
   let deliveryQuoteToken = "";
   let deliveryQuote = { method: "pickup", prontoMethod: "pickup", fee: 10000, title: "Pronto · Recoger" };
   let deliveryQuotePending = false;
@@ -3599,32 +3598,6 @@ img{display:block;max-width:100%}
     return address;
   }
 
-  function resetStripeCheckoutSession() {
-    stripeCanConfirm = false;
-    stripeVerifiedAmountTotal = 0;
-    stripeSessionId = "";
-    stripeSessionCartKey = "";
-    try {
-      if (typeof paymentElement?.destroy === "function") paymentElement.destroy();
-      else if (typeof paymentElement?.unmount === "function") paymentElement.unmount();
-    } catch {}
-    checkoutElements = null;
-    checkoutActions = null;
-    paymentElement = null;
-    $("paymentElement")?.replaceChildren();
-    updateStripePayAvailability();
-  }
-
-  function primeStripeInBackground() {
-    if (
-      activeStep !== "payment" ||
-      selectedPayment !== "stripe" ||
-      !stripePublishableKey ||
-      typeof window.Stripe !== "function"
-    ) return;
-    stripeClient ||= window.Stripe(stripePublishableKey);
-  }
-
   function syncStripeCheckoutSession() {
     if (!checkoutElements || !stripeSessionId || typeof checkoutElements.runServerUpdate !== "function") {
       return Promise.resolve();
@@ -4248,8 +4221,7 @@ img{display:block;max-width:100%}
         if (!deliveryQuoteMatchesCart()) scheduleDeliveryQuote();
         if (selectedPayment === "stripe" && tab.dataset.method === "stripe") {
           syncBillingAddressMode();
-          primeStripeInBackground();
-          syncPaymentInBackground();
+            syncPaymentInBackground();
           syncPanelHeight();
         }
       };
@@ -4262,7 +4234,6 @@ img{display:block;max-width:100%}
     $("paymentGlass").classList.add("isStripe");
     if (!goToStep("payment")) return;
     syncBillingAddressMode();
-    primeStripeInBackground();
     if (!deliveryQuoteMatchesCart()) scheduleDeliveryQuote();
     syncPaymentInBackground();
     syncPanelHeight();

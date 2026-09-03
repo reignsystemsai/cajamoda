@@ -3615,6 +3615,16 @@ img{display:block;max-width:100%}
     updateStripePayAvailability();
   }
 
+  function primeStripeInBackground() {
+    if (
+      activeStep !== "payment" ||
+      selectedPayment !== "stripe" ||
+      !stripePublishableKey ||
+      typeof window.Stripe !== "function"
+    ) return;
+    stripeClient ||= window.Stripe(stripePublishableKey);
+  }
+
   function syncStripeCheckoutSession() {
     if (!checkoutElements || !stripeSessionId || typeof checkoutElements.runServerUpdate !== "function") {
       return Promise.resolve();

@@ -3551,13 +3551,7 @@ img{display:block;max-width:100%}
   }
 
   function updateStripePayAvailability() {
-    const ready = Boolean(
-      checkoutElements &&
-      checkoutActions &&
-      paymentElement &&
-      !stripeSessionUpdating
-    );
-    $("stripePayButton").disabled = !ready;
+    $("stripePayButton").disabled = !stripeCanConfirm;
   }
 
   function billingAddress() {

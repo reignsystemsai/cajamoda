@@ -127,7 +127,6 @@ const googlePlaceDetailsCache = new Map();
 const DELIVERY_REFERENCE_CACHE_TTL = 24 * 60 * 60 * 1000;
 const GOOGLE_PLACE_CACHE_TTL = 30 * 60 * 1000;
 const stripeIntentSyncLocks = new Map();
-const stripeSessionSyncLocks = new Map();
 const nequiConfirmationLocks = new Map();
 const enviaLabelLocks = new Map();
 const enviaWebhookProcessing = new Set();
@@ -652,9 +651,7 @@ async function protectCheckoutOperation(response, label, operation) {
     }
     sendJson(response, 500, {
       code: "PAYMENT_PREPARATION_FAILED",
-      message: CHECKOUT_SAFE_ERROR_MESSAGE,
-      reason: safeText(error?.code || error?.type || error?.name, 80),
-      parameter: safeText(error?.param, 80)
+      message: CHECKOUT_SAFE_ERROR_MESSAGE
     });
   }
 }
@@ -690,10 +687,6 @@ async function stripeLineItemFromCartItem(item) {
   }
 
   const fulfillmentSku = safeText(variant?.sku || product?.sku, 100).toUpperCase();
-  const checkoutSize = existingVariantSize(variant);
-  const checkoutColor = checkoutVariantChoice(variant, ["color", "colour"]);
-  const checkoutImage = getProductImageUrl(product);
-  const checkoutImageId = wixMediaId(checkoutImage);
   const fulfillmentSegments = fulfillmentSku.split("-").filter(Boolean);
   const fulfillmentCode = [...fulfillmentSegments].reverse().find(segment =>
     ["P", "PR", "RP", "R", "L", "PL", "LP", "RL", "LR", "PRL"].includes(segment)
@@ -727,10 +720,6 @@ async function stripeLineItemFromCartItem(item) {
     quantity,
     fulfillmentCode: normalizedFulfillmentCode,
     selectedDeliveryMode,
-    sku: fulfillmentSku,
-    size: checkoutSize,
-    color: checkoutColor,
-    image: checkoutImage,
     price_data: {
       currency: "cop",
       // Stripe treats COP as a two-decimal currency in API requests.
@@ -738,16 +727,7 @@ async function stripeLineItemFromCartItem(item) {
       product_data: {
         name: safeText(product?.name, 80) || "Producto CajaModa",
         description: stripeChoiceText(item) || undefined,
-        metadata: {
-          productId,
-          variantId,
-          fulfillmentCode: normalizedFulfillmentCode,
-          selectedDeliveryMode,
-          sku: fulfillmentSku,
-          size: checkoutSize,
-          color: checkoutColor,
-          imageId: checkoutImageId
-        }
+        metadata: { productId, variantId, fulfillmentCode: normalizedFulfillmentCode, selectedDeliveryMode }
       }
     }
   };
@@ -766,58 +746,6 @@ function selectedDeliveryLabel(value) {
   return "Rápido Nacional";
 }
 
-function checkoutVariantChoice(variant, names = []) {
-  const accepted = new Set(names.map(name => String(name).toLowerCase()));
-  for (const choice of Array.isArray(variant?.choices) ? variant.choices : []) {
-    const values = choice?.optionChoiceNames || choice?.choiceNames || choice;
-    const optionName = safeText(values?.optionName || values?.name, 50).toLowerCase();
-    const choiceName = safeText(values?.choiceName || values?.value, 100);
-    if (accepted.has(optionName) && choiceName) return choiceName;
-  }
-  return "";
-}
-
-function importedOrderNumber(externalId) {
-  const digest = crypto.createHash("sha256").update(String(externalId || "")).digest("hex").slice(0, 12);
-  const numeric = (BigInt(`0x${digest || "1"}`) % 900000000000n) + 100000000000n;
-  return numeric.toString();
-}
-
-function wixOrderDescriptionLines(line) {
-  return [
-    ["SKU", safeText(line?.sku, 100).toUpperCase()],
-    ["Talla", safeText(line?.size, 50)],
-    ["Color", safeText(line?.color, 100)],
-    ["Entrega", selectedDeliveryLabel(line?.selectedDeliveryMode)]
-  ]
-    .filter(([, value]) => value)
-    .map(([name, value]) => ({
-      name: { original: name },
-      plainText: { original: value }
-    }));
-}
-
-function wixOrderLineItem(line) {
-  const image = safeText(line?.image, 1500);
-  return {
-    productName: { original: line.name },
-    descriptionLines: wixOrderDescriptionLines(line),
-    quantity: line.quantity,
-    price: { amount: String(line.amount) },
-    itemType: { preset: "PHYSICAL" },
-    image: image || undefined,
-    physicalProperties: {
-      shippable: true,
-      sku: safeText(line?.sku, 100).toUpperCase()
-    },
-    catalogReference: {
-      appId: WIX_STORES_APP_ID,
-      catalogItemId: line.productId,
-      options: { variantId: line.variantId }
-    }
-  };
-}
-
 async function handleCreateStripeCheckout(request, response) {
   if (!stripe) {
     sendError(response, 503, "Stripe todavía no está configurado en el servidor.");
@@ -832,16 +760,7 @@ async function handleCreateStripeCheckout(request, response) {
   const catalogLines = await verifiedCheckoutCatalogItems(items);
   // Keep CajaModa fulfillment data server-side. Stripe only accepts documented
   // line item properties, so never forward fulfillmentCode at this level.
-  const lineItems = catalogLines.map(({
-    cartLineId,
-    fulfillmentCode,
-    selectedDeliveryMode,
-    sku,
-    size,
-    color,
-    image,
-    ...line
-  }) => line);
+  const lineItems = catalogLines.map(({ cartLineId, fulfillmentCode, selectedDeliveryMode, ...line }) => line);
   const customerEmail = safeText(body?.customer?.email, 250);
   const prepareOnly = body?.prepareOnly === true;
   const delivery = prepareOnly
@@ -859,16 +778,30 @@ async function handleCreateStripeCheckout(request, response) {
     : await checkoutDelivery(body, catalogLines);
   const deliveryMethod = delivery.method;
   const deliveryLabel = delivery.title;
+  const intentLines = catalogLines.map(line => ({
+    productId: safeText(line?.price_data?.product_data?.metadata?.productId, 80),
+    variantId: safeText(line?.price_data?.product_data?.metadata?.variantId, 80),
+    quantity: Math.max(1, Math.floor(Number(line?.quantity || 1))),
+    amount: Number(line?.price_data?.unit_amount || 0) / 100,
+    name: safeText(line?.price_data?.product_data?.name, 300) || "Producto CajaModa",
+    fulfillmentCode: safeText(line?.fulfillmentCode, 10).toUpperCase(),
+    selectedDeliveryMode: safeText(line?.selectedDeliveryMode, 20).toLowerCase()
+  }));
+  const captureMethod = stripeCaptureMethod(intentLines);
+  const intentMetadata = stripeIntentMetadata(intentLines, body, delivery);
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     ui_mode: "elements",
     payment_method_types: ["card"],
+    wallet_options: {
+      link: { display: "never" }
+    },
     payment_intent_data: {
-      capture_method: stripeCaptureMethod(catalogLines),
+      capture_method: captureMethod,
+      receipt_email: customerEmail || undefined,
       metadata: {
-        source: "cajamoda-checkout-session",
-        storeId: STORE_ID,
-        ...analytics.stripeMetadataFromContext(body?.analytics)
+        ...intentMetadata,
+        source: "cajamoda-checkout-elements"
       }
     },
     line_items: lineItems,
@@ -899,8 +832,7 @@ async function handleCreateStripeCheckout(request, response) {
       deliveryAddress: delivery.addressLine,
       deliveryCity: delivery.city,
       deliveryState: delivery.state,
-      deliveryPostalCode: delivery.postalCode,
-      ...analytics.stripeMetadataFromContext(body?.analytics)
+      deliveryPostalCode: delivery.postalCode
     }
   }, {
     idempotencyKey: safeText(body?.requestId, 100) || undefined
@@ -935,16 +867,7 @@ async function handleUpdateStripeCheckout(request, response) {
     return;
   }
   const catalogLines = await verifiedCheckoutCatalogItems(items);
-  const lineItems = catalogLines.map(({
-    cartLineId,
-    fulfillmentCode,
-    selectedDeliveryMode,
-    sku,
-    size,
-    color,
-    image,
-    ...line
-  }) => line);
+  const lineItems = catalogLines.map(({ cartLineId, fulfillmentCode, selectedDeliveryMode, ...line }) => line);
   const delivery = await checkoutDelivery(body, catalogLines);
   const updated = await stripe.checkout.sessions.update(sessionId, {
     line_items: lineItems,
@@ -970,8 +893,7 @@ async function handleUpdateStripeCheckout(request, response) {
       deliveryAddress: delivery.addressLine,
       deliveryCity: delivery.city,
       deliveryState: delivery.state,
-      deliveryPostalCode: delivery.postalCode,
-      ...analytics.stripeMetadataFromContext(body?.analytics)
+      deliveryPostalCode: delivery.postalCode
     }
   });
   sendJson(response, 200, { ok: true, sessionId: updated.id, amountTotal: updated.amount_total });
@@ -995,13 +917,6 @@ async function handleStripeConfirmation(request, response, url) {
     : null;
   const authorized = intent?.status === "requires_capture";
   const paid = intent?.status === "succeeded" || session.payment_status === "paid";
-  if (paid) {
-    try {
-      await syncCompletedStripeSession(session);
-    } catch (error) {
-      console.error(`[Stripe] Confirmation Wix synchronization failed for ${session.id}:`, error);
-    }
-  }
   sendJson(response, 200, {
     ok: true,
     order: {
@@ -1024,7 +939,7 @@ function stripeAddressToWix(address = {}) {
     subdivision: safeText(address.state, 100),
     city: safeText(address.city, 100),
     postalCode: safeText(address.postal_code, 40),
-    addressLine1: safeText(address.line1, 250),
+    addressLine: safeText(address.line1, 250),
     addressLine2: safeText(address.line2, 250)
   };
 }
@@ -1035,331 +950,6 @@ function splitCustomerName(value) {
     firstName: parts.shift() || "Cliente",
     lastName: parts.join(" ") || "CajaModa"
   };
-}
-
-
-function cajaModaOrderNumber(order) {
-  const value = safeText(order?.number, 100).replace(/^#/, "").trim();
-  return value.startsWith("CM-") ? value : "CM-" + value;
-}
-
-function orderConfirmationIdempotencyKey(order) {
-  const seed = safeText(order?._id || order?.id || order?.number, 200);
-  const bytes = crypto
-    .createHash("sha256")
-    .update("cajamoda-order-confirmation:" + seed)
-    .digest()
-    .subarray(0, 16);
-  bytes[6] = (bytes[6] & 0x0f) | 0x40;
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
-  const hex = bytes.toString("hex");
-  return [
-    hex.slice(0, 8),
-    hex.slice(8, 12),
-    hex.slice(12, 16),
-    hex.slice(16, 20),
-    hex.slice(20, 32)
-  ].join("-");
-}
-
-function formatCop(value) {
-  return new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    maximumFractionDigits: 0
-  }).format(Number(value || 0));
-}
-
-function orderConfirmationEmailHtml(order) {
-  const normalized = normalizeWixOrder(order);
-  const orderNumber = cajaModaOrderNumber(order);
-  const customerName = normalized.customer || "Cliente CajaModa";
-  const delivery = getConfirmationDelivery(order);
-  const address = normalized.shippingAddress || {};
-  const addressText = [
-    address.addressLine1,
-    address.addressLine2,
-    address.city,
-    address.state,
-    address.postalCode
-  ].filter(Boolean).join(", ");
-  const itemRows = normalized.items.map(item => {
-    const details = [
-      item.sku ? "SKU " + item.sku : "",
-      item.size ? "Talla " + item.size : "",
-      item.color ? "Color " + item.color : "",
-      "Cantidad " + item.quantity
-    ].filter(Boolean).join(" · ");
-    const image = item.image
-      ? "<img src='" + escapeHtml(item.image) + "' alt='' width='84' height='104' style='display:block;width:84px;height:104px;object-fit:cover;border-radius:16px;border:1px solid #e4ddd3;'>"
-      : "<div style='width:84px;height:104px;border-radius:16px;background:#eee9e1;text-align:center;line-height:104px;font-family:Georgia,serif;font-size:18px;color:#6f685f;'>CM</div>";
-    return [
-      "<tr>",
-      "<td style='padding:18px 14px 18px 0;vertical-align:top;width:84px;'>", image, "</td>",
-      "<td style='padding:22px 0;vertical-align:top;border-bottom:1px solid #e9e2d9;'>",
-      "<div style='font-family:Arial,sans-serif;font-size:18px;font-weight:700;color:#171513;'>", escapeHtml(item.name), "</div>",
-      "<div style='margin-top:7px;font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#756f67;'>", escapeHtml(details), "</div>",
-      "<div style='margin-top:7px;font-family:Arial,sans-serif;font-size:14px;color:#46643c;'>", escapeHtml(item.delivery || delivery.method), "</div>",
-      "</td>",
-      "</tr>"
-    ].join("");
-  }).join("");
-
-  return [
-    "<!doctype html><html><body style='margin:0;padding:0;background:#eee7dc;'>",
-    "<table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='background:#eee7dc;padding:34px 12px;'>",
-    "<tr><td align='center'>",
-    "<table role='presentation' width='640' cellspacing='0' cellpadding='0' style='width:100%;max-width:640px;background:#fbfaf7;border:1px solid rgba(255,255,255,.86);border-radius:30px;box-shadow:0 18px 50px rgba(61,48,31,.13);overflow:hidden;'>",
-    "<tr><td style='padding:34px 34px 26px;text-align:center;background:rgba(255,255,255,.70);border-bottom:1px solid #e3dcd2;'>",
-    "<div style='font-family:Didot,Bodoni MT,Times New Roman,serif;font-size:60px;line-height:.82;letter-spacing:-9px;color:#111;'>CM</div>",
-    "<div style='margin-top:12px;font-family:Georgia,serif;font-size:17px;letter-spacing:9px;color:#111;'>CAJAMODA</div>",
-    "<div style='margin-top:8px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:6px;color:#5f5a54;'>COLOMBIA</div>",
-    "</td></tr>",
-    "<tr><td style='padding:38px 42px 12px;text-align:center;'>",
-    "<div style='display:inline-block;width:54px;height:54px;border:1px solid #201d19;border-radius:50%;font-family:Arial,sans-serif;font-size:27px;line-height:54px;color:#171513;'>✓</div>",
-    "<h1 style='margin:24px 0 8px;font-family:Arial,sans-serif;font-size:30px;letter-spacing:7px;color:#151311;'>COMPRA CONFIRMADA</h1>",
-    "<p style='margin:0;font-family:Arial,sans-serif;font-size:18px;color:#5e5851;'>Gracias por tu compra, ", escapeHtml(customerName), ".</p>",
-    "<div style='margin:24px auto 0;padding:13px 18px;display:inline-block;border:1px solid #dcd3c8;border-radius:999px;background:rgba(255,255,255,.82);font-family:Arial,sans-serif;font-size:15px;color:#37322d;'>Pedido #", escapeHtml(orderNumber), " · Pago confirmado</div>",
-    "</td></tr>",
-    "<tr><td style='padding:18px 42px 0;'>",
-    "<table role='presentation' width='100%' cellspacing='0' cellpadding='0'>", itemRows, "</table>",
-    "</td></tr>",
-    "<tr><td style='padding:26px 42px;'>",
-    "<table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='background:rgba(255,255,255,.76);border:1px solid #ded7ce;border-radius:22px;'>",
-    "<tr><td style='padding:22px 24px;border-bottom:1px solid #e7e0d7;'>",
-    "<div style='font-family:Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;color:#777067;'>ENTREGA</div>",
-    "<div style='margin-top:7px;font-family:Arial,sans-serif;font-size:17px;font-weight:700;color:#181512;'>", escapeHtml(delivery.method), "</div>",
-    "<div style='margin-top:5px;font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#6e675f;'>", escapeHtml(addressText), "</div>",
-    "</td></tr>",
-    "<tr><td style='padding:22px 24px;'>",
-    "<div style='font-family:Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;color:#777067;'>SEGUIMIENTO</div>",
-    "<div style='margin-top:7px;font-family:Arial,sans-serif;font-size:17px;font-weight:700;color:#181512;'>Guía pendiente</div>",
-    "<div style='margin-top:5px;font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#6e675f;'>Te enviaremos otro correo con la transportadora y el número de rastreo cuando tu pedido sea despachado.</div>",
-    "</td></tr></table>",
-    "</td></tr>",
-    "<tr><td style='padding:0 42px 34px;'>",
-    "<table role='presentation' width='100%' cellspacing='0' cellpadding='0'>",
-    "<tr><td style='font-family:Arial,sans-serif;font-size:15px;color:#6e675f;'>Total</td>",
-    "<td align='right' style='font-family:Arial,sans-serif;font-size:22px;font-weight:700;color:#171513;'>", escapeHtml(formatCop(normalized.total)), "</td></tr>",
-    "</table>",
-    "<div style='margin-top:28px;text-align:center;'>",
-    "<a href='https://www.cajamoda.com/' style='display:inline-block;padding:15px 28px;border-radius:999px;background:#171513;color:#fff;text-decoration:none;font-family:Arial,sans-serif;font-size:15px;font-weight:700;'>Seguir comprando</a>",
-    "</div>",
-    "<p style='margin:30px 0 0;text-align:center;font-family:Arial,sans-serif;font-size:12px;line-height:1.6;color:#817970;'>Conserva tu número de pedido si necesitas ayuda con tu compra.</p>",
-    "</td></tr>",
-    "</table>",
-    "</td></tr></table>",
-    "</body></html>"
-  ].join("");
-}
-
-async function sendOrderConfirmationEmail(order) {
-  if (!WIX_API_KEY || !WIX_SITE_ID) throw new Error("Wix Email no está configurado.");
-  const customerEmail = safeText(order?.buyerInfo?.email, 250).toLowerCase();
-  if (!customerEmail) throw new Error("El pedido confirmado no tiene correo del cliente.");
-
-  const orderNumber = cajaModaOrderNumber(order);
-  const result = await fetch(
-    "https://www.wixapis.com/email-transmissions/v1/email-transmissions/send",
-    {
-      method: "POST",
-      headers: {
-        "Authorization": WIX_API_KEY,
-        "wix-site-id": WIX_SITE_ID,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        emailTransmission: {
-          emailSubject: "Tu pedido CajaModa está confirmado — #" + orderNumber,
-          emailHtmlContent: orderConfirmationEmailHtml(order),
-          senderName: "CajaModa",
-          toRecipients: [{ emailAddress: customerEmail }],
-          type: "TRANSACTIONAL",
-          metadata: {
-            order: orderNumber.replace(/[^a-z0-9]/gi, ""),
-            source: "CajaModa"
-          }
-        },
-        idempotencyKey: orderConfirmationIdempotencyKey(order)
-      })
-    }
-  );
-  const payload = await result.json().catch(() => ({}));
-  if (!result.ok) {
-    const message = safeText(
-      payload?.details?.applicationError?.description ||
-      payload?.message ||
-      payload?.error,
-      300
-    );
-    throw new Error(message || "Wix Email rechazó la confirmación del pedido.");
-  }
-  console.log(
-    "[Wix Email] Order confirmation accepted:",
-    orderNumber,
-    safeText(payload?.emailTransmission?.id, 100)
-  );
-  return payload?.emailTransmission;
-}
-
-function orderShipmentIdempotencyKey(order, carrier, trackingNumber) {
-  const seed = [
-    safeText(order?._id || order?.id || order?.number, 200),
-    safeText(carrier, 100).toLowerCase(),
-    safeText(trackingNumber, 100).toLowerCase()
-  ].join(":");
-  const bytes = crypto
-    .createHash("sha256")
-    .update("cajamoda-order-shipment:" + seed)
-    .digest()
-    .subarray(0, 16);
-  bytes[6] = (bytes[6] & 0x0f) | 0x40;
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
-  const hex = bytes.toString("hex");
-  return [
-    hex.slice(0, 8),
-    hex.slice(8, 12),
-    hex.slice(12, 16),
-    hex.slice(16, 20),
-    hex.slice(20, 32)
-  ].join("-");
-}
-
-function orderShipmentEmailHtml(order, carrier, trackingNumber, trackingLink = "") {
-  const normalized = normalizeWixOrder(order);
-  const orderNumber = cajaModaOrderNumber(order);
-  const customerName = normalized.customer || "Cliente CajaModa";
-  const addressText = "Cl. 35 #10-22 piso 1 local 1, San Diego, Cartagena de Indias, Bolívar, Colombia";
-  const itemRows = normalized.items.map(item => {
-    const details = [
-      item.sku ? "SKU " + item.sku : "",
-      item.size ? "Talla " + item.size : "",
-      item.color ? "Color " + item.color : "",
-      "Cantidad " + item.quantity
-    ].filter(Boolean).join(" · ");
-    const image = item.image
-      ? "<img src='" + escapeHtml(item.image) + "' alt='' width='72' height='90' style='display:block;width:72px;height:90px;object-fit:cover;border-radius:14px;border:1px solid #e4ddd3;'>"
-      : "<div style='width:72px;height:90px;border-radius:14px;background:#eee9e1;text-align:center;line-height:90px;font-family:Georgia,serif;font-size:17px;color:#6f685f;'>CM</div>";
-    return [
-      "<tr>",
-      "<td style='padding:15px 12px 15px 0;vertical-align:top;width:72px;'>", image, "</td>",
-      "<td style='padding:19px 0;vertical-align:top;border-bottom:1px solid #e9e2d9;'>",
-      "<div style='font-family:Arial,sans-serif;font-size:17px;font-weight:700;color:#171513;'>", escapeHtml(item.name), "</div>",
-      "<div style='margin-top:6px;font-family:Arial,sans-serif;font-size:13px;line-height:1.5;color:#756f67;'>", escapeHtml(details), "</div>",
-      "</td>",
-      "</tr>"
-    ].join("");
-  }).join("");
-  const trackingAction = trackingLink
-    ? [
-        "<div style='margin-top:24px;text-align:center;'>",
-        "<a href='", escapeHtml(trackingLink), "' style='display:inline-block;padding:15px 28px;border-radius:999px;background:#171513;color:#fff;text-decoration:none;font-family:Arial,sans-serif;font-size:15px;font-weight:700;'>Rastrear pedido</a>",
-        "</div>"
-      ].join("")
-    : "";
-
-  return [
-    "<!doctype html><html><body style='margin:0;padding:0;background:#eee7dc;'>",
-    "<table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='background:#eee7dc;padding:34px 12px;'>",
-    "<tr><td align='center'>",
-    "<table role='presentation' width='640' cellspacing='0' cellpadding='0' style='width:100%;max-width:640px;background:#fbfaf7;border:1px solid rgba(255,255,255,.86);border-radius:30px;box-shadow:0 18px 50px rgba(61,48,31,.13);overflow:hidden;'>",
-    "<tr><td style='padding:34px 34px 26px;text-align:center;background:rgba(255,255,255,.70);border-bottom:1px solid #e3dcd2;'>",
-    "<div style='font-family:Didot,Bodoni MT,Times New Roman,serif;font-size:60px;line-height:.82;letter-spacing:-9px;color:#111;'>CM</div>",
-    "<div style='margin-top:12px;font-family:Georgia,serif;font-size:17px;letter-spacing:9px;color:#111;'>CAJAMODA</div>",
-    "<div style='margin-top:8px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:6px;color:#5f5a54;'>COLOMBIA</div>",
-    "</td></tr>",
-    "<tr><td style='padding:38px 42px 16px;text-align:center;'>",
-    "<div style='display:inline-block;width:54px;height:54px;border:1px solid #201d19;border-radius:50%;font-family:Arial,sans-serif;font-size:25px;line-height:54px;color:#171513;'>✓</div>",
-    "<h1 style='margin:24px 0 8px;font-family:Arial,sans-serif;font-size:30px;letter-spacing:7px;color:#151311;'>PEDIDO ENVIADO</h1>",
-    "<p style='margin:0;font-family:Arial,sans-serif;font-size:18px;color:#5e5851;'>", escapeHtml(customerName), ", tu pedido va en camino.</p>",
-    "<div style='margin:24px auto 0;padding:13px 18px;display:inline-block;border:1px solid #dcd3c8;border-radius:999px;background:rgba(255,255,255,.82);font-family:Arial,sans-serif;font-size:15px;color:#37322d;'>Pedido #", escapeHtml(orderNumber), "</div>",
-    "</td></tr>",
-    "<tr><td style='padding:20px 42px 0;'>",
-    "<table role='presentation' width='100%' cellspacing='0' cellpadding='0' style='background:rgba(255,255,255,.76);border:1px solid #ded7ce;border-radius:22px;'>",
-    "<tr><td style='padding:22px 24px;border-bottom:1px solid #e7e0d7;'>",
-    "<div style='font-family:Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;color:#777067;'>TRANSPORTADORA</div>",
-    "<div style='margin-top:7px;font-family:Arial,sans-serif;font-size:18px;font-weight:700;color:#181512;'>", escapeHtml(carrier), "</div>",
-    "</td></tr>",
-    "<tr><td style='padding:22px 24px;'>",
-    "<div style='font-family:Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;color:#777067;'>NÚMERO DE RASTREO</div>",
-    "<div style='margin-top:7px;font-family:Arial,sans-serif;font-size:22px;font-weight:700;letter-spacing:1px;color:#181512;'>", escapeHtml(trackingNumber), "</div>",
-    "<div style='margin-top:7px;font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#6e675f;'>Usa este número para consultar el estado de tu entrega con ", escapeHtml(carrier), ".</div>",
-    trackingAction,
-    "</td></tr></table>",
-    "</td></tr>",
-    "<tr><td style='padding:18px 42px 0;'>",
-    "<table role='presentation' width='100%' cellspacing='0' cellpadding='0'>", itemRows, "</table>",
-    "</td></tr>",
-    "<tr><td style='padding:24px 42px 34px;'>",
-    "<div style='padding:20px 22px;border:1px solid #ded7ce;border-radius:20px;background:rgba(255,255,255,.68);'>",
-    "<div style='font-family:Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;color:#777067;'>DIRECCIÓN DE ENTREGA</div>",
-    "<div style='margin-top:7px;font-family:Arial,sans-serif;font-size:14px;line-height:1.6;color:#5f5952;'>", escapeHtml(addressText), "</div>",
-    "</div>",
-    "<p style='margin:28px 0 0;text-align:center;font-family:Arial,sans-serif;font-size:12px;line-height:1.6;color:#817970;'>Conserva tu número de pedido y rastreo si necesitas ayuda con tu entrega.</p>",
-    "</td></tr>",
-    "</table>",
-    "</td></tr></table>",
-    "</body></html>"
-  ].join("");
-}
-
-async function sendOrderShipmentEmail(order, carrier, trackingNumber, trackingLink = "") {
-  if (!WIX_API_KEY || !WIX_SITE_ID) throw new Error("Wix Email no está configurado.");
-  const customerEmail = safeText(order?.buyerInfo?.email, 250).toLowerCase();
-  if (!customerEmail) throw new Error("El pedido enviado no tiene correo del cliente.");
-
-  const orderNumber = cajaModaOrderNumber(order);
-  const result = await fetch(
-    "https://www.wixapis.com/email-transmissions/v1/email-transmissions/send",
-    {
-      method: "POST",
-      headers: {
-        "Authorization": WIX_API_KEY,
-        "wix-site-id": WIX_SITE_ID,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        emailTransmission: {
-          emailSubject: "Tu pedido CajaModa fue enviado — #" + orderNumber,
-          emailHtmlContent: orderShipmentEmailHtml(
-            order,
-            carrier,
-            trackingNumber,
-            trackingLink
-          ),
-          senderName: "CajaModa",
-          toRecipients: [{ emailAddress: customerEmail }],
-          type: "TRANSACTIONAL",
-          metadata: {
-            order: orderNumber.replace(/[^a-z0-9]/gi, ""),
-            tracking: trackingNumber.replace(/[^a-z0-9]/gi, ""),
-            source: "CajaModa"
-          }
-        },
-        idempotencyKey: orderShipmentIdempotencyKey(
-          order,
-          carrier,
-          trackingNumber
-        )
-      })
-    }
-  );
-  const payload = await result.json().catch(() => ({}));
-  if (!result.ok) {
-    const message = safeText(
-      payload?.details?.applicationError?.description ||
-      payload?.message ||
-      payload?.error,
-      300
-    );
-    throw new Error(message || "Wix Email rechazó la confirmación de envío.");
-  }
-  console.log(
-    "[Wix Email] Shipment confirmation accepted:",
-    orderNumber,
-    safeText(payload?.emailTransmission?.id, 100)
-  );
-  return payload?.emailTransmission;
 }
 
 async function getStripePurchasedLines(session) {
@@ -1385,13 +975,7 @@ async function getStripePurchasedLines(session) {
       amount,
       name: safeText(line?.description || stripeProduct?.name, 300) || "Producto CajaModa",
       fulfillmentCode: safeText(stripeProduct?.metadata?.fulfillmentCode, 10).toUpperCase(),
-      selectedDeliveryMode: safeText(stripeProduct?.metadata?.selectedDeliveryMode, 20).toLowerCase(),
-      sku: safeText(stripeProduct?.metadata?.sku, 100).toUpperCase(),
-      size: safeText(stripeProduct?.metadata?.size, 50),
-      color: safeText(stripeProduct?.metadata?.color, 100),
-      image: safeText(stripeProduct?.metadata?.imageId, 300)
-        ? `https://static.wixstatic.com/media/${safeText(stripeProduct.metadata.imageId, 300)}`
-        : ""
+      selectedDeliveryMode: safeText(stripeProduct?.metadata?.selectedDeliveryMode, 20).toLowerCase()
     };
   });
 }
@@ -1413,20 +997,19 @@ async function importStripeOrderIntoWix(session, lines) {
   const name = splitCustomerName(shipping?.name || customer?.name || session?.metadata?.customerName);
   const stripeAddress = stripeAddressToWix(shipping?.address || customer?.address || {});
   const address = session?.metadata?.deliveryMethod === "pickup"
-    ? { country: "CO", city: "Cartagena", addressLine1: CARTAGENA_PICKUP_ADDRESS }
+    ? { country: "CO", city: "Cartagena", addressLine: CARTAGENA_PICKUP_ADDRESS }
     : {
         ...stripeAddress,
         country: "CO",
         city: safeText(session?.metadata?.deliveryCity, 100) || stripeAddress.city,
         subdivision: safeText(session?.metadata?.deliveryState, 100) || stripeAddress.subdivision,
         postalCode: safeText(session?.metadata?.deliveryPostalCode, 40) || stripeAddress.postalCode,
-        addressLine1: safeText(session?.metadata?.deliveryAddress, 250) || stripeAddress.addressLine1
+        addressLine: safeText(session?.metadata?.deliveryAddress, 250) || stripeAddress.addressLine
       };
   const subtotal = lines.reduce((sum, line) => sum + line.amount * line.quantity, 0);
   const total = Number(session?.amount_total || 0) / 100;
 
   const imported = await wix.orders.importOrder({
-    number: importedOrderNumber(session.id),
     status: "APPROVED",
     paymentStatus: "PAID",
     fulfillmentStatus: "NOT_FULFILLED",
@@ -1458,7 +1041,22 @@ async function importStripeOrderIntoWix(session, lines) {
         }
       }
     },
-    lineItems: lines.map(wixOrderLineItem),
+    lineItems: lines.map(line => ({
+      productName: { original: line.name },
+      descriptionLines: [{
+        name: { original: "Entrega" },
+        plainText: { original: selectedDeliveryLabel(line.selectedDeliveryMode) }
+      }],
+      quantity: line.quantity,
+      price: { amount: String(line.amount) },
+      itemType: { preset: "PHYSICAL" },
+      physicalProperties: { shippable: true },
+      catalogReference: {
+        appId: WIX_STORES_APP_ID,
+        catalogItemId: line.productId,
+        options: { variantId: line.variantId }
+      }
+    })),
     priceSummary: {
       subtotal: { amount: String(subtotal) },
       shipping: { amount: String(Math.max(0, total - subtotal)) },
@@ -1481,80 +1079,22 @@ async function decrementStripeInventory(lines) {
 }
 
 async function syncCompletedStripeSession(session) {
-  const existingSync = stripeSessionSyncLocks.get(session.id);
-  if (existingSync) return existingSync;
-  const sync = (async () => {
-    if (!wix) throw new Error("Wix no está configurado para recibir el pedido.");
-    if (session.payment_status !== "paid") return;
-    if (session?.metadata?.wixSync === "complete") return;
+  if (!wix) throw new Error("Wix no está configurado para recibir el pedido.");
+  if (session.payment_status !== "paid") return;
+  if (session?.metadata?.wixSync === "complete") return;
 
-    const lines = await getStripePurchasedLines(session);
-    const imported = await importStripeOrderIntoWix(session, lines);
-    if (imported.created) {
-      await decrementStripeInventory(lines);
-    }
-    await sendOrderConfirmationEmail(imported.order);
-    await analytics.recordPurchase({
-      externalId: session.id,
-      order: imported.order,
-      stripeMetadata: session.metadata,
-      items: lines.map(line => ({
-        productId: line.productId,
-        productName: line.name,
-        productImage: line.image,
-        quantity: line.quantity,
-        value: line.amount
-      })),
-      value: Number(session.amount_total || 0) / 100,
-      paymentMethod: "card"
-    }).catch(error => {
-      console.error("[Analytics] Stripe purchase recording failed:", error);
-    });
-    await stripe.checkout.sessions.update(session.id, {
-      metadata: {
-        ...session.metadata,
-        wixSync: "complete",
-        wixOrderId: safeText(imported?.order?._id || imported?.order?.id, 80)
-      }
-    });
-  })();
-  stripeSessionSyncLocks.set(session.id, sync);
-  try {
-    return await sync;
-  } finally {
-    stripeSessionSyncLocks.delete(session.id);
+  const lines = await getStripePurchasedLines(session);
+  const imported = await importStripeOrderIntoWix(session, lines);
+  if (imported.created) {
+    await decrementStripeInventory(lines);
   }
-}
-
-async function findCajaModaCheckoutSession(intentId) {
-  const result = await stripe.checkout.sessions.list({
-    payment_intent: intentId,
-    limit: 1
-  });
-  return result.data.find(session =>
-    safeText(session?.metadata?.source, 80) === "cajamoda-storefront"
-  ) || null;
-}
-
-async function syncPendingStripeCheckoutSessions() {
-  if (!stripe || !wix) return;
-  const result = await stripe.checkout.sessions.list({
-    status: "complete",
-    created: { gte: Math.floor(Date.now() / 1000) - (30 * 24 * 60 * 60) },
-    limit: 100
-  });
-  const pending = result.data.filter(session =>
-    session.payment_status === "paid" &&
-    safeText(session?.metadata?.source, 80) === "cajamoda-storefront" &&
-    session?.metadata?.wixSync !== "complete"
-  );
-  for (const session of pending) {
-    try {
-      await syncCompletedStripeSession(session);
-    } catch (error) {
-      console.error(`[Stripe] Pending Wix synchronization failed for ${session.id}:`, error);
+  await stripe.checkout.sessions.update(session.id, {
+    metadata: {
+      ...session.metadata,
+      wixSync: "complete",
+      wixOrderId: safeText(imported?.order?._id || imported?.order?.id, 80)
     }
-  }
+  });
 }
 
 function encodedNationalDeliveryPlan(delivery) {
@@ -1612,8 +1152,7 @@ function stripeIntentMetadata(lines, body, delivery) {
     deliveryState: safeText(delivery.state, 100),
     deliveryPostalCode: safeText(delivery.postalCode, 40),
     deliveryFee: String(Math.max(0, Number(delivery.fee || 0))),
-    deliveryPlan: safeText(encodedNationalDeliveryPlan(delivery), 500),
-    ...analytics.stripeMetadataFromContext(body?.analytics)
+    deliveryPlan: safeText(encodedNationalDeliveryPlan(delivery), 500)
   };
   lines.forEach((line, index) => {
     metadata[`item${index}`] = Buffer.from(JSON.stringify({
@@ -1623,11 +1162,7 @@ function stripeIntentMetadata(lines, body, delivery) {
       a: line.amount,
       n: safeText(line.name, 180),
       f: safeText(line.fulfillmentCode, 10).toUpperCase(),
-      d: safeText(line.selectedDeliveryMode, 20).toLowerCase(),
-      s: safeText(line.sku, 100).toUpperCase(),
-      z: safeText(line.size, 50),
-      c: safeText(line.color, 100),
-      i: wixMediaId(line.image)
+      d: safeText(line.selectedDeliveryMode, 20).toLowerCase()
     })).toString("base64url");
   });
   return metadata;
@@ -1645,13 +1180,7 @@ function stripeIntentLines(intent) {
       amount: Number(item.a || 0),
       name: safeText(item.n, 300) || "Producto CajaModa",
       fulfillmentCode: safeText(item.f, 10).toUpperCase(),
-      selectedDeliveryMode: safeText(item.d, 20).toLowerCase(),
-      sku: safeText(item.s, 100).toUpperCase(),
-      size: safeText(item.z, 50),
-      color: safeText(item.c, 100),
-      image: safeText(item.i, 300)
-        ? `https://static.wixstatic.com/media/${safeText(item.i, 300)}`
-        : ""
+      selectedDeliveryMode: safeText(item.d, 20).toLowerCase()
     };
   }).filter(line => line.productId && line.variantId && Number.isFinite(line.amount) && line.amount >= 1);
 }
@@ -1674,11 +1203,7 @@ async function handleCreateStripePaymentIntent(request, response) {
     amount: Number(line?.price_data?.unit_amount || 0) / 100,
     name: safeText(line?.price_data?.product_data?.name, 300) || "Producto CajaModa",
     fulfillmentCode: safeText(line?.fulfillmentCode, 10).toUpperCase(),
-    selectedDeliveryMode: safeText(line?.selectedDeliveryMode, 20).toLowerCase(),
-    sku: safeText(line?.sku, 100).toUpperCase(),
-    size: safeText(line?.size, 50),
-    color: safeText(line?.color, 100),
-    image: safeText(line?.image, 1500)
+    selectedDeliveryMode: safeText(line?.selectedDeliveryMode, 20).toLowerCase()
   }));
   const captureMethod = stripeCaptureMethod(lines);
   const delivery = await checkoutDelivery(body, lines);
@@ -1742,18 +1267,17 @@ async function importStripeIntentIntoWix(intent, lines) {
   const name = splitCustomerName(billing.name || intent.metadata.customerName);
   const deliveryMethod = safeText(intent.metadata.deliveryMethod, 20) || "pickup";
   const address = deliveryMethod === "pickup"
-    ? { country: "CO", city: "Cartagena", subdivision: "BL", postalCode: "130001", addressLine1: CARTAGENA_PICKUP_ADDRESS }
+    ? { country: "CO", city: "Cartagena", subdivision: "BL", postalCode: "130001", addressLine: CARTAGENA_PICKUP_ADDRESS }
     : {
         country: "CO",
         city: safeText(intent.metadata.deliveryCity, 100),
         subdivision: safeText(intent.metadata.deliveryState, 100),
         postalCode: safeText(intent.metadata.deliveryPostalCode, 40),
-        addressLine1: safeText(intent.metadata.deliveryAddress, 250)
+        addressLine: safeText(intent.metadata.deliveryAddress, 250)
       };
   const subtotal = lines.reduce((sum, line) => sum + line.amount * line.quantity, 0);
   const total = Number(intent.amount_received || intent.amount || 0) / 100;
   const imported = await wix.orders.importOrder({
-    number: importedOrderNumber(intent.id),
     status: "APPROVED",
     paymentStatus: "PAID",
     fulfillmentStatus: "NOT_FULFILLED",
@@ -1779,7 +1303,12 @@ async function importStripeIntentIntoWix(intent, lines) {
         phone: safeText(intent.metadata.customerPhone, 80)
       } } }
     },
-    lineItems: lines.map(wixOrderLineItem),
+    lineItems: lines.map(line => ({
+      productName: { original: line.name }, quantity: line.quantity,
+      price: { amount: String(line.amount) }, itemType: { preset: "PHYSICAL" },
+      physicalProperties: { shippable: true },
+      catalogReference: { appId: WIX_STORES_APP_ID, catalogItemId: line.productId, options: { variantId: line.variantId } }
+    })),
     priceSummary: {
       subtotal: { amount: String(subtotal) }, shipping: { amount: String(Math.max(0, total - subtotal)) },
       tax: { amount: "0" }, discount: { amount: "0" }, total: { amount: String(total) }
@@ -1789,12 +1318,6 @@ async function importStripeIntentIntoWix(intent, lines) {
 }
 
 async function syncSucceededStripeIntent(paymentIntent) {
-  const checkoutSession = await findCajaModaCheckoutSession(paymentIntent.id);
-  if (checkoutSession) {
-    const latestSession = await stripe.checkout.sessions.retrieve(checkoutSession.id);
-    await syncCompletedStripeSession(latestSession);
-    return;
-  }
   const existingSync = stripeIntentSyncLocks.get(paymentIntent.id);
   if (existingSync) return existingSync;
   const sync = (async () => {
@@ -1806,23 +1329,6 @@ async function syncSucceededStripeIntent(paymentIntent) {
     if (!lines.length) throw new Error("Stripe devolvió un pedido sin productos verificables.");
     const imported = await importStripeIntentIntoWix(latest, lines);
     if (imported.created) await decrementStripeInventory(lines);
-    await sendOrderConfirmationEmail(imported.order);
-    await analytics.recordPurchase({
-      externalId: latest.id,
-      order: imported.order,
-      stripeMetadata: latest.metadata,
-      items: lines.map(line => ({
-        productId: line.productId,
-        productName: line.name,
-        productImage: line.image,
-        quantity: line.quantity,
-        value: line.amount
-      })),
-      value: Number(latest.amount || 0) / 100,
-      paymentMethod: "card"
-    }).catch(error => {
-      console.error("[Analytics] Stripe intent purchase recording failed:", error);
-    });
     await stripe.paymentIntents.update(latest.id, { metadata: {
       ...latest.metadata,
       wixSync: "complete",

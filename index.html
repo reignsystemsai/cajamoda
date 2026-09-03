@@ -2486,6 +2486,14 @@ body:not(.storefrontLoading) .storefrontLoader{
   display:none;
 }
 
+.storefrontLoaderLogo{
+  width:190px;
+  margin:0 auto;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+
 .storefrontLoaderMark{
   font-family:Georgia,serif;
   font-size:70px;
@@ -2540,8 +2548,18 @@ body:not(.storefrontLoading) .storefrontLoader{
 
 <div id="storefrontLoader" class="storefrontLoader" role="status" aria-live="polite">
   <div>
-    <div class="storefrontLoaderMark">CM</div>
-    <div class="storefrontLoaderWord">CAJAMODA</div>
+    <div class="storefrontLoaderLogo" aria-label="CajaModa Colombia">
+      <div class="brandMonogram">
+        <span class="brandC">C</span>
+        <span class="brandM">M</span>
+      </div>
+      <div class="brandWord">CAJAMODA</div>
+      <div class="brandCountryRow" aria-hidden="true">
+        <span class="brandCountryLine"></span>
+        <span class="brandCountry">COLOMBIA</span>
+        <span class="brandCountryLine"></span>
+      </div>
+    </div>
     <div id="storefrontLoaderStatus" class="storefrontLoaderStatus">Cargando la colección…</div>
     <button id="storefrontLoaderRetry" class="storefrontLoaderRetry" type="button">Intentar de nuevo</button>
   </div>

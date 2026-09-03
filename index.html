@@ -2545,6 +2545,13 @@ body:not(.storefrontLoading) .storefrontLoader{
 </head>
 
 <body class="storefrontLoading">
+<script>
+  try{
+    if(sessionStorage.getItem("cajamoda-home-loaded") === "1"){
+      document.body.classList.remove("storefrontLoading");
+    }
+  }catch(error){}
+</script>
 
 <div id="storefrontLoader" class="storefrontLoader" role="status" aria-live="polite">
   <div>
@@ -4921,6 +4928,9 @@ body:not(.storefrontLoading) .storefrontLoader{
   function revealStorefront(){
     if(!storefrontCatalogReady || !initialProductRevealDone) return;
     clearTimeout(storefrontLoadTimer);
+    try{
+      sessionStorage.setItem("cajamoda-home-loaded","1");
+    }catch(error){}
     document.body.classList.remove("storefrontLoading");
     $("storefrontLoader").classList.remove("error");
   }

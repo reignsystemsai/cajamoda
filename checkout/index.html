@@ -3720,8 +3720,7 @@ img{display:block;max-width:100%}
       stripeCanConfirm = false;
       updateStripePayAvailability();
       checkoutElements.on("change", session => {
-        const stripeTotal = session?.total?.total?.amount;
-        if (stripeTotal) $("stripePayButton").textContent = `Pagar ${stripeTotal}`;
+        $("stripePayButton").textContent = `Pagar ${money(checkoutTotal())} COP`;
         stripeCanConfirm = Boolean(session.canConfirm);
         if (stripeCanConfirm) errorBox.textContent = "";
         updateStripePayAvailability();

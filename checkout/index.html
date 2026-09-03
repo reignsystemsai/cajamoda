@@ -3555,10 +3555,7 @@ img{display:block;max-width:100%}
       checkoutElements &&
       checkoutActions &&
       paymentElement &&
-      !stripeSessionUpdating &&
-      stripeSessionCartKey === currentDeliveryQuoteKey() &&
-      cardCheckoutDetailsReady() &&
-      deliveryQuoteMatchesCart()
+      !stripeSessionUpdating
     );
     $("stripePayButton").disabled = !ready;
   }

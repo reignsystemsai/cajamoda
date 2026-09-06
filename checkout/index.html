@@ -497,14 +497,16 @@ img{display:block;max-width:100%}
 }
 .summaryLine{
   min-height:31px;
-  display:flex;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,44%);
   align-items:center;
-  justify-content:space-between;
-  gap:15px;
+  column-gap:15px;
   font-size:10px
 }
-.summaryLine span:first-child{color:#666}
-.summaryValue{font-weight:650}
+.summaryLine span:first-child{color:#666;min-width:0}
+.summaryValue{font-weight:650;text-align:right}
+#deliverySummaryRows .summaryValue,
+#bagShipmentCharges .summaryValue{text-align:left}
 .summaryDivider{
   height:1px;
   margin:7px 0;

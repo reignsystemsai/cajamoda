@@ -3603,7 +3603,7 @@ img{display:block;max-width:100%}
     }
     const synchronizedKey = currentDeliveryQuoteKey();
     const expectedAmountTotal = Math.round(checkoutTotal() * 100);
-    let returnedAmountTotal = null;
+let returnedShippingOptionId = "";
     stripeSessionCartKey = "";
     updateStripePayAvailability();
     const update = async () => {
@@ -3614,10 +3614,10 @@ img{display:block;max-width:100%}
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok || result?.ok !== true) throw paymentPreparationFailure(result);
-      returnedAmountTotal = Number(result.amountTotal);
-      if (!Number.isFinite(returnedAmountTotal) || returnedAmountTotal !== expectedAmountTotal) {
-        throw new Error("El total de Stripe no coincide con el pedido.");
-      }
+     returnedShippingOptionId = String(result.shippingOptionId || "");
+if (!returnedShippingOptionId) {
+  throw new Error("No se pudo agregar el costo de entrega.");
+}
     };
     stripeSessionUpdate = stripeSessionUpdate.catch(() => {}).then(async () => {
       stripeSessionUpdating = true;
@@ -3625,6 +3625,7 @@ img{display:block;max-width:100%}
       try {
         const result = await checkoutElements.runServerUpdate(update);
         if (result?.type === "error") throw new Error(result?.error?.message || PAYMENT_PREPARATION_ERROR);
+        await checkoutActions.updateShippingOption(returnedShippingOptionId);
         if (synchronizedKey === currentDeliveryQuoteKey()) {
           stripeSessionCartKey = synchronizedKey;
         }

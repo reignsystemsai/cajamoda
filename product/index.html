@@ -6380,13 +6380,21 @@ function closeWishList(){
      HOME / FAVORITES / PROFILE
      ============================================================ */
 
-  $("navHome")
-    .onclick =
-      () => {
+  $("navHome").onclick = () => {
+  try {
+    const previousPage = new URL(document.referrer);
 
-        location.href =
-          CONFIG.homePage;
-      };
+    if (
+      previousPage.origin === location.origin &&
+      previousPage.pathname === CONFIG.homePage
+    ) {
+      history.back();
+      return;
+    }
+  } catch (error) {}
+
+  location.href = CONFIG.homePage;
+};
 
   $("navFavorites")
     .onclick =

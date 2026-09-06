@@ -5124,11 +5124,12 @@ body:not(.storefrontLoading) .storefrontLoader{
   }
 
   function productUrl(product){
-    const url = new URL(CONFIG.productPage,location.origin);
-    url.searchParams.set("productId",product.id);
-    url.searchParams.set("category",product.category);
-    return url.toString();
-  }
+  const url = new URL(CONFIG.productPage,location.origin);
+  url.searchParams.set("productId",product.id);
+  url.searchParams.set("category",product.category);
+  url.searchParams.set("from","home");
+  return url.toString();
+}
 
   function syncQuickPreviewHeart(){
     const product = state.quickPreviewProduct;
@@ -5215,7 +5216,10 @@ body:not(.storefrontLoading) .storefrontLoader{
               "category",
               product.category
             );
-
+url.searchParams.set(
+  "from",
+  "home"
+);
             track(
               "PRODUCT_CLICK",
               {

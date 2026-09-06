@@ -1336,7 +1336,8 @@ async function syncSucceededStripeIntent(paymentIntent) {
   if (existingSync) return existingSync;
   const sync = (async () => {
     if (!wix) throw new Error("Wix no está configurado para recibir el pedido.");
-    if (paymentIntent.status !== "succeeded" || paymentIntent?.metadata?.wixSync === "complete") return;
+if (!["succeeded", "requires_capture"].includes(paymentIntent.status) ||
+    paymentIntent?.metadata?.wixSync === "complete") return;
     const latest = await stripe.paymentIntents.retrieve(paymentIntent.id);
     if (latest?.metadata?.wixSync === "complete") return;
     const lines = stripeIntentLines(latest);
@@ -1361,8 +1362,9 @@ async function handleStripeIntentConfirmation(request, response, url) {
   if (!stripe) return sendError(response, 503, "Stripe todavía no está configurado.");
   const intentId = safeText(url.searchParams.get("paymentIntent"), 100);
   if (!/^pi_[A-Za-z0-9]+$/.test(intentId)) return sendError(response, 400, "El pago no es válido.");
-  const intent = await stripe.paymentIntents.retrieve(intentId, { expand: ["payment_method"] });
-  if (intent.status === "succeeded") await syncSucceededStripeIntent(intent);
+if (["succeeded", "requires_capture"].includes(intent.status)) {
+  await syncSucceededStripeIntent(intent);
+}
   const authorized = intent.status === "requires_capture";
   const deliveryTitle = safeText(intent.metadata.deliverySummary, 300) ||
     (intent.metadata.deliveryMethod === "pickup"
@@ -1403,14 +1405,18 @@ async function handleStripeWebhook(request, response) {
 
   setImmediate(() => {
     void (async () => {
-      if (event.type === "checkout.session.completed") {
-        await syncCompletedStripeSession(event.data.object);
-        console.log(`[Stripe] Payment synchronized with Wix: ${event.data.object.id}`);
-      }
-      if (event.type === "payment_intent.succeeded") {
-        await syncSucceededStripeIntent(event.data.object);
-        console.log(`[Stripe] Card payment synchronized with Wix: ${event.data.object.id}`);
-      }
+     if (event.type === "checkout.session.completed") {
+  await syncCompletedStripeSession(event.data.object);
+  console.log(`[Stripe] Payment synchronized with Wix: ${event.data.object.id}`);
+}
+if (event.type === "payment_intent.amount_capturable_updated") {
+  await syncSucceededStripeIntent(event.data.object);
+  console.log(`[Stripe] Authorized card order synchronized with Wix: ${event.data.object.id}`);
+}
+if (event.type === "payment_intent.succeeded") {
+  await syncSucceededStripeIntent(event.data.object);
+  console.log(`[Stripe] Card payment synchronized with Wix: ${event.data.object.id}`);
+}
     })().catch(error => {
       console.error(`[Stripe] Wix synchronization failed for ${event.id}:`, error);
     });

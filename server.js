@@ -1359,32 +1359,48 @@ if (!["succeeded", "requires_capture"].includes(paymentIntent.status) ||
 }
 
 async function handleStripeIntentConfirmation(request, response, url) {
-  if (!stripe) return sendError(response, 503, "Stripe todavía no está configurado.");
+  if (!stripe) {
+    return sendError(response, 503, "Stripe todavía no está configurado.");
+  }
+
   const intentId = safeText(url.searchParams.get("paymentIntent"), 100);
-  if (!/^pi_[A-Za-z0-9]+$/.test(intentId)) return sendError(response, 400, "El pago no es válido.");
-if (["succeeded", "requires_capture"].includes(intent.status)) {
-  await syncSucceededStripeIntent(intent);
-}
+
+  if (!/^pi_[A-Za-z0-9]+$/.test(intentId)) {
+    return sendError(response, 400, "El pago no es válido.");
+  }
+
+  const intent = await stripe.paymentIntents.retrieve(intentId, {
+    expand: ["payment_method"]
+  });
+
   const authorized = intent.status === "requires_capture";
-  const deliveryTitle = safeText(intent.metadata.deliverySummary, 300) ||
+
+  const deliveryTitle =
+    safeText(intent.metadata.deliverySummary, 300) ||
     (intent.metadata.deliveryMethod === "pickup"
       ? "Pronto: Recoger en punto · 24–48 h"
       : intent.metadata.deliveryMethod === "national"
         ? "Rápido Nacional · 4–7 días"
         : "Pronto a domicilio · 24–48 h");
+
   sendJson(response, 200, {
     ok: true,
     order: {
       paid: intent.status === "succeeded",
       authorized,
       number: `S-${intent.id.slice(-12).toUpperCase()}`,
-      payment: intent.status === "succeeded"
-        ? "Pago con tarjeta confirmado"
-        : authorized
-          ? "Pago con tarjeta autorizado"
-          : "Pago en proceso",
-      delivery: getConfirmationDelivery({ shippingInfo: { title: deliveryTitle } }),
-      shipments: pendingNationalShipmentsFromEncodedPlan(intent?.metadata?.deliveryPlan)
+      payment:
+        intent.status === "succeeded"
+          ? "Pago con tarjeta confirmado"
+          : authorized
+            ? "Pago con tarjeta autorizado"
+            : "Pago en proceso",
+      delivery: getConfirmationDelivery({
+        shippingInfo: { title: deliveryTitle }
+      }),
+      shipments: pendingNationalShipmentsFromEncodedPlan(
+        intent?.metadata?.deliveryPlan
+      )
     }
   });
 }

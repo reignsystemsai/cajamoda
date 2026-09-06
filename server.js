@@ -896,7 +896,21 @@ async function handleUpdateStripeCheckout(request, response) {
       deliveryPostalCode: delivery.postalCode
     }
   });
-  sendJson(response, 200, { ok: true, sessionId: updated.id, amountTotal: updated.amount_total });
+ const shippingRate = updated?.shipping_options?.[0]?.shipping_rate;
+const shippingOptionId =
+  typeof shippingRate === "string" ? shippingRate : shippingRate?.id;
+
+if (!shippingOptionId) {
+  sendError(response, 500, "No se pudo preparar el costo de entrega.");
+  return;
+}
+
+sendJson(response, 200, {
+  ok: true,
+  sessionId: updated.id,
+  amountTotal: updated.amount_total,
+  shippingOptionId
+});
 }
 
 async function handleStripeConfirmation(request, response, url) {

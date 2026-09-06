@@ -3552,18 +3552,9 @@ img{display:block;max-width:100%}
     return Boolean($("deliveryAddress")?.value.trim());
   }
 
-  function updateStripePayAvailability() {
-    const ready = Boolean(
-      checkoutElements &&
-      checkoutActions &&
-      paymentElement &&
-      !stripeSessionUpdating &&
-      stripeSessionCartKey === currentDeliveryQuoteKey() &&
-      cardCheckoutDetailsReady() &&
-      deliveryQuoteMatchesCart()
-    );
-    $("stripePayButton").disabled = !ready;
-  }
+ function updateStripePayAvailability() {
+  $("stripePayButton").disabled = !stripeCanConfirm;
+}
 
   function billingAddress() {
     if ($("billingSame")?.checked) {

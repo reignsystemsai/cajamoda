@@ -2603,9 +2603,11 @@ window.addEventListener(
          READY
          ====================================================== */
 
-      case "READY":
-        sendInit();
-        break;
+     case "READY":
+  if (catalog.length) {
+    sendInit();
+  }
+  break;
 
       /* ======================================================
          PRODUCT VARIANTS

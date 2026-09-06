@@ -2545,7 +2545,13 @@ body:not(.storefrontLoading) .storefrontLoader{
 </head>
 
 <body class="storefrontLoading">
-
+<script>
+  try{
+    if(sessionStorage.getItem("cajamoda-home-loaded") === "1"){
+      document.body.classList.remove("storefrontLoading");
+    }
+  }catch(error){}
+</script>
 <div id="storefrontLoader" class="storefrontLoader" role="status" aria-live="polite">
   <div>
     <div class="storefrontLoaderLogo" aria-label="CajaModa Colombia">

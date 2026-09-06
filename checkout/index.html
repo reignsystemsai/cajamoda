@@ -3552,8 +3552,8 @@ img{display:block;max-width:100%}
     return Boolean($("deliveryAddress")?.value.trim());
   }
 
- function updateStripePayAvailability() {
-  $("stripePayButton").disabled = !stripeCanConfirm;
+function updateStripePayAvailability() {
+  $("stripePayButton").disabled = !checkoutActions || !paymentElement;
 }
 
   function billingAddress() {
@@ -3748,7 +3748,6 @@ if (!returnedShippingOptionId) {
     button.textContent = "Procesando pago…";
     try {
       if (!checkoutElements || !checkoutActions || !paymentElement) throw new Error("El formulario de Stripe todavía está cargando.");
-      if (!validatePaymentDetails()) throw new Error("Completa tus datos de contacto y entrega.");
   
       const firstName = $("customerFirstName")?.value.trim();
       const lastName = $("customerLastName")?.value.trim();

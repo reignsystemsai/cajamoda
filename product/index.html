@@ -6381,17 +6381,13 @@ function closeWishList(){
      ============================================================ */
 
   $("navHome").onclick = () => {
-  try {
-    const previousPage = new URL(document.referrer);
+  const cameFromHome =
+    new URLSearchParams(location.search).get("from") === "home";
 
-    if (
-      previousPage.origin === location.origin &&
-      previousPage.pathname === CONFIG.homePage
-    ) {
-      history.back();
-      return;
-    }
-  } catch (error) {}
+  if (cameFromHome && history.length > 1) {
+    history.back();
+    return;
+  }
 
   location.href = CONFIG.homePage;
 };

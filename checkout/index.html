@@ -1097,7 +1097,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
 .stepTab{height:48px;font-size:9px;letter-spacing:.02em}.stepTab.isComplete::before{content:"✓";display:inline-grid;place-items:center;width:17px;height:17px;margin-right:5px;border-radius:50%;background:#080808;color:#fff;font-size:9px;font-weight:800}.stepPanel{padding:28px 42px 50px}
 .bottomNav{display:none!important}.bagSummaryToggle{width:100%;min-height:82px;margin-bottom:18px;padding:15px 18px;border:1px solid rgba(255,255,255,.9);border-radius:22px;display:grid;grid-template-columns:44px 1fr 24px;align-items:center;gap:14px;background:linear-gradient(145deg,rgba(255,255,255,.78),rgba(255,255,255,.40));box-shadow:inset 0 1px 0 #fff,0 15px 38px rgba(0,0,0,.07);text-align:left;backdrop-filter:blur(28px) saturate(160%);-webkit-backdrop-filter:blur(28px) saturate(160%)}.bagSummaryIcon{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:rgba(234,234,234,.72)}.bagSummaryIcon svg{width:23px;height:23px;fill:none;stroke:#080808;stroke-width:1.5}.bagSummaryCopy strong,.bagSummaryCopy span{display:block}.bagSummaryCopy strong{font-size:12px}.bagSummaryCopy span{margin-top:5px;color:#626262;font-size:9px}.bagSummaryChevron{font-size:22px;line-height:1;transition:transform .2s ease}.bagSummaryToggle[aria-expanded="true"] .bagSummaryChevron{transform:rotate(180deg)}.reviewList{margin-bottom:18px}.reviewList[hidden]{display:none}.reviewList .finalCheckoutItem{min-height:86px;padding:9px;border-radius:17px;grid-template-columns:62px 1fr}.reviewList .cartImage{width:62px;height:72px;border-radius:12px}.reviewList .cartDescription,.reviewList .cartRating,.reviewList .cartOptionControls,.reviewList .quantityControl,.reviewList .cartHeart,.reviewList .removeButton{display:none}.reviewList .cartDeliveryChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-top:8px}.reviewList .cartDeliveryLabel{grid-column:1/-1}.reviewList .cartDeliveryChoice{min-width:0;height:30px;padding:0 5px;border-radius:10px;font-size:8px}.reviewList .cartName{font-size:10px}.reviewList .cartOptions{margin-top:5px}.reviewList .cartPrice{font-size:10px}
 .bottomNav{display:grid!important;background:transparent;border:0;border-radius:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
-.bagSummaryChevron{width:16px;height:10px;fill:none;stroke:currentColor;stroke-width:.9;stroke-linecap:round;stroke-linejoin:round;font-size:0}
+.bagSummaryChevron{width:16px;height:1px;display:block;background:currentColor;opacity:.72;transition:opacity .2s ease}
 .paymentSectionTitle{margin:21px 0 12px;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:28px;line-height:1.12;font-weight:800}.paymentGlass.isStripe{padding:22px;border:1px solid rgba(255,255,255,.88);background:linear-gradient(145deg,rgba(255,255,255,.72),rgba(255,255,255,.38));box-shadow:inset 0 1px 0 rgba(255,255,255,.98),0 20px 48px rgba(0,0,0,.09);backdrop-filter:blur(30px) saturate(165%);-webkit-backdrop-filter:blur(30px) saturate(165%)}
 .deliveryGlass,.paymentGlass,.confirmedDeliverySummary,.reviewGlass,.reviewTotals,.addressSheet{border:1px solid rgba(255,255,255,.88);background:linear-gradient(145deg,rgba(255,255,255,.72),rgba(255,255,255,.38));box-shadow:inset 0 1px 0 rgba(255,255,255,.98),0 20px 48px rgba(0,0,0,.09);backdrop-filter:blur(30px) saturate(165%);-webkit-backdrop-filter:blur(30px) saturate(165%)}
 .deliveryGlass{border-radius:26px;padding:22px}.deliveryPromiseGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}.deliveryPromise{position:relative;min-height:92px;padding:15px 12px;border:1px solid rgba(0,0,0,.10);border-radius:18px;background:rgba(255,255,255,.48);text-align:left;transition:.2s ease}.deliveryPromise strong,.deliveryPromise small{display:block}.deliveryPromise strong{font-size:12px}.deliveryPromise small{margin-top:7px;color:#686868;font-size:8px;line-height:1.35}.deliveryPromiseDot{position:absolute;right:11px;top:11px;width:18px;height:18px;border:1px solid rgba(0,0,0,.24);border-radius:50%;display:grid;place-items:center}.deliveryPromise.isSelected{border-color:#111;background:rgba(255,255,255,.78)}.deliveryPromise.isSelected .deliveryPromiseDot{border-color:#080808;background:#080808;color:#fff}.deliveryPromise.isSelected .deliveryPromiseDot::after{content:"✓";font-size:10px;font-weight:800}.deliveryPromise:disabled{opacity:.34;cursor:not-allowed}.deliveryGlass.isConfirmed .deliveryPromiseGrid,.deliveryGlass.isConfirmed .deliveryDetails,.deliveryGlass.isConfirmed #prontoReceivingChoice,.deliveryGlass.isConfirmed #confirmDeliveryButton,.deliveryGlass.isConfirmed #addressSuggestionSource{display:none}.deliveryGlass.isConfirmed #continueToPaymentButton{display:block}.deliveryGlass.isConfirmed #deliveryQuoteBreakdown{margin-top:0}
@@ -1293,12 +1293,12 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
         <button id="bagSummaryToggle" class="bagSummaryToggle" type="button" aria-expanded="false" aria-controls="reviewList">
           <span class="bagSummaryIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.3 8.4h11.4l1 11H5.3l1-11Z"/><path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/></svg></span>
           <span class="bagSummaryCopy"><strong>En tu bolsa</strong><span id="approvedBagSummary">0 artículos</span></span>
-          <svg class="bagSummaryChevron" viewBox="0 0 16 10" aria-hidden="true"><path d="m1 2 7 6 7-6"/></svg>
+          <span class="bagSummaryChevron" aria-hidden="true"></span>
         </button>
         <div id="reviewList" class="reviewList" hidden></div>
 
         <div id="deliveryView">
-        <h2 class="paymentSectionTitle">¿Cómo quieres recibir tu pedido?</h2>
+        <h2 class="paymentSectionTitle">Opciones de entrega</h2>
         <section id="deliveryGlass" class="deliveryGlass" aria-label="Entrega">
           <div class="deliveryPromiseGrid" aria-label="Método de entrega">
             <button class="deliveryPromise" type="button" data-checkout-delivery="pickup"><span class="deliveryPromiseDot"></span><strong>Pronto</strong><small>Pickup o domicilio en Cartagena</small></button>
@@ -1433,7 +1433,10 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
                 <span>Subtotal</span>
                 <span id="subtotalValue" class="summaryValue">$0</span>
               </div>
-              <div id="stripeShipmentCharges"></div>
+              <div class="summaryLine">
+                <span>Entrega</span>
+                <span id="stripeDeliveryValue" class="summaryValue">$0</span>
+              </div>
               <div class="summaryLine">
                 <span>Impuesto estimado</span>
                 <span id="estimatedTaxValue" class="summaryValue">$0</span>
@@ -1807,6 +1810,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
       chargeRows.every(charge => charge.resolved);
     const profile = checkoutFulfillmentProfile(cart);
     if ($("subtotalValue")) $("subtotalValue").textContent = money(subtotal);
+    if ($("stripeDeliveryValue")) $("stripeDeliveryValue").textContent = money(deliveryFee);
     if ($("totalValue")) $("totalValue").textContent = money(total);
     if ($("bagTotalValue")) $("bagTotalValue").textContent = money(bagTotal);
     if ($("headerTotal")) $("headerTotal").textContent = money(total);
@@ -1817,7 +1821,6 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
     if ($("reviewTotalValue")) $("reviewTotalValue").textContent = money(total);
     renderShipmentCharges("bagShipmentCharges", chargeRows);
     renderShipmentCharges("nequiShipmentCharges", chargeRows);
-    renderShipmentCharges("stripeShipmentCharges", chargeRows);
     renderDeliveryQuoteBreakdown(profile, quoteReady, total);
     if ($("estimatedTaxValue")) $("estimatedTaxValue").textContent = money(0);
     if ($("stripePayButton")) $("stripePayButton").textContent = "Continuar a revisión";
@@ -3143,12 +3146,25 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
     if ($("reviewSubtotalValue")) $("reviewSubtotalValue").textContent = money(cart.total);
     if ($("reviewDeliveryValue")) $("reviewDeliveryValue").textContent = money(fee);
     if ($("reviewTotalValue")) $("reviewTotalValue").textContent = money(cart.total + fee);
-    if ($("reviewOrderItems")) $("reviewOrderItems").innerHTML = cart.items.map(item => `
-      <article class="reviewOrderItem">
-        ${productImage(item)}
-        <div><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(deliveryModeLabel(item))} · Cant. ${item.quantity}</span></div>
-        <b>${money(item.unitPrice * item.quantity)}</b>
-      </article>`).join("");
+    if ($("reviewOrderItems")) $("reviewOrderItems").innerHTML = cart.items.map(item => {
+      const options = [
+        item.color,
+        item.size ? `Talla ${item.size}` : "",
+        deliveryModeLabel(item)
+      ].filter(Boolean).join(" · ");
+      return `
+        <article class="reviewItem">
+          ${productImage(item, true)}
+          <div class="reviewInfo">
+            <div class="reviewName">${escapeHtml(item.name)}</div>
+            <div class="reviewOptions">${escapeHtml(options)}</div>
+          </div>
+          <div class="reviewNumbers">
+            <div class="reviewQuantity">Cant. ${item.quantity}</div>
+            <div class="reviewPrice">${money(item.unitPrice * item.quantity)}</div>
+          </div>
+        </article>`;
+    }).join("");
     const submit = $("submitOrderButton");
     if (submit) {
       submit.textContent = selectedPayment === "nequi" ? "Enviar pago Nequi" : `Enviar pago ${money(checkoutTotal())} COP`;

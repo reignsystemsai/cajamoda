@@ -1,88 +1,31 @@
 <!doctype html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#f7f3ee" />
-  <title>Compra confirmada · CajaModa</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500;6..96,600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    *{box-sizing:border-box}
-    html,body{margin:0;min-height:100%;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#0a0a0a}
-    body{background:#f4eee7 url("/assets/order-confirmation-boutique.png") center/cover fixed no-repeat}
-    body::before{content:"";position:fixed;inset:0;background:rgba(255,255,255,.18);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);z-index:-1}
-    button,a{font:inherit}
-    .page{width:min(100%,900px);margin:auto;padding:max(18px,env(safe-area-inset-top)) 18px max(36px,env(safe-area-inset-bottom))}
-    .header{position:relative;min-height:120px;display:grid;place-items:center}
-    .brandLockup{width:190px;display:flex;flex-direction:column;align-items:center;pointer-events:none;user-select:none}
-    .brandMonogram{position:relative;width:100px;height:57px;font-family:"Bodoni Moda",Didot,serif}
-    .brandC{position:absolute;left:7px;top:-12px;font-size:74px;line-height:1;font-weight:400;letter-spacing:-8px;transform:scaleX(.89)}
-    .brandM{position:absolute;left:43px;top:8px;font-size:52px;line-height:1;font-weight:400;letter-spacing:-5px;transform:scaleX(.90)}
-    .brandWord{margin-top:-2px;padding-left:6px;font-family:"Bodoni Moda",Didot,serif;font-size:11px;line-height:1;font-weight:500;letter-spacing:5.4px}
-    .brandCountryRow{width:145px;margin-top:7px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
-    .brandCountryLine{height:1px;background:rgba(0,0,0,.42)}
-    .brandCountry{padding-left:3px;font-size:6px;line-height:1;font-weight:600;letter-spacing:3.1px}
-    .categoryRail{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:8px 0 22px}
-    .category{position:relative;overflow:hidden;aspect-ratio:.66;border-radius:18px;background:#eee;box-shadow:0 12px 32px rgba(0,0,0,.08)}
-    .category img{width:100%;height:100%;display:block;object-fit:cover}.category::after{content:"";position:absolute;inset:45% 0 0;background:linear-gradient(transparent,rgba(0,0,0,.56))}.category span{position:absolute;z-index:1;left:7px;right:7px;bottom:10px;text-align:center;color:white;font-size:clamp(8px,2.3vw,14px);font-weight:800;line-height:1.05;text-transform:uppercase}
-    .glass{border:1px solid rgba(255,255,255,.82);border-radius:36px;background:linear-gradient(145deg,rgba(255,255,255,.62),rgba(255,255,255,.20));box-shadow:0 0 0 1px rgba(0,0,0,.035),inset 0 1px 0 rgba(255,255,255,.95),0 26px 70px rgba(0,0,0,.14);backdrop-filter:blur(31px) saturate(175%);-webkit-backdrop-filter:blur(31px) saturate(175%)}
-    .confirmation{padding:28px 24px;text-align:center}.check{width:62px;height:62px;margin:0 auto 20px;border:1.8px solid #080808;border-radius:50%;display:grid;place-items:center;background:#080808;color:#fff;box-shadow:0 10px 28px rgba(0,0,0,.16)}.check svg{width:30px;stroke:#fff;stroke-width:2.2}
-    .eyebrow{font-size:clamp(19px,5vw,28px);font-weight:600;letter-spacing:.2em}.thanks{margin:8px 0 22px;font-size:17px}.rule{height:1px;background:rgba(0,0,0,.14);margin:0 auto 22px;max-width:470px}.orderNumber{font-size:19px}.payment{margin:7px 0 20px;font-size:19px;font-weight:750}
-    .summary{max-width:540px;margin:auto;border:1px solid rgba(0,0,0,.08);border-radius:22px;overflow:hidden;background:rgba(255,255,255,.25)}.summaryRow{min-height:68px;padding:14px 16px;display:flex;align-items:center;gap:13px;text-align:left}.summaryRow+.summaryRow{border-top:1px solid rgba(0,0,0,.08)}.icon{width:40px;height:40px;flex:0 0 40px;border:1px solid rgba(0,0,0,.14);border-radius:50%;display:grid;place-items:center}.icon svg{width:22px}.summaryText{font-size:14px;line-height:1.35}
-    .shipmentCards{max-width:540px;margin:14px auto 0;display:grid;gap:10px;text-align:left}.shipmentCard{padding:16px;border:1px solid rgba(0,0,0,.09);border-radius:20px;background:rgba(255,255,255,.3)}.shipmentHeading{display:flex;justify-content:space-between;gap:12px;align-items:baseline}.shipmentTitle{font-weight:800}.shipmentStatus{font-size:12px;font-weight:750}.shipmentMessage{margin:8px 0 0;font-size:13px;line-height:1.45;color:#444}.shipmentTracking{margin-top:9px;font-size:13px}.shipmentTracking a{color:#111;font-weight:700}
-    .referral{max-width:540px;margin:24px auto 0;padding-top:24px;border-top:1px solid rgba(0,0,0,.14)}.gift{width:46px;height:46px;margin:auto;display:grid;place-items:center;border:1px solid rgba(0,0,0,.15);border-radius:50%}.gift svg{width:24px}.referralTitle{margin:14px 0 6px;font-size:19px;font-weight:750;letter-spacing:.15em}.referralLead{font-size:17px}.referralNote{margin:5px 0 16px;color:#555;font-size:13px}
-    .shareIcons{display:flex;justify-content:center;gap:18px;margin:15px 0}.shareIcons[hidden]{display:none}.shareIcon{width:46px;height:46px;padding:0;border:1px solid rgba(0,0,0,.14);border-radius:50%;background:rgba(255,255,255,.36);display:grid;place-items:center;color:#080808;cursor:pointer;transition:transform .18s ease,background .18s ease}.shareIcon:hover{transform:translateY(-2px);background:rgba(255,255,255,.62)}.shareIcon:disabled{opacity:.45;cursor:wait;transform:none}.shareIcon svg{width:23px;height:23px;fill:currentColor}.referralCode{width:max-content;max-width:100%;margin:4px auto 0;padding:8px 13px;border:1px solid rgba(0,0,0,.10);border-radius:999px;background:rgba(255,255,255,.36);font-size:12px;font-weight:750}.status{min-height:18px;margin-top:9px;font-size:12px;color:#555}.status.error{color:#9f1e2c}.continue{width:100%;min-height:58px;margin-top:10px;border-radius:18px;background:#090909;color:#fff;display:flex;align-items:center;justify-content:center;text-decoration:none;font-weight:750}
-    @media(max-width:480px){.page{padding-left:12px;padding-right:12px}.header{min-height:108px}.categoryRail{gap:7px}.category{border-radius:14px}.confirmation{padding:25px 16px;border-radius:30px}.eyebrow{letter-spacing:.14em}}
-  </style>
-</head>
-<body>
-  <main class="page">
-    <header class="header" aria-label="CajaModa Colombia">
-      <div class="brandLockup">
-        <div class="brandMonogram"><span class="brandC">C</span><span class="brandM">M</span></div>
-        <div class="brandWord">CAJAMODA</div>
-        <div class="brandCountryRow"><span class="brandCountryLine"></span><span class="brandCountry">COLOMBIA</span><span class="brandCountryLine"></span></div>
-      </div>
-    </header>
-    <nav class="categoryRail" aria-label="Categorías CajaModa">
-      <a class="category" href="/?category=late"><img src="/assets/category-noches.svg" alt=""/><span>Noches Largas</span></a>
-      <a class="category" href="/?category=quiet"><img src="/assets/category-dias.svg" alt=""/><span>Días Tranquilos</span></a>
-      <a class="category" href="/?category=fast"><img src="/assets/category-rapido.svg" alt=""/><span>Rápido y Fácil</span></a>
-      <a class="category" href="/?category=sun"><img src="/assets/category-sol.svg" alt=""/><span>Baño de Sol</span></a>
-    </nav>
-    <section class="confirmation glass" aria-live="polite">
-      <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m5 12 4.2 4.2L19 6.5"/></svg></div>
-      <div class="eyebrow" id="confirmationTitle">VERIFICANDO COMPRA</div>
-      <p class="thanks">Gracias por tu compra</p><div class="rule"></div>
-      <div class="orderNumber" id="orderNumber">Pedido</div><div class="payment" id="paymentStatus">Confirmando con Wix…</div>
-      <div class="summary">
-        <div class="summaryRow"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 21s7-5.2 7-12A7 7 0 1 0 5 9c0 6.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2.2"/></svg></span><span class="summaryText" id="deliveryMethod">Método de entrega confirmado en tu pedido.</span></div>
-        <div class="summaryRow"><span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z"/><path d="M10 21h4"/></svg></span><span class="summaryText" id="deliveryMessage">Te enviaremos actualizaciones sobre tu pedido.</span></div>
-      </div>
-      <div class="shipmentCards" id="shipmentCards" hidden></div>
-      <div class="referral">
-        <div class="gift"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 10h16v10H4zM3 6h18v4H3zM12 6v14"/><path d="M12 6H8.5a2.5 2.5 0 1 1 2.5-2.5L12 6Zm0 0h3.5A2.5 2.5 0 1 0 13 3.5L12 6Z"/></svg></div>
-        <div class="referralTitle">COMPARTE EL ESTILO</div><div class="referralLead">Regala 10% a una amiga</div><div class="referralNote">Tu amiga recibe un código único para su primera compra.</div>
-        <div class="shareIcons" id="shareIcons" hidden aria-label="Compartir descuento">
-          <button class="shareIcon" type="button" data-share-channel="whatsapp" aria-label="Compartir por WhatsApp" disabled>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.04 2a9.84 9.84 0 0 0-8.42 14.92L2 22l5.22-1.58A9.92 9.92 0 1 0 12.04 2Zm0 17.97a8.04 8.04 0 0 1-4.1-1.12l-.3-.18-3.1.94.98-3.02-.2-.31a8.1 8.1 0 1 1 6.72 3.69Zm4.44-6.08c-.24-.12-1.44-.71-1.66-.79-.22-.08-.38-.12-.54.12-.16.24-.62.79-.76.95-.14.16-.28.18-.52.06-.24-.12-1.02-.38-1.94-1.2-.72-.64-1.2-1.43-1.34-1.67-.14-.24-.02-.37.1-.49.11-.11.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.19-.47-.39-.4-.54-.41h-.46c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.69 2.58 4.1 3.62.57.25 1.02.4 1.37.51.58.18 1.1.16 1.51.1.46-.07 1.44-.59 1.64-1.16.2-.57.2-1.06.14-1.16-.06-.1-.22-.16-.46-.28Z"/></svg>
-          </button>
-          <button class="shareIcon" type="button" data-share-channel="instagram" aria-label="Compartir por Instagram" disabled>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.8 2h8.4A5.8 5.8 0 0 1 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8A5.8 5.8 0 0 1 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2Zm-.2 2A3.6 3.6 0 0 0 4 7.6v8.8A3.6 3.6 0 0 0 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6A3.6 3.6 0 0 0 16.4 4H7.6Zm9.65 1.5a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5ZM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"/></svg>
-          </button>
-          <button class="shareIcon" type="button" data-share-channel="tiktok" aria-label="Compartir por TikTok" disabled>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2h3.05c.23 1.14.86 2.58 1.98 4.02A6.1 6.1 0 0 0 22 7.86v3.08a9.4 9.4 0 0 1-5-1.5V17a6 6 0 1 1-6-6c.25 0 .49.01.73.04v3.08A3 3 0 1 0 14 17V2Z"/></svg>
-          </button>
-        </div>
-        <div class="referralCode" id="referralCode" hidden></div>
-        <div class="status" id="statusText"></div>
-        <a class="continue" href="/">Seguir comprando</a>
-      </div>
-    </section>
-  </main>
-  <script src="/analytics/client.js"></script>
-  <script type="module" src="/src/order-confirmation.js"></script>
-</body>
-</html>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f3f3f3">
+<title>Compra confirmada · CajaModa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500;6..96,600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}:root{--ink:#080808;--muted:#5f6675;--line:rgba(0,0,0,.09);--safe-top:env(safe-area-inset-top,0px);--safe-bottom:env(safe-area-inset-bottom,0px)}
+html,body{margin:0;min-height:100%;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink)}body{background:#eee url("/assets/order-confirmation-boutique.png") center/cover fixed no-repeat}body::before{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255,255,.38);backdrop-filter:blur(17px) saturate(115%);-webkit-backdrop-filter:blur(17px) saturate(115%)}button,a{font:inherit;color:inherit}
+.page{width:min(100%,760px);min-height:100dvh;margin:auto;padding:calc(20px + var(--safe-top)) 26px calc(34px + var(--safe-bottom));background:rgba(255,255,255,.30);box-shadow:0 0 80px rgba(0,0,0,.08)}.header{height:118px;display:flex;align-items:flex-start;justify-content:space-between}
+.brandLockup{width:170px;display:flex;flex-direction:column;align-items:center;user-select:none}.brandMonogram{position:relative;width:90px;height:53px;font-family:"Bodoni Moda",Didot,serif}.brandC{position:absolute;left:7px;top:-12px;font-size:69px;line-height:1;letter-spacing:-8px;transform:scaleX(.89)}.brandM{position:absolute;left:41px;top:7px;font-size:48px;line-height:1;letter-spacing:-5px;transform:scaleX(.9)}.brandWord{margin-top:-2px;padding-left:6px;font-family:"Bodoni Moda",Didot,serif;font-size:10px;letter-spacing:5px}.brandCountryRow{width:135px;margin-top:6px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:7px}.brandCountryLine{height:1px;background:rgba(0,0,0,.48)}.brandCountry{padding-left:3px;font-size:5px;font-weight:700;letter-spacing:2.8px}
+.bag{position:relative;width:42px;height:42px;display:grid;place-items:center;text-decoration:none}.bag svg{width:25px;fill:none;stroke:#080808;stroke-width:1.5}.bagBadge{position:absolute;right:-2px;top:-5px;min-width:20px;height:20px;padding:0 5px;border:2px solid rgba(255,255,255,.9);border-radius:999px;display:grid;place-items:center;background:#080808;color:#fff;font-size:8px;font-weight:800}
+.hero{text-align:center}.check{width:108px;height:108px;margin:0 auto 24px;border-radius:50%;display:grid;place-items:center;background:#080808;color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 18px 46px rgba(0,0,0,.20)}.check svg{width:54px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}h1{margin:0;font-family:"Bodoni Moda",Didot,serif;font-size:clamp(40px,7.5vw,64px);line-height:1.02;font-weight:500;letter-spacing:-2.5px}.confirmed{margin:13px 0 0;color:var(--muted);font-size:18px}.orderNumber{margin:16px 0 28px;font-size:19px;font-weight:750}
+.glass{border:1px solid rgba(255,255,255,.88);background:linear-gradient(145deg,rgba(255,255,255,.76),rgba(255,255,255,.38));box-shadow:inset 0 1px 0 #fff,0 20px 50px rgba(0,0,0,.08);backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%)}.summary{border-radius:25px;overflow:hidden}.summaryRow{min-height:78px;padding:15px 20px;display:grid;grid-template-columns:48px minmax(130px,1fr) minmax(120px,1.35fr);gap:16px;align-items:center;text-align:left}.summaryRow+.summaryRow{border-top:1px solid var(--line)}.icon{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:rgba(230,232,236,.72)}.icon svg{width:24px;fill:none;stroke:#080808;stroke-width:1.6}.label{font-weight:750}.value{text-align:right;color:#161c2c;line-height:1.35}.value.total{font-size:20px;font-weight:800;color:#080808}
+.shipmentCards{display:grid;gap:9px;margin-top:12px}.shipmentCards[hidden]{display:none}.shipmentCard{padding:14px 16px;border-radius:18px;background:rgba(255,255,255,.58);border:1px solid rgba(0,0,0,.08)}.shipmentHeading{display:flex;justify-content:space-between;gap:12px}.shipmentTitle{font-weight:800}.shipmentStatus{font-size:12px;font-weight:700}.shipmentMessage,.shipmentTracking{margin:7px 0 0;color:#555;font-size:12px;line-height:1.45}
+.emailNote{margin:24px auto 22px;max-width:520px;text-align:center;color:var(--muted);font-size:16px;line-height:1.48}.actions{display:grid;gap:13px}.primary{min-height:62px;border-radius:999px;display:grid;place-items:center;background:#080808;color:#fff;text-decoration:none;font-size:17px;font-weight:650;box-shadow:0 14px 34px rgba(0,0,0,.17)}.secondary{text-align:center;text-decoration:underline;font-size:16px}.help{margin-top:38px;padding-top:24px;border-top:1px solid rgba(0,0,0,.12);text-align:center;color:var(--muted);font-size:14px}.help a{text-decoration:underline}.status{min-height:18px;margin-top:12px;text-align:center;color:#555;font-size:12px}.status.error{color:#9f1e2c}
+@media(max-width:560px){.page{padding-left:14px;padding-right:14px}.header{height:108px}.brandLockup{width:150px}.check{width:88px;height:88px}.check svg{width:44px}.summaryRow{min-height:70px;padding:13px 14px;grid-template-columns:42px minmax(92px,1fr) minmax(105px,1.25fr);gap:10px;font-size:13px}.icon{width:40px;height:40px}.value.total{font-size:17px}.confirmed{font-size:16px}.emailNote{font-size:14px}}
+</style></head>
+<body><main class="page">
+<header class="header"><div class="brandLockup" aria-label="CajaModa Colombia"><div class="brandMonogram"><span class="brandC">C</span><span class="brandM">M</span></div><div class="brandWord">CAJAMODA</div><div class="brandCountryRow"><span class="brandCountryLine"></span><span class="brandCountry">COLOMBIA</span><span class="brandCountryLine"></span></div></div><a class="bag" href="/checkout/" aria-label="Ver bolsa"><svg viewBox="0 0 24 24"><path d="M6.3 8.4h11.4l1 11H5.3l1-11Z"/><path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/></svg><span id="confirmationBagBadge" class="bagBadge">0</span></a></header>
+<section class="hero" aria-live="polite"><div class="check"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.2 4.2L19 6.8"/></svg></div><h1>Gracias por tu compra</h1><p id="confirmationTitle" class="confirmed">Tu pedido fue confirmado.</p><div id="orderNumber" class="orderNumber">Pedido</div><div id="paymentStatus" hidden></div></section>
+<section class="summary glass" aria-label="Resumen del pedido">
+<div class="summaryRow"><span class="icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18M7 15h2"/></svg></span><span class="label">Total pagado</span><span id="confirmationTotal" class="value total">Confirmando…</span></div>
+<div class="summaryRow"><span class="icon"><svg viewBox="0 0 24 24"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg></span><span class="label">Entrega</span><span id="deliveryMethod" class="value">Confirmando…</span></div>
+<div class="summaryRow"><span class="icon"><svg viewBox="0 0 24 24"><circle cx="7" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M10 17h5l-2-6H8m5-3h3"/></svg></span><span id="arrivalLabel" class="label">Entrega estimada</span><span id="deliveryMessage" class="value">Te enviaremos actualizaciones.</span></div>
+<div class="summaryRow"><span class="icon"><svg viewBox="0 0 24 24"><path d="M12 21s7-5.2 7-12A7 7 0 1 0 5 9c0 6.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2.2"/></svg></span><span class="label">Dirección</span><span id="confirmationAddress" class="value">Confirmando…</span></div>
+</section><div id="shipmentCards" class="shipmentCards" hidden></div>
+<p class="emailNote">Enviamos la confirmación y los detalles de seguimiento a <strong id="confirmationEmail">tu correo electrónico</strong>.</p>
+<div class="actions"><a class="primary" href="/?orders=1">Ver mi pedido</a><a class="secondary" href="/">Seguir comprando</a></div><div class="help">¿Necesitas ayuda? <a href="mailto:ayuda@cajamoda.com">Contáctanos</a></div><div id="statusText" class="status"></div><div id="shareIcons" hidden></div><div id="referralCode" hidden></div>
+</main><script src="/analytics/client.js"></script><script type="module" src="/src/order-confirmation.js"></script></body></html>
+

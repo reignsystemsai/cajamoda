@@ -4061,7 +4061,7 @@ if (!returnedShippingOptionId) {
         $("stripePayButton").textContent = "Continuar a revisión";
         applyStripeSession(session);
         stripeCanConfirm = Boolean(session.canConfirm);
-        if (stripeCanConfirm) errorBox.textContent = "";
+        if (stripeCanConfirm && stripeSessionTotalMatchesCheckout()) errorBox.textContent = "";
         updateStripePayAvailability();
         syncPanelHeight();
       });

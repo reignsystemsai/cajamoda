@@ -869,19 +869,21 @@ async function handleUpdateStripeCheckout(request, response) {
   const catalogLines = await verifiedCheckoutCatalogItems(items);
   const lineItems = catalogLines.map(({ cartLineId, fulfillmentCode, selectedDeliveryMode, ...line }) => line);
   const delivery = await checkoutDelivery(body, catalogLines);
+  const shippingAmount = Math.max(0, Math.round(Number(delivery.fee || 0) * 100));
+  const shippingRate = await stripe.shippingRates.create({
+    type: "fixed_amount",
+    fixed_amount: { amount: shippingAmount, currency: "cop" },
+    display_name: safeText(delivery.title, 100) || "Entrega CajaModa",
+    delivery_estimate: {
+      minimum: { unit: "business_day", value: 1 },
+      maximum: { unit: "business_day", value: delivery.maxBusinessDays }
+    }
+  }, {
+    idempotencyKey: `cajamoda-shipping-${sessionId}-${safeText(delivery.method, 20)}-${shippingAmount}-${delivery.maxBusinessDays}`
+  });
   const updated = await stripe.checkout.sessions.update(sessionId, {
     line_items: lineItems,
-    shipping_options: [{
-      shipping_rate_data: {
-        type: "fixed_amount",
-        fixed_amount: { amount: delivery.fee * 100, currency: "cop" },
-        display_name: delivery.title,
-        delivery_estimate: {
-          minimum: { unit: "business_day", value: 1 },
-          maximum: { unit: "business_day", value: delivery.maxBusinessDays }
-        }
-      }
-    }],
+    shipping_options: [{ shipping_rate: shippingRate.id }],
     metadata: {
       ...session.metadata,
       deliveryMethod: delivery.method,
@@ -896,11 +898,7 @@ async function handleUpdateStripeCheckout(request, response) {
       deliveryPostalCode: delivery.postalCode
     }
   });
- const shippingRate = updated?.shipping_options?.[0]?.shipping_rate;
-const shippingOptionId =
-  typeof shippingRate === "string" ? shippingRate : shippingRate?.id;
-
-if (!shippingOptionId) {
+if (!shippingRate?.id) {
   sendError(response, 500, "No se pudo preparar el costo de entrega.");
   return;
 }
@@ -909,7 +907,7 @@ sendJson(response, 200, {
   ok: true,
   sessionId: updated.id,
   amountTotal: updated.amount_total,
-  shippingOptionId
+  shippingOptionId: shippingRate.id
 });
 }
 

@@ -1596,6 +1596,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
   let stripeSessionId = "";
   let stripeCanConfirm = false;
   let stripeSessionTotalAmount = "";
+  let stripeSessionTotalMinorUnits = null;
   let stripeLastPaymentError = null;
   let stripeInitializing = false;
   let stripeSessionUpdate = Promise.resolve();
@@ -1814,14 +1815,15 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
     const profile = checkoutFulfillmentProfile(cart);
     if ($("subtotalValue")) $("subtotalValue").textContent = money(subtotal);
     if ($("stripeDeliveryValue")) $("stripeDeliveryValue").textContent = money(deliveryFee);
-    if ($("totalValue")) $("totalValue").textContent = stripeSessionTotalAmount || money(total);
+    const confirmedStripeTotal = stripeSessionTotalMatchesCheckout() ? stripeSessionTotalAmount : money(total);
+    if ($("totalValue")) $("totalValue").textContent = confirmedStripeTotal;
     if ($("bagTotalValue")) $("bagTotalValue").textContent = money(bagTotal);
     if ($("headerTotal")) $("headerTotal").textContent = money(total);
     if ($("nequiAmount")) $("nequiAmount").textContent = `${money(total)} COP`;
     if ($("nequiSubtotal")) $("nequiSubtotal").textContent = money(subtotal);
     if ($("reviewSubtotalValue")) $("reviewSubtotalValue").textContent = money(subtotal);
     if ($("reviewDeliveryValue")) $("reviewDeliveryValue").textContent = money(deliveryFee);
-    if ($("reviewTotalValue")) $("reviewTotalValue").textContent = stripeSessionTotalAmount || money(total);
+    if ($("reviewTotalValue")) $("reviewTotalValue").textContent = confirmedStripeTotal;
     renderShipmentCharges("bagShipmentCharges", chargeRows);
     renderShipmentCharges("nequiShipmentCharges", chargeRows);
     renderDeliveryQuoteBreakdown(profile, quoteReady, total);
@@ -3148,7 +3150,9 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
     if ($("reviewPaymentText")) $("reviewPaymentText").textContent = selectedPayment === "nequi" ? "Nequi" : "Tarjeta · Stripe seguro";
     if ($("reviewSubtotalValue")) $("reviewSubtotalValue").textContent = money(cart.total);
     if ($("reviewDeliveryValue")) $("reviewDeliveryValue").textContent = money(fee);
-    if ($("reviewTotalValue")) $("reviewTotalValue").textContent = stripeSessionTotalAmount || money(cart.total + fee);
+    if ($("reviewTotalValue")) $("reviewTotalValue").textContent = stripeSessionTotalMatchesCheckout()
+      ? stripeSessionTotalAmount
+      : money(cart.total + fee);
     if ($("reviewOrderItems")) $("reviewOrderItems").innerHTML = cart.items.map(item => {
       const options = [
         item.color,
@@ -3173,7 +3177,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
     if (submit) {
       submit.textContent = selectedPayment === "nequi" ? "Enviar pago Nequi" : `Enviar pago ${money(checkoutTotal())} COP`;
       submit.disabled = selectedPayment === "stripe"
-        ? !checkoutActions || !paymentElement || !deliveryQuoteMatchesCart()
+        ? !checkoutActions || !paymentElement || !deliveryQuoteMatchesCart() || !stripeSessionTotalMatchesCheckout()
         : !$("nequiReference")?.value.trim();
     }
   }
@@ -3750,6 +3754,8 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
     deliveryQuoteToken = "";
     quoteDestinationKey = pickupOnly ? currentDeliveryQuoteKey() : "";
     stripeSessionCartKey = "";
+    stripeSessionTotalAmount = "";
+    stripeSessionTotalMinorUnits = null;
     renderPaymentTotals();
     syncPaymentInBackground();
   }
@@ -3800,18 +3806,33 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
     return Boolean($("deliveryAddress")?.value.trim());
   }
 
-function updateStripePayAvailability() {
-  $("stripePayButton").disabled = !checkoutActions || !paymentElement || !deliveryQuoteMatchesCart();
-}
+  function stripeSessionTotalMatchesCheckout() {
+    return Number.isFinite(stripeSessionTotalMinorUnits) &&
+      stripeSessionTotalMinorUnits === Math.round(checkoutTotal() * 100);
+  }
+
+  function updateStripePayAvailability() {
+    $("stripePayButton").disabled = !checkoutActions ||
+      !paymentElement ||
+      !deliveryQuoteMatchesCart() ||
+      stripeSessionUpdating ||
+      stripeSessionCartKey !== currentDeliveryQuoteKey() ||
+      !stripeSessionTotalMatchesCheckout();
+  }
 
   function applyStripeSession(session) {
     session = session?.session || session;
     if (!session || typeof session !== "object") return;
-    const formattedTotal = String(session.total?.total?.amount || "").trim();
-    if (formattedTotal) {
-      stripeSessionTotalAmount = formattedTotal;
-      if ($("totalValue")) $("totalValue").textContent = formattedTotal;
-      if ($("reviewTotalValue")) $("reviewTotalValue").textContent = formattedTotal;
+    const total = session.total?.total;
+    const minorUnits = Number(total?.minorUnitsAmount);
+    const divisor = Number(session.minorUnitsAmountDivisor || 100);
+    if (Number.isFinite(minorUnits) && divisor > 0) {
+      stripeSessionTotalMinorUnits = minorUnits;
+      stripeSessionTotalAmount = money(minorUnits / divisor);
+      if (stripeSessionTotalMatchesCheckout()) {
+        if ($("totalValue")) $("totalValue").textContent = stripeSessionTotalAmount;
+        if ($("reviewTotalValue")) $("reviewTotalValue").textContent = stripeSessionTotalAmount;
+      }
     }
     stripeLastPaymentError = session.lastPaymentError || null;
   }
@@ -3859,8 +3880,8 @@ function updateStripePayAvailability() {
     ].includes(code) || /declin|rechaz/i.test(message)) {
       return "Tu banco rechazó la tarjeta. Prueba otra tarjeta o comunícate con tu banco.";
     }
-    if (code === "stripe_total_unavailable" || /must (?:either )?read|display.*total/i.test(message)) {
-      return "No se realizó ningún cargo. No pudimos verificar el total seguro con Stripe. Recarga la página e inténtalo de nuevo.";
+    if (["stripe_total_unavailable", "stripe_total_mismatch"].includes(code) || /must (?:either )?read|display.*total/i.test(message)) {
+      return "No se realizó ningún cargo. No pudimos sincronizar el total con Stripe. Recarga la página e inténtalo de nuevo.";
     }
     if (["processing_error", "payment_intent_payment_attempt_failed"].includes(code)) {
       return "Stripe no pudo procesar la tarjeta. No se realizó ningún cargo; inténtalo de nuevo o usa otra tarjeta.";
@@ -3903,7 +3924,7 @@ function updateStripePayAvailability() {
   }
 
   function syncStripeCheckoutSession() {
-    if (!checkoutElements || !stripeSessionId || typeof checkoutElements.runServerUpdate !== "function") {
+    if (!checkoutActions || !stripeSessionId || typeof checkoutActions.runServerUpdate !== "function") {
       return Promise.resolve();
     }
     const synchronizedKey = currentDeliveryQuoteKey();
@@ -3928,9 +3949,18 @@ if (!returnedShippingOptionId) {
       stripeSessionUpdating = true;
       updateStripePayAvailability();
       try {
-        const result = await checkoutElements.runServerUpdate(update);
-        if (result?.type === "error") throw new Error(result?.error?.message || PAYMENT_PREPARATION_ERROR);
-        await checkoutActions.updateShippingOption(returnedShippingOptionId);
+        const result = await checkoutActions.runServerUpdate(update);
+        if (result?.type === "error") throw result.error || new Error(PAYMENT_PREPARATION_ERROR);
+        const shippingResult = await checkoutActions.updateShippingOption(returnedShippingOptionId);
+        if (shippingResult?.type === "error") {
+          throw shippingResult.error || new Error("No se pudo seleccionar el costo de entrega en Stripe.");
+        }
+        applyStripeSession(await Promise.resolve(checkoutActions.getSession()));
+        if (!stripeSessionTotalMatchesCheckout() || stripeSessionTotalMinorUnits !== expectedAmountTotal) {
+          const totalError = new Error("Stripe Checkout Session total does not match the confirmed order total.");
+          totalError.code = "stripe_total_mismatch";
+          throw totalError;
+        }
         if (synchronizedKey === currentDeliveryQuoteKey()) {
           stripeSessionCartKey = synchronizedKey;
         }
@@ -3962,7 +3992,7 @@ if (!returnedShippingOptionId) {
     }
     void syncStripeCheckoutSession().catch(error => {
       console.error("[CajaModa] Stripe Checkout update error:", error);
-      $("stripeError").textContent = PAYMENT_PREPARATION_ERROR;
+      $("stripeError").textContent = stripeCustomerError(error);
       updateStripePayAvailability();
     });
   }
@@ -4024,6 +4054,7 @@ if (!returnedShippingOptionId) {
       paymentElement.mount("#paymentElement");
       stripeCanConfirm = false;
       stripeSessionTotalAmount = "";
+      stripeSessionTotalMinorUnits = null;
       stripeLastPaymentError = null;
       updateStripePayAvailability();
       checkoutElements.on("change", session => {
@@ -4043,6 +4074,7 @@ if (!returnedShippingOptionId) {
       paymentElement = null;
       stripeSessionId = "";
       stripeSessionTotalAmount = "";
+      stripeSessionTotalMinorUnits = null;
       stripeLastPaymentError = null;
       stripeSessionCartKey = "";
       stripeSessionUpdating = false;
@@ -4071,15 +4103,16 @@ if (!returnedShippingOptionId) {
       const lastName = customer.customerLastName;
       const currentSession = await Promise.resolve(checkoutActions.getSession());
       applyStripeSession(currentSession);
-      if (!stripeSessionTotalAmount) {
-        const totalError = new Error("Stripe requires the Checkout Session total to be read and displayed before confirmation.");
-        totalError.code = "stripe_total_unavailable";
+      if (!stripeSessionTotalMatchesCheckout()) {
+        const totalError = new Error("Stripe Checkout Session total does not match the confirmed order total.");
+        totalError.code = "stripe_total_mismatch";
         throw totalError;
       }
-      const result = await checkoutActions.confirm({
-        email: customer.email,
+      const confirmOptions = {
         billingAddress: { name: `${firstName} ${lastName}`, address: billingAddress() }
-      });
+      };
+      if (customer.email) confirmOptions.email = customer.email;
+      const result = await checkoutActions.confirm(confirmOptions);
       if (result?.type === "error") throw result.error || result;
       location.href = `${location.origin}/order-confirmation/?stripeSessionId=${encodeURIComponent(stripeSessionId)}`;
     } catch (error) {

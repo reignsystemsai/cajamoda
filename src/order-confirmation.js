@@ -43,12 +43,14 @@ function renderCheckoutContext(order = null) {
   const cart = pendingCheckout?.cart || {};
   const delivery = pendingCheckout?.delivery || {};
   const customer = pendingCheckout?.customer || {};
-  const total = Number(cart.total || 0) + Number(delivery.fee || 0);
-  if ($("confirmationTotal")) $("confirmationTotal").textContent = total > 0 ? moneyCOP(total) : (order?.total ? moneyCOP(order.total) : "Confirmado");
-  if ($("deliveryMethod")) $("deliveryMethod").textContent = pendingDeliveryLabel();
-  if ($("deliveryMessage")) $("deliveryMessage").textContent = pendingArrivalText();
-  if ($("confirmationAddress")) $("confirmationAddress").textContent = delivery.address || delivery.addressLine1 || delivery.city || "Dirección confirmada";
-  if ($("confirmationEmail")) $("confirmationEmail").textContent = customer.email || "tu correo electrónico";
+  const localTotal = Number(cart.total || 0) + Number(delivery.fee || 0);
+  const confirmedTotal = Number(order?.total || 0);
+  const total = confirmedTotal > 0 ? confirmedTotal : localTotal;
+  if ($("confirmationTotal")) $("confirmationTotal").textContent = total > 0 ? moneyCOP(total) : "Confirmado";
+  if ($("deliveryMethod")) $("deliveryMethod").textContent = order?.delivery?.method || pendingDeliveryLabel();
+  if ($("deliveryMessage")) $("deliveryMessage").textContent = order?.delivery?.message || pendingArrivalText();
+  if ($("confirmationAddress")) $("confirmationAddress").textContent = order?.delivery?.address || delivery.address || delivery.addressLine1 || order?.delivery?.city || delivery.city || "Dirección confirmada";
+  if ($("confirmationEmail")) $("confirmationEmail").textContent = order?.customer?.email || customer.email || "tu correo electrónico";
   if ($("confirmationBagBadge")) $("confirmationBagBadge").textContent = String(Math.max(0, Number(cart.count || cart.items?.reduce((sum, item) => sum + Number(item.quantity || 1), 0) || 0)));
 }
 

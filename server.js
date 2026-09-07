@@ -126,6 +126,7 @@ const colombiaMunicipalityCache = { loadedAt: 0, items: [] };
 const googlePlaceDetailsCache = new Map();
 const DELIVERY_REFERENCE_CACHE_TTL = 24 * 60 * 60 * 1000;
 const GOOGLE_PLACE_CACHE_TTL = 30 * 60 * 1000;
+const stripeSessionSyncLocks = new Map();
 const stripeIntentSyncLocks = new Map();
 const nequiConfirmationLocks = new Map();
 const enviaLabelLocks = new Map();
@@ -929,16 +930,25 @@ async function handleStripeConfirmation(request, response, url) {
     : null;
   const authorized = intent?.status === "requires_capture";
   const paid = intent?.status === "succeeded" || session.payment_status === "paid";
+  const wixOrder = paid ? await syncCompletedStripeSession(session) : null;
+  const customer = session?.customer_details || {};
   sendJson(response, 200, {
     ok: true,
     order: {
-      number: session.id.slice(-10).toUpperCase(),
+      id: safeText(wixOrder?._id || wixOrder?.id, 80),
+      number: safeText(wixOrder?.number, 40) || stripeImportedOrderNumber(session.id),
+      total: Number(session?.amount_total || 0) / 100,
       payment: paid ? "Pago confirmado" : authorized ? "Pago autorizado" : "Pago pendiente",
       paid,
       authorized,
+      customer: {
+        email: safeText(customer?.email || session?.customer_email, 250)
+      },
       delivery: {
-        method: "Entrega CajaModa",
-        message: "Te enviaremos la información de entrega por correo."
+        method: safeText(session?.metadata?.deliverySummary, 300) || "Entrega CajaModa",
+        message: "Te enviaremos la información de entrega por correo.",
+        address: safeText(session?.metadata?.deliveryAddress, 250),
+        city: safeText(session?.metadata?.deliveryCity, 100)
       },
       shipments: pendingNationalShipmentsFromEncodedPlan(session?.metadata?.deliveryPlan)
     }
@@ -962,6 +972,16 @@ function splitCustomerName(value) {
     firstName: parts.shift() || "Cliente",
     lastName: parts.join(" ") || "CajaModa"
   };
+}
+
+function stripeImportedOrderNumber(externalId) {
+  const suffix = crypto.createHash("sha256").update(String(externalId)).digest("hex").slice(0, 10).toUpperCase();
+  return `CM-${suffix}`;
+}
+
+async function findCajaModaCheckoutSession(paymentIntentId) {
+  const result = await stripe.checkout.sessions.list({ payment_intent: paymentIntentId, limit: 1 });
+  return (result?.data || []).find(session => session?.metadata?.source === "cajamoda-storefront") || null;
 }
 
 async function getStripePurchasedLines(session) {
@@ -1022,6 +1042,7 @@ async function importStripeOrderIntoWix(session, lines) {
   const total = Number(session?.amount_total || 0) / 100;
 
   const imported = await wix.orders.importOrder({
+    number: stripeImportedOrderNumber(session.id),
     status: "APPROVED",
     paymentStatus: "PAID",
     fulfillmentStatus: "NOT_FULFILLED",
@@ -1091,22 +1112,34 @@ async function decrementStripeInventory(lines) {
 }
 
 async function syncCompletedStripeSession(session) {
-  if (!wix) throw new Error("Wix no está configurado para recibir el pedido.");
-  if (session.payment_status !== "paid") return;
-  if (session?.metadata?.wixSync === "complete") return;
+  const existingSync = stripeSessionSyncLocks.get(session.id);
+  if (existingSync) return existingSync;
+  const sync = (async () => {
+    if (!wix) throw new Error("Wix no está configurado para recibir el pedido.");
+    if (session.payment_status !== "paid") return null;
+    const existing = await findStripeWixOrder(session.id);
+    if (existing) return existing;
 
-  const lines = await getStripePurchasedLines(session);
-  const imported = await importStripeOrderIntoWix(session, lines);
-  if (imported.created) {
-    await decrementStripeInventory(lines);
-  }
-  await stripe.checkout.sessions.update(session.id, {
-    metadata: {
-      ...session.metadata,
-      wixSync: "complete",
-      wixOrderId: safeText(imported?.order?._id || imported?.order?.id, 80)
+    const lines = await getStripePurchasedLines(session);
+    const imported = await importStripeOrderIntoWix(session, lines);
+    if (imported.created) {
+      await decrementStripeInventory(lines);
     }
-  });
+    await stripe.checkout.sessions.update(session.id, {
+      metadata: {
+        ...session.metadata,
+        wixSync: "complete",
+        wixOrderId: safeText(imported?.order?._id || imported?.order?.id, 80)
+      }
+    });
+    return imported.order;
+  })();
+  stripeSessionSyncLocks.set(session.id, sync);
+  try {
+    return await sync;
+  } finally {
+    stripeSessionSyncLocks.delete(session.id);
+  }
 }
 
 function encodedNationalDeliveryPlan(delivery) {
@@ -1290,6 +1323,7 @@ async function importStripeIntentIntoWix(intent, lines) {
   const subtotal = lines.reduce((sum, line) => sum + line.amount * line.quantity, 0);
   const total = Number(intent.amount_received || intent.amount || 0) / 100;
   const imported = await wix.orders.importOrder({
+    number: stripeImportedOrderNumber(intent.id),
     status: "APPROVED",
     paymentStatus: "PAID",
     fulfillmentStatus: "NOT_FULFILLED",
@@ -1419,18 +1453,17 @@ async function handleStripeWebhook(request, response) {
 
   setImmediate(() => {
     void (async () => {
-     if (event.type === "checkout.session.completed") {
-  await syncCompletedStripeSession(event.data.object);
-  console.log(`[Stripe] Payment synchronized with Wix: ${event.data.object.id}`);
-}
-if (event.type === "payment_intent.amount_capturable_updated") {
-  await syncSucceededStripeIntent(event.data.object);
-  console.log(`[Stripe] Authorized card order synchronized with Wix: ${event.data.object.id}`);
-}
-if (event.type === "payment_intent.succeeded") {
-  await syncSucceededStripeIntent(event.data.object);
-  console.log(`[Stripe] Card payment synchronized with Wix: ${event.data.object.id}`);
-}
+      if (event.type === "checkout.session.completed") {
+        await syncCompletedStripeSession(event.data.object);
+        console.log(`[Stripe] Payment synchronized with Wix: ${event.data.object.id}`);
+      }
+      if (["payment_intent.amount_capturable_updated", "payment_intent.succeeded"].includes(event.type)) {
+        const checkoutSession = await findCajaModaCheckoutSession(event.data.object.id);
+        if (!checkoutSession) {
+          await syncSucceededStripeIntent(event.data.object);
+          console.log(`[Stripe] Card payment synchronized with Wix: ${event.data.object.id}`);
+        }
+      }
     })().catch(error => {
       console.error(`[Stripe] Wix synchronization failed for ${event.id}:`, error);
     });

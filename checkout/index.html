@@ -1095,9 +1095,10 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
 .checkoutApp.isPayment .checkoutIntro{display:flex}
 .stepNav{top:calc(102px + var(--safe-top));grid-template-columns:repeat(4,1fr);margin:0 42px;background:rgba(255,255,255,.35)}
 .stepTab{height:48px;font-size:9px;letter-spacing:.02em}.stepTab.isComplete::before{content:"✓";display:inline-grid;place-items:center;width:17px;height:17px;margin-right:5px;border-radius:50%;background:#080808;color:#fff;font-size:9px;font-weight:800}.stepPanel{padding:28px 42px 50px}
-.bottomNav{display:none!important}.bagSummaryToggle{width:100%;min-height:82px;margin-bottom:18px;padding:15px 18px;border:1px solid rgba(255,255,255,.9);border-radius:22px;display:grid;grid-template-columns:44px 1fr 24px;align-items:center;gap:14px;background:linear-gradient(145deg,rgba(255,255,255,.78),rgba(255,255,255,.40));box-shadow:inset 0 1px 0 #fff,0 15px 38px rgba(0,0,0,.07);text-align:left;backdrop-filter:blur(28px) saturate(160%);-webkit-backdrop-filter:blur(28px) saturate(160%)}.bagSummaryIcon{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:rgba(234,234,234,.72)}.bagSummaryIcon svg{width:23px;height:23px;fill:none;stroke:#080808;stroke-width:1.5}.bagSummaryCopy strong,.bagSummaryCopy span{display:block}.bagSummaryCopy strong{font-size:12px}.bagSummaryCopy span{margin-top:5px;color:#626262;font-size:9px}.bagSummaryChevron{font-size:22px;line-height:1;transition:transform .2s ease}.bagSummaryToggle[aria-expanded="true"] .bagSummaryChevron{transform:rotate(180deg)}.reviewList{margin-bottom:18px}.reviewList[hidden]{display:none}.reviewList .finalCheckoutItem{min-height:86px;padding:9px;border-radius:17px;grid-template-columns:62px 1fr}.reviewList .cartImage{width:62px;height:72px;border-radius:12px}.reviewList .cartDescription,.reviewList .cartRating,.reviewList .cartOptionControls,.reviewList .quantityControl,.reviewList .cartHeart,.reviewList .removeButton{display:none}.reviewList .cartDeliveryChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-top:8px}.reviewList .cartDeliveryLabel{grid-column:1/-1}.reviewList .cartDeliveryChoice{min-width:0;height:30px;padding:0 5px;border-radius:10px;font-size:8px}.reviewList .cartName{font-size:10px}.reviewList .cartOptions{margin-top:5px}.reviewList .cartPrice{font-size:10px}
+.bottomNav{display:none!important}.bagSummaryToggle{position:relative;width:100%;min-height:82px;margin-bottom:18px;padding:15px 18px 22px;border:1px solid rgba(255,255,255,.9);border-radius:22px;display:grid;grid-template-columns:44px 1fr;align-items:center;gap:14px;background:linear-gradient(145deg,rgba(255,255,255,.78),rgba(255,255,255,.40));box-shadow:inset 0 1px 0 #fff,0 15px 38px rgba(0,0,0,.07);text-align:left;backdrop-filter:blur(28px) saturate(160%);-webkit-backdrop-filter:blur(28px) saturate(160%)}.bagSummaryIcon{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:rgba(234,234,234,.72)}.bagSummaryIcon svg{width:23px;height:23px;fill:none;stroke:#080808;stroke-width:1.5}.bagSummaryCopy strong,.bagSummaryCopy span{display:block}.bagSummaryCopy strong{font-size:12px}.bagSummaryCopy span{margin-top:5px;color:#626262;font-size:9px}.reviewList{margin-bottom:18px}.reviewList[hidden]{display:none}.reviewList .finalCheckoutItem{min-height:86px;padding:9px;border-radius:17px;grid-template-columns:62px 1fr}.reviewList .cartImage{width:62px;height:72px;border-radius:12px}.reviewList .cartDescription,.reviewList .cartRating,.reviewList .cartOptionControls,.reviewList .quantityControl,.reviewList .cartHeart,.reviewList .removeButton{display:none}.reviewList .cartDeliveryChoices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-top:8px}.reviewList .cartDeliveryLabel{grid-column:1/-1}.reviewList .cartDeliveryChoice{min-width:0;height:30px;padding:0 5px;border-radius:10px;font-size:8px}.reviewList .cartName{font-size:10px}.reviewList .cartOptions{margin-top:5px}.reviewList .cartPrice{font-size:10px}
 .bottomNav{display:grid!important;background:transparent;border:0;border-radius:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
-.bagSummaryChevron{width:16px;height:1px;display:block;background:currentColor;opacity:.72;transition:opacity .2s ease}
+.bagSummaryChevron{position:absolute;left:50%;bottom:10px;width:24px;height:1px;display:block;background:currentColor;opacity:.62;transform:translateX(-50%);transition:opacity .2s ease}.bagSummaryToggle[aria-expanded="true"] .bagSummaryChevron{opacity:1;transform:translateX(-50%)}
+.reviewNumbers{min-width:44px;display:flex;flex-direction:column;align-items:flex-end}.reviewSize{width:27px;height:27px;margin:0 0 8px auto;border:1px solid rgba(0,0,0,.18);border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.70);color:#111;font-size:8px;font-weight:700;line-height:1}.reviewPrice{margin-top:7px}
 .paymentSectionTitle{margin:21px 0 12px;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:28px;line-height:1.12;font-weight:800}.paymentGlass.isStripe{padding:22px;border:1px solid rgba(255,255,255,.88);background:linear-gradient(145deg,rgba(255,255,255,.72),rgba(255,255,255,.38));box-shadow:inset 0 1px 0 rgba(255,255,255,.98),0 20px 48px rgba(0,0,0,.09);backdrop-filter:blur(30px) saturate(165%);-webkit-backdrop-filter:blur(30px) saturate(165%)}
 .deliveryGlass,.paymentGlass,.confirmedDeliverySummary,.reviewGlass,.reviewTotals,.addressSheet{border:1px solid rgba(255,255,255,.88);background:linear-gradient(145deg,rgba(255,255,255,.72),rgba(255,255,255,.38));box-shadow:inset 0 1px 0 rgba(255,255,255,.98),0 20px 48px rgba(0,0,0,.09);backdrop-filter:blur(30px) saturate(165%);-webkit-backdrop-filter:blur(30px) saturate(165%)}
 .deliveryGlass{border-radius:26px;padding:22px}.deliveryPromiseGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}.deliveryPromise{position:relative;min-height:92px;padding:15px 12px;border:1px solid rgba(0,0,0,.10);border-radius:18px;background:rgba(255,255,255,.48);text-align:left;transition:.2s ease}.deliveryPromise strong,.deliveryPromise small{display:block}.deliveryPromise strong{font-size:12px}.deliveryPromise small{margin-top:7px;color:#686868;font-size:8px;line-height:1.35}.deliveryPromiseDot{position:absolute;right:11px;top:11px;width:18px;height:18px;border:1px solid rgba(0,0,0,.24);border-radius:50%;display:grid;place-items:center}.deliveryPromise.isSelected{border-color:#111;background:rgba(255,255,255,.78)}.deliveryPromise.isSelected .deliveryPromiseDot{border-color:#080808;background:#080808;color:#fff}.deliveryPromise.isSelected .deliveryPromiseDot::after{content:"✓";font-size:10px;font-weight:800}.deliveryPromise:disabled{opacity:.34;cursor:not-allowed}.deliveryGlass.isConfirmed .deliveryPromiseGrid,.deliveryGlass.isConfirmed .deliveryDetails,.deliveryGlass.isConfirmed #prontoReceivingChoice,.deliveryGlass.isConfirmed #confirmDeliveryButton,.deliveryGlass.isConfirmed #addressSuggestionSource{display:none}.deliveryGlass.isConfirmed #continueToPaymentButton{display:block}.deliveryGlass.isConfirmed #deliveryQuoteBreakdown{margin-top:0}
@@ -1594,6 +1595,8 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
   let paymentElement = null;
   let stripeSessionId = "";
   let stripeCanConfirm = false;
+  let stripeSessionTotalAmount = "";
+  let stripeLastPaymentError = null;
   let stripeInitializing = false;
   let stripeSessionUpdate = Promise.resolve();
   let stripeSessionCartKey = "";
@@ -1811,14 +1814,14 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
     const profile = checkoutFulfillmentProfile(cart);
     if ($("subtotalValue")) $("subtotalValue").textContent = money(subtotal);
     if ($("stripeDeliveryValue")) $("stripeDeliveryValue").textContent = money(deliveryFee);
-    if ($("totalValue")) $("totalValue").textContent = money(total);
+    if ($("totalValue")) $("totalValue").textContent = stripeSessionTotalAmount || money(total);
     if ($("bagTotalValue")) $("bagTotalValue").textContent = money(bagTotal);
     if ($("headerTotal")) $("headerTotal").textContent = money(total);
     if ($("nequiAmount")) $("nequiAmount").textContent = `${money(total)} COP`;
     if ($("nequiSubtotal")) $("nequiSubtotal").textContent = money(subtotal);
     if ($("reviewSubtotalValue")) $("reviewSubtotalValue").textContent = money(subtotal);
     if ($("reviewDeliveryValue")) $("reviewDeliveryValue").textContent = money(deliveryFee);
-    if ($("reviewTotalValue")) $("reviewTotalValue").textContent = money(total);
+    if ($("reviewTotalValue")) $("reviewTotalValue").textContent = stripeSessionTotalAmount || money(total);
     renderShipmentCharges("bagShipmentCharges", chargeRows);
     renderShipmentCharges("nequiShipmentCharges", chargeRows);
     renderDeliveryQuoteBreakdown(profile, quoteReady, total);
@@ -3145,13 +3148,13 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
     if ($("reviewPaymentText")) $("reviewPaymentText").textContent = selectedPayment === "nequi" ? "Nequi" : "Tarjeta · Stripe seguro";
     if ($("reviewSubtotalValue")) $("reviewSubtotalValue").textContent = money(cart.total);
     if ($("reviewDeliveryValue")) $("reviewDeliveryValue").textContent = money(fee);
-    if ($("reviewTotalValue")) $("reviewTotalValue").textContent = money(cart.total + fee);
+    if ($("reviewTotalValue")) $("reviewTotalValue").textContent = stripeSessionTotalAmount || money(cart.total + fee);
     if ($("reviewOrderItems")) $("reviewOrderItems").innerHTML = cart.items.map(item => {
       const options = [
         item.color,
-        item.size ? `Talla ${item.size}` : "",
         deliveryModeLabel(item)
       ].filter(Boolean).join(" · ");
+      const size = String(item.size || "").trim();
       return `
         <article class="reviewItem">
           ${productImage(item, true)}
@@ -3160,6 +3163,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
             <div class="reviewOptions">${escapeHtml(options)}</div>
           </div>
           <div class="reviewNumbers">
+            ${size ? `<span class="reviewSize" aria-label="Talla ${escapeHtml(size)}">${escapeHtml(size)}</span>` : ""}
             <div class="reviewQuantity">Cant. ${item.quantity}</div>
             <div class="reviewPrice">${money(item.unitPrice * item.quantity)}</div>
           </div>
@@ -3800,6 +3804,70 @@ function updateStripePayAvailability() {
   $("stripePayButton").disabled = !checkoutActions || !paymentElement || !deliveryQuoteMatchesCart();
 }
 
+  function applyStripeSession(session) {
+    session = session?.session || session;
+    if (!session || typeof session !== "object") return;
+    const formattedTotal = String(session.total?.total?.amount || "").trim();
+    if (formattedTotal) {
+      stripeSessionTotalAmount = formattedTotal;
+      if ($("totalValue")) $("totalValue").textContent = formattedTotal;
+      if ($("reviewTotalValue")) $("reviewTotalValue").textContent = formattedTotal;
+    }
+    stripeLastPaymentError = session.lastPaymentError || null;
+  }
+
+  function stripeFailureDetails(error) {
+    const sources = [
+      error,
+      error?.error,
+      error?.payment_intent?.last_payment_error,
+      stripeLastPaymentError,
+      stripeLastPaymentError?.error
+    ].filter(Boolean);
+    const code = sources.map(source => String(
+      source?.decline_code || source?.declineCode || source?.code || ""
+    ).trim().toLowerCase()).find(Boolean) || "";
+    const message = sources.map(source => String(
+      typeof source === "string" ? source : source?.message || ""
+    ).trim()).find(Boolean) || "";
+    return { code, message };
+  }
+
+  function stripeCustomerError(error) {
+    const { code, message } = stripeFailureDetails(error);
+    if (code === "testmode_decline") {
+      return "Esta es una tarjeta de prueba y no puede usarse en una compra real. Usa una tarjeta válida.";
+    }
+    if (["incorrect_number", "invalid_number"].includes(code)) {
+      return "El número de la tarjeta no es válido. Revisa la información de tu tarjeta.";
+    }
+    if (["incorrect_cvc", "invalid_cvc"].includes(code)) {
+      return "El código de seguridad de la tarjeta no es correcto. Revisa el CVC.";
+    }
+    if (["expired_card", "invalid_expiry_month", "invalid_expiry_year"].includes(code)) {
+      return "La tarjeta está vencida o su fecha no es válida. Revisa la fecha o usa otra tarjeta.";
+    }
+    if (code === "insufficient_funds") {
+      return "La tarjeta no tiene fondos suficientes. Usa otra tarjeta o consulta con tu banco.";
+    }
+    if (code === "authentication_required") {
+      return "Tu banco necesita verificar esta compra. Completa la autenticación o usa otra tarjeta.";
+    }
+    if ([
+      "card_declined", "generic_decline", "do_not_honor", "lost_card", "stolen_card",
+      "pickup_card", "restricted_card", "transaction_not_allowed", "card_velocity_exceeded"
+    ].includes(code) || /declin|rechaz/i.test(message)) {
+      return "Tu banco rechazó la tarjeta. Prueba otra tarjeta o comunícate con tu banco.";
+    }
+    if (code === "stripe_total_unavailable" || /must (?:either )?read|display.*total/i.test(message)) {
+      return "No se realizó ningún cargo. No pudimos verificar el total seguro con Stripe. Recarga la página e inténtalo de nuevo.";
+    }
+    if (["processing_error", "payment_intent_payment_attempt_failed"].includes(code)) {
+      return "Stripe no pudo procesar la tarjeta. No se realizó ningún cargo; inténtalo de nuevo o usa otra tarjeta.";
+    }
+    return "No se realizó ningún cargo. No pudimos completar el pago. Inténtalo de nuevo o elige otro método de pago.";
+  }
+
   function billingAddress() {
     if ($("billingSame")?.checked) {
       if (!$("deliveryAddress")?.value.trim()) {
@@ -3955,9 +4023,12 @@ if (!returnedShippingOptionId) {
       });
       paymentElement.mount("#paymentElement");
       stripeCanConfirm = false;
+      stripeSessionTotalAmount = "";
+      stripeLastPaymentError = null;
       updateStripePayAvailability();
       checkoutElements.on("change", session => {
         $("stripePayButton").textContent = "Continuar a revisión";
+        applyStripeSession(session);
         stripeCanConfirm = Boolean(session.canConfirm);
         if (stripeCanConfirm) errorBox.textContent = "";
         updateStripePayAvailability();
@@ -3971,6 +4042,8 @@ if (!returnedShippingOptionId) {
       checkoutActions = null;
       paymentElement = null;
       stripeSessionId = "";
+      stripeSessionTotalAmount = "";
+      stripeLastPaymentError = null;
       stripeSessionCartKey = "";
       stripeSessionUpdating = false;
       console.error("[CajaModa] Stripe Payment Element error:", error);
@@ -3996,18 +4069,27 @@ if (!returnedShippingOptionId) {
       const customer = collectCustomer();
       const firstName = customer.customerFirstName;
       const lastName = customer.customerLastName;
+      const currentSession = await Promise.resolve(checkoutActions.getSession());
+      applyStripeSession(currentSession);
+      if (!stripeSessionTotalAmount) {
+        const totalError = new Error("Stripe requires the Checkout Session total to be read and displayed before confirmation.");
+        totalError.code = "stripe_total_unavailable";
+        throw totalError;
+      }
       const result = await checkoutActions.confirm({
         email: customer.email,
         billingAddress: { name: `${firstName} ${lastName}`, address: billingAddress() }
       });
-      if (result?.type === "error") throw result.error;
+      if (result?.type === "error") throw result.error || result;
       location.href = `${location.origin}/order-confirmation/?stripeSessionId=${encodeURIComponent(stripeSessionId)}`;
     } catch (error) {
+      try {
+        if (checkoutActions?.getSession) {
+          applyStripeSession(await Promise.resolve(checkoutActions.getSession()));
+        }
+      } catch (_) {}
       if (![CART_ITEM_UNAVAILABLE_CODE, PRONTO_LOCATION_UNAVAILABLE_CODE].includes(error?.code)) {
-        const rawMessage = String(error?.message || "");
-        errorBox.textContent = /declin|rechaz/i.test(rawMessage)
-          ? "Tu tarjeta fue rechazada. Revisa los datos o prueba otra tarjeta."
-          : "No pudimos procesar el pago. Revisa los datos e inténtalo nuevamente.";
+        errorBox.textContent = stripeCustomerError(error);
         if ($("reviewError")) $("reviewError").textContent = errorBox.textContent;
       }
       button.textContent = originalLabel;

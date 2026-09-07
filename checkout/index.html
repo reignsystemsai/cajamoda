@@ -3138,7 +3138,9 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
     const submit = $("submitOrderButton");
     if (submit) {
       submit.textContent = selectedPayment === "nequi" ? "Enviar pago Nequi" : `Enviar pago ${money(checkoutTotal())} COP`;
-      submit.disabled = selectedPayment === "stripe" ? !stripeCanConfirm : !$("nequiReference")?.value.trim();
+      submit.disabled = selectedPayment === "stripe"
+        ? !checkoutActions || !paymentElement || !deliveryQuoteMatchesCart()
+        : !$("nequiReference")?.value.trim();
     }
   }
 
@@ -3178,7 +3180,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
       const complete = tab.dataset.method === "delivery"
         ? quoteReady
         : tab.dataset.method === "stripe"
-          ? stripeCanConfirm && ["review"].includes(checkoutView)
+          ? selectedPayment === "stripe" && ["review"].includes(checkoutView)
           : tab.dataset.method === "nequi"
             ? Boolean($("nequiReference")?.value.trim()) && checkoutView === "review"
             : false;
@@ -3206,7 +3208,6 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
       return renderCheckoutFlow();
     }
     if (view === "review") {
-      if (selectedPayment === "stripe" && !stripeCanConfirm) return showToast("Completa los datos de tu tarjeta.");
       if (selectedPayment === "nequi" && !$("nequiReference")?.value.trim()) return showToast("Ingresa la referencia de tu pago Nequi.");
     }
     checkoutView = view;
@@ -3761,7 +3762,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
   }
 
 function updateStripePayAvailability() {
-  $("stripePayButton").disabled = !checkoutActions || !paymentElement || !stripeCanConfirm || !deliveryQuoteMatchesCart();
+  $("stripePayButton").disabled = !checkoutActions || !paymentElement || !deliveryQuoteMatchesCart();
 }
 
   function billingAddress() {

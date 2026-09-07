@@ -5,6 +5,53 @@ const API_BASE =
 const $ = id => document.getElementById(id);
 const confirmationQuery = new URLSearchParams(location.search);
 
+function storedJson(key) {
+  try { return JSON.parse(localStorage.getItem(key) || "null"); }
+  catch { return null; }
+}
+
+const pendingCheckout = storedJson("cajamoda-pending-checkout") || {};
+
+function moneyCOP(value) {
+  return new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0
+  }).format(Math.max(0, Number(value) || 0));
+}
+
+function pendingDeliveryLabel() {
+  const delivery = pendingCheckout?.delivery || {};
+  const modes = (pendingCheckout?.cart?.items || []).map(item => String(item?.selectedDeliveryMode || "").toLowerCase());
+  const labels = [];
+  if (modes.includes("pickup")) labels.push(delivery.prontoMethod === "moto" ? "Pronto · Domicilio" : "Pronto · Pickup");
+  if (modes.includes("fast")) labels.push("Rápido");
+  if (modes.includes("ship")) labels.push("Libéralo");
+  return labels.join(" + ") || "Entrega CajaModa";
+}
+
+function pendingArrivalText() {
+  const modes = (pendingCheckout?.cart?.items || []).map(item => String(item?.selectedDeliveryMode || "").toLowerCase());
+  const labels = [];
+  if (modes.includes("pickup")) labels.push("24–48 h");
+  if (modes.includes("fast")) labels.push("4–7 días");
+  if (modes.includes("ship")) labels.push("14–28 días");
+  return labels.join(" + ") || "Te enviaremos actualizaciones por correo.";
+}
+
+function renderCheckoutContext(order = null) {
+  const cart = pendingCheckout?.cart || {};
+  const delivery = pendingCheckout?.delivery || {};
+  const customer = pendingCheckout?.customer || {};
+  const total = Number(cart.total || 0) + Number(delivery.fee || 0);
+  if ($("confirmationTotal")) $("confirmationTotal").textContent = total > 0 ? moneyCOP(total) : (order?.total ? moneyCOP(order.total) : "Confirmado");
+  if ($("deliveryMethod")) $("deliveryMethod").textContent = pendingDeliveryLabel();
+  if ($("deliveryMessage")) $("deliveryMessage").textContent = pendingArrivalText();
+  if ($("confirmationAddress")) $("confirmationAddress").textContent = delivery.address || delivery.addressLine1 || delivery.city || "Dirección confirmada";
+  if ($("confirmationEmail")) $("confirmationEmail").textContent = customer.email || "tu correo electrónico";
+  if ($("confirmationBagBadge")) $("confirmationBagBadge").textContent = String(Math.max(0, Number(cart.count || cart.items?.reduce((sum, item) => sum + Number(item.quantity || 1), 0) || 0)));
+}
+
 function confirmationReference(queryName, storageKey) {
   const queryValue = confirmationQuery.get(queryName) || "";
   if (queryValue) {
@@ -45,7 +92,7 @@ function displayOrderNumber(order) {
 }
 
 function renderOrderNumber(order) {
-  $("orderNumber").textContent = `Pedido #${displayOrderNumber(order)}`;
+  $("orderNumber").textContent = `Pedido ${displayOrderNumber(order)}`;
 }
 
 function setReferralAvailable(available) {
@@ -130,13 +177,14 @@ function renderShipmentCards(shipments) {
 
 async function loadConfirmation() {
   if (nequiOrderNumber) {
-    $("confirmationTitle").textContent = "PEDIDO RECIBIDO";
+    $("confirmationTitle").textContent = "Tu pedido fue recibido.";
     renderOrderNumber({ number: nequiOrderNumber });
     $("paymentStatus").textContent = "Pago Nequi por confirmar";
     $("deliveryMethod").textContent = "Entrega CajaModa";
     $("deliveryMessage").textContent = "Confirmaremos el pago y te enviaremos la información de entrega.";
     setReferralAvailable(false);
     setStatus("Tu pedido está reservado mientras verificamos el pago.");
+    renderCheckoutContext();
     try { localStorage.removeItem("cajamoda-pending-nequi-order"); } catch {}
     return;
   }
@@ -151,11 +199,12 @@ async function loadConfirmation() {
     }
     confirmation = payload.order;
     renderShipmentCards(confirmation.shipments);
-    $("confirmationTitle").textContent = confirmation.paid ? "COMPRA CONFIRMADA" : "PAGO AUTORIZADO";
+    $("confirmationTitle").textContent = confirmation.paid ? "Tu pedido fue confirmado." : "Tu pago fue autorizado.";
     renderOrderNumber(confirmation);
     $("paymentStatus").textContent = confirmation.payment;
     $("deliveryMethod").textContent = confirmation.delivery?.method || "Entrega CajaModa";
     $("deliveryMessage").textContent = confirmation.delivery?.message || "Te enviaremos actualizaciones por correo.";
+    renderCheckoutContext(confirmation);
     setReferralAvailable(Boolean(checkoutId));
     try { localStorage.removeItem("cajamoda-pending-stripe-intent"); } catch {}
     return;
@@ -171,11 +220,12 @@ async function loadConfirmation() {
     }
     confirmation = payload.order;
     renderShipmentCards(confirmation.shipments);
-    $("confirmationTitle").textContent = confirmation.paid ? "COMPRA CONFIRMADA" : "PAGO AUTORIZADO";
+    $("confirmationTitle").textContent = confirmation.paid ? "Tu pedido fue confirmado." : "Tu pago fue autorizado.";
     renderOrderNumber(confirmation);
     $("paymentStatus").textContent = confirmation.payment;
     $("deliveryMethod").textContent = confirmation.delivery?.method || "Entrega CajaModa";
     $("deliveryMessage").textContent = confirmation.delivery?.message || "Te enviaremos actualizaciones por correo.";
+    renderCheckoutContext(confirmation);
     setReferralAvailable(Boolean(checkoutId));
     return;
   }
@@ -190,11 +240,12 @@ async function loadConfirmation() {
 
   confirmation = payload.order;
   renderShipmentCards(confirmation.shipments);
-  $("confirmationTitle").textContent = "COMPRA CONFIRMADA";
+  $("confirmationTitle").textContent = "Tu pedido fue confirmado.";
   renderOrderNumber(confirmation);
   $("paymentStatus").textContent = confirmation.payment;
   $("deliveryMethod").textContent = confirmation.delivery?.method || "Método de entrega confirmado";
   $("deliveryMessage").textContent = confirmation.delivery?.message || "Te enviaremos actualizaciones sobre tu pedido.";
+  renderCheckoutContext(confirmation);
   setReferralAvailable(true);
   try { localStorage.removeItem("cajamoda-pending-checkout"); } catch {}
 }
@@ -238,8 +289,9 @@ shareButtons.forEach(button => {
   button.addEventListener("click", () => createReferral(button.dataset.shareChannel || ""));
 });
 
+renderCheckoutContext();
 loadConfirmation().catch(error => {
-  $("confirmationTitle").textContent = "COMPRA RECIBIDA";
+  $("confirmationTitle").textContent = "Tu compra fue recibida.";
   $("paymentStatus").textContent = "Revisa tu correo de confirmación";
   setStatus(error?.message || "No pudimos cargar los detalles.", true);
 });

@@ -1496,9 +1496,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
   <div class="addressSheet glassCard">
     <span class="blackCheck addressSheetCheck">✓</span>
     <h2 id="addressConfirmationTitle">Confirma tu dirección</h2>
-    <p>Encontramos una dirección similar. Puedes confirmarla o editarla.</p>
     <div class="addressChoice isSelected"><span class="addressChoicePin" aria-hidden="true">⌖</span><span><strong>Dirección ingresada</strong><small id="addressConfirmationText"></small></span><span class="addressChoiceRadio" aria-hidden="true"></span></div>
-    <div class="addressChoice"><span class="addressChoicePin" aria-hidden="true">⌖</span><span><strong>Dirección sugerida</strong><small id="addressSuggestedText"></small></span><span class="addressChoiceRadio" aria-hidden="true"></span></div>
     <div class="addressSheetActions"><button id="addressConfirmEdit" class="addressEditButton" type="button">Editar</button><button id="addressConfirmYes" class="primaryButton" type="button">Confirmar y continuar</button></div>
   </div>
 </div>
@@ -3234,9 +3232,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
   function openAddressConfirmation() {
     if (!validatePaymentDetails() || !validateDeliveryConfirmationFields()) return;
     const city = $("deliveryCity")?.value.trim() || "";
-    const postalCode = $("deliveryPostalCode")?.value.trim() || "";
     $("addressConfirmationText").textContent = [completeDeliveryAddress(), city].filter(Boolean).join(", ");
-    if ($("addressSuggestedText")) $("addressSuggestedText").textContent = [$("deliveryAddress")?.value.trim(), city, postalCode].filter(Boolean).join(", ");
     $("addressConfirmation").hidden = false;
   }
 
@@ -3832,7 +3828,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
     const divisor = Number(session.minorUnitsAmountDivisor || 100);
     if (Number.isFinite(minorUnits) && divisor > 0) {
       stripeSessionTotalMinorUnits = minorUnits;
-      stripeSessionTotalAmount = formattedAmount || money(minorUnits / divisor);
+      stripeSessionTotalAmount = formattedAmount.replace(/([,.])00(?=\s*COP$)/i, "") || money(minorUnits / divisor);
       if (stripeSessionTotalMatchesCheckout()) {
         if ($("totalValue")) $("totalValue").textContent = stripeSessionTotalAmount;
         if ($("reviewTotalValue")) $("reviewTotalValue").textContent = stripeSessionTotalAmount;

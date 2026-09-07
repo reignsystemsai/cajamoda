@@ -1102,7 +1102,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
 .paymentSectionTitle{margin:21px 0 12px;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:28px;line-height:1.12;font-weight:800}.paymentGlass.isStripe{padding:22px;border:1px solid rgba(255,255,255,.88);background:linear-gradient(145deg,rgba(255,255,255,.72),rgba(255,255,255,.38));box-shadow:inset 0 1px 0 rgba(255,255,255,.98),0 20px 48px rgba(0,0,0,.09);backdrop-filter:blur(30px) saturate(165%);-webkit-backdrop-filter:blur(30px) saturate(165%)}
 .deliveryGlass,.paymentGlass,.confirmedDeliverySummary,.reviewGlass,.reviewTotals,.addressSheet{border:1px solid rgba(255,255,255,.88);background:linear-gradient(145deg,rgba(255,255,255,.72),rgba(255,255,255,.38));box-shadow:inset 0 1px 0 rgba(255,255,255,.98),0 20px 48px rgba(0,0,0,.09);backdrop-filter:blur(30px) saturate(165%);-webkit-backdrop-filter:blur(30px) saturate(165%)}
 .deliveryGlass{border-radius:26px;padding:22px}.deliveryPromiseGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}.deliveryPromise{position:relative;min-height:92px;padding:15px 12px;border:1px solid rgba(0,0,0,.10);border-radius:18px;background:rgba(255,255,255,.48);text-align:left;transition:.2s ease}.deliveryPromise strong,.deliveryPromise small{display:block}.deliveryPromise strong{font-size:12px}.deliveryPromise small{margin-top:7px;color:#686868;font-size:8px;line-height:1.35}.deliveryPromiseDot{position:absolute;right:11px;top:11px;width:18px;height:18px;border:1px solid rgba(0,0,0,.24);border-radius:50%;display:grid;place-items:center}.deliveryPromise.isSelected{border-color:#111;background:rgba(255,255,255,.78)}.deliveryPromise.isSelected .deliveryPromiseDot{border-color:#080808;background:#080808;color:#fff}.deliveryPromise.isSelected .deliveryPromiseDot::after{content:"✓";font-size:10px;font-weight:800}.deliveryPromise:disabled{opacity:.34;cursor:not-allowed}.deliveryGlass.isConfirmed .deliveryPromiseGrid,.deliveryGlass.isConfirmed .deliveryDetails,.deliveryGlass.isConfirmed #prontoReceivingChoice,.deliveryGlass.isConfirmed #confirmDeliveryButton,.deliveryGlass.isConfirmed #addressSuggestionSource{display:none}.deliveryGlass.isConfirmed #continueToPaymentButton{display:block}.deliveryGlass.isConfirmed #deliveryQuoteBreakdown{margin-top:0}
-.deliveryDetails{gap:12px}.shippingFields .deliveryField{border-radius:14px;background:rgba(255,255,255,.54)}.confirmPayment,.stripePayButton{height:55px;border-radius:999px;font-size:10px;letter-spacing:.02em}.paymentMethod[data-method="nequi"].isSelected{color:#080808}.paymentAction.nequiOpen{border-color:#111;background:#111}.nequiPane{color:#080808}
+.deliveryDetails{gap:12px}.shippingFields .deliveryField{border-radius:14px;background:rgba(255,255,255,.54)}.confirmPayment,.stripePayButton{height:55px;border-radius:999px;font-size:10px;letter-spacing:.02em}.paymentMethod[data-method="nequi"].isSelected{color:#4d0bb7}.paymentAction.nequiOpen,.nequiPane .confirmPayment{border-color:#4d0bb7;background:#4d0bb7;color:#fff}.nequiPane{color:#080808}.nequiBrand{display:flex;align-items:center;gap:8px;margin-bottom:13px;color:#4d0bb7;font-size:20px;font-weight:800;letter-spacing:-.7px}.nequiBrandMark{width:25px;height:25px;border-radius:8px;display:grid;place-items:center;background:#4d0bb7;color:#fff;font-size:14px;font-weight:850}
 .confirmedDeliverySummary{margin:0 0 17px;padding:14px 16px;border-radius:20px;display:grid;grid-template-columns:32px 1fr auto;gap:12px;align-items:center}.confirmedDeliverySummary[hidden]{display:none}.confirmedDeliverySummary strong,.confirmedDeliverySummary span{display:block}.confirmedDeliverySummary strong{font-size:10px}.confirmedDeliverySummary span:not(.blackCheck){margin-top:3px;color:#666;font-size:8px}.confirmedDeliverySummary button,.reviewConfirmRow button{font-size:8px;text-decoration:underline}
 .blackCheck{width:28px;height:28px;border-radius:50%;display:grid!important;place-items:center!important;background:#080808!important;color:#fff!important;font-size:14px!important;font-weight:800!important;line-height:1!important}.deliveryReady::before{background:#080808;color:#fff;border-color:#080808}
 .reviewCheckout[hidden],#deliveryView[hidden],#paymentView[hidden]{display:none}.reviewGlass{padding:4px 17px;border-radius:23px}.reviewConfirmRow{min-height:68px;display:grid;grid-template-columns:32px 1fr auto;align-items:center;gap:12px}.reviewConfirmRow+.reviewConfirmRow{border-top:1px solid rgba(0,0,0,.09)}.reviewConfirmRow strong,.reviewConfirmRow span{display:block}.reviewConfirmRow strong{font-size:10px}.reviewConfirmRow div span{margin-top:4px;color:#666;font-size:8px;line-height:1.4}.reviewOrderItems{display:grid;gap:10px;margin:15px 0}.reviewOrderItem{display:grid;grid-template-columns:58px 1fr auto;gap:12px;align-items:center;padding:10px 12px;border:1px solid rgba(0,0,0,.07);border-radius:18px;background:rgba(255,255,255,.52)}.reviewOrderItem img{width:58px;height:70px;object-fit:contain;border-radius:11px;background:#f3f3f3}.reviewOrderItem strong{display:block;font-size:9px}.reviewOrderItem span{display:block;margin-top:4px;color:#666;font-size:8px}.reviewOrderItem b{font-size:9px}.reviewTotals{padding:17px;border-radius:20px}.reviewCheckout>.stripePayButton{margin-top:14px}
@@ -1367,6 +1367,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
         <h2 id="paymentSectionTitle" class="paymentSectionTitle">Finaliza tu pago</h2>
         <section id="paymentGlass" class="paymentGlass isStripe">
           <div id="nequiPane" class="nequiPane" hidden>
+            <div class="nequiBrand" aria-label="Nequi"><span class="nequiBrandMark" aria-hidden="true">N</span><span>Nequi</span></div>
             <div class="nequiSteps">
               <div class="nequiStepsTitle">Paga con Nequi en 3 pasos</div>
               <ol>
@@ -3177,7 +3178,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
     if (submit) {
       submit.textContent = selectedPayment === "nequi" ? "Enviar pago Nequi" : `Enviar pago ${money(checkoutTotal())} COP`;
       submit.disabled = selectedPayment === "stripe"
-        ? !checkoutActions || !paymentElement || !deliveryQuoteMatchesCart() || !stripeSessionTotalMatchesCheckout()
+        ? !checkoutActions || !paymentElement || !deliveryQuoteMatchesCart()
         : !$("nequiReference")?.value.trim();
     }
   }
@@ -4102,6 +4103,9 @@ if (!returnedShippingOptionId) {
       const customer = collectCustomer();
       const firstName = customer.customerFirstName;
       const lastName = customer.customerLastName;
+      if (stripeSessionCartKey !== currentDeliveryQuoteKey() || !stripeSessionTotalMatchesCheckout()) {
+        await syncStripeCheckoutSession();
+      }
       const currentSession = await Promise.resolve(checkoutActions.getSession());
       applyStripeSession(currentSession);
       if (!stripeSessionTotalMatchesCheckout()) {

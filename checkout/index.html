@@ -1081,6 +1081,27 @@ img{display:block;max-width:100%}
 .cartItem.isUnavailable{border-color:rgba(163,25,25,.28);background:rgba(255,246,244,.76)}
 .cartUnavailableNotice{margin-top:10px;padding:11px 12px;border:1px solid rgba(163,25,25,.18);border-radius:12px;background:#fff5f3;color:#8e211b;font-size:8.5px;line-height:1.45}
 .cartUnavailableRemove{margin-top:9px;padding:9px 12px;border:1px solid #8e211b;border-radius:10px;background:#fff;color:#8e211b;font-size:8px;font-weight:750}
+
+/* Approved CajaModa clear-glass checkout */
+html,body{background:#f0eeeb}
+body::before{content:"";position:fixed;inset:0;z-index:-2;background:linear-gradient(120deg,rgba(245,239,232,.76),rgba(255,255,255,.52)),url("/assets/order-confirmation-boutique.png") center/cover fixed no-repeat;filter:saturate(.72)}
+body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255,255,.26);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.checkoutApp{max-width:760px;padding-bottom:48px;background:rgba(255,255,255,.30);box-shadow:0 0 70px rgba(0,0,0,.08)}
+.checkoutHeader{height:calc(102px + var(--safe-top));background:rgba(255,255,255,.48);border-bottom:1px solid rgba(255,255,255,.72)}
+.checkoutIntro{padding:24px 42px 18px}.checkoutIntro h1{font-size:48px}.checkoutIntro p{font-size:11px}
+.checkoutApp.isPayment .checkoutIntro{display:flex}
+.stepNav{top:calc(102px + var(--safe-top));grid-template-columns:repeat(4,1fr);margin:0 42px;background:rgba(255,255,255,.35)}
+.stepTab{height:48px;font-size:9px;letter-spacing:.02em}.stepPanel{padding:28px 42px 50px}
+.bottomNav{display:none!important}.reviewList{margin-bottom:18px}.reviewList .finalCheckoutItem{min-height:86px;padding:9px;border-radius:17px;grid-template-columns:62px 1fr}.reviewList .cartImage{width:62px;height:72px;border-radius:12px}.reviewList .cartDescription,.reviewList .cartRating,.reviewList .cartOptionControls,.reviewList .quantityControl,.reviewList .cartHeart,.reviewList .removeButton{display:none}.reviewList .cartName{font-size:10px}.reviewList .cartOptions{margin-top:5px}.reviewList .cartPrice{font-size:10px}
+.paymentSectionTitle{margin:21px 0 12px;font-family:"Cormorant Garamond",Georgia,serif;font-size:28px;line-height:1.08;font-weight:600}.paymentGlass.isStripe{padding:22px;border:1px solid rgba(255,255,255,.88);background:linear-gradient(145deg,rgba(255,255,255,.72),rgba(255,255,255,.38));box-shadow:inset 0 1px 0 rgba(255,255,255,.98),0 20px 48px rgba(0,0,0,.09);backdrop-filter:blur(30px) saturate(165%);-webkit-backdrop-filter:blur(30px) saturate(165%)}
+.deliveryGlass,.paymentGlass,.confirmedDeliverySummary,.reviewGlass,.reviewTotals,.addressSheet{border:1px solid rgba(255,255,255,.88);background:linear-gradient(145deg,rgba(255,255,255,.72),rgba(255,255,255,.38));box-shadow:inset 0 1px 0 rgba(255,255,255,.98),0 20px 48px rgba(0,0,0,.09);backdrop-filter:blur(30px) saturate(165%);-webkit-backdrop-filter:blur(30px) saturate(165%)}
+.deliveryGlass{border-radius:26px;padding:22px}.deliveryPromiseGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}.deliveryPromise{position:relative;min-height:92px;padding:15px 12px;border:1px solid rgba(0,0,0,.10);border-radius:18px;background:rgba(255,255,255,.48);text-align:left;transition:.2s ease}.deliveryPromise strong,.deliveryPromise small{display:block}.deliveryPromise strong{font-size:12px}.deliveryPromise small{margin-top:7px;color:#686868;font-size:8px;line-height:1.35}.deliveryPromiseDot{position:absolute;right:11px;top:11px;width:18px;height:18px;border:1px solid rgba(0,0,0,.24);border-radius:50%;display:grid;place-items:center}.deliveryPromise.isSelected{border-color:#111;background:rgba(255,255,255,.78)}.deliveryPromise.isSelected .deliveryPromiseDot{border-color:#080808;background:#080808;color:#fff}.deliveryPromise.isSelected .deliveryPromiseDot::after{content:"✓";font-size:10px;font-weight:800}.deliveryPromise:disabled{opacity:.34;cursor:not-allowed}.deliveryGlass.isConfirmed .deliveryPromiseGrid,.deliveryGlass.isConfirmed .deliveryDetails,.deliveryGlass.isConfirmed #prontoReceivingChoice,.deliveryGlass.isConfirmed #confirmDeliveryButton,.deliveryGlass.isConfirmed #addressSuggestionSource{display:none}.deliveryGlass.isConfirmed #continueToPaymentButton{display:block}.deliveryGlass.isConfirmed #deliveryQuoteBreakdown{margin-top:0}
+.deliveryDetails{gap:12px}.shippingFields .deliveryField{border-radius:14px;background:rgba(255,255,255,.54)}.confirmPayment,.stripePayButton{height:55px;border-radius:999px;font-size:10px;letter-spacing:.02em}.paymentMethod[data-method="nequi"].isSelected{color:#080808}.paymentAction.nequiOpen{border-color:#111;background:#111}.nequiPane{color:#080808}
+.confirmedDeliverySummary{margin:0 0 17px;padding:14px 16px;border-radius:20px;display:grid;grid-template-columns:32px 1fr auto;gap:12px;align-items:center}.confirmedDeliverySummary[hidden]{display:none}.confirmedDeliverySummary strong,.confirmedDeliverySummary span{display:block}.confirmedDeliverySummary strong{font-size:10px}.confirmedDeliverySummary span:not(.blackCheck){margin-top:3px;color:#666;font-size:8px}.confirmedDeliverySummary button,.reviewConfirmRow button{font-size:8px;text-decoration:underline}
+.blackCheck{width:28px;height:28px;border-radius:50%;display:grid!important;place-items:center!important;background:#080808!important;color:#fff!important;font-size:14px!important;font-weight:800!important;line-height:1!important}.deliveryReady::before{background:#080808;color:#fff;border-color:#080808}
+.reviewCheckout[hidden],#deliveryView[hidden],#paymentView[hidden]{display:none}.reviewGlass{padding:4px 17px;border-radius:23px}.reviewConfirmRow{min-height:68px;display:grid;grid-template-columns:32px 1fr auto;align-items:center;gap:12px}.reviewConfirmRow+.reviewConfirmRow{border-top:1px solid rgba(0,0,0,.09)}.reviewConfirmRow strong,.reviewConfirmRow span{display:block}.reviewConfirmRow strong{font-size:10px}.reviewConfirmRow div span{margin-top:4px;color:#666;font-size:8px;line-height:1.4}.reviewOrderItems{display:grid;gap:10px;margin:15px 0}.reviewOrderItem{display:grid;grid-template-columns:58px 1fr auto;gap:12px;align-items:center;padding:10px 12px;border:1px solid rgba(0,0,0,.07);border-radius:18px;background:rgba(255,255,255,.52)}.reviewOrderItem img{width:58px;height:70px;object-fit:contain;border-radius:11px;background:#f3f3f3}.reviewOrderItem strong{display:block;font-size:9px}.reviewOrderItem span{display:block;margin-top:4px;color:#666;font-size:8px}.reviewOrderItem b{font-size:9px}.reviewTotals{padding:17px;border-radius:20px}.reviewCheckout>.stripePayButton{margin-top:14px}
+.addressConfirmation{position:fixed;z-index:200;inset:0;display:flex;align-items:flex-end;justify-content:center;padding:22px;background:rgba(15,15,15,.24);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}.addressConfirmation[hidden]{display:none}.addressSheet{width:min(680px,100%);padding:28px;border-radius:30px;text-align:center}.addressSheetCheck{width:42px;height:42px;margin:0 auto 14px;font-size:19px!important}.addressSheet h2{margin:0;font-family:"Cormorant Garamond",Georgia,serif;font-size:30px}.addressSheet p{margin:12px auto 20px;max-width:480px;color:#555;font-size:10px;line-height:1.6}.addressSheet .secondaryButton{width:100%;margin-top:8px;justify-content:center}
+@media(max-width:600px){.checkoutIntro{padding:22px 20px 14px}.checkoutIntro h1{font-size:40px}.stepNav{margin:0 20px}.stepPanel{padding:24px 18px 42px}.deliveryPromiseGrid{grid-template-columns:1fr}.deliveryPromise{min-height:70px}.deliveryDetails{grid-template-columns:1fr}.deliveryDetails .wide{grid-column:auto}.checkoutHeader{height:calc(94px + var(--safe-top))}.stepNav{top:calc(94px + var(--safe-top))}}
 </style>
 </head>
 
@@ -1127,9 +1148,9 @@ img{display:block;max-width:100%}
 
   <section class="checkoutIntro">
     <div>
-      <h1>Tu pedido</h1>
+      <h1>Checkout</h1>
       <p>
-        Revisa tu bolsa y elige cómo pagar de forma segura.
+        Confirma la entrega y finaliza tu compra de forma segura.
       </p>
     </div>
 
@@ -1143,10 +1164,11 @@ img{display:block;max-width:100%}
     <button
       class="stepTab isActive"
       type="button"
-      data-step="bag"
+      data-step="payment"
+      data-method="delivery"
       aria-current="step"
     >
-      Bolsa
+      Pagar
     </button>
 
     <button
@@ -1167,13 +1189,22 @@ img{display:block;max-width:100%}
       Nequi
     </button>
 
+    <button
+      class="stepTab"
+      type="button"
+      data-step="payment"
+      data-method="review"
+    >
+      Revisión
+    </button>
+
   </nav>
 
   <main id="stepViewport" class="stepViewport">
     <div id="stepTrack" class="stepTrack">
 
       <section
-        class="stepPanel isActive"
+        class="stepPanel"
         data-panel="bag"
         aria-label="Bolsa"
       >
@@ -1249,15 +1280,21 @@ img{display:block;max-width:100%}
       </section>
 
       <section
-        class="stepPanel"
+        class="stepPanel isActive"
         data-panel="payment"
         aria-label="Pago"
-        aria-hidden="true"
+        aria-hidden="false"
       >
         <div id="reviewList" class="reviewList"></div>
 
-        <h2 class="paymentSectionTitle">Datos de entrega</h2>
-        <section class="deliveryGlass" aria-label="Entrega">
+        <div id="deliveryView">
+        <h2 class="paymentSectionTitle">¿Cómo quieres recibir tu pedido?</h2>
+        <section id="deliveryGlass" class="deliveryGlass" aria-label="Entrega">
+          <div class="deliveryPromiseGrid" aria-label="Método de entrega">
+            <button class="deliveryPromise" type="button" data-checkout-delivery="pickup"><span class="deliveryPromiseDot"></span><strong>Pronto</strong><small>24–48 horas · Cartagena</small></button>
+            <button class="deliveryPromise" type="button" data-checkout-delivery="fast"><span class="deliveryPromiseDot"></span><strong>Rápido</strong><small>4–7 días</small></button>
+            <button class="deliveryPromise" type="button" data-checkout-delivery="ship"><span class="deliveryPromiseDot"></span><strong>Libéralo</strong><small>14–28 días</small></button>
+          </div>
           <div class="promiseRow" hidden style="display:none">
             <div class="promiseBadge">P</div>
             <div aria-live="polite">
@@ -1305,8 +1342,17 @@ img{display:block;max-width:100%}
             <div id="deliveryQuoteGroups"></div>
             <div class="deliveryQuoteRow deliveryQuoteTotal"><span>Total con entrega</span><span id="deliveryQuoteTotal">Por calcular</span></div>
           </div>
+          <button id="continueToPaymentButton" class="confirmPayment" type="button" hidden>Continuar al pago</button>
+        </section>
+        </div>
+
+        <section id="confirmedDeliverySummary" class="confirmedDeliverySummary glassCard" hidden aria-label="Entrega confirmada">
+          <span class="blackCheck" aria-hidden="true">✓</span>
+          <div><strong>Entrega confirmada</strong><span id="confirmedDeliveryText">Tu dirección y método de entrega están listos.</span></div>
+          <button id="editDeliveryButton" type="button">Editar</button>
         </section>
 
+        <div id="paymentView" hidden>
         <h2 id="paymentSectionTitle" class="paymentSectionTitle">Finaliza tu pago</h2>
         <section id="paymentGlass" class="paymentGlass isStripe">
           <div id="nequiPane" class="nequiPane" hidden>
@@ -1337,7 +1383,7 @@ img{display:block;max-width:100%}
             <label class="referenceLabel" for="nequiReference">Número de referencia Nequi *
               <input id="nequiReference" class="compactInput" inputmode="numeric" placeholder="Ingresa el número de referencia" required aria-required="true">
             </label>
-            <button id="confirmNequiButton" class="confirmPayment" type="button" disabled>Confirmar que ya pagué</button>
+            <button id="confirmNequiButton" class="confirmPayment" type="button" disabled>Continuar a revisión</button>
             <p class="pendingNote">Verificaremos el pago antes de confirmar tu pedido.</p>
           </div>
 
@@ -1384,10 +1430,29 @@ img{display:block;max-width:100%}
                 <span id="totalValue" class="summaryTotalValue">$0</span>
               </div>
             </div>
-            <button id="stripePayButton" class="stripePayButton" type="button" disabled>Pagar de forma segura</button>
+            <button id="stripePayButton" class="stripePayButton" type="button" disabled>Continuar a revisión</button>
             <div id="stripeError" class="stripeError" role="alert" aria-live="polite"></div>
             <div class="stripeTrust"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Pago seguro y cifrado</div>
           </div>
+        </section>
+        </div>
+
+        <section id="reviewView" class="reviewCheckout" hidden aria-label="Revisión del pedido">
+          <h2 class="paymentSectionTitle">Revisa tu pedido</h2>
+          <div class="reviewGlass glassCard">
+            <div class="reviewConfirmRow"><span class="blackCheck">✓</span><div><strong>Entrega</strong><span id="reviewDeliveryText"></span></div><button type="button" data-review-edit="delivery">Editar</button></div>
+            <div class="reviewConfirmRow"><span class="blackCheck">✓</span><div><strong>Pago</strong><span id="reviewPaymentText"></span></div><button type="button" data-review-edit="payment">Editar</button></div>
+          </div>
+          <div id="reviewOrderItems" class="reviewOrderItems"></div>
+          <div class="paymentSummary reviewTotals glassCard">
+            <div class="summaryLine"><span>Subtotal</span><span id="reviewSubtotalValue" class="summaryValue">$0</span></div>
+            <div class="summaryLine"><span>Entrega</span><span id="reviewDeliveryValue" class="summaryValue">$0</span></div>
+            <div class="summaryDivider"></div>
+            <div class="summaryTotal"><span class="summaryTotalLabel">Total</span><span id="reviewTotalValue" class="summaryTotalValue">$0</span></div>
+          </div>
+          <button id="submitOrderButton" class="stripePayButton" type="button">Enviar pago</button>
+          <div id="reviewError" class="stripeError" role="alert" aria-live="polite"></div>
+          <div class="stripeTrust"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Pago seguro y cifrado</div>
         </section>
 
         <div class="panelActions">
@@ -1406,6 +1471,16 @@ img{display:block;max-width:100%}
       </section>
     </div>
   </main>
+</div>
+
+<div id="addressConfirmation" class="addressConfirmation" role="dialog" aria-modal="true" aria-labelledby="addressConfirmationTitle" hidden>
+  <div class="addressSheet glassCard">
+    <span class="blackCheck addressSheetCheck">✓</span>
+    <h2 id="addressConfirmationTitle">Confirma tu dirección</h2>
+    <p id="addressConfirmationText"></p>
+    <button id="addressConfirmYes" class="confirmPayment" type="button">Sí, confirmar entrega</button>
+    <button id="addressConfirmEdit" class="secondaryButton" type="button">Editar dirección</button>
+  </div>
 </div>
 
 <div id="deliveryHelp" class="deliveryHelp" role="dialog" aria-modal="true" aria-labelledby="deliveryHelpTitle">
@@ -1492,6 +1567,7 @@ img{display:block;max-width:100%}
   ];
   let selectedDelivery = "";
   let selectedPayment = "stripe";
+  let checkoutView = "delivery";
   let nequiPhone = "";
   let stripePublishableKey = "";
   let stripeClient = null;
@@ -1721,11 +1797,14 @@ img{display:block;max-width:100%}
     if ($("headerTotal")) $("headerTotal").textContent = money(total);
     if ($("nequiAmount")) $("nequiAmount").textContent = `${money(total)} COP`;
     if ($("nequiSubtotal")) $("nequiSubtotal").textContent = money(subtotal);
+    if ($("reviewSubtotalValue")) $("reviewSubtotalValue").textContent = money(subtotal);
+    if ($("reviewDeliveryValue")) $("reviewDeliveryValue").textContent = money(deliveryFee);
+    if ($("reviewTotalValue")) $("reviewTotalValue").textContent = money(total);
     renderShipmentCharges("bagShipmentCharges", chargeRows);
     renderShipmentCharges("nequiShipmentCharges", chargeRows);
     renderShipmentCharges("stripeShipmentCharges", chargeRows);
     renderDeliveryQuoteBreakdown(profile, quoteReady, total);
-    if ($("stripePayButton")) $("stripePayButton").textContent = `Pagar ${money(total)} COP`;
+    if ($("stripePayButton")) $("stripePayButton").textContent = "Continuar a revisión";
     const quoteStatus = $("deliveryQuoteStatus");
     if (quoteStatus && profile.hasNational) {
       const destinationReady = Boolean(
@@ -1753,7 +1832,7 @@ img{display:block;max-width:100%}
     updateNequiConfirmAvailability();
   }
 
-  let activeStep = "bag";
+  let activeStep = "payment";
   let paymentTimer = null;
 
   function readJson(key, fallback) {
@@ -2781,6 +2860,7 @@ img{display:block;max-width:100%}
       });
 
     hydrateCheckoutReviews(cart.items);
+    renderCheckoutFlow();
     syncPanelHeight();
   }
 
@@ -3004,6 +3084,102 @@ img{display:block;max-width:100%}
     if ($("reviewEmail")) $("reviewEmail").textContent = email || "Correo pendiente";
   }
 
+  function deliveryModeName(mode) {
+    return mode === "pickup" ? "Pronto" : mode === "fast" ? "Rápido" : "Libéralo";
+  }
+
+  function setCheckoutDeliveryMode(mode) {
+    const normalized = normalizeDeliveryMode(mode);
+    const cart = readCart();
+    if (!cart.items.length) return showToast("Tu bolsa está vacía.");
+    if (cart.items.some(item => !allowedDeliveryModes(item).includes(normalized))) {
+      return showToast(`${deliveryModeName(normalized)} no está disponible para todos los productos de esta bolsa.`);
+    }
+    cart.items.forEach(item => {
+      item.allowedDeliveryModes = allowedDeliveryModes(item);
+      item.selectedDeliveryMode = normalized;
+      item.deliveryMode = normalized;
+    });
+    if (normalized !== "pickup") selectedDelivery = "";
+    else if (!["pickup", "moto"].includes(selectedDelivery)) selectedDelivery = "";
+    deliveryQuote = null;
+    quoteDestinationKey = "";
+    saveCart(cart);
+    if (normalized === "pickup") requestAnimationFrame(() => $("prontoReceivingChoice")?.scrollIntoView({ behavior: "smooth", block: "center" }));
+  }
+
+  function renderReviewCheckout() {
+    const cart = readCart();
+    const fee = checkoutDeliveryFee();
+    const destination = completeDeliveryAddress() || $("deliveryCity")?.value.trim() || "dirección confirmada";
+    const deliveryText = `${deliverySummaryLabel(cart)} · ${destination}`;
+    if ($("confirmedDeliveryText")) $("confirmedDeliveryText").textContent = deliveryText;
+    if ($("reviewDeliveryText")) $("reviewDeliveryText").textContent = deliveryText;
+    if ($("reviewPaymentText")) $("reviewPaymentText").textContent = selectedPayment === "nequi" ? "Nequi" : "Tarjeta · Stripe seguro";
+    if ($("reviewSubtotalValue")) $("reviewSubtotalValue").textContent = money(cart.total);
+    if ($("reviewDeliveryValue")) $("reviewDeliveryValue").textContent = money(fee);
+    if ($("reviewTotalValue")) $("reviewTotalValue").textContent = money(cart.total + fee);
+    if ($("reviewOrderItems")) $("reviewOrderItems").innerHTML = cart.items.map(item => `
+      <article class="reviewOrderItem">
+        ${productImage(item)}
+        <div><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(deliveryModeLabel(item))} · Cant. ${item.quantity}</span></div>
+        <b>${money(item.unitPrice * item.quantity)}</b>
+      </article>`).join("");
+    const submit = $("submitOrderButton");
+    if (submit) {
+      submit.textContent = selectedPayment === "nequi" ? "Enviar pago Nequi" : `Enviar pago ${money(checkoutTotal())} COP`;
+      submit.disabled = selectedPayment === "stripe" ? !stripeCanConfirm : !$("nequiReference")?.value.trim();
+    }
+  }
+
+  function renderCheckoutFlow() {
+    const cart = readCart();
+    const quoteReady = deliveryPlanSelectionsComplete(cart) && deliveryQuoteMatchesCart(cart);
+    document.querySelectorAll("[data-checkout-delivery]").forEach(button => {
+      const mode = normalizeDeliveryMode(button.dataset.checkoutDelivery);
+      button.disabled = !(cart.items.length && cart.items.every(item => allowedDeliveryModes(item).includes(mode)));
+      button.classList.toggle("isSelected", Boolean(cart.items.length) && cart.items.every(item => normalizeDeliveryMode(item.selectedDeliveryMode) === mode));
+    });
+    $("deliveryView").hidden = checkoutView !== "delivery";
+    $("paymentView").hidden = !["stripe", "nequi"].includes(checkoutView);
+    $("reviewView").hidden = checkoutView !== "review";
+    $("confirmedDeliverySummary").hidden = checkoutView === "delivery" || !quoteReady;
+    $("deliveryGlass")?.classList.toggle("isConfirmed", checkoutView === "delivery" && quoteReady);
+    $("stripePane").hidden = checkoutView !== "stripe";
+    $("nequiPane").hidden = checkoutView !== "nequi";
+    $("paymentGlass").classList.toggle("isStripe", checkoutView === "stripe");
+    document.querySelectorAll("[data-step][data-method]").forEach(tab => {
+      const active = tab.dataset.method === checkoutView;
+      tab.classList.toggle("isActive", active);
+      active ? tab.setAttribute("aria-current", "step") : tab.removeAttribute("aria-current");
+    });
+    renderReviewCheckout();
+    syncPanelHeight();
+  }
+
+  function openAddressConfirmation() {
+    if (!validatePaymentDetails() || !validateDeliveryConfirmationFields()) return;
+    $("addressConfirmationText").textContent = `${completeDeliveryAddress()}, ${$("deliveryCity")?.value.trim() || ""}. ${deliverySummaryLabel()}`;
+    $("addressConfirmation").hidden = false;
+  }
+
+  function openCheckoutView(view) {
+    if (["stripe", "nequi", "review"].includes(view) && !deliveryQuoteMatchesCart()) {
+      showToast("Confirma la entrega antes de continuar al pago.");
+      checkoutView = "delivery";
+      return renderCheckoutFlow();
+    }
+    if (view === "review") {
+      if (selectedPayment === "stripe" && !stripeCanConfirm) return showToast("Completa los datos de tu tarjeta.");
+      if (selectedPayment === "nequi" && !$("nequiReference")?.value.trim()) return showToast("Ingresa la referencia de tu pago Nequi.");
+    }
+    checkoutView = view;
+    if (view === "stripe" || view === "nequi") selectedPayment = view;
+    renderCheckoutFlow();
+    if (view === "stripe") { syncBillingAddressMode(); syncPaymentInBackground(); }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   customerFields.forEach(field => {
     $(field)?.addEventListener("input", saveCustomer);
   });
@@ -3059,10 +3235,6 @@ img{display:block;max-width:100%}
   }
 
   function goToStep(step, options = {}) {
-    if(step==="payment"&&!deliveryPlanSelectionsComplete()){
-      showToast(checkoutFulfillmentProfile().hasPronto&&!["pickup","moto"].includes(selectedDelivery)?"Elige recoger en punto o moto para tu pedido Pronto.":"Selecciona la entrega de cada producto.");
-      return false;
-    }
     const index = STEPS.indexOf(step);
 
     if (index < 0) {
@@ -3253,6 +3425,7 @@ img{display:block;max-width:100%}
       !deliveryPlanSelectionsComplete(cart) ||
       !deliveryQuoteMatchesCart(cart) ||
       !$("nequiReference")?.value.trim();
+    if (checkoutView === "review") renderReviewCheckout();
   }
 
   function checkoutPayload() {
@@ -3333,17 +3506,15 @@ img{display:block;max-width:100%}
 
   function syncDeliveryConfirmationUi() {
     const button = $("confirmDeliveryButton");
-    const paymentTitle = $("paymentSectionTitle");
-    const paymentGlass = $("paymentGlass");
-    if (!button || !paymentTitle || !paymentGlass) return;
+    if (!button) return;
     const awaitingConfirmation =
       deliveryQuoteRequiresConfirmation() &&
       !deliveryQuoteMatchesCart();
-    button.hidden = !awaitingConfirmation;
+    const ready = deliveryPlanSelectionsComplete() && deliveryQuoteMatchesCart();
+    button.hidden = ready;
     button.disabled = deliveryQuotePending;
     button.textContent = deliveryQuotePending ? "Confirmando entrega…" : "Confirmar entrega";
-    paymentTitle.hidden = false;
-    paymentGlass.hidden = false;
+    if ($("continueToPaymentButton")) $("continueToPaymentButton").hidden = !ready;
     const quoteStatus = $("deliveryQuoteStatus");
     const hasFieldError = Boolean(document.querySelector(".shippingFields .deliveryField.hasError"));
     if (awaitingConfirmation && quoteStatus && !deliveryQuotePending) {
@@ -3353,6 +3524,7 @@ img{display:block;max-width:100%}
           "Completa tus datos y selecciona Confirmar entrega.";
       }
     }
+    renderCheckoutFlow();
     syncPanelHeight();
   }
 
@@ -3553,7 +3725,7 @@ img{display:block;max-width:100%}
   }
 
 function updateStripePayAvailability() {
-  $("stripePayButton").disabled = !checkoutActions || !paymentElement;
+  $("stripePayButton").disabled = !checkoutActions || !paymentElement || !stripeCanConfirm || !deliveryQuoteMatchesCart();
 }
 
   function billingAddress() {
@@ -3713,7 +3885,7 @@ if (!returnedShippingOptionId) {
       stripeCanConfirm = false;
       updateStripePayAvailability();
       checkoutElements.on("change", session => {
-        $("stripePayButton").textContent = `Pagar ${money(checkoutTotal())} COP`;
+        $("stripePayButton").textContent = "Continuar a revisión";
         stripeCanConfirm = Boolean(session.canConfirm);
         if (stripeCanConfirm) errorBox.textContent = "";
         updateStripePayAvailability();
@@ -3740,7 +3912,7 @@ if (!returnedShippingOptionId) {
   }
 
   async function submitStripePayment() {
-    const button = $("stripePayButton");
+    const button = checkoutView === "review" ? $("submitOrderButton") : $("stripePayButton");
     const errorBox = $("stripeError");
     const originalLabel = button.textContent;
     button.disabled = true;
@@ -3759,9 +3931,11 @@ if (!returnedShippingOptionId) {
     } catch (error) {
       if (![CART_ITEM_UNAVAILABLE_CODE, PRONTO_LOCATION_UNAVAILABLE_CODE].includes(error?.code)) {
         errorBox.textContent = error?.message || "No pudimos procesar el pago.";
+        if ($("reviewError")) $("reviewError").textContent = errorBox.textContent;
       }
       button.textContent = originalLabel;
       updateStripePayAvailability();
+      renderReviewCheckout();
     }
   }
 
@@ -3773,7 +3947,7 @@ if (!returnedShippingOptionId) {
       showToast("Ingresa el número de referencia Nequi.");
       return;
     }
-    const button = $("confirmNequiButton");
+    const button = checkoutView === "review" ? $("submitOrderButton") : $("confirmNequiButton");
     button.disabled = true;
     button.textContent = "Registrando pedido…";
     try {
@@ -3796,7 +3970,8 @@ if (!returnedShippingOptionId) {
     } catch (error) {
       console.error("[CajaModa] Nequi order error:", error);
       button.disabled = false;
-      button.textContent = "Confirmar que ya pagué";
+      button.textContent = checkoutView === "review" ? "Enviar pago" : "Continuar a revisión";
+      renderReviewCheckout();
       if (![CART_ITEM_UNAVAILABLE_CODE, PRONTO_LOCATION_UNAVAILABLE_CODE].includes(error?.code)) {
         showToast(error?.code === "PAYMENT_PREPARATION_FAILED" ? PAYMENT_PREPARATION_ERROR : error?.message || PAYMENT_PREPARATION_ERROR);
       }
@@ -4201,19 +4376,8 @@ if (!returnedShippingOptionId) {
     .querySelectorAll("[data-step]")
     .forEach(tab => {
       tab.onclick = () => {
-        if (tab.dataset.method) {
-          selectedPayment = tab.dataset.method;
-          $("nequiPane").hidden = selectedPayment !== "nequi";
-          $("stripePane").hidden = selectedPayment !== "stripe";
-          $("paymentGlass").classList.toggle("isStripe", selectedPayment === "stripe");
-        }
         if (!goToStep(tab.dataset.step)) return;
-        if (!deliveryQuoteMatchesCart()) scheduleDeliveryQuote();
-        if (selectedPayment === "stripe" && tab.dataset.method === "stripe") {
-          syncBillingAddressMode();
-            syncPaymentInBackground();
-          syncPanelHeight();
-        }
+        openCheckoutView(tab.dataset.method || "delivery");
       };
     });
 
@@ -4236,13 +4400,24 @@ if (!returnedShippingOptionId) {
   });
 
   $("backToContactButton").onclick = () => {
-    goToStep("bag");
+    openCheckoutView("delivery");
   };
 
-  $("confirmNequiButton").onclick = submitNequiPayment;
-  $("confirmDeliveryButton").onclick = confirmDeliveryQuote;
+  document.querySelectorAll("[data-checkout-delivery]").forEach(button => {
+    button.onclick = () => setCheckoutDeliveryMode(button.dataset.checkoutDelivery);
+  });
+  $("confirmNequiButton").onclick = () => openCheckoutView("review");
+  $("confirmDeliveryButton").onclick = openAddressConfirmation;
+  $("addressConfirmYes").onclick = async () => { $("addressConfirmation").hidden = true; await confirmDeliveryQuote(); };
+  $("addressConfirmEdit").onclick = () => { $("addressConfirmation").hidden = true; $("deliveryAddress")?.focus(); };
+  $("continueToPaymentButton").onclick = () => openCheckoutView("stripe");
+  $("editDeliveryButton").onclick = () => openCheckoutView("delivery");
+  document.querySelectorAll("[data-review-edit]").forEach(button => {
+    button.onclick = () => openCheckoutView(button.dataset.reviewEdit === "delivery" ? "delivery" : selectedPayment);
+  });
   $("nequiReference")?.addEventListener("input", updateNequiConfirmAvailability);
-  $("stripePayButton").onclick = submitStripePayment;
+  $("stripePayButton").onclick = () => openCheckoutView("review");
+  $("submitOrderButton").onclick = () => selectedPayment === "nequi" ? submitNequiPayment() : submitStripePayment();
   $("billingSame")?.addEventListener("change", () => {
     syncBillingAddressMode();
   });
@@ -4409,7 +4584,11 @@ if (!returnedShippingOptionId) {
     window.CajaModaBagPreview?.close();
 
     if (activeStep === "payment") {
-      goToStep("bag");
+      if (checkoutView !== "delivery") {
+        openCheckoutView(checkoutView === "review" ? selectedPayment : "delivery");
+        return;
+      }
+      location.href = "/";
       return;
     }
 
@@ -4519,12 +4698,13 @@ if (!returnedShippingOptionId) {
   },"*");
 
   goToStep(
-    "bag",
+    "payment",
     {
       skipValidation: true,
       scroll: false
     }
   );
+  renderCheckoutFlow();
 })();
 </script>
 

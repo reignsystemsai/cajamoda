@@ -3828,7 +3828,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
     const divisor = Number(session.minorUnitsAmountDivisor || 100);
     if (Number.isFinite(minorUnits) && divisor > 0) {
       stripeSessionTotalMinorUnits = minorUnits;
-      stripeSessionTotalAmount = formattedAmount || money(minorUnits / divisor);
+      stripeSessionTotalAmount = formattedAmount.replace(/([,.])00(?=\s*COP$)/i, "") || money(minorUnits / divisor);
       if (stripeSessionTotalMatchesCheckout()) {
         if ($("totalValue")) $("totalValue").textContent = stripeSessionTotalAmount;
         if ($("reviewTotalValue")) $("reviewTotalValue").textContent = stripeSessionTotalAmount;

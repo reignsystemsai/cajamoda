@@ -3251,7 +3251,12 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
     checkoutView = view;
     if (view === "stripe" || view === "nequi") selectedPayment = view;
     renderCheckoutFlow();
-    if (view === "stripe") { syncBillingAddressMode(); syncPaymentInBackground(); }
+    if (view === "stripe") {
+      $("stripeError").textContent = "";
+      if ($("reviewError")) $("reviewError").textContent = "";
+      syncBillingAddressMode();
+      syncPaymentInBackground();
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -3814,10 +3819,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
   function updateStripePayAvailability() {
     $("stripePayButton").disabled = !checkoutActions ||
       !paymentElement ||
-      !deliveryQuoteMatchesCart() ||
-      stripeSessionUpdating ||
-      stripeSessionCartKey !== currentDeliveryQuoteKey() ||
-      !stripeSessionTotalMatchesCheckout();
+      !deliveryQuoteMatchesCart();
   }
 
   function applyStripeSession(session) {
@@ -3992,7 +3994,6 @@ if (!returnedShippingOptionId) {
     }
     void syncStripeCheckoutSession().catch(error => {
       console.error("[CajaModa] Stripe Checkout update error:", error);
-      $("stripeError").textContent = stripeCustomerError(error);
       updateStripePayAvailability();
     });
   }
@@ -4269,14 +4270,14 @@ if (!returnedShippingOptionId) {
     syncPanelHeight();
   }
 
-  function renderCitySuggestions() {
+  function renderCitySuggestions(showAll = false) {
     const input = $("deliveryCity");
     const panel = $("citySuggestionPanel");
     if (!input || !panel || !$("deliveryDepartment")?.value) {
       clearAutocompletePanel("deliveryCity", "citySuggestionPanel");
       return;
     }
-    const query = normalizeLocationChoice(input.value);
+    const query = showAll ? "" : normalizeLocationChoice(input.value);
     const matches = deliveryCities
       .filter(city => !query || normalizeLocationChoice(city.name).includes(query));
     panel.innerHTML = "";
@@ -4293,7 +4294,10 @@ if (!returnedShippingOptionId) {
       name.className = "autocompletePrimary";
       name.textContent = city.name;
       button.append(name);
-      button.addEventListener("pointerdown", event => event.preventDefault());
+      button.addEventListener("pointerdown", event => {
+        event.preventDefault();
+        selectDeliveryCity(city);
+      });
       button.addEventListener("click", () => selectDeliveryCity(city));
       panel.append(button);
     });
@@ -4642,7 +4646,7 @@ if (!returnedShippingOptionId) {
   $("deliveryCity")?.addEventListener("focus", renderCitySuggestions);
   $("cityDropdownButton")?.addEventListener("click", () => {
     $("deliveryCity")?.focus();
-    renderCitySuggestions();
+    renderCitySuggestions(true);
   });
   $("deliveryCity")?.addEventListener("input", () => {
     $("deliveryCityDaneCode").value = "";

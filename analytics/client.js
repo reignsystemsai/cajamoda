@@ -330,3 +330,7 @@
     flush(true);
   });
 })();
+
+if (window.location.pathname.startsWith("/checkout")) {
+  import("/src/checkout-ui-refinement.js");
+}

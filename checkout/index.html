@@ -3937,7 +3937,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
     }
     const synchronizedKey = currentDeliveryQuoteKey();
     const expectedAmountTotal = Math.round(checkoutTotal() * 100);
-let returnedShippingOptionId = "";
+    let returnedShippingOptionId = "";
     stripeSessionCartKey = "";
     updateStripePayAvailability();
     const update = async () => {
@@ -3946,12 +3946,10 @@ let returnedShippingOptionId = "";
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({ ...checkoutPayload(), sessionId: stripeSessionId })
       });
-      const result = await response.json().catch(() => ({}));
+      const result = await response.clone().json().catch(() => ({}));
       if (!response.ok || result?.ok !== true) throw paymentPreparationFailure(result);
-     returnedShippingOptionId = String(result.shippingOptionId || "");
-if (!returnedShippingOptionId) {
-  throw new Error("No se pudo agregar el costo de entrega.");
-}
+      returnedShippingOptionId = String(result.shippingOptionId || "");
+      return response;
     };
     stripeSessionUpdate = stripeSessionUpdate.catch(() => {}).then(async () => {
       stripeSessionUpdating = true;
@@ -3959,11 +3957,14 @@ if (!returnedShippingOptionId) {
       try {
         const result = await checkoutActions.runServerUpdate(update);
         if (result?.type === "error") throw result.error || new Error(PAYMENT_PREPARATION_ERROR);
-        const shippingResult = await checkoutActions.updateShippingOption(returnedShippingOptionId);
-        if (shippingResult?.type === "error") {
-          throw shippingResult.error || new Error("No se pudo seleccionar el costo de entrega en Stripe.");
-        }
         applyStripeSession(await Promise.resolve(checkoutActions.getSession()));
+        if (!stripeSessionTotalMatchesCheckout() && returnedShippingOptionId) {
+          const shippingResult = await checkoutActions.updateShippingOption(returnedShippingOptionId);
+          if (shippingResult?.type === "error") {
+            throw shippingResult.error || new Error("No se pudo seleccionar el costo de entrega en Stripe.");
+          }
+          applyStripeSession(await Promise.resolve(checkoutActions.getSession()));
+        }
         if (!stripeSessionTotalMatchesCheckout() || stripeSessionTotalMinorUnits !== expectedAmountTotal) {
           const totalError = new Error("Stripe Checkout Session total does not match the confirmed order total.");
           totalError.code = "stripe_total_mismatch";

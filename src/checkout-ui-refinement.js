@@ -119,7 +119,7 @@
   }
 
   function hasProntoItems() {
-    return [...document.querySelectorAll("[data-cart-delivery='pickup']")].length > 0;
+    return document.querySelector("[data-cart-delivery='pickup'].selected") !== null;
   }
 
   function syncProductDeliveryUI() {
@@ -165,20 +165,17 @@
       receiving.before(gate);
     }
 
-    const showGate = hasProntoItems() && !addressReady();
-    gate.hidden = !showGate;
+    const hidden = !(hasProntoItems() && !addressReady());
+    if (gate.hidden !== hidden) gate.hidden = hidden;
   }
 
   function syncProntoReceivingUI() {
-    const ready = addressReady();
-    const hasPronto = hasProntoItems();
-    const shouldShow = hasPronto && ready;
-
+    const shouldShow = hasProntoItems() && addressReady();
+    const hidden = !shouldShow;
     const receiving = document.getElementById("prontoReceivingChoice");
     const bagReceiving = document.getElementById("bagProntoReceivingChoice");
-    if (receiving) receiving.hidden = !shouldShow;
-    if (bagReceiving) bagReceiving.hidden = !shouldShow;
-
+    if (receiving && receiving.hidden !== hidden) receiving.hidden = hidden;
+    if (bagReceiving && bagReceiving.hidden !== hidden) bagReceiving.hidden = hidden;
     ensureProntoGate();
   }
 

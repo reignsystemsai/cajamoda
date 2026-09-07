@@ -3178,7 +3178,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
     if (submit) {
       submit.textContent = selectedPayment === "nequi" ? "Enviar pago Nequi" : `Enviar pago ${money(checkoutTotal())} COP`;
       submit.disabled = selectedPayment === "stripe"
-        ? !checkoutActions || !paymentElement || !deliveryQuoteMatchesCart()
+        ? !checkoutActions || !paymentElement
         : !$("nequiReference")?.value.trim();
     }
   }
@@ -4104,40 +4104,16 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
     errorBox.textContent = "";
     button.textContent = "Procesando pago…";
     try {
-      if (!checkoutElements || !checkoutActions || !paymentElement) throw new Error("El formulario de Stripe todavía está cargando.");
-  
-      const customer = collectCustomer();
-      const firstName = customer.customerFirstName;
-      const lastName = customer.customerLastName;
-      if (stripeSessionCartKey !== currentDeliveryQuoteKey() || !stripeSessionTotalMatchesCheckout()) {
-        await syncStripeCheckoutSession();
-      }
-      const currentSession = await Promise.resolve(checkoutActions.getSession());
-      applyStripeSession(currentSession);
-      if (!stripeSessionTotalMatchesCheckout()) {
-        const totalError = new Error("Stripe Checkout Session total does not match the confirmed order total.");
-        totalError.code = "stripe_total_mismatch";
-        throw totalError;
-      }
-      const confirmOptions = {
-        billingAddress: { name: `${firstName} ${lastName}`, address: billingAddress() }
-      };
-      if (customer.email) confirmOptions.email = customer.email;
-      const result = await checkoutActions.confirm(confirmOptions);
+      if (!checkoutActions || !paymentElement) throw new Error("El formulario de Stripe todavía está cargando.");
+      const result = await checkoutActions.confirm();
       if (result?.type === "error") throw result.error || result;
       location.href = `${location.origin}/order-confirmation/?stripeSessionId=${encodeURIComponent(stripeSessionId)}`;
     } catch (error) {
-      try {
-        if (checkoutActions?.getSession) {
-          applyStripeSession(await Promise.resolve(checkoutActions.getSession()));
-        }
-      } catch (_) {}
       if (![CART_ITEM_UNAVAILABLE_CODE, PRONTO_LOCATION_UNAVAILABLE_CODE].includes(error?.code)) {
         errorBox.textContent = stripeCustomerError(error);
         if ($("reviewError")) $("reviewError").textContent = errorBox.textContent;
       }
       button.textContent = originalLabel;
-      updateStripePayAvailability();
       renderReviewCheckout();
     }
   }

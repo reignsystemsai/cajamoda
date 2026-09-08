@@ -43,19 +43,89 @@ export function customerEnviaTrackingLabel(status) {
   return "Enviado";
 }
 
+const DEFAULT_CLOTHING_WEIGHT_KG = 0.5;
+
+export const CLOTHING_PACKAGE_PRESETS = Object.freeze([
+  Object.freeze({ name: "small", maxItems: 1, maxContentsWeightKg: 0.6, packagingWeightKg: 0.05, dimensions: Object.freeze({ length: 30, width: 25, height: 5 }) }),
+  Object.freeze({ name: "medium", maxItems: 2, maxContentsWeightKg: 1.2, packagingWeightKg: 0.08, dimensions: Object.freeze({ length: 35, width: 28, height: 10 }) }),
+  Object.freeze({ name: "large", maxItems: 4, maxContentsWeightKg: 2.2, packagingWeightKg: 0.15, dimensions: Object.freeze({ length: 40, width: 35, height: 15 }) }),
+  Object.freeze({ name: "xl", maxItems: 6, maxContentsWeightKg: 3.2, packagingWeightKg: 0.25, dimensions: Object.freeze({ length: 45, width: 40, height: 20 }) })
+]);
+
 export const STANDARD_CLOTHING_PARCEL = Object.freeze({
   type: "box",
   content: "Ropa para mujer",
   amount: 1,
   lengthUnit: "CM",
   weightUnit: "KG",
-  weight: 0.5,
-  dimensions: Object.freeze({
-    length: 30,
-    width: 25,
-    height: 5
-  })
+  weight: DEFAULT_CLOTHING_WEIGHT_KG + CLOTHING_PACKAGE_PRESETS[0].packagingWeightKg,
+  dimensions: CLOTHING_PACKAGE_PRESETS[0].dimensions
 });
+
+function lineUnitAmount(line) {
+  const amount = Number(
+    line?.price?.amount ||
+    line?.price_data?.unit_amount / 100 ||
+    line?.unitPrice ||
+    (typeof line?.price === "number" ? line.price : 0) ||
+    line?.amount ||
+    0
+  );
+  return Number.isFinite(amount) ? Math.max(0, amount) : 0;
+}
+
+function lineUnitWeightKg(line) {
+  const weight = Number(
+    line?.shippingWeightKg ||
+    line?.physicalProperties?.weight ||
+    line?.variant?.physicalProperties?.weight ||
+    0
+  );
+  return Number.isFinite(weight) && weight > 0 ? weight : DEFAULT_CLOTHING_WEIGHT_KG;
+}
+
+function clothingPackagePreset(items) {
+  const contentsWeight = items.reduce((total, item) => total + item.weightKg, 0);
+  return CLOTHING_PACKAGE_PRESETS.find(preset =>
+    items.length <= preset.maxItems && contentsWeight <= preset.maxContentsWeightKg
+  ) || CLOTHING_PACKAGE_PRESETS[CLOTHING_PACKAGE_PRESETS.length - 1];
+}
+
+function clothingParcel(items) {
+  const preset = clothingPackagePreset(items);
+  const contentsWeight = items.reduce((total, item) => total + item.weightKg, 0);
+  const declaredValue = items.reduce((total, item) => total + item.value, 0);
+  return {
+    type: "box",
+    content: "Ropa para mujer",
+    amount: 1,
+    lengthUnit: "CM",
+    weightUnit: "KG",
+    weight: Number((contentsWeight + preset.packagingWeightKg).toFixed(2)),
+    dimensions: { ...preset.dimensions },
+    declaredValue: Math.max(1, Math.round(declaredValue))
+  };
+}
+
+export function nationalShipmentParcels(lines = []) {
+  const items = [];
+  for (const line of Array.isArray(lines) ? lines : []) {
+    const quantity = Math.max(1, Math.floor(Number(line?.quantity || 1)));
+    const weightKg = lineUnitWeightKg(line);
+    const value = lineUnitAmount(line);
+    for (let index = 0; index < quantity; index += 1) {
+      items.push({ weightKg, value });
+    }
+  }
+  if (!items.length) return [{ ...STANDARD_CLOTHING_PARCEL, dimensions: { ...STANDARD_CLOTHING_PARCEL.dimensions }, declaredValue: 1 }];
+
+  const parcels = [];
+  const largestPreset = CLOTHING_PACKAGE_PRESETS[CLOTHING_PACKAGE_PRESETS.length - 1];
+  for (let index = 0; index < items.length; index += largestPreset.maxItems) {
+    parcels.push(clothingParcel(items.slice(index, index + largestPreset.maxItems)));
+  }
+  return parcels;
+}
 
 function selectedDeliveryMode(line) {
   return String(
@@ -118,15 +188,7 @@ export function groupWixOrderNationalLines(order = {}) {
 export function nationalLinesDeclaredValue(lines = []) {
   return (Array.isArray(lines) ? lines : []).reduce((total, line) => {
     const quantity = Math.max(1, Math.floor(Number(line?.quantity || 1)));
-    const amount = Number(
-      line?.price?.amount ||
-      line?.price_data?.unit_amount / 100 ||
-      line?.unitPrice ||
-      (typeof line?.price === "number" ? line.price : 0) ||
-      line?.amount ||
-      0
-    );
-    return total + (Number.isFinite(amount) ? Math.max(0, amount) * quantity : 0);
+    return total + lineUnitAmount(line) * quantity;
   }, 0);
 }
 
@@ -137,9 +199,17 @@ export function buildEnviaNationalPayload({
   carrier = "",
   service = "",
   declaredValue = 0,
+  packages = [],
   printFormat = "",
   printSize = ""
 } = {}) {
+  const shipmentPackages = Array.isArray(packages) && packages.length
+    ? packages
+    : [{
+        ...STANDARD_CLOTHING_PARCEL,
+        dimensions: { ...STANDARD_CLOTHING_PARCEL.dimensions },
+        declaredValue: Math.max(1, Math.round(Number(declaredValue) || 1))
+      }];
   const payload = {
     origin: {
       name: String(origin.name || ""),
@@ -159,10 +229,11 @@ export function buildEnviaNationalPayload({
       country: "CO",
       postalCode: String(destination.postalCode || "")
     },
-    packages: [{
-      ...STANDARD_CLOTHING_PARCEL,
-      declaredValue: Math.max(1, Math.round(Number(declaredValue) || 1))
-    }],
+    packages: shipmentPackages.map(parcel => ({
+      ...parcel,
+      dimensions: { ...parcel.dimensions },
+      declaredValue: Math.max(1, Math.round(Number(parcel.declaredValue) || 1))
+    })),
     shipment: {
       type: 1,
       carrier: String(carrier || ""),

@@ -10,6 +10,7 @@ import {
   groupNationalShipmentLines,
   groupWixOrderNationalLines,
   nationalLinesDeclaredValue,
+  nationalShipmentParcels,
   normalizeEnviaTrackingStatus,
   nationalShipmentDefinition,
   publicNationalShipmentPlan
@@ -1796,7 +1797,7 @@ async function enviaCarriers() {
   return [...new Set(names)].slice(0, 16);
 }
 
-async function quoteNationalDelivery(delivery, customer, declaredValue) {
+async function quoteNationalDelivery(delivery, customer, declaredValue, packages = []) {
   requireDeliveryEnvironment("national");
   const city = safeText(delivery?.city, 100);
   const state = safeText(delivery?.state, 5).toUpperCase();
@@ -1826,10 +1827,13 @@ async function quoteNationalDelivery(delivery, customer, declaredValue) {
       city: safeText(located.city, 20), state: safeText(located.state || state, 5), country: "CO",
       postalCode: verifiedPostalCode || safeText(located.postalCode || located.zipcode, 20)
     },
-    packages: [{
-      ...STANDARD_CLOTHING_PARCEL,
-      declaredValue: Math.max(1, Math.round(Number(declaredValue) || 1))
-    }],
+    packages: Array.isArray(packages) && packages.length
+      ? packages
+      : [{
+          ...STANDARD_CLOTHING_PARCEL,
+          dimensions: { ...STANDARD_CLOTHING_PARCEL.dimensions },
+          declaredValue: Math.max(1, Math.round(Number(declaredValue) || 1))
+        }],
     settings: { currency: "COP" },
     shipment: { type: 1, carrier }
   });
@@ -1911,7 +1915,8 @@ async function calculateDeliveryQuote(body, lines = []) {
           const quote = await quoteNationalDelivery(
             body?.delivery || {},
             body?.customer || {},
-            nationalLinesDeclaredValue(shipmentLines)
+            nationalLinesDeclaredValue(shipmentLines),
+            nationalShipmentParcels(shipmentLines)
           );
           return {
             ...quote,
@@ -5755,7 +5760,8 @@ async function handleGenerateEnviaLabel(request, response, orderId, shipmentType
     const quote = await quoteNationalDelivery(
       destination.delivery,
       destination.customer,
-      nationalLinesDeclaredValue(shipment.lines)
+      nationalLinesDeclaredValue(shipment.lines),
+      nationalShipmentParcels(shipment.lines)
     );
     if (!quote.carrier || !quote.service) {
       return sendError(response, 502, "Envia no devolvió una transportadora y servicio válidos.");
@@ -5781,6 +5787,7 @@ async function handleGenerateEnviaLabel(request, response, orderId, shipmentType
       carrier: quote.carrier,
       service: quote.service,
       declaredValue: nationalLinesDeclaredValue(shipment.lines),
+      packages: nationalShipmentParcels(shipment.lines),
       printFormat: ENVIA_PRINT_FORMAT,
       printSize: ENVIA_PRINT_SIZE
     });

@@ -4077,7 +4077,9 @@ body:not(.storefrontLoading) .storefrontLoader{
       [
         product.vibeId,
         product.vibe,
-        product.category
+        product.route,
+        product.raw?.vibeId,
+        product.raw?.vibe
       ]
         .filter(Boolean)
         .map(
@@ -4170,6 +4172,14 @@ body:not(.storefrontLoading) .storefrontLoader{
           product,
           productIndex
         ),
+
+      route:
+        product.vibeId ||
+        product.vibe ||
+        product.route ||
+        product.raw?.vibeId ||
+        product.raw?.vibe ||
+        "",
 
       productType:
         product.productType ||
@@ -6449,7 +6459,7 @@ scheduleBagAutoClose();
             storefrontCatalogReady = state.products.length > 0;
 
             saveJson(
-              "cajamoda-catalog",
+              "cajamoda-catalog-v2",
               state.products
             );
 
@@ -6508,7 +6518,7 @@ scheduleBagAutoClose();
               [...map.values()];
 
             saveJson(
-              "cajamoda-catalog",
+              "cajamoda-catalog-v2",
               state.products
             );
 
@@ -7113,7 +7123,7 @@ scheduleBagAutoClose();
 
       const cached =
         readJson(
-          "cajamoda-catalog",
+          "cajamoda-catalog-v2",
           []
         );
 
@@ -7160,7 +7170,7 @@ scheduleBagAutoClose();
 
   const cachedCatalog =
     readJson(
-      "cajamoda-catalog",
+      "cajamoda-catalog-v2",
       []
     );
 

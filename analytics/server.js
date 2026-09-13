@@ -214,7 +214,7 @@ function displayAction(eventType) {
   return labels[eventType] || safeText(eventType, 80).replaceAll("_", " ");
 }
 
-export function createAnalyticsService({ wix, getOrders, getProducts }) {
+export function createAnalyticsService({ wix, getOrders, getProducts, eventStore }) {
   let collectionReady = null;
   const activeSessions = new Map();
   const rateLimits = new Map();
@@ -436,8 +436,11 @@ export function createAnalyticsService({ wix, getOrders, getProducts }) {
 
   async function writeEvents(events, serverVerified = false) {
     if (!events.length) return 0;
-    await ensureCollection();
     const items = events.map(event => analyticsItem(event, serverVerified));
+    if (eventStore?.writeEvents) {
+      return eventStore.writeEvents(items);
+    }
+    await ensureCollection();
     await wix.dataItems.bulkSave(COLLECTION_ID, items);
     return items.length;
   }
@@ -514,6 +517,9 @@ export function createAnalyticsService({ wix, getOrders, getProducts }) {
   }
 
   async function queryEvents(since) {
+    if (eventStore?.queryEvents) {
+      return eventStore.queryEvents(since);
+    }
     await ensureCollection();
     let page = await wix.dataItems
       .query(COLLECTION_ID)
@@ -532,6 +538,9 @@ export function createAnalyticsService({ wix, getOrders, getProducts }) {
 
   async function findOrderContext(orderId) {
     if (!orderId) return null;
+    if (eventStore?.findOrderContext) {
+      return eventStore.findOrderContext(orderId);
+    }
     await ensureCollection();
     const result = await wix.dataItems
       .query(COLLECTION_ID)
@@ -695,8 +704,17 @@ export function createAnalyticsService({ wix, getOrders, getProducts }) {
       ? productsResult.value
       : [];
     const events = rawEvents.filter(event => eventDate(event.occurredAt) < selected.end);
+    const purchaseEvents = events.filter(event => event.eventType === "purchase" && event.serverVerified);
+    const verifiedOrderIds = new Set(
+      purchaseEvents.map(event => safeText(event.orderId, 150)).filter(Boolean)
+    );
     const orders = (Array.isArray(allOrders) ? allOrders : [])
-      .filter(order => paidOrder(order) && eventDate(order.date) >= since && eventDate(order.date) < selected.end);
+      .filter(order =>
+        paidOrder(order) &&
+        verifiedOrderIds.has(safeText(order.id, 150)) &&
+        eventDate(order.date) >= since &&
+        eventDate(order.date) < selected.end
+      );
     const eventCounts = new Map();
     for (const event of events) {
       eventCounts.set(event.eventType, (eventCounts.get(event.eventType) || 0) + 1);
@@ -706,7 +724,6 @@ export function createAnalyticsService({ wix, getOrders, getProducts }) {
     const checkoutSessions = new Set(
       events.filter(event => event.eventType === "checkout").map(event => event.sessionId).filter(Boolean)
     );
-    const purchaseEvents = events.filter(event => event.eventType === "purchase" && event.serverVerified);
     const purchaseByOrder = new Map(
       purchaseEvents.filter(event => event.orderId).map(event => [String(event.orderId), event])
     );

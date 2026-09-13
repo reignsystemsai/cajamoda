@@ -6259,6 +6259,43 @@ function creatorSlug(value) {
     .slice(0, 60);
 }
 
+async function getPublicCreatorLink(request, response, requestedSlug) {
+  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
+    return sendError(response, 503, "Creator links are not configured.");
+  }
+
+  const slug = creatorSlug(requestedSlug);
+  if (!slug || slug !== String(requestedSlug || "").toLowerCase()) {
+    return sendError(response, 404, "Creator link not found.");
+  }
+
+  const headers = { apikey: SUPABASE_SECRET_KEY, Accept: "application/json" };
+  if (SUPABASE_SECRET_KEY.startsWith("eyJ")) {
+    headers.Authorization = `Bearer ${SUPABASE_SECRET_KEY}`;
+  }
+  const result = await fetch(
+    `${SUPABASE_URL}/rest/v1/creator_applications?creator_slug=eq.${encodeURIComponent(slug)}&status=eq.approved&select=creator_slug&limit=1`,
+    { headers }
+  );
+  if (!result.ok) {
+    const detail = await result.text().catch(() => "");
+    console.error("[Creator link] Supabase read failed:", result.status, detail);
+    return sendError(response, 503, "Creator link verification is temporarily unavailable.");
+  }
+
+  const rows = await result.json();
+  if (!Array.isArray(rows) || !rows.length) {
+    return sendJson(response, 404, { ok: false, active: false });
+  }
+
+  sendJson(response, 200, {
+    ok: true,
+    active: true,
+    slug,
+    destination: "/"
+  });
+}
+
 async function updateCreatorApplication(request, response, applicationId) {
   if (!isAuthorized(request)) return sendError(response, 401, "Sign in to Store Loader.");
   if (!isPlatformAdmin(request)) return sendError(response, 403, "Creator management is reserved for CajaModa administration.");
@@ -7822,6 +7859,12 @@ const server =
 
         if(request.method === "POST" && url.pathname === "/api/creator-applications"){
           await handleCreatorApplication(request,response);
+          return;
+        }
+
+        const publicCreatorLinkMatch = url.pathname.match(/^\/api\/creator-links\/([a-z0-9]+(?:-[a-z0-9]+)*)$/i);
+        if(request.method === "GET" && publicCreatorLinkMatch){
+          await getPublicCreatorLink(request,response,publicCreatorLinkMatch[1]);
           return;
         }
 

@@ -265,7 +265,7 @@
         : "—";
       return '<tr>' +
         '<td><div class="creatorApplicant"><span class="creatorApplicantAvatar">' + escapeHtml(initials) + '</span><div><strong>' + escapeHtml(firstName + " " + lastName) + '</strong><span>' + escapeHtml(application.email || "") + '</span></div></div></td>' +
-        '<td>' + escapeHtml(application.city || "—") + '</td>' +
+        '<td>' + escapeHtml([application.city, application.department].filter(Boolean).join(", ") || "—") + '</td>' +
         '<td><a class="creatorLink" href="https://wa.me/' + encodeURIComponent(phoneDigits) + '" target="_blank" rel="noopener">WhatsApp</a></td>' +
         '<td><div class="creatorLinks">' + socialLinks + '</div></td>' +
         '<td>' + escapeHtml(application.heard_about || "—") + '</td>' +

@@ -144,9 +144,9 @@ const CARTAGENA_PICKUP_ADDRESS = "Cl. 35 #10-22, piso 1, local 1, San Diego, Car
 const STOREFRONT_URL = String(
   process.env.STOREFRONT_URL || "https://www.cajamoda.com"
 ).replace(/\/$/, "");
-const CREATOR_AGREEMENT_VERSION = "2026-09-13";
-const CREATOR_AGREEMENT_CONSENT = "I have read and agree to the CajaModa Creator Program Agreement, Terms and Conditions, and Privacy Policy. I understand that checking this box and selecting Accept and Continue constitutes my electronic signature. I consent to receive and retain these records electronically.";
-const CREATOR_AGREEMENT_TEXT = "CajaModa Creator Program Agreement. The creator participates as an independent creator, not as an employee, store owner, partner, agent, franchisee, or legal representative of CajaModa. Commission equals the creator tier percentage multiplied by the non-negative commissionable margin for each attributed, captured item: item sale price collected, excluding delivery, taxes and fees, minus CajaModa acquisition cost, minus COP 12,000 marketing reserve per item. Authorized but uncaptured payments remain pending and do not earn commission. Commissions earned from the 1st through the 15th are scheduled for payment on or about the last calendar day of that month. Commissions earned from the 16th through month-end are scheduled for payment on or about the 15th of the following month. The creator is responsible for complying with the laws, disclosures, taxes, and regulations of their country. Either party may terminate participation at any time. Fraud, theft, scams, chargebacks, manipulation, and unlawful conduct are prohibited; CajaModa may withhold or reverse related commissions, remove participants, and take lawful action to recover losses. CajaModa is a United States company and does not offer discretionary refunds, except where required by applicable law.";
+const CREATOR_AGREEMENT_VERSION = "2026-09-13-es";
+const CREATOR_AGREEMENT_CONSENT = "Declaro que he leído y acepto el Acuerdo del Programa de Creadoras de CajaModa, los Términos y Condiciones y la Política de Privacidad. Entiendo que al marcar esta casilla y seleccionar Aceptar y continuar realizo mi firma electrónica. Acepto recibir y conservar estos registros por medios electrónicos.";
+const CREATOR_AGREEMENT_TEXT = "Acuerdo del Programa de Creadoras CajaModa. La creadora participa como creadora independiente, no como empleada, propietaria de tienda, socia, agente, franquiciada ni representante legal de CajaModa. La comisión equivale al porcentaje del nivel de la creadora multiplicado por el margen comisionable no negativo de cada artículo atribuido y capturado: precio de venta cobrado por el artículo, sin entrega, impuestos ni cargos, menos el costo de adquisición de CajaModa y menos COP 12.000 de reserva de mercadeo por artículo. Los pagos autorizados pero no capturados permanecen pendientes y no generan comisión. Las comisiones ganadas del día 1 al 15 se programan para pagarse alrededor del último día calendario de ese mes. Las comisiones ganadas del día 16 al final del mes se programan para pagarse alrededor del día 15 del mes siguiente. La creadora es responsable de cumplir las leyes, divulgaciones, impuestos y regulaciones de su país. Cualquiera de las partes puede terminar la participación en cualquier momento. Se prohíben el fraude, robo, estafas, contracargos, manipulación y actividades ilegales; CajaModa puede retener o revertir las comisiones relacionadas, retirar participantes y tomar medidas legales para recuperar pérdidas. CajaModa es una empresa estadounidense y no ofrece reembolsos discrecionales, excepto cuando la ley aplicable los exija.";
 const CREATOR_AGREEMENT_SHA256 = crypto.createHash("sha256").update(CREATOR_AGREEMENT_TEXT).digest("hex");
 const CREATOR_ACCESS_TTL_MS = 48 * 60 * 60 * 1000;
 const CREATOR_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -6624,7 +6624,7 @@ async function completeCreatorOnboarding(request, response) {
   if (!acceptanceResponse.ok) {
     const detail = await acceptanceResponse.text().catch(() => "");
     console.error("[Creator agreement] Could not store acceptance:", acceptanceResponse.status, detail);
-    return sendError(response, 503, "We could not record your agreement acceptance.");
+    return sendError(response, 503, "No pudimos registrar la aceptación de tu acuerdo.");
   }
   const profileResponse = await fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?id=eq.${encodeURIComponent(profile.id)}`, {
     method: "PATCH",
@@ -6645,12 +6645,12 @@ async function completeCreatorOnboarding(request, response) {
     firstName: profile.first_name,
     lastName: profile.last_name,
     email: profile.email,
-    subject: "Your CajaModa Creator Program Agreement",
-    heading: "Your agreement is signed",
-    message: `We recorded your electronic acceptance of Creator Program Agreement version ${CREATOR_AGREEMENT_VERSION} on ${activatedAt}.`,
-    buttonLabel: "VIEW AGREEMENT",
+    subject: "Tu Acuerdo del Programa de Creadoras CajaModa",
+    heading: "Tu acuerdo está firmado",
+    message: `Registramos tu aceptación electrónica del Acuerdo del Programa de Creadoras, versión ${CREATOR_AGREEMENT_VERSION}, el ${activatedAt}.`,
+    buttonLabel: "VER MI ACUERDO",
     buttonUrl: `${STOREFRONT_URL}/creators/terms/`,
-    note: "Keep this email with your records.",
+    note: "Conserva este correo para tus registros.",
     idempotencyKey: `creator-agreement-${profile.id}-${CREATOR_AGREEMENT_VERSION}`
   }).catch(error => console.error("[Creator agreement] Confirmation email failed:", error));
   sendJson(response, 200, {
@@ -6662,10 +6662,10 @@ async function completeCreatorOnboarding(request, response) {
 
 async function updateCreatorPayoutAccount(request, response) {
   const profile = await creatorProfileForSession(request);
-  if (!profile) return sendError(response, 401, "Sign in to your creator account.");
+  if (!profile) return sendError(response, 401, "Inicia sesión en tu cuenta de creadora.");
   const body = await readBody(request);
   const method = safeText(body?.payoutMethod, 20).toLowerCase();
-  if (!["nequi", "paypal"].includes(method)) return sendError(response, 400, "Choose Nequi or PayPal.");
+  if (!["nequi", "paypal"].includes(method)) return sendError(response, 400, "Elige Nequi o PayPal.");
   let payout;
   try { payout = creatorPayoutDestination(method, body?.payoutDestination); }
   catch (error) { return sendError(response, 400, error.message); }
@@ -6674,7 +6674,7 @@ async function updateCreatorPayoutAccount(request, response) {
     headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" }),
     body: JSON.stringify({ creator_id: profile.id, method, destination: payout.destination, destination_masked: payout.masked, status: "verified", updated_at: new Date().toISOString() })
   });
-  if (!saved.ok) return sendError(response, 503, "We could not save your payment method.");
+  if (!saved.ok) return sendError(response, 503, "No pudimos guardar tu método de pago.");
   sendJson(response, 200, { ok: true, payout: { method, destination_masked: payout.masked, status: "verified" } });
 }
 

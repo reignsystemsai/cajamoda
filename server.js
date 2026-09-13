@@ -22,6 +22,7 @@ import {
 } from "@wix/sdk";
 
 import {
+  products,
   productsV3,
   inventoryItemsV3
 } from "@wix/stores";
@@ -213,6 +214,7 @@ const wix =
 
         modules: {
 
+          products,
           productsV3,
           inventoryItemsV3,
           categoriesV3,
@@ -5743,17 +5745,41 @@ async function getCreatorApplications() {
 
 async function getWixProductsForAnalytics() {
   if (!wix) return [];
-  const result = await wix.productsV3
-    .queryProducts({ fields: ["MEDIA_ITEMS_INFO", "THUMBNAIL"] })
-    .limit(100)
-    .find();
-  return (Array.isArray(result?.items) ? result.items : [])
-    .map(product => ({
-      productId: safeText(product?._id || product?.id, 120),
-      productName: safeText(product?.name, 300),
-      productImage: getProductImageUrl(product)
-    }))
-    .filter(product => product.productId);
+  const [v3Result, legacyResult] = await Promise.allSettled([
+    wix.productsV3
+      .queryProducts({ fields: ["MEDIA_ITEMS_INFO", "THUMBNAIL"] })
+      .limit(100)
+      .find(),
+    wix.products
+      .queryProducts()
+      .limit(100)
+      .find()
+  ]);
+  const v3Products = v3Result.status === "fulfilled" && Array.isArray(v3Result.value?.items)
+    ? v3Result.value.items
+    : [];
+  const legacyProducts = legacyResult.status === "fulfilled" && Array.isArray(legacyResult.value?.items)
+    ? legacyResult.value.items
+    : [];
+  const legacyById = new Map(
+    legacyProducts.map(product => [safeText(product?._id || product?.id, 120), product])
+  );
+  const productIds = [...new Set([
+    ...v3Products.map(product => safeText(product?._id || product?.id, 120)),
+    ...legacyProducts.map(product => safeText(product?._id || product?.id, 120))
+  ].filter(Boolean))];
+  const v3ById = new Map(
+    v3Products.map(product => [safeText(product?._id || product?.id, 120), product])
+  );
+  return productIds.map(productId => {
+    const current = v3ById.get(productId) || {};
+    const legacy = legacyById.get(productId) || {};
+    return {
+      productId,
+      productName: safeText(current?.name || legacy?.name, 300),
+      productImage: getProductImageUrl(current) || getProductImageUrl(legacy)
+    };
+  });
 }
 
 async function handleStoreOwnerAnalytics(request, response, url) {

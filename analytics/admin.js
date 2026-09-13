@@ -313,6 +313,24 @@
   function creatorReferralUrl(slug){return "https://www.cajamoda.com/"+encodeURIComponent(slug)}
   function creatorAction(id,status,label,className=""){return'<button class="creatorAction '+className+'" type="button" data-creator-id="'+escapeHtml(id)+'" data-creator-status="'+escapeHtml(status)+'">'+escapeHtml(label)+'</button>'}
   function creatorTierActions(p){return'<div class="creatorActions">'+[1,2,3].map(tier=>'<button class="creatorAction '+(p.tier===tier?'primary':'')+'" type="button" data-creator-id="'+escapeHtml(p.id)+'" data-creator-status="approved" data-creator-tier="'+tier+'">Nivel '+tier+'</button>').join("")+'</div>'}
+  function creatorProductsSold(products){const rows=Array.isArray(products)?products:[];return rows.length?rows.map(item=>{const name=item?.productName||item?.name||"Product";const quantity=Math.max(1,Number(item?.quantity||1));const size=item?.size||item?.selectedSize||"";return escapeHtml(name)+" × "+number(quantity)+(size?" · "+escapeHtml(size):"")}).join("<br>"):"—"}
+  function closeCreatorSales(){const modal=$("creatorSalesModal");if(modal)modal.hidden=true}
+  async function openCreatorSales(id,name){
+    const modal=$("creatorSalesModal"),body=$("creatorSalesRows");
+    if(!modal||!body)return;
+    modal.hidden=false;
+    setText("creatorSalesTitle",(name||"Creator")+" Sales");
+    setText("creatorSalesOrders","—");setText("creatorSalesRevenue","—");setText("creatorSalesCommission","—");
+    body.innerHTML='<tr><td class="creatorSalesEmpty" colspan="7">Loading paid sales…</td></tr>';
+    try{
+      const data=await request("/api/store-owner/creator-applications/"+encodeURIComponent(id)+"/sales");
+      setText("creatorSalesOrders",number(data.totals?.orders));
+      setText("creatorSalesRevenue",money(data.totals?.productSales));
+      setText("creatorSalesCommission",money(data.totals?.commission));
+      const rows=Array.isArray(data.sales)?data.sales:[];
+      body.innerHTML=rows.length?rows.map(sale=>'<tr><td>'+escapeHtml(sale.earned_at?new Intl.DateTimeFormat("en-US",{dateStyle:"medium",timeStyle:"short",timeZone:"America/Bogota"}).format(new Date(sale.earned_at)):"—")+'</td><td>'+escapeHtml(sale.order_id||"—")+'</td><td class="creatorSalesProducts">'+creatorProductsSold(sale.products)+'</td><td>'+money(sale.product_subtotal)+'</td><td>'+money(sale.commission_amount)+' <small>('+number(sale.commission_rate)+'%)</small></td><td>'+escapeHtml(String(sale.payment_method||"—").toUpperCase())+'</td><td><span class="creatorSalesStatus">'+escapeHtml(sale.status||"earned")+'</span></td></tr>').join(""):'<tr><td class="creatorSalesEmpty" colspan="7">No paid sales have been attributed to this creator yet.</td></tr>';
+    }catch(error){body.innerHTML='<tr><td class="creatorSalesEmpty" colspan="7">'+escapeHtml(error?.message||"Creator sales could not be loaded.")+'</td></tr>'}
+  }
   function renderCreatorNetwork(rows){
     const apps=(Array.isArray(rows)?rows:[]).map(application=>({application,person:creatorPerson(application)}));
     const incoming=apps.filter(x=>["new","verifying"].includes(x.person.status));
@@ -322,11 +340,15 @@
     const ib=$("creatorIncomingRows");
     if(ib)ib.innerHTML=incoming.length?incoming.map(({application,person:p})=>'<tr><td>'+creatorIdentity(p)+'</td><td>'+escapeHtml(p.location)+'</td><td><a class="creatorLink" href="https://wa.me/'+encodeURIComponent(p.phoneDigits)+'" target="_blank" rel="noopener">WhatsApp</a></td><td><div class="creatorLinks">'+creatorProfileLinks(p)+'</div></td><td>'+escapeHtml(application.heard_about||"—")+'</td><td><span class="creatorStatus">'+escapeHtml(p.status)+"</span></td><td><div class=\"creatorActions\">"+creatorAction(p.id,"verifying","Verificando")+creatorAction(p.id,"approved","Aprobar","primary")+creatorAction(p.id,"declined","No seleccionar","danger")+"</div></td></tr>").join(""):'<tr><td class="creatorEmpty" colspan="7">Las solicitudes nuevas aparecerán aquí automáticamente.</td></tr>';
     const sb=$("creatorSelectedRows");
-    if(sb)sb.innerHTML=selected.length?selected.map(({person:p})=>{const link=creatorReferralUrl(p.slug);const state=p.onboardingStatus==="active"?"Activa":p.onboardingStatus==="invited"?"Invitación enviada":"Pendiente";return'<tr><td>'+creatorIdentity(p)+'</td><td>'+escapeHtml(p.location)+'</td><td><div class="creatorShareLink"><code>'+escapeHtml(link)+'</code><button class="creatorAction" type="button" data-copy-creator-link="'+escapeHtml(link)+'">Copiar</button></div><span class="creatorStatus">'+escapeHtml(state)+'</span></td><td><span class="creatorStatus">Nivel '+number(p.tier)+'</span></td><td>'+number(p.commissionRate)+'%</td><td>'+creatorTierActions(p)+creatorAction(p.id,"declined","Desactivar","danger")+'</td></tr>'}).join(""):'<tr><td class="creatorEmpty" colspan="6">Las creadoras aprobadas aparecerán aquí.</td></tr>';
+    if(sb)sb.innerHTML=selected.length?selected.map(({person:p})=>{const link=creatorReferralUrl(p.slug);const state=p.onboardingStatus==="active"?"Activa":p.onboardingStatus==="invited"?"Invitación enviada":"Pendiente";return'<tr><td>'+creatorIdentity(p)+'</td><td>'+escapeHtml(p.location)+'</td><td><div class="creatorShareLink"><code>'+escapeHtml(link)+'</code><button class="creatorAction" type="button" data-copy-creator-link="'+escapeHtml(link)+'">Copiar</button></div><span class="creatorStatus">'+escapeHtml(state)+'</span></td><td><button class="creatorAction primary" type="button" data-creator-sales-id="'+escapeHtml(p.id)+'" data-creator-sales-name="'+escapeHtml(p.name)+'">View Sales</button><div>'+number(p.orders)+' orders · '+money(p.sales)+'</div></td><td><span class="creatorStatus">Nivel '+number(p.tier)+'</span></td><td>'+number(p.commissionRate)+'%</td><td>'+creatorTierActions(p)+creatorAction(p.id,"declined","Desactivar","danger")+'</td></tr>'}).join(""):'<tr><td class="creatorEmpty" colspan="7">Las creadoras aprobadas aparecerán aquí.</td></tr>';
     const rb=$("creatorRankingRows");if(rb)rb.innerHTML=ranked.length?ranked.map(({person:p},i)=>'<tr><td><span class="creatorRank">'+(i+1)+'</span></td><td>'+creatorIdentity(p)+'</td><td>'+number(p.visits)+'</td><td>'+number(p.orders)+'</td><td>'+money(p.sales)+'</td><td>'+percent(p.conversion/100)+'</td></tr>').join(""):'<tr><td class="creatorEmpty" colspan="6">El Top 10 aparecerá cuando las creadoras seleccionadas comiencen a generar actividad atribuida.</td></tr>'
   }
 
   document.addEventListener("click",async event=>{
+    const salesModal=$("creatorSalesModal");
+    if(event.target.closest("[data-close-creator-sales]")||event.target===salesModal){closeCreatorSales();return}
+    const salesButton=event.target.closest("[data-creator-sales-id]");
+    if(salesButton){await openCreatorSales(salesButton.dataset.creatorSalesId,salesButton.dataset.creatorSalesName);return}
     const copyButton=event.target.closest("[data-copy-creator-link]");
     if(copyButton){await navigator.clipboard.writeText(copyButton.dataset.copyCreatorLink||"");copyButton.textContent="Copiado";setTimeout(()=>copyButton.textContent="Copiar",1200);return}
     const button=event.target.closest("[data-creator-status]");

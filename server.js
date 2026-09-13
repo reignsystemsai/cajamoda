@@ -144,6 +144,9 @@ const CARTAGENA_PICKUP_ADDRESS = "Cl. 35 #10-22, piso 1, local 1, San Diego, Car
 const STOREFRONT_URL = String(
   process.env.STOREFRONT_URL || "https://www.cajamoda.com"
 ).replace(/\/$/, "");
+const CREATOR_AGREEMENT_VERSION = "2026-09-13";
+const CREATOR_ACCESS_TTL_MS = 48 * 60 * 60 * 1000;
+const CREATOR_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 const stripe = STRIPE_SECRET_KEY
   ? new Stripe(STRIPE_SECRET_KEY)
@@ -841,6 +844,7 @@ async function handleCreateStripeCheckout(request, response) {
     locale: "es",
     return_url: `${STOREFRONT_URL}/order-confirmation/?stripeSessionId={CHECKOUT_SESSION_ID}`,
     metadata: {
+      ...analytics.stripeMetadataFromContext(body?.analytics),
       source: "cajamoda-storefront",
       deliveryMethod,
       deliverySummary: safeText(delivery.title, 300),
@@ -1135,22 +1139,40 @@ async function syncCompletedStripeSession(session) {
   const sync = (async () => {
     if (!wix) throw new Error("Wix no está configurado para recibir el pedido.");
     if (session.payment_status !== "paid") return null;
-    const existing = await findStripeWixOrder(session.id);
-    if (existing) return existing;
-
     const lines = await getStripePurchasedLines(session);
-    const imported = await importStripeOrderIntoWix(session, lines);
-    if (imported.created) {
-      await decrementStripeInventory(lines);
+    let order = await findStripeWixOrder(session.id);
+    let created = false;
+    if (!order) {
+      const imported = await importStripeOrderIntoWix(session, lines);
+      order = imported.order;
+      created = imported.created;
+      if (created) await decrementStripeInventory(lines);
     }
-    await stripe.checkout.sessions.update(session.id, {
+    if (session?.metadata?.wixSync !== "complete") await stripe.checkout.sessions.update(session.id, {
       metadata: {
         ...session.metadata,
         wixSync: "complete",
-        wixOrderId: safeText(imported?.order?._id || imported?.order?.id, 80)
+        wixOrderId: safeText(order?._id || order?.id, 80)
       }
     });
-    return imported.order;
+    const orderId = safeText(order?._id || order?.id, 150);
+    const subtotal = lines.reduce((sum, line) => sum + line.amount * line.quantity, 0);
+    await analytics.recordPurchase({
+      externalId: session.id,
+      order,
+      stripeMetadata: session.metadata,
+      items: lines,
+      value: Number(session.amount_total || 0) / 100,
+      paymentMethod: "stripe"
+    });
+    await recordCreatorCommission({
+      orderId,
+      paymentMethod: "stripe",
+      productSubtotal: subtotal,
+      items: lines,
+      campaign: session?.metadata?.analyticsCampaign
+    });
+    return order;
   })();
   stripeSessionSyncLocks.set(session.id, sync);
   try {
@@ -1201,6 +1223,7 @@ function pendingNationalShipmentsFromEncodedPlan(value) {
 
 function stripeIntentMetadata(lines, body, delivery) {
   const metadata = {
+    ...analytics.stripeMetadataFromContext(body?.analytics),
     source: "cajamoda-custom-card",
     storeId: STORE_ID,
     itemCount: String(lines.length),
@@ -1386,19 +1409,25 @@ async function syncSucceededStripeIntent(paymentIntent) {
   if (existingSync) return existingSync;
   const sync = (async () => {
     if (!wix) throw new Error("Wix no está configurado para recibir el pedido.");
-if (!["succeeded", "requires_capture"].includes(paymentIntent.status) ||
-    paymentIntent?.metadata?.wixSync === "complete") return;
+    if (!["succeeded", "requires_capture"].includes(paymentIntent.status)) return;
     const latest = await stripe.paymentIntents.retrieve(paymentIntent.id);
-    if (latest?.metadata?.wixSync === "complete") return;
     const lines = stripeIntentLines(latest);
     if (!lines.length) throw new Error("Stripe devolvió un pedido sin productos verificables.");
-    const imported = await importStripeIntentIntoWix(latest, lines);
-    if (imported.created) await decrementStripeInventory(lines);
-    await stripe.paymentIntents.update(latest.id, { metadata: {
-      ...latest.metadata,
-      wixSync: "complete",
-      wixOrderId: safeText(imported?.order?._id || imported?.order?.id, 80)
-    } });
+    let order = await findStripeIntentWixOrder(latest.id);
+    if (!order) {
+      const imported = await importStripeIntentIntoWix(latest, lines);
+      order = imported.order;
+      if (imported.created) await decrementStripeInventory(lines);
+    }
+    if (latest?.metadata?.wixSync !== "complete") await stripe.paymentIntents.update(latest.id, { metadata: {
+        ...latest.metadata,
+        wixSync: "complete",
+        wixOrderId: safeText(order?._id || order?.id, 80)
+      } });
+    const orderId = safeText(order?._id || order?.id, 150);
+    const subtotal = lines.reduce((sum, line) => sum + line.amount * line.quantity, 0);
+    await analytics.recordPurchase({ externalId: latest.id, order, stripeMetadata: latest.metadata, items: lines, value: Number(latest.amount_received || latest.amount || 0) / 100, paymentMethod: "stripe" });
+    await recordCreatorCommission({ orderId, paymentMethod: "stripe", productSubtotal: subtotal, items: lines, campaign: latest?.metadata?.analyticsCampaign });
   })();
   stripeIntentSyncLocks.set(paymentIntent.id, sync);
   try {
@@ -2412,22 +2441,29 @@ async function handleConfirmNequiOrder(request, response, orderId) {
   nequiConfirmationLocks.set(orderId, confirmation);
   try {
     const confirmed = await confirmation;
+    const commissionItems = (Array.isArray(confirmed?.lineItems) ? confirmed.lineItems : [])
+      .map(normalizeWixOrderLineItem)
+      .map(line => ({
+        productId: line.productId,
+        productName: line.name,
+        productImage: line.image,
+        quantity: line.quantity,
+        value: 0
+      }));
     await analytics.recordPurchase({
       externalId: "nequi-" + orderId,
       order: confirmed,
-      items: (Array.isArray(confirmed?.lineItems) ? confirmed.lineItems : [])
-        .map(normalizeWixOrderLineItem)
-        .map(line => ({
-          productId: line.productId,
-          productName: line.name,
-          productImage: line.image,
-          quantity: line.quantity,
-          value: 0
-        })),
+      items: commissionItems,
       value: getOrderTotal(confirmed),
       paymentMethod: "nequi"
     }).catch(error => {
       console.error("[Analytics] Nequi purchase recording failed:", error);
+    });
+    await recordCreatorCommission({
+      orderId,
+      paymentMethod: "nequi",
+      productSubtotal: Number(confirmed?.priceSummary?.subtotal?.amount || 0),
+      items: commissionItems
     });
     sendJson(response, 200, { ok: true, order: normalizeWixOrder(confirmed) });
   } finally {
@@ -6204,13 +6240,17 @@ async function getCreatorApplications() {
     "creator_slug", "tier", "commission_rate", "approved_at", "reviewed_at",
     "confirmation_email_status"
   ].join(",");
-  const [applicationsResponse, eventsResponse] = await Promise.all([
+  const [applicationsResponse, eventsResponse, profilesResponse] = await Promise.all([
     fetch(
       `${SUPABASE_URL}/rest/v1/creator_applications?select=${fields}&order=created_at.desc&limit=100`,
       { headers }
     ),
     fetch(
       `${SUPABASE_URL}/rest/v1/analytics_events?select=event_type,session_id,order_id,value,campaign,server_verified&source=eq.creator&campaign=not.is.null&limit=5000`,
+      { headers }
+    ),
+    fetch(
+      `${SUPABASE_URL}/rest/v1/creator_profiles?select=application_id,status,agreement_accepted_at`,
       { headers }
     )
   ]);
@@ -6221,6 +6261,8 @@ async function getCreatorApplications() {
   }
   const rows = await applicationsResponse.json();
   const events = eventsResponse.ok ? await eventsResponse.json() : [];
+  const profiles = profilesResponse.ok ? await profilesResponse.json() : [];
+  const profileByApplication = new Map((Array.isArray(profiles) ? profiles : []).map(profile => [profile.application_id, profile]));
   const metrics = new Map();
   for (const event of Array.isArray(events) ? events : []) {
     const slug = safeText(event?.campaign, 120);
@@ -6240,6 +6282,8 @@ async function getCreatorApplications() {
     const salesTotal = current?.sales || 0;
     return {
       ...application,
+      onboarding_status: profileByApplication.get(application.id)?.status || null,
+      agreement_accepted_at: profileByApplication.get(application.id)?.agreement_accepted_at || null,
       visits,
       paid_orders: paidOrders,
       sales_total: salesTotal,
@@ -6259,6 +6303,297 @@ function creatorSlug(value) {
     .slice(0, 60);
 }
 
+function creatorTokenHash(value) {
+  return crypto.createHash("sha256").update(String(value || "")).digest("hex");
+}
+
+function creatorAccessUrl(path, token) {
+  const url = new URL(path, `${STOREFRONT_URL}/`);
+  url.searchParams.set("token", token);
+  return url.toString();
+}
+
+function creatorEmailFrame(firstName, heading, message, buttonLabel, buttonUrl, note = "") {
+  const safeName = escapeHtml(firstName || "Creadora");
+  return `<!doctype html><html lang="es"><body style="margin:0;background:#fff5fa;font-family:Arial,sans-serif;color:#171217"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" style="padding:30px 14px"><table role="presentation" width="620" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:620px;background:#fff;border-radius:26px;overflow:hidden;border:1px solid #f1c7da"><tr><td align="center" style="padding:28px 24px 20px"><div style="font-family:Georgia,serif;font-size:42px;letter-spacing:-5px">CM</div><div style="font-family:Georgia,serif;font-size:17px;letter-spacing:7px">CAJAMODA</div><div style="margin-top:7px;color:#c92b69;font-size:9px;font-weight:700;letter-spacing:4px">COLOMBIA</div></td></tr><tr><td><img src="https://static.wixstatic.com/media/9459df_9c4306fd63b249e59878019f20341fe8~mv2.png" width="620" alt="CajaModa" style="display:block;width:100%;height:auto"></td></tr><tr><td align="center" style="padding:34px 34px 38px"><div style="color:#cf2d6d;font-size:10px;font-weight:700;letter-spacing:3px">ESTÁS INVITADA ✦</div><h1 style="margin:12px 0 14px;font:400 34px/1.1 Georgia,serif">Hola ${safeName},</h1><h2 style="margin:0 0 14px;font:400 25px/1.25 Georgia,serif">${escapeHtml(heading)}</h2><p style="margin:0 auto 24px;max-width:480px;color:#4f454c;font-size:15px;line-height:1.65">${escapeHtml(message)}</p><a href="${escapeHtml(buttonUrl)}" style="display:inline-block;padding:15px 30px;border-radius:999px;background:linear-gradient(90deg,#bf1f5d,#ec1870);color:#fff;text-decoration:none;font-size:12px;font-weight:800;letter-spacing:1.5px">${escapeHtml(buttonLabel)}</a>${note ? `<p style="margin:22px auto 0;max-width:470px;color:#83747d;font-size:11px;line-height:1.55">${escapeHtml(note)}</p>` : ""}</td></tr><tr><td align="center" style="padding:25px;background:#171217;color:#fff"><div style="font-family:Georgia,serif;font-size:17px;letter-spacing:3px">CAJAMODA COLOMBIA</div></td></tr></table></td></tr></table></body></html>`;
+}
+
+async function sendCreatorTransactionalEmail({ firstName, lastName, email, subject, heading, message, buttonLabel, buttonUrl, note, idempotencyKey }) {
+  if (!WIX_API_KEY || !WIX_SITE_ID) throw new Error("Wix email is not configured.");
+  const transmission = await fetch("https://www.wixapis.com/email-transmissions/v1/email-transmissions/send", {
+    method: "POST",
+    headers: { Authorization: WIX_API_KEY, "wix-site-id": WIX_SITE_ID, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      emailTransmission: {
+        emailSubject: subject,
+        emailHtmlContent: creatorEmailFrame(firstName, heading, message, buttonLabel, buttonUrl, note),
+        senderName: "CajaModa Colombia",
+        toRecipients: [{ name: `${firstName} ${lastName}`.trim(), emailAddress: email }],
+        type: "TRANSACTIONAL"
+      },
+      idempotencyKey
+    })
+  });
+  const payload = await transmission.json().catch(() => ({}));
+  if (!transmission.ok) throw new Error(safeText(payload?.message || payload?.error, 300) || `Wix email rejected (${transmission.status}).`);
+}
+
+async function approveCreatorAndSendInvite(application) {
+  const token = createToken();
+  const expiresAt = new Date(now() + CREATOR_ACCESS_TTL_MS).toISOString();
+  const rpc = await fetch(`${SUPABASE_URL}/rest/v1/rpc/approve_creator_application`, {
+    method: "POST",
+    headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "return=representation" }),
+    body: JSON.stringify({
+      p_application_id: application.id,
+      p_access_token_hash: creatorTokenHash(token),
+      p_access_token_expires_at: expiresAt
+    })
+  });
+  const rows = await rpc.json().catch(() => null);
+  if (!rpc.ok) throw new Error(safeText(rows?.message || rows?.details, 300) || "No pudimos crear la cuenta de creadora.");
+  const profile = Array.isArray(rows) ? rows[0] : rows;
+  await sendCreatorTransactionalEmail({
+    firstName: application.first_name,
+    lastName: application.last_name,
+    email: application.email,
+    subject: "Fuiste seleccionada para ser creadora CajaModa",
+    heading: "¡Fuiste seleccionada!",
+    message: "Acepta la invitación para conocer tu nivel de comisión, firmar el acuerdo de creadora independiente y elegir cómo recibir tus pagos.",
+    buttonLabel: "ACEPTAR INVITACIÓN",
+    buttonUrl: creatorAccessUrl("/creators/accept/", token),
+    note: "Este enlace es personal y estará disponible durante 48 horas.",
+    idempotencyKey: `creator-invite-${application.id}-${creatorTokenHash(token).slice(0, 16)}`
+  });
+  return profile;
+}
+
+async function creatorProfileForAccessToken(token) {
+  const hash = creatorTokenHash(token);
+  if (!token || !/^[a-f0-9]{64}$/.test(hash)) return null;
+  const query = new URLSearchParams({
+    select: "*",
+    access_token_hash: `eq.${hash}`,
+    access_token_expires_at: `gt.${new Date().toISOString()}`,
+    limit: "1"
+  });
+  const result = await fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?${query}`, { headers: livePresenceHeaders() });
+  if (!result.ok) return null;
+  const rows = await result.json().catch(() => []);
+  return Array.isArray(rows) ? rows[0] || null : null;
+}
+
+async function createCreatorSession(profileId) {
+  const token = createToken();
+  const session = {
+    creator_id: profileId,
+    token_hash: creatorTokenHash(token),
+    expires_at: new Date(now() + CREATOR_SESSION_TTL_MS).toISOString()
+  };
+  const result = await fetch(`${SUPABASE_URL}/rest/v1/creator_sessions`, {
+    method: "POST",
+    headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+    body: JSON.stringify(session)
+  });
+  if (!result.ok) throw new Error("No pudimos iniciar la sesión de creadora.");
+  return token;
+}
+
+async function creatorProfileForSession(request) {
+  const token = getBearerToken(request);
+  if (!token) return null;
+  const query = new URLSearchParams({
+    select: "creator_id",
+    token_hash: `eq.${creatorTokenHash(token)}`,
+    revoked_at: "is.null",
+    expires_at: `gt.${new Date().toISOString()}`,
+    limit: "1"
+  });
+  const sessionResponse = await fetch(`${SUPABASE_URL}/rest/v1/creator_sessions?${query}`, { headers: livePresenceHeaders() });
+  const sessions = sessionResponse.ok ? await sessionResponse.json().catch(() => []) : [];
+  const session = Array.isArray(sessions) ? sessions[0] : null;
+  if (!session?.creator_id) return null;
+  const profileResponse = await fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?id=eq.${encodeURIComponent(session.creator_id)}&status=eq.active&select=*&limit=1`, { headers: livePresenceHeaders() });
+  const profiles = profileResponse.ok ? await profileResponse.json().catch(() => []) : [];
+  return Array.isArray(profiles) ? profiles[0] || null : null;
+}
+
+function creatorPayoutDestination(method, value) {
+  const raw = safeText(value, 254).toLowerCase();
+  if (method === "nequi") {
+    const digits = raw.replace(/\D/g, "").replace(/^57(?=3\d{9}$)/, "");
+    if (!/^3\d{9}$/.test(digits)) throw new Error("Ingresa un número Nequi colombiano válido.");
+    return { destination: `+57${digits}`, masked: `Nequi ••• ${digits.slice(-4)}` };
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)) throw new Error("Ingresa el correo válido de tu cuenta PayPal.");
+  const [name, domain] = raw.split("@");
+  return { destination: raw, masked: `PayPal ${name.slice(0, 2)}•••@${domain}` };
+}
+
+async function completeCreatorOnboarding(request, response) {
+  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) return sendError(response, 503, "El programa de creadoras no está disponible.");
+  const body = await readBody(request);
+  const profile = await creatorProfileForAccessToken(safeText(body?.token, 200));
+  if (!profile || profile.status !== "invited") return sendError(response, 401, "La invitación venció o ya fue utilizada.");
+  if (body?.agreementAccepted !== true) return sendError(response, 400, "Debes aceptar el acuerdo para continuar.");
+  const method = safeText(body?.payoutMethod, 20).toLowerCase();
+  if (!['nequi', 'paypal'].includes(method)) return sendError(response, 400, "Elige Nequi o PayPal.");
+  let payout;
+  try { payout = creatorPayoutDestination(method, body?.payoutDestination); }
+  catch (error) { return sendError(response, 400, error.message); }
+
+  const payoutResponse = await fetch(`${SUPABASE_URL}/rest/v1/creator_payout_accounts?on_conflict=creator_id`, {
+    method: "POST",
+    headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" }),
+    body: JSON.stringify({
+      creator_id: profile.id,
+      method,
+      destination: payout.destination,
+      destination_masked: payout.masked,
+      status: "verified",
+      updated_at: new Date().toISOString()
+    })
+  });
+  if (!payoutResponse.ok) return sendError(response, 503, "No pudimos guardar tu método de pago.");
+
+  const activatedAt = new Date().toISOString();
+  const profileResponse = await fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?id=eq.${encodeURIComponent(profile.id)}`, {
+    method: "PATCH",
+    headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+    body: JSON.stringify({
+      status: "active",
+      agreement_version: CREATOR_AGREEMENT_VERSION,
+      agreement_accepted_at: activatedAt,
+      activated_at: activatedAt,
+      updated_at: activatedAt,
+      access_token_hash: null,
+      access_token_expires_at: null
+    })
+  });
+  if (!profileResponse.ok) return sendError(response, 503, "No pudimos activar tu cuenta.");
+  const sessionToken = await createCreatorSession(profile.id);
+  sendJson(response, 200, {
+    ok: true,
+    sessionToken,
+    creator: { firstName: profile.first_name, slug: profile.slug, tier: profile.tier, commissionRate: profile.commission_rate, payout: payout.masked }
+  });
+}
+
+async function requestCreatorLogin(request, response) {
+  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) return sendError(response, 503, "El acceso de creadoras no está disponible.");
+  const body = await readBody(request);
+  const email = safeText(body?.email, 254).toLowerCase();
+  const generic = { ok: true, message: "Si tu cuenta está activa, recibirás un enlace de acceso." };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return sendJson(response, 200, generic);
+  const query = new URLSearchParams({ select: "*", email: `eq.${email}`, status: "eq.active", limit: "1" });
+  const lookup = await fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?${query}`, { headers: livePresenceHeaders() });
+  const rows = lookup.ok ? await lookup.json().catch(() => []) : [];
+  const profile = Array.isArray(rows) ? rows[0] : null;
+  if (!profile) return sendJson(response, 200, generic);
+  const token = createToken();
+  const hash = creatorTokenHash(token);
+  const expiresAt = new Date(now() + CREATOR_ACCESS_TTL_MS).toISOString();
+  const saved = await fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?id=eq.${encodeURIComponent(profile.id)}`, {
+    method: "PATCH",
+    headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+    body: JSON.stringify({ access_token_hash: hash, access_token_expires_at: expiresAt, updated_at: new Date().toISOString() })
+  });
+  if (!saved.ok) return sendError(response, 503, "No pudimos preparar tu acceso.");
+  await sendCreatorTransactionalEmail({
+    firstName: profile.first_name,
+    lastName: profile.last_name,
+    email: profile.email,
+    subject: "Tu acceso al portal de creadoras CajaModa",
+    heading: "Tu portal está listo",
+    message: "Entra para ver tus ventas, productos vendidos, nivel y comisiones.",
+    buttonLabel: "ENTRAR A MI PORTAL",
+    buttonUrl: creatorAccessUrl("/creators/", token),
+    note: "Este enlace personal vence en 48 horas.",
+    idempotencyKey: `creator-login-${profile.id}-${hash.slice(0, 16)}`
+  });
+  sendJson(response, 200, generic);
+}
+
+async function consumeCreatorLogin(request, response) {
+  const body = await readBody(request);
+  const profile = await creatorProfileForAccessToken(safeText(body?.token, 200));
+  if (!profile || profile.status !== "active") return sendError(response, 401, "El enlace venció o ya fue utilizado.");
+  const sessionToken = await createCreatorSession(profile.id);
+  await fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?id=eq.${encodeURIComponent(profile.id)}`, {
+    method: "PATCH",
+    headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+    body: JSON.stringify({ access_token_hash: null, access_token_expires_at: null, updated_at: new Date().toISOString() })
+  });
+  sendJson(response, 200, { ok: true, sessionToken });
+}
+
+async function getCreatorPortal(request, response) {
+  const profile = await creatorProfileForSession(request);
+  if (!profile) return sendError(response, 401, "Inicia sesión como creadora.");
+  const [payoutResponse, commissionResponse] = await Promise.all([
+    fetch(`${SUPABASE_URL}/rest/v1/creator_payout_accounts?creator_id=eq.${encodeURIComponent(profile.id)}&select=method,destination_masked,status&limit=1`, { headers: livePresenceHeaders() }),
+    fetch(`${SUPABASE_URL}/rest/v1/creator_commissions?creator_id=eq.${encodeURIComponent(profile.id)}&select=order_id,product_subtotal,commission_rate,commission_amount,products,status,earned_at,paid_at&order=earned_at.desc&limit=100`, { headers: livePresenceHeaders() })
+  ]);
+  const payouts = payoutResponse.ok ? await payoutResponse.json().catch(() => []) : [];
+  const commissions = commissionResponse.ok ? await commissionResponse.json().catch(() => []) : [];
+  const rows = Array.isArray(commissions) ? commissions : [];
+  const totals = rows.reduce((result, row) => {
+    result.earned += Number(row.commission_amount || 0);
+    if (row.status === "paid") result.paid += Number(row.commission_amount || 0);
+    else if (row.status !== "reversed") result.available += Number(row.commission_amount || 0);
+    return result;
+  }, { earned: 0, available: 0, paid: 0 });
+  sendJson(response, 200, {
+    ok: true,
+    creator: {
+      firstName: profile.first_name,
+      lastName: profile.last_name,
+      slug: profile.slug,
+      tier: profile.tier,
+      commissionRate: profile.commission_rate,
+      link: `${STOREFRONT_URL}/${profile.slug}`,
+      payout: Array.isArray(payouts) ? payouts[0] || null : null
+    },
+    totals,
+    sales: rows
+  });
+}
+
+async function recordCreatorCommission({ orderId, paymentMethod, productSubtotal, items, campaign }) {
+  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY || !orderId || productSubtotal <= 0) return null;
+  let slug = creatorSlug(campaign);
+  if (!slug) {
+    const context = await findSupabaseAnalyticsOrderContext(orderId).catch(() => null);
+    if (safeText(context?.source, 80).toLowerCase() === "creator") slug = creatorSlug(context?.campaign);
+  }
+  if (!slug) return null;
+  const profileResponse = await fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?slug=eq.${encodeURIComponent(slug)}&status=eq.active&select=id,commission_rate&limit=1`, { headers: livePresenceHeaders() });
+  const profiles = profileResponse.ok ? await profileResponse.json().catch(() => []) : [];
+  const profile = Array.isArray(profiles) ? profiles[0] : null;
+  if (!profile) return null;
+  const rate = Number(profile.commission_rate || 0);
+  const amount = Math.round(Number(productSubtotal) * rate) / 100;
+  const result = await fetch(`${SUPABASE_URL}/rest/v1/creator_commissions?on_conflict=order_id`, {
+    method: "POST",
+    headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" }),
+    body: JSON.stringify({
+      creator_id: profile.id,
+      order_id: safeText(orderId, 150),
+      payment_method: safeText(paymentMethod, 40),
+      product_subtotal: Number(productSubtotal),
+      commission_rate: rate,
+      commission_amount: amount,
+      products: Array.isArray(items) ? items.slice(0, 50) : []
+    })
+  });
+  if (!result.ok) {
+    const detail = await result.text().catch(() => "");
+    console.error("[Creator commission] Could not record commission:", result.status, detail);
+    return null;
+  }
+  return amount;
+}
+
 async function getPublicCreatorLink(request, response, requestedSlug) {
   if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
     return sendError(response, 503, "Creator links are not configured.");
@@ -6274,7 +6609,7 @@ async function getPublicCreatorLink(request, response, requestedSlug) {
     headers.Authorization = `Bearer ${SUPABASE_SECRET_KEY}`;
   }
   const result = await fetch(
-    `${SUPABASE_URL}/rest/v1/creator_applications?creator_slug=eq.${encodeURIComponent(slug)}&status=eq.approved&select=creator_slug&limit=1`,
+    `${SUPABASE_URL}/rest/v1/creator_profiles?slug=eq.${encodeURIComponent(slug)}&status=eq.active&select=slug&limit=1`,
     { headers }
   );
   if (!result.ok) {
@@ -6323,13 +6658,39 @@ async function updateCreatorApplication(request, response, applicationId) {
 
   const now = new Date().toISOString();
   const updates = { status, reviewed_at: now };
+  if (status === "approved" && application.status !== "approved") {
+    try {
+      const profile = await approveCreatorAndSendInvite(application);
+      return sendJson(response, 200, { ok: true, application: {
+        ...application,
+        status: "approved",
+        creator_slug: profile?.slug,
+        tier: profile?.tier,
+        commission_rate: profile?.commission_rate,
+        onboarding_status: profile?.status
+      } });
+    } catch (error) {
+      console.error("[Creator applications] Approval failed:", error);
+      return sendError(response, 503, safeText(error?.message, 300) || "No pudimos aprobar la creadora.");
+    }
+  }
   if (status === "approved") {
     const tier = [1, 2, 3].includes(Number(body?.tier)) ? Number(body.tier) : 1;
-    const baseSlug = creatorSlug(body?.creatorSlug || application.creator_slug || application.instagram_username || `${application.first_name}-${application.last_name}`) || `creadora-${application.id.slice(0, 8)}`;
-    updates.creator_slug = baseSlug;
     updates.tier = tier;
     updates.commission_rate = tier * 10;
     updates.approved_at = application.approved_at || now;
+    const profileUpdate = await fetch(
+      `${SUPABASE_URL}/rest/v1/creator_profiles?application_id=eq.${encodeURIComponent(applicationId)}`,
+      { method: "PATCH", headers: { ...headers, Prefer: "return=minimal" }, body: JSON.stringify({ tier, commission_rate: tier * 10, updated_at: now }) }
+    );
+    if (!profileUpdate.ok) return sendError(response, 503, "No pudimos actualizar el nivel de la creadora.");
+  }
+  if (status === "declined" && application.status === "approved") {
+    const profileUpdate = await fetch(
+      `${SUPABASE_URL}/rest/v1/creator_profiles?application_id=eq.${encodeURIComponent(applicationId)}`,
+      { method: "PATCH", headers: { ...headers, Prefer: "return=minimal" }, body: JSON.stringify({ status: "inactive", deactivated_at: now, updated_at: now }) }
+    );
+    if (!profileUpdate.ok) return sendError(response, 503, "No pudimos desactivar el enlace de la creadora.");
   }
   const saved = await fetch(
     `${SUPABASE_URL}/rest/v1/creator_applications?id=eq.${encodeURIComponent(applicationId)}`,
@@ -7859,6 +8220,26 @@ const server =
 
         if(request.method === "POST" && url.pathname === "/api/creator-applications"){
           await handleCreatorApplication(request,response);
+          return;
+        }
+
+        if(request.method === "POST" && url.pathname === "/api/creators/onboarding"){
+          await completeCreatorOnboarding(request,response);
+          return;
+        }
+
+        if(request.method === "POST" && url.pathname === "/api/creators/login"){
+          await requestCreatorLogin(request,response);
+          return;
+        }
+
+        if(request.method === "POST" && url.pathname === "/api/creators/session"){
+          await consumeCreatorLogin(request,response);
+          return;
+        }
+
+        if(request.method === "GET" && url.pathname === "/api/creators/me"){
+          await getCreatorPortal(request,response);
           return;
         }
 

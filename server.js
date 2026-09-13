@@ -5654,10 +5654,11 @@ async function handleCreatorApplication(request, response) {
   const localPhone = safeText(body?.phone, 40).replace(/\D/g, "").replace(/^57(?=\d{10}$)/, "");
   const instagramUsername = creatorSocialUsername(body?.instagramUsername);
   const tiktokUsername = creatorSocialUsername(body?.tiktokUsername);
+  const department = safeText(body?.department, 120);
   const city = safeText(body?.city, 120);
   const referralSource = safeText(body?.referralSource, 120);
 
-  if (!firstName || !lastName || !city || !referralSource) {
+  if (!firstName || !lastName || !department || !city || !referralSource) {
     return sendError(response, 400, "Completa todos los campos obligatorios.");
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -5680,6 +5681,7 @@ async function handleCreatorApplication(request, response) {
     email,
     instagram_username: instagramUsername || null,
     tiktok_username: tiktokUsername || null,
+    department,
     city,
     heard_about: referralSource,
     status: "new",
@@ -5722,7 +5724,7 @@ async function getCreatorApplications() {
   }
   const fields = [
     "id", "created_at", "first_name", "last_name", "phone", "email",
-    "instagram_username", "tiktok_username", "city", "heard_about", "status"
+    "instagram_username", "tiktok_username", "department", "city", "heard_about", "status"
   ].join(",");
   const response = await fetch(
     `${SUPABASE_URL}/rest/v1/creator_applications?select=${fields}&order=created_at.desc&limit=100`,

@@ -6,8 +6,9 @@
   "description": "CajaModa custom storefront powered by Wix Headless and hosted on Render.",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run verify:critical && vite build",
     "preview": "vite preview",
+    "verify:critical": "node scripts/verify-critical-checkout.mjs",
     "verify:final": "node scripts/verify-final-storefront.mjs",
     "start": "node server.js"
   },

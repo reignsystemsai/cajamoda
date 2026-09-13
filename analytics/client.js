@@ -3,7 +3,7 @@
 
   if (window.CajaModaAnalytics) return;
 
-  const ENDPOINT = "https://cajamoda-storeload-api.onrender.com/api/analytics/events";
+  const ENDPOINT = "https://cajamoda-storeload-api.onrender.com/api/storefront-events";
   const PRESENCE_ENDPOINT = "https://cajamoda-storeload-api.onrender.com/api/live-presence";
   const VISITOR_KEY = "cajamoda-analytics-visitor";
   const SESSION_KEY = "cajamoda-analytics-session";

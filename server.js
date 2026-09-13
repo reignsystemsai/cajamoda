@@ -5939,6 +5939,169 @@ function creatorAttribution(value) {
   };
 }
 
+function creatorApplicationEmailHtml(firstName) {
+  const name = escapeHtml(firstName) || "creadora";
+  const boxImage = "https://static.wixstatic.com/media/9459df_9c4306fd63b249e59878019f20341fe8~mv2.png";
+  return `<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#fff7fb;color:#151015;font-family:Arial,Helvetica,sans-serif">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#fff7fb">
+    <tr><td align="center" style="padding:24px 12px">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px;background:#ffffff;border:1px solid #f0cadd;border-radius:28px;overflow:hidden">
+        <tr><td align="center" style="padding:28px 24px 20px;background:#ffffff">
+          <div style="font-family:Georgia,'Times New Roman',serif;font-size:42px;line-height:1">CM</div>
+          <div style="margin-top:6px;font-family:Georgia,'Times New Roman',serif;font-size:15px;letter-spacing:7px">CAJAMODA</div>
+          <div style="margin-top:8px;color:#c70055;font-size:9px;font-weight:700;letter-spacing:5px">COLOMBIA</div>
+        </td></tr>
+        <tr><td><img src="${boxImage}" width="640" alt="CajaModa Colombia" style="display:block;width:100%;height:auto;border:0"></td></tr>
+        <tr><td align="center" style="padding:34px 34px 18px">
+          <div style="color:#d1005a;font-size:11px;font-weight:700;letter-spacing:4px">TU SOLICITUD YA ESTÁ BRILLANDO ✦</div>
+          <h1 style="margin:14px 0 16px;font-family:Georgia,'Times New Roman',serif;font-size:34px;font-weight:400;line-height:1.15">Hola ${name},</h1>
+          <p style="margin:0;color:#393139;font-size:16px;line-height:1.65">Gracias por considerar formar parte del programa de creadoras CajaModa. Estamos verificando tu número de WhatsApp y tus perfiles de Instagram o TikTok.</p>
+          <div style="display:inline-block;margin:22px 0 12px;padding:12px 24px;border-radius:999px;background:#111111;color:#ffffff;font-size:12px;font-weight:700;letter-spacing:2px">RESPUESTA EN 24 A 48 HORAS</div>
+          <p style="margin:0;color:#6e6269;font-size:13px;line-height:1.5">Te enviaremos otro correo si has sido seleccionada.</p>
+        </td></tr>
+        <tr><td style="padding:12px 34px 30px">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#fff9fc;border:1px solid #efc4d8;border-radius:22px">
+            <tr><td align="center" style="padding:28px 24px">
+              <h2 style="margin:0 0 12px;font-family:Georgia,'Times New Roman',serif;font-size:25px;font-weight:400">Mientras revisamos tu solicitud…</h2>
+              <p style="margin:0 0 22px;color:#40363d;font-size:14px;line-height:1.6">¿Quieres mostrarnos tu estilo? Descubre CajaModa y, si encuentras algo que te encante, comparte un video abriendo tu pedido o mostrando tu atuendo.</p>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" style="padding:0 0 12px"><a href="https://www.cajamoda.com/" style="display:block;min-width:230px;padding:14px 22px;border-radius:999px;background:#cf2d6d;color:#ffffff;text-decoration:none;font-size:13px;font-weight:700;letter-spacing:1px">COMPRAR AHORA</a></td></tr><tr><td align="center"><a href="https://www.instagram.com/cajamoda.colombia/" style="display:block;min-width:230px;padding:13px 21px;border:1px solid #111111;border-radius:999px;background:#ffffff;color:#111111;text-decoration:none;font-size:13px;font-weight:700;letter-spacing:1px">VER INSTAGRAM</a></td></tr></table>
+              <p style="margin:18px 0 0;color:#83747d;font-size:11px;line-height:1.55">Hacer una compra es totalmente opcional y no garantiza que seas seleccionada. Si decides compartir contenido, etiquetarnos nos ayuda a conocer tu creatividad y tu estilo.</p>
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td align="center" style="padding:0 34px 32px">
+          <div style="color:#d1005a;font-size:10px;font-weight:700;letter-spacing:3px">SI ERES SELECCIONADA, PODRÍAS</div>
+          <p style="margin:14px 0 0;color:#2c252a;font-size:14px;line-height:1.75">✦ Aparecer en campañas de CajaModa<br>✦ Acceder a descuentos exclusivos<br>✦ Participar en eventos especiales</p>
+        </td></tr>
+        <tr><td align="center" style="padding:28px 24px;background:#171217;color:#ffffff">
+          <div style="font-family:Georgia,'Times New Roman',serif;font-size:18px;letter-spacing:3px">CAJAMODA COLOMBIA</div>
+          <p style="margin:10px 0 0;color:#f4dce7;font-size:12px">Esto apenas comienza. Mantente atenta a tu correo. ✦</p>
+          <p style="margin:12px 0 0;color:#b9aeb4;font-size:10px">Este correo confirma que recibimos tu solicitud; no significa que ya hayas sido seleccionada.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+}
+
+async function setCreatorApplicationEmailStatus(applicationId, status) {
+  if (!applicationId || !SUPABASE_URL || !SUPABASE_SECRET_KEY) return;
+  const headers = {
+    apikey: SUPABASE_SECRET_KEY,
+    "Content-Type": "application/json",
+    Prefer: "return=minimal"
+  };
+  if (SUPABASE_SECRET_KEY.startsWith("eyJ")) {
+    headers.Authorization = `Bearer ${SUPABASE_SECRET_KEY}`;
+  }
+  const result = await fetch(
+    `${SUPABASE_URL}/rest/v1/creator_applications?id=eq.${encodeURIComponent(applicationId)}`,
+    { method: "PATCH", headers, body: JSON.stringify({ confirmation_email_status: status }) }
+  );
+  if (!result.ok) {
+    console.error("[Creator application] Could not persist confirmation email status:", result.status);
+  }
+}
+
+async function findCreatorApplicationByEmail(email) {
+  const headers = { apikey: SUPABASE_SECRET_KEY, Accept: "application/json" };
+  if (SUPABASE_SECRET_KEY.startsWith("eyJ")) {
+    headers.Authorization = `Bearer ${SUPABASE_SECRET_KEY}`;
+  }
+  const query = new URLSearchParams({
+    select: "id,confirmation_email_status",
+    email: `eq.${email}`,
+    limit: "1"
+  });
+  const result = await fetch(`${SUPABASE_URL}/rest/v1/creator_applications?${query}`, { headers });
+  if (!result.ok) return null;
+  const rows = await result.json().catch(() => []);
+  return Array.isArray(rows) ? rows[0] || null : null;
+}
+
+async function findCreatorApplicationById(applicationId) {
+  const headers = { apikey: SUPABASE_SECRET_KEY, Accept: "application/json" };
+  if (SUPABASE_SECRET_KEY.startsWith("eyJ")) {
+    headers.Authorization = `Bearer ${SUPABASE_SECRET_KEY}`;
+  }
+  const query = new URLSearchParams({
+    select: "id,first_name,last_name,email,confirmation_email_status",
+    id: `eq.${applicationId}`,
+    limit: "1"
+  });
+  const result = await fetch(`${SUPABASE_URL}/rest/v1/creator_applications?${query}`, { headers });
+  if (!result.ok) return null;
+  const rows = await result.json().catch(() => []);
+  return Array.isArray(rows) ? rows[0] || null : null;
+}
+
+async function sendCreatorApplicationConfirmationEmail(application) {
+  if (!WIX_API_KEY || !WIX_SITE_ID) {
+    throw new Error("Wix email is not configured.");
+  }
+  const transmission = await fetch(
+    "https://www.wixapis.com/email-transmissions/v1/email-transmissions/send",
+    {
+      method: "POST",
+      headers: {
+        Authorization: WIX_API_KEY,
+        "wix-site-id": WIX_SITE_ID,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        emailTransmission: {
+          emailSubject: "Recibimos tu solicitud para ser creadora CajaModa",
+          emailHtmlContent: creatorApplicationEmailHtml(application.firstName),
+          senderName: "CajaModa Colombia",
+          toRecipients: [{
+            name: `${application.firstName} ${application.lastName}`.trim(),
+            emailAddress: application.email
+          }],
+          type: "TRANSACTIONAL"
+        },
+        idempotencyKey: application.id
+      })
+    }
+  );
+  const payload = await transmission.json().catch(() => ({}));
+  if (!transmission.ok) {
+    throw new Error(safeText(payload?.message || payload?.error, 300) || `Wix email rejected (${transmission.status}).`);
+  }
+  return safeText(payload?.emailTransmission?.id, 100);
+}
+
+async function deliverCreatorApplicationConfirmation(application) {
+  try {
+    await sendCreatorApplicationConfirmationEmail(application);
+    await setCreatorApplicationEmailStatus(application.id, "sent");
+    return "sent";
+  } catch (error) {
+    console.error("[Creator application] Confirmation email failed:", error);
+    await setCreatorApplicationEmailStatus(application.id, "failed");
+    return "failed";
+  }
+}
+
+async function resendCreatorApplicationConfirmation(request, response, applicationId) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Sign in to Store Loader.");
+  if (!isPlatformAdmin(request)) return sendError(response, 403, "Creator management is reserved for CajaModa administration.");
+  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) return sendError(response, 503, "Creator management is not configured.");
+  const application = await findCreatorApplicationById(applicationId);
+  if (!application) return sendError(response, 404, "Creator application not found.");
+  const confirmationEmailStatus = await deliverCreatorApplicationConfirmation({
+    id: application.id,
+    firstName: application.first_name,
+    lastName: application.last_name,
+    email: application.email
+  });
+  if (confirmationEmailStatus !== "sent") {
+    return sendError(response, 502, "Wix could not accept the confirmation email.");
+  }
+  sendJson(response, 200, { ok: true, confirmationEmailStatus });
+}
+
 async function handleCreatorApplication(request, response) {
   enforceCreatorApplicationRateLimit(request);
   const body = await readBody(request);
@@ -6010,13 +6173,23 @@ async function handleCreatorApplication(request, response) {
 
   if (!supabaseResponse.ok) {
     if (result?.code === "23505") {
-      return sendJson(response, 200, { ok: true, alreadyReceived: true });
+      const existing = await findCreatorApplicationByEmail(email);
+      const confirmationEmailStatus = existing?.confirmation_email_status === "sent"
+        ? "sent"
+        : existing?.id
+          ? await deliverCreatorApplicationConfirmation({ id: existing.id, firstName, lastName, email })
+          : "failed";
+      return sendJson(response, 200, { ok: true, alreadyReceived: true, confirmationEmailStatus });
     }
     console.error("[Creator application] Supabase insert failed:", result);
     return sendError(response, 503, "No pudimos guardar tu solicitud. Intenta nuevamente.");
   }
 
-  sendJson(response, 201, { ok: true, applicationId: result?.[0]?.id || "" });
+  const applicationId = result?.[0]?.id || "";
+  const confirmationEmailStatus = applicationId
+    ? await deliverCreatorApplicationConfirmation({ id: applicationId, firstName, lastName, email })
+    : "failed";
+  sendJson(response, 201, { ok: true, applicationId, confirmationEmailStatus });
 }
 
 async function getCreatorApplications() {
@@ -7655,6 +7828,12 @@ const server =
         const creatorApplicationMatch = url.pathname.match(/^\/api\/store-owner\/creator-applications\/([0-9a-f-]+)$/i);
         if(request.method === "PATCH" && creatorApplicationMatch){
           await updateCreatorApplication(request,response,creatorApplicationMatch[1]);
+          return;
+        }
+
+        const creatorConfirmationMatch = url.pathname.match(/^\/api\/store-owner\/creator-applications\/([0-9a-f-]+)\/confirmation-email$/i);
+        if(request.method === "POST" && creatorConfirmationMatch){
+          await resendCreatorApplicationConfirmation(request,response,creatorConfirmationMatch[1]);
           return;
         }
 

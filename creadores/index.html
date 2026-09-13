@@ -78,9 +78,7 @@
     <footer>CAJAMODA COLOMBIA · PROGRAMA DE CREADORAS</footer>
   </main>
   <script src="/storefront.js?v=20260913-4"></script>
-  <script type="module">
-    import { createClient, OAuthStrategy } from "@wix/sdk";
-    import { contacts, triggeredEmails } from "@wix/site-crm";
+  <script>
     const STORE_API_URL = "https://cajamoda-storeload-api.onrender.com";
     const form = document.querySelector("#creatorForm");
     const message = document.querySelector("#formMessage");
@@ -90,9 +88,6 @@
     const cityInput = document.querySelector("#city");
     const departmentList = document.querySelector("#departmentList");
     const cityList = document.querySelector("#cityList");
-    const wixClientId = import.meta.env.VITE_WIX_CLIENT_ID;
-    const wixEmailId = "VV50qiz";
-    const sessionKey = "wixSession";
     let departments = [];
     let cityLoadTimer;
     function normalized(value){return String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase()}
@@ -100,10 +95,8 @@
     async function loadCities(){clearTimeout(cityLoadTimer);const department=departments.find(item=>normalized(item.name)===normalized(departmentInput.value));if(!department){cityList.replaceChildren();return}cityLoadTimer=setTimeout(async()=>{try{const params=new URLSearchParams({state:department.code,stateName:department.name});const response=await fetch(`${STORE_API_URL}/api/delivery/cities?${params}`,{headers:{Accept:"application/json"}});const result=await response.json().catch(()=>({}));if(!response.ok||!Array.isArray(result.cities))throw new Error();cityList.replaceChildren(...result.cities.map(item=>Object.assign(document.createElement("option"),{value:item.name})))}catch{cityList.replaceChildren()}},180)}
     departmentInput.addEventListener("input",()=>{cityInput.value="";loadCities()});
     loadDepartments();
-    function readTokens(){try{return JSON.parse(localStorage.getItem(sessionKey)||"null")||undefined}catch{return undefined}}
-    async function sendWixReceipt(values){if(!wixClientId)throw new Error("El correo de confirmación aún no está configurado.");const wix=createClient({modules:{contacts,triggeredEmails},auth:OAuthStrategy({clientId:wixClientId,tokens:readTokens()})});const tokens=await wix.auth.generateVisitorTokens(readTokens());localStorage.setItem(sessionKey,JSON.stringify(tokens));const identity=await wix.contacts.appendOrCreateContact({name:{first:values.firstName,last:values.lastName},emails:[{email:values.email,tag:"MAIN",primary:true}],phones:[{phone:`+57${values.phone}`,tag:"MOBILE",primary:true}],locale:"es-CO"});await wix.triggeredEmails.emailContact(wixEmailId,identity.contactId,{variables:{"contact.Name.first":values.firstName}})}
     form.phone.addEventListener("input",event=>{event.target.value=event.target.value.replace(/\D/g,"").slice(0,10)});
-    form.addEventListener("submit",async event=>{event.preventDefault();message.className="message";message.textContent="";if(!form.reportValidity())return;const data=new FormData(form);const values=Object.fromEntries(data.entries());values.phone=String(values.phone||"").replace(/\D/g,"");values.isAdult=data.has("isAdult");values.privacyConsent=data.has("privacyConsent");if(!String(values.instagramUsername||"").trim()&&!String(values.tiktokUsername||"").trim()){message.textContent="Ingresa tu usuario de Instagram o TikTok.";message.className="message error";return}const params=new URLSearchParams(location.search);values.attribution={source:params.get("utm_source")||"",medium:params.get("utm_medium")||"",campaign:params.get("utm_campaign")||"",content:params.get("utm_content")||"",landingPage:location.pathname+location.search};submit.disabled=true;submit.textContent="ENVIANDO…";try{const response=await fetch(`${STORE_API_URL}/api/creator-applications`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(values)});const result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||"No pudimos enviar tu solicitud.");if(!result.ignored&&!result.alreadyReceived){try{await sendWixReceipt(values)}catch(error){console.error("[Creator application] Wix receipt failed:",error)}}window.CajaModaAnalytics?.track?.("creator_application_submitted",{page:"creator-application",city:values.city,department:values.department,referralSource:values.referralSource});form.classList.add("hidden");success.classList.add("visible");success.focus()}catch(error){message.textContent=error?.message||"No pudimos enviar tu solicitud. Intenta nuevamente.";message.className="message error"}finally{submit.disabled=false;submit.textContent="QUIERO SER CREADORA"}});
+    form.addEventListener("submit",async event=>{event.preventDefault();message.className="message";message.textContent="";if(!form.reportValidity())return;const data=new FormData(form);const values=Object.fromEntries(data.entries());values.phone=String(values.phone||"").replace(/\D/g,"");values.isAdult=data.has("isAdult");values.privacyConsent=data.has("privacyConsent");if(!String(values.instagramUsername||"").trim()&&!String(values.tiktokUsername||"").trim()){message.textContent="Ingresa tu usuario de Instagram o TikTok.";message.className="message error";return}const params=new URLSearchParams(location.search);values.attribution={source:params.get("utm_source")||"",medium:params.get("utm_medium")||"",campaign:params.get("utm_campaign")||"",content:params.get("utm_content")||"",landingPage:location.pathname+location.search};submit.disabled=true;submit.textContent="ENVIANDO…";try{const response=await fetch(`${STORE_API_URL}/api/creator-applications`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(values)});const result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||"No pudimos enviar tu solicitud.");window.CajaModaAnalytics?.track?.("creator_application_submitted",{page:"creator-application",city:values.city,department:values.department,referralSource:values.referralSource});form.classList.add("hidden");success.classList.add("visible");success.focus()}catch(error){message.textContent=error?.message||"No pudimos enviar tu solicitud. Intenta nuevamente.";message.className="message error"}finally{submit.disabled=false;submit.textContent="QUIERO SER CREADORA"}});
   </script>
 </body>
 </html>

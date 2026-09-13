@@ -145,6 +145,9 @@ const STOREFRONT_URL = String(
   process.env.STOREFRONT_URL || "https://www.cajamoda.com"
 ).replace(/\/$/, "");
 const CREATOR_AGREEMENT_VERSION = "2026-09-13";
+const CREATOR_AGREEMENT_CONSENT = "I have read and agree to the CajaModa Creator Program Agreement, Terms and Conditions, and Privacy Policy. I understand that checking this box and selecting Accept and Continue constitutes my electronic signature. I consent to receive and retain these records electronically.";
+const CREATOR_AGREEMENT_TEXT = "CajaModa Creator Program Agreement. The creator participates as an independent creator, not as an employee, store owner, partner, agent, franchisee, or legal representative of CajaModa. Commission equals the creator tier percentage multiplied by the non-negative commissionable margin for each attributed, captured item: item sale price collected, excluding delivery, taxes and fees, minus CajaModa acquisition cost, minus COP 12,000 marketing reserve per item. Authorized but uncaptured payments remain pending and do not earn commission. Commissions earned from the 1st through the 15th are scheduled for payment on or about the last calendar day of that month. Commissions earned from the 16th through month-end are scheduled for payment on or about the 15th of the following month. The creator is responsible for complying with the laws, disclosures, taxes, and regulations of their country. Either party may terminate participation at any time. Fraud, theft, scams, chargebacks, manipulation, and unlawful conduct are prohibited; CajaModa may withhold or reverse related commissions, remove participants, and take lawful action to recover losses. CajaModa is a United States company and does not offer discretionary refunds, except where required by applicable law.";
+const CREATOR_AGREEMENT_SHA256 = crypto.createHash("sha256").update(CREATOR_AGREEMENT_TEXT).digest("hex");
 const CREATOR_ACCESS_TTL_MS = 48 * 60 * 60 * 1000;
 const CREATOR_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const CREATOR_MARKETING_RESERVE_PER_ITEM_COP = 12000;
@@ -1467,10 +1470,12 @@ async function syncSucceededStripeIntent(paymentIntent) {
         wixSync: "complete",
         wixOrderId: safeText(order?._id || order?.id, 80)
       } });
-    const orderId = safeText(order?._id || order?.id, 150);
-    const subtotal = lines.reduce((sum, line) => sum + line.amount * line.quantity, 0);
-    await analytics.recordPurchase({ externalId: latest.id, order, stripeMetadata: latest.metadata, items: lines, value: Number(latest.amount_received || latest.amount || 0) / 100, paymentMethod: "stripe" });
-    await recordCreatorCommission({ orderId, paymentMethod: "stripe", productSubtotal: subtotal, items: lines, campaign: latest?.metadata?.analyticsCampaign });
+    if (latest.status === "succeeded") {
+      const orderId = safeText(order?._id || order?.id, 150);
+      const subtotal = lines.reduce((sum, line) => sum + line.amount * line.quantity, 0);
+      await analytics.recordPurchase({ externalId: latest.id, order, stripeMetadata: latest.metadata, items: lines, value: Number(latest.amount_received || latest.amount || 0) / 100, paymentMethod: "stripe" });
+      await recordCreatorCommission({ orderId, paymentMethod: "stripe", productSubtotal: subtotal, items: lines, campaign: latest?.metadata?.analyticsCampaign });
+    }
   })();
   stripeIntentSyncLocks.set(paymentIntent.id, sync);
   try {
@@ -6359,7 +6364,7 @@ async function getCreatorApplications() {
     "creator_slug", "tier", "commission_rate", "approved_at", "reviewed_at",
     "confirmation_email_status"
   ].join(",");
-  const [applicationsResponse, eventsResponse, profilesResponse] = await Promise.all([
+  const [applicationsResponse, eventsResponse, profilesResponse, commissionsResponse] = await Promise.all([
     fetch(
       `${SUPABASE_URL}/rest/v1/creator_applications?select=${fields}&order=created_at.desc&limit=100`,
       { headers }
@@ -6368,10 +6373,8 @@ async function getCreatorApplications() {
       `${SUPABASE_URL}/rest/v1/analytics_events?select=event_type,session_id,order_id,value,campaign,server_verified&source=eq.creator&campaign=not.is.null&limit=5000`,
       { headers }
     ),
-    fetch(
-      `${SUPABASE_URL}/rest/v1/creator_profiles?select=application_id,status,agreement_accepted_at`,
-      { headers }
-    )
+    fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?select=id,application_id,status,agreement_version,agreement_accepted_at`, { headers }),
+    fetch(`${SUPABASE_URL}/rest/v1/creator_commissions?select=creator_id,commission_amount,status,earned_at,paid_at&limit=5000`, { headers })
   ]);
   if (!applicationsResponse.ok) {
     const detail = await applicationsResponse.text().catch(() => "");
@@ -6381,7 +6384,22 @@ async function getCreatorApplications() {
   const rows = await applicationsResponse.json();
   const events = eventsResponse.ok ? await eventsResponse.json() : [];
   const profiles = profilesResponse.ok ? await profilesResponse.json() : [];
-  const profileByApplication = new Map((Array.isArray(profiles) ? profiles : []).map(profile => [profile.application_id, profile]));
+  const profileRows = Array.isArray(profiles) ? profiles : [];
+  const profileByApplication = new Map(profileRows.map(profile => [profile.application_id, profile]));
+  const profileIds = profileRows.map(profile => profile.id).filter(Boolean);
+  let payoutByCreator = new Map();
+  if (profileIds.length) {
+    const payoutQuery = new URLSearchParams({ select: "creator_id,method,destination,destination_masked,status", creator_id: `in.(${profileIds.join(",")})` });
+    const payoutResponse = await fetch(`${SUPABASE_URL}/rest/v1/creator_payout_accounts?${payoutQuery}`, { headers });
+    const payoutRows = payoutResponse.ok ? await payoutResponse.json().catch(() => []) : [];
+    payoutByCreator = new Map((Array.isArray(payoutRows) ? payoutRows : []).map(row => [row.creator_id, row]));
+  }
+  const commissionsByCreator = new Map();
+  const commissionRows = commissionsResponse.ok ? await commissionsResponse.json().catch(() => []) : [];
+  for (const commission of Array.isArray(commissionRows) ? commissionRows : []) {
+    if (!commissionsByCreator.has(commission.creator_id)) commissionsByCreator.set(commission.creator_id, []);
+    commissionsByCreator.get(commission.creator_id).push(commission);
+  }
   const metrics = new Map();
   for (const event of Array.isArray(events) ? events : []) {
     const slug = safeText(event?.campaign, 120);
@@ -6399,10 +6417,20 @@ async function getCreatorApplications() {
     const visits = current?.sessions.size || 0;
     const paidOrders = current?.orders.size || 0;
     const salesTotal = current?.sales || 0;
+    const creatorProfile = profileByApplication.get(application.id);
+    const creatorCommissions = commissionsByCreator.get(creatorProfile?.id) || [];
+    const commissionDue = creatorCommissions.filter(row => ["earned", "batched"].includes(row.status)).reduce((sum, row) => sum + Number(row.commission_amount || 0), 0);
+    const nextPayoutAt = creatorCommissions.filter(row => ["earned", "batched"].includes(row.status)).map(row => creatorPayoutDate(row.earned_at)).filter(Boolean).sort()[0] || null;
+    const lifetimePaid = creatorCommissions.filter(row => row.status === "paid").reduce((sum, row) => sum + Number(row.commission_amount || 0), 0);
     return {
       ...application,
-      onboarding_status: profileByApplication.get(application.id)?.status || null,
-      agreement_accepted_at: profileByApplication.get(application.id)?.agreement_accepted_at || null,
+      onboarding_status: creatorProfile?.status || null,
+      agreement_version: creatorProfile?.agreement_version || null,
+      agreement_accepted_at: creatorProfile?.agreement_accepted_at || null,
+      payout_account: payoutByCreator.get(creatorProfile?.id) || null,
+      commission_due: commissionDue,
+      next_payout_at: nextPayoutAt,
+      lifetime_paid: lifetimePaid,
       visits,
       paid_orders: paidOrders,
       sales_total: salesTotal,
@@ -6576,6 +6604,28 @@ async function completeCreatorOnboarding(request, response) {
   if (!payoutResponse.ok) return sendError(response, 503, "No pudimos guardar tu método de pago.");
 
   const activatedAt = new Date().toISOString();
+  const acceptanceResponse = await fetch(`${SUPABASE_URL}/rest/v1/creator_agreement_acceptances?on_conflict=creator_id,agreement_version`, {
+    method: "POST",
+    headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" }),
+    body: JSON.stringify({
+      creator_id: profile.id,
+      agreement_version: CREATOR_AGREEMENT_VERSION,
+      agreement_sha256: CREATOR_AGREEMENT_SHA256,
+      agreement_text: CREATOR_AGREEMENT_TEXT,
+      consent_text: CREATOR_AGREEMENT_CONSENT,
+      legal_name: `${profile.first_name || ""} ${profile.last_name || ""}`.trim(),
+      email: profile.email,
+      signature_type: "clickwrap",
+      accepted_at: activatedAt,
+      ip_address: safeText(request.headers["x-forwarded-for"] || request.socket?.remoteAddress, 120).split(",")[0].trim() || null,
+      user_agent: safeText(request.headers["user-agent"], 500) || null
+    })
+  });
+  if (!acceptanceResponse.ok) {
+    const detail = await acceptanceResponse.text().catch(() => "");
+    console.error("[Creator agreement] Could not store acceptance:", acceptanceResponse.status, detail);
+    return sendError(response, 503, "We could not record your agreement acceptance.");
+  }
   const profileResponse = await fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?id=eq.${encodeURIComponent(profile.id)}`, {
     method: "PATCH",
     headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "return=minimal" }),
@@ -6591,11 +6641,50 @@ async function completeCreatorOnboarding(request, response) {
   });
   if (!profileResponse.ok) return sendError(response, 503, "No pudimos activar tu cuenta.");
   const sessionToken = await createCreatorSession(profile.id);
+  await sendCreatorTransactionalEmail({
+    firstName: profile.first_name,
+    lastName: profile.last_name,
+    email: profile.email,
+    subject: "Your CajaModa Creator Program Agreement",
+    heading: "Your agreement is signed",
+    message: `We recorded your electronic acceptance of Creator Program Agreement version ${CREATOR_AGREEMENT_VERSION} on ${activatedAt}.`,
+    buttonLabel: "VIEW AGREEMENT",
+    buttonUrl: `${STOREFRONT_URL}/creators/terms/`,
+    note: "Keep this email with your records.",
+    idempotencyKey: `creator-agreement-${profile.id}-${CREATOR_AGREEMENT_VERSION}`
+  }).catch(error => console.error("[Creator agreement] Confirmation email failed:", error));
   sendJson(response, 200, {
     ok: true,
     sessionToken,
     creator: { firstName: profile.first_name, slug: profile.slug, tier: profile.tier, commissionRate: profile.commission_rate, payout: payout.masked }
   });
+}
+
+async function updateCreatorPayoutAccount(request, response) {
+  const profile = await creatorProfileForSession(request);
+  if (!profile) return sendError(response, 401, "Sign in to your creator account.");
+  const body = await readBody(request);
+  const method = safeText(body?.payoutMethod, 20).toLowerCase();
+  if (!["nequi", "paypal"].includes(method)) return sendError(response, 400, "Choose Nequi or PayPal.");
+  let payout;
+  try { payout = creatorPayoutDestination(method, body?.payoutDestination); }
+  catch (error) { return sendError(response, 400, error.message); }
+  const saved = await fetch(`${SUPABASE_URL}/rest/v1/creator_payout_accounts?on_conflict=creator_id`, {
+    method: "POST",
+    headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" }),
+    body: JSON.stringify({ creator_id: profile.id, method, destination: payout.destination, destination_masked: payout.masked, status: "verified", updated_at: new Date().toISOString() })
+  });
+  if (!saved.ok) return sendError(response, 503, "We could not save your payment method.");
+  sendJson(response, 200, { ok: true, payout: { method, destination_masked: payout.masked, status: "verified" } });
+}
+
+function creatorPayoutDate(value) {
+  const earned = new Date(value);
+  if (Number.isNaN(earned.getTime())) return null;
+  if (earned.getUTCDate() <= 15) {
+    return new Date(Date.UTC(earned.getUTCFullYear(), earned.getUTCMonth() + 1, 0, 23, 59, 59)).toISOString();
+  }
+  return new Date(Date.UTC(earned.getUTCFullYear(), earned.getUTCMonth() + 1, 15, 23, 59, 59)).toISOString();
 }
 
 async function requestCreatorLogin(request, response) {
@@ -6740,17 +6829,30 @@ async function getCreatorPortal(request, response) {
   if (!profile) return sendError(response, 401, "Inicia sesión como creadora.");
   const [payoutResponse, commissionResponse] = await Promise.all([
     fetch(`${SUPABASE_URL}/rest/v1/creator_payout_accounts?creator_id=eq.${encodeURIComponent(profile.id)}&select=method,destination_masked,status&limit=1`, { headers: livePresenceHeaders() }),
-    fetch(`${SUPABASE_URL}/rest/v1/creator_commissions?creator_id=eq.${encodeURIComponent(profile.id)}&select=id,order_id,product_subtotal,commission_rate,commission_amount,products,status,earned_at,paid_at&order=earned_at.desc&limit=100`, { headers: livePresenceHeaders() })
+    fetch(`${SUPABASE_URL}/rest/v1/creator_commissions?creator_id=eq.${encodeURIComponent(profile.id)}&select=id,order_id,commission_rate,commission_amount,products,status,earned_at,paid_at&order=earned_at.desc&limit=100`, { headers: livePresenceHeaders() })
   ]);
   const payouts = payoutResponse.ok ? await payoutResponse.json().catch(() => []) : [];
   const commissions = commissionResponse.ok ? await commissionResponse.json().catch(() => []) : [];
   const rows = await reconcileCreatorCommissions(Array.isArray(commissions) ? commissions : []);
   const totals = rows.reduce((result, row) => {
-    result.earned += Number(row.commission_amount || 0);
-    if (row.status === "paid") result.paid += Number(row.commission_amount || 0);
-    else if (row.status !== "reversed") result.available += Number(row.commission_amount || 0);
+    const amount = Number(row.commission_amount || 0);
+    if (row.status !== "reversed") result.earned += amount;
+    if (row.status === "paid") {
+      result.paid += amount;
+      if (row.paid_at && (!result.lastPayoutAt || new Date(row.paid_at) > new Date(result.lastPayoutAt))) result.lastPayoutAt = row.paid_at;
+    } else if (["earned", "batched"].includes(row.status)) {
+      result.available += amount;
+      const due = creatorPayoutDate(row.earned_at);
+      if (due && (!result.nextPayoutAt || new Date(due) < new Date(result.nextPayoutAt))) result.nextPayoutAt = due;
+    }
     return result;
-  }, { earned: 0, available: 0, paid: 0 });
+  }, { earned: 0, available: 0, paid: 0, lastPayoutAt: null, nextPayoutAt: null });
+  totals.lastPayoutAmount = totals.lastPayoutAt
+    ? rows.filter(row => row.status === "paid" && row.paid_at === totals.lastPayoutAt).reduce((sum, row) => sum + Number(row.commission_amount || 0), 0)
+    : 0;
+  totals.nextPayoutAmount = totals.nextPayoutAt
+    ? rows.filter(row => ["earned", "batched"].includes(row.status) && creatorPayoutDate(row.earned_at) === totals.nextPayoutAt).reduce((sum, row) => sum + Number(row.commission_amount || 0), 0)
+    : 0;
   sendJson(response, 200, {
     ok: true,
     creator: {
@@ -6763,8 +6865,37 @@ async function getCreatorPortal(request, response) {
       payout: Array.isArray(payouts) ? payouts[0] || null : null
     },
     totals,
-    sales: rows
+    sales: rows.map(row => ({
+      id: row.id,
+      products: row.products,
+      commission_rate: row.commission_rate,
+      commission_amount: row.commission_amount,
+      status: row.status,
+      earned_at: row.earned_at,
+      paid_at: row.paid_at,
+      payout_at: creatorPayoutDate(row.earned_at)
+    }))
   });
+}
+
+async function markCreatorCommissionsPaid(request, response, applicationId) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Sign in to Store Loader.");
+  if (!isPlatformAdmin(request)) return sendError(response, 403, "Creator payouts are reserved for CajaModa administration.");
+  const profilesResponse = await fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?application_id=eq.${encodeURIComponent(applicationId)}&select=id&limit=1`, { headers: livePresenceHeaders() });
+  const profiles = profilesResponse.ok ? await profilesResponse.json().catch(() => []) : [];
+  const profile = Array.isArray(profiles) ? profiles[0] : null;
+  if (!profile) return sendError(response, 404, "Creator profile not found.");
+  const due = await fetch(`${SUPABASE_URL}/rest/v1/creator_commissions?creator_id=eq.${encodeURIComponent(profile.id)}&status=in.(earned,batched)&select=id,commission_amount`, { headers: livePresenceHeaders() });
+  const rows = due.ok ? await due.json().catch(() => []) : [];
+  if (!Array.isArray(rows) || !rows.length) return sendJson(response, 200, { ok: true, paidCount: 0, paidAmount: 0 });
+  const paidAt = new Date().toISOString();
+  const updated = await fetch(`${SUPABASE_URL}/rest/v1/creator_commissions?creator_id=eq.${encodeURIComponent(profile.id)}&status=in.(earned,batched)`, {
+    method: "PATCH",
+    headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+    body: JSON.stringify({ status: "paid", paid_at: paidAt })
+  });
+  if (!updated.ok) return sendError(response, 503, "The payout could not be recorded.");
+  sendJson(response, 200, { ok: true, paidCount: rows.length, paidAmount: rows.reduce((sum, row) => sum + Number(row.commission_amount || 0), 0), paidAt });
 }
 
 async function getStoreOwnerCreatorSales(request, response, applicationId) {
@@ -6848,12 +6979,7 @@ async function getStoreOwnerCreatorSales(request, response, applicationId) {
     return result;
   }, { orders: 0, productSales: 0, commission: 0, dueOnFirst: 0, dueOnFifteenth: 0 });
 
-  function payoutDate(value) {
-    const earned = new Date(value);
-    if (Number.isNaN(earned.getTime())) return "";
-    const day = earned.getUTCDate() <= 15 ? 1 : 15;
-    return new Date(Date.UTC(earned.getUTCFullYear(), earned.getUTCMonth() + 1, day)).toISOString();
-  }
+  const payoutDate = creatorPayoutDate;
 
   const attributedSessionIds = new Set(
     attributedEvents.map(event => safeText(event?.session_id, 100)).filter(Boolean)
@@ -7109,6 +7235,29 @@ async function updateCreatorApplication(request, response, applicationId) {
     return sendError(response, 503, "No pudimos actualizar la solicitud.");
   }
   sendJson(response, 200, { ok: true, application: result?.[0] || null });
+}
+
+async function resendCreatorInvitation(request, response, applicationId) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Sign in to Store Loader.");
+  if (!isPlatformAdmin(request)) return sendError(response, 403, "Creator management is reserved for CajaModa administration.");
+  const headers = livePresenceHeaders();
+  const [applicationResponse, profileResponse] = await Promise.all([
+    fetch(`${SUPABASE_URL}/rest/v1/creator_applications?id=eq.${encodeURIComponent(applicationId)}&status=eq.approved&select=*&limit=1`, { headers }),
+    fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?application_id=eq.${encodeURIComponent(applicationId)}&select=status&limit=1`, { headers })
+  ]);
+  const applications = applicationResponse.ok ? await applicationResponse.json().catch(() => []) : [];
+  const profiles = profileResponse.ok ? await profileResponse.json().catch(() => []) : [];
+  const application = Array.isArray(applications) ? applications[0] : null;
+  const profile = Array.isArray(profiles) ? profiles[0] : null;
+  if (!application || !profile) return sendError(response, 404, "Creator invitation not found.");
+  if (profile.status !== "invited") return sendError(response, 409, "Only pending invitations can be resent.");
+  try {
+    await approveCreatorAndSendInvite(application);
+    sendJson(response, 200, { ok: true });
+  } catch (error) {
+    console.error("[Creator invitation] Resend failed:", error);
+    sendError(response, 503, "The invitation could not be resent.");
+  }
 }
 
 async function deleteCreatorApplication(request, response, applicationId) {
@@ -8683,6 +8832,11 @@ const server =
           return;
         }
 
+        if(request.method === "PUT" && url.pathname === "/api/creators/payout-account"){
+          await updateCreatorPayoutAccount(request,response);
+          return;
+        }
+
         const publicCreatorLinkMatch = url.pathname.match(/^\/api\/creator-links\/([a-z0-9]+(?:-[a-z0-9]+)*)$/i);
         if(request.method === "GET" && publicCreatorLinkMatch){
           await getPublicCreatorLink(request,response,publicCreatorLinkMatch[1]);
@@ -8702,6 +8856,18 @@ const server =
         const creatorSalesMatch = url.pathname.match(/^\/api\/store-owner\/creator-applications\/([0-9a-f-]+)\/sales$/i);
         if(request.method === "GET" && creatorSalesMatch){
           await getStoreOwnerCreatorSales(request,response,creatorSalesMatch[1]);
+          return;
+        }
+
+        const creatorInviteMatch = url.pathname.match(/^\/api\/store-owner\/creator-applications\/([0-9a-f-]+)\/invitation$/i);
+        if(request.method === "POST" && creatorInviteMatch){
+          await resendCreatorInvitation(request,response,creatorInviteMatch[1]);
+          return;
+        }
+
+        const creatorPayoutMatch = url.pathname.match(/^\/api\/store-owner\/creator-applications\/([0-9a-f-]+)\/payouts\/mark-paid$/i);
+        if(request.method === "POST" && creatorPayoutMatch){
+          await markCreatorCommissionsPaid(request,response,creatorPayoutMatch[1]);
           return;
         }
 

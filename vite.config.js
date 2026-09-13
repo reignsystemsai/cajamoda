@@ -37,6 +37,7 @@ export default defineConfig({
         checkout: resolve(import.meta.dirname, "checkout/index.html"),
         creators: resolve(import.meta.dirname, "creadores/index.html"),
         jery: resolve(import.meta.dirname, "jery/index.html"),
+        prueba: resolve(import.meta.dirname, "prueba/index.html"),
         orderConfirmation: resolve(import.meta.dirname, "order-confirmation/index.html"),
         admin: resolve(import.meta.dirname, "admin/index.html"),
       },

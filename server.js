@@ -6559,6 +6559,52 @@ async function getCreatorPortal(request, response) {
   });
 }
 
+async function getStoreOwnerCreatorSales(request, response, applicationId) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Sign in to Store Loader.");
+  if (!isPlatformAdmin(request)) return sendError(response, 403, "Creator sales are reserved for CajaModa administration.");
+  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) return sendError(response, 503, "Creator sales are not configured.");
+
+  const profileResponse = await fetch(
+    `${SUPABASE_URL}/rest/v1/creator_profiles?application_id=eq.${encodeURIComponent(applicationId)}&select=id,first_name,last_name,slug,tier,commission_rate&limit=1`,
+    { headers: livePresenceHeaders() }
+  );
+  const profiles = profileResponse.ok ? await profileResponse.json().catch(() => []) : [];
+  const profile = Array.isArray(profiles) ? profiles[0] : null;
+  if (!profile) return sendError(response, 404, "Creator profile not found.");
+
+  const commissionResponse = await fetch(
+    `${SUPABASE_URL}/rest/v1/creator_commissions?creator_id=eq.${encodeURIComponent(profile.id)}&select=order_id,payment_method,product_subtotal,commission_rate,commission_amount,products,status,earned_at,paid_at&order=earned_at.desc&limit=250`,
+    { headers: livePresenceHeaders() }
+  );
+  if (!commissionResponse.ok) {
+    const detail = await commissionResponse.text().catch(() => "");
+    console.error("[Creator sales] Supabase read failed:", commissionResponse.status, detail);
+    return sendError(response, 503, "Creator sales are temporarily unavailable.");
+  }
+  const sales = await commissionResponse.json().catch(() => []);
+  const rows = Array.isArray(sales) ? sales : [];
+  const totals = rows.reduce((result, row) => {
+    if (row.status === "reversed") return result;
+    result.orders += 1;
+    result.productSales += Math.max(0, Number(row.product_subtotal || 0));
+    result.commission += Math.max(0, Number(row.commission_amount || 0));
+    return result;
+  }, { orders: 0, productSales: 0, commission: 0 });
+
+  sendJson(response, 200, {
+    ok: true,
+    creator: {
+      firstName: profile.first_name,
+      lastName: profile.last_name,
+      slug: profile.slug,
+      tier: profile.tier,
+      commissionRate: profile.commission_rate
+    },
+    totals,
+    sales: rows
+  });
+}
+
 async function recordCreatorCommission({ orderId, paymentMethod, productSubtotal, items, campaign }) {
   if (!SUPABASE_URL || !SUPABASE_SECRET_KEY || !orderId || productSubtotal <= 0) return null;
   let slug = creatorSlug(campaign);
@@ -8252,6 +8298,12 @@ const server =
         const creatorApplicationMatch = url.pathname.match(/^\/api\/store-owner\/creator-applications\/([0-9a-f-]+)$/i);
         if(request.method === "PATCH" && creatorApplicationMatch){
           await updateCreatorApplication(request,response,creatorApplicationMatch[1]);
+          return;
+        }
+
+        const creatorSalesMatch = url.pathname.match(/^\/api\/store-owner\/creator-applications\/([0-9a-f-]+)\/sales$/i);
+        if(request.method === "GET" && creatorSalesMatch){
+          await getStoreOwnerCreatorSales(request,response,creatorSalesMatch[1]);
           return;
         }
 

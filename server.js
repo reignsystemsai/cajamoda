@@ -237,7 +237,9 @@ const analytics =
   createAnalyticsService({
     wix,
     getOrders:
-      getWixOrdersForAnalytics
+      getWixOrdersForAnalytics,
+    getProducts:
+      getWixProductsForAnalytics
   });
 
 /* ============================================================
@@ -5739,6 +5741,21 @@ async function getCreatorApplications() {
   return Array.isArray(rows) ? rows : [];
 }
 
+async function getWixProductsForAnalytics() {
+  if (!wix) return [];
+  const result = await wix.productsV3
+    .queryProducts({ fields: ["MEDIA_ITEMS_INFO", "THUMBNAIL"] })
+    .limit(100)
+    .find();
+  return (Array.isArray(result?.items) ? result.items : [])
+    .map(product => ({
+      productId: safeText(product?._id || product?.id, 120),
+      productName: safeText(product?.name, 300),
+      productImage: getProductImageUrl(product)
+    }))
+    .filter(product => product.productId);
+}
+
 async function handleStoreOwnerAnalytics(request, response, url) {
   if (!isAuthorized(request)) {
     return sendError(response, 401, "Sign in to Store Loader.");
@@ -5750,11 +5767,18 @@ async function handleStoreOwnerAnalytics(request, response, url) {
   const days = Number(url.searchParams.get("days") || 30);
   const month = safeText(url.searchParams.get("month"), 20);
   try {
-    const [result, creatorApplications] = await Promise.all([
+    const [result, creatorApplicationsResult] = await Promise.all([
       analytics.dashboard(days, month),
-      getCreatorApplications()
+      getCreatorApplications().catch(error => {
+        console.error("[Creator applications] Dashboard source unavailable:", error);
+        return null;
+      })
     ]);
-    sendJson(response, 200, { ...result, creatorApplications });
+    sendJson(response, 200, {
+      ...result,
+      creatorApplications: Array.isArray(creatorApplicationsResult) ? creatorApplicationsResult : [],
+      creatorApplicationsAvailable: Array.isArray(creatorApplicationsResult)
+    });
   } catch (error) {
     console.error("[Analytics] Dashboard load failed:", error);
     sendError(response, 503, "Wix Data permission is required for Network Management.");

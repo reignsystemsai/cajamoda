@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,follow"><title>CajaModa Colombia</title>
+  <style>*{box-sizing:border-box}html,body{height:100%;margin:0}body{display:grid;place-items:center;background:linear-gradient(145deg,#fff,#fff3f8);font-family:Arial,sans-serif;color:#111}.brand{text-align:center}.mark{font:76px/.75 Georgia,serif;letter-spacing:-.16em}.name{margin-top:20px;font:20px Georgia,serif;letter-spacing:.35em}.country{margin-top:9px;color:#c82f68;font-size:10px;font-weight:800;letter-spacing:.4em}.gem{width:12px;height:12px;margin:28px auto;background:#df2d75;transform:rotate(45deg);animation:pulse .9s ease-in-out infinite alternate}.message{color:#766d73;font-size:13px}@keyframes pulse{to{transform:rotate(45deg) scale(1.65);opacity:.4}}</style>
+</head>
+<body><main class="brand" aria-live="polite"><div class="mark">CM</div><div class="name">CAJAMODA</div><div class="country">COLOMBIA</div><div class="gem"></div><p class="message" id="message">Abriendo la tienda…</p></main>
+<script>
+(()=>{const api="https://cajamoda-storeload-api.onrender.com";const slug=location.pathname.split("/").filter(Boolean)[0]?.toLowerCase()||"";const reserved=new Set(["product","checkout","creadores","creators","startup","admin","analytics","order-confirmation","assets"]);const destination=new URL("/",location.origin);function go(active){if(active){destination.searchParams.set("utm_source","creator");destination.searchParams.set("utm_medium","creator");destination.searchParams.set("utm_campaign",slug);destination.searchParams.set("utm_content","creator-link")}else document.querySelector("#message").textContent="Este enlace no está activo.";if(active)setTimeout(()=>location.replace(destination),250)}if(!slug||reserved.has(slug))return go(false);fetch(`${api}/api/creator-links/${encodeURIComponent(slug)}`,{headers:{Accept:"application/json"}}).then(r=>r.ok?r.json():{active:false}).then(r=>go(r.active===true)).catch(()=>go(false))})();
+</script></body></html>

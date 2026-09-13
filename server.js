@@ -5785,7 +5785,7 @@ async function getWixProductsForAnalytics() {
   const v3ById = new Map(
     v3Products.map(product => [safeText(product?._id || product?.id, 120), product])
   );
-  return productIds.map(productId => {
+  const products = productIds.map(productId => {
     const current = v3ById.get(productId) || {};
     const legacy = legacyById.get(productId) || {};
     return {
@@ -5794,6 +5794,24 @@ async function getWixProductsForAnalytics() {
       productImage: getProductImageUrl(current) || getProductImageUrl(legacy)
     };
   });
+  const missingImageIds = products
+    .filter(product => !product.productImage)
+    .map(product => product.productId);
+  const detailedImages = new Map(await Promise.all(missingImageIds.map(async productId => {
+    try {
+      const result = await wix.productsV3.getProduct(productId, {
+        fields: ["MEDIA_ITEMS_INFO", "THUMBNAIL"]
+      });
+      return [productId, getProductImageUrl(result?.product || result)];
+    } catch (error) {
+      console.warn(`[Analytics] No se pudo cargar la foto de ${productId}:`, error?.message || error);
+      return [productId, ""];
+    }
+  })));
+  return products.map(product => ({
+    ...product,
+    productImage: product.productImage || detailedImages.get(product.productId) || ""
+  }));
 }
 
 async function handleStoreOwnerAnalytics(request, response, url) {
@@ -7228,6 +7246,11 @@ const server =
         }
 
         if(request.method === "POST" && url.pathname === "/api/analytics/events"){
+          await handleAnalyticsEvents(request,response);
+          return;
+        }
+
+        if(request.method === "POST" && url.pathname === "/api/storefront-events"){
           await handleAnalyticsEvents(request,response);
           return;
         }

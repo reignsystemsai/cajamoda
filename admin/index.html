@@ -3138,6 +3138,50 @@ img{
 @media(max-width:620px){#panel-analytics{margin:-12px;padding:16px}.analyticsKpis{grid-template-columns:1fr 1fr}.analyticsKpi{min-height:116px}.analyticsKpiValue{font-size:24px}.analyticsCanvasWrap,.analyticsDonutWrap{height:230px}.analyticsPanel{padding:17px}.analyticsFunnelRow{grid-template-columns:82px 1fr 40px}}
 @media(max-width:900px){.analyticsMetricGroupGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.analyticsMetricGroupGrid{grid-template-columns:1fr}.chatBubble{right:16px;bottom:16px}.chatShell{right:16px;bottom:84px}}
 
+/* Network Management — borderless CajaModa frost */
+#panel-analytics{
+  margin:0!important;
+  padding:clamp(24px,3vw,46px);
+  width:100%!important;
+  min-height:calc(100vh - 42px);
+  border:0;
+  border-radius:0;
+  background:#fff;
+  color:#111;
+  box-shadow:none;
+  overflow:visible;
+}
+.analyticsShell{width:100%;max-width:none;margin:0;gap:30px}
+.analyticsControlColumn{width:min(680px,100%)}.analyticsLiveCompact{width:max-content;min-width:210px;margin-top:12px;padding:9px 12px;border:0;border-radius:12px;background:rgba(255,255,255,.72);box-shadow:0 9px 24px rgba(42,37,29,.05);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}.analyticsLiveCompact .analyticsPanelHead{margin:0}.analyticsLiveCompact .analyticsPanelTitle{font-size:11px}.analyticsLiveCompact .analyticsPanelMeta,.analyticsLiveCompact .analyticsLiveList{display:none}.analyticsLiveCompact .analyticsLiveCount{min-width:20px;height:20px;font-size:9px}.analyticsLiveCompact .analyticsLiveDot{width:6px;height:6px;box-shadow:0 0 0 4px rgba(44,201,139,.1)}
+.analyticsHotAlerts{padding:18px 20px;border:0;border-radius:18px;background:rgba(255,255,255,.64);box-shadow:0 16px 42px rgba(42,37,29,.07);backdrop-filter:blur(26px);-webkit-backdrop-filter:blur(26px)}.analyticsHotHead{display:flex;align-items:center;justify-content:space-between;gap:12px}.analyticsHotTitle{color:#111;font-size:14px;font-weight:820}.analyticsHotTitle span{display:inline-block;width:7px;height:7px;margin-right:9px;border-radius:50%;background:#ff765f;box-shadow:0 0 16px rgba(255,118,95,.52)}.analyticsHotMeta{color:#747880;font-size:10px}.analyticsHotList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 16px;margin-top:13px}.analyticsHotItem{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:9px;align-items:center;padding:9px 0;border-bottom:1px solid rgba(17,17,17,.06)}.analyticsHotRank{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#111;color:#fff;font-size:9px;font-weight:800}.analyticsHotItem strong{display:block;color:#111;font-size:10px}.analyticsHotItem span{display:block;margin-top:3px;color:#6f737b;font-size:9px;line-height:1.35}.analyticsHotItem b{color:#111;font-size:11px}.analyticsHotEmpty{grid-column:1/-1;padding:8px 0;color:#777b82;font-size:10px}
+.analyticsEyebrow,.analyticsSub,.analyticsStatus,.analyticsPanelMeta{color:#696b72}
+.analyticsTitle,.analyticsPanelTitle{color:#111}
+.analyticsLiveDot{background:#2cc98b;box-shadow:0 0 0 7px rgba(44,201,139,.1),0 0 20px rgba(44,201,139,.28)}
+.analyticsRange{border:0;background:rgba(255,255,255,.62);box-shadow:0 12px 34px rgba(42,37,29,.07);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
+.analyticsRangeButton,.analyticsRefresh{color:#60636a}.analyticsRangeButton.active{background:#111;color:#fff}.analyticsRefresh{border:0;background:rgba(255,255,255,.62);color:#111;box-shadow:0 12px 34px rgba(42,37,29,.07)}
+#analyticsMonth{border:0!important;background:rgba(255,255,255,.62)!important;color:#111!important;box-shadow:0 12px 34px rgba(42,37,29,.07)!important}
+.analyticsTableCard,.analyticsBottom .analyticsPanel{border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;overflow:visible!important;transform:none!important}
+.analyticsCard::before{display:none}.analyticsTableHeader{padding:4px 0 18px}.analyticsTableScroll{overflow:visible!important;max-height:none!important}
+.analyticsTable{min-width:0;table-layout:fixed}.analyticsTable th{position:static;background:rgba(255,255,255,.48);color:#666a72;border:0;border-bottom:1px solid rgba(17,17,17,.08);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px)}.analyticsTable th:first-child{border-radius:16px 0 0 0}.analyticsTable th:last-child{border-radius:0 16px 0 0}.analyticsTable th.sorted{color:#111}
+.analyticsTable td{color:#4f535b;border-bottom:1px solid rgba(17,17,17,.065);white-space:normal}.analyticsProduct strong{color:#111}.analyticsProduct span{color:#777b82}.analyticsTable tbody tr{background:rgba(255,255,255,.42);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}.analyticsTable tbody tr:hover{background:rgba(255,255,255,.72)}
+.analyticsTableAction,.analyticsFilterSelect{border:0;background:rgba(255,255,255,.72);color:#40434a;box-shadow:0 8px 22px rgba(42,37,29,.06)}.analyticsLiveCount{background:rgba(44,201,139,.13);color:#14724e}
+.analyticsLiveList{max-height:none;overflow:visible}.analyticsLiveRow{border:0;background:rgba(255,255,255,.58);color:#555a62;box-shadow:0 12px 34px rgba(42,37,29,.06);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}.analyticsLiveRow strong{color:#111}.analyticsSessionId{color:#6d727a}.analyticsEmpty{color:#747880}
+body:has(#panel-analytics.active),.loaderApp:has(#panel-analytics.active){background:#fff!important}
+.loaderMain:has(#panel-analytics.active){max-width:none!important;padding:0!important}
+@media(max-width:960px){#panel-analytics{width:100%!important;margin:0!important;padding:24px 20px}.analyticsTable{table-layout:auto;min-width:760px}.analyticsTableScroll{overflow-x:auto!important;scrollbar-width:none}.analyticsTableScroll::-webkit-scrollbar{display:none}}
+@media(max-width:620px){#panel-analytics{width:100%!important;margin:0!important;padding:20px 16px}.analyticsTableHeader{align-items:flex-start;flex-direction:column}.analyticsTableActions{width:100%}.analyticsHotList{grid-template-columns:1fr}}
+
+
+
+/* Creator Network — separate management dashboard */
+#panel-creators{position:relative;overflow:hidden;margin:0;padding:clamp(24px,3vw,46px);width:100%;min-height:calc(100vh - 42px);border:0;border-radius:0;background:linear-gradient(145deg,#fff 0%,#fff8fb 52%,#fff 100%);color:#111}
+#panel-creators:before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 86% 8%,rgba(210,45,105,.12),transparent 24%),radial-gradient(circle at 8% 88%,rgba(255,202,221,.26),transparent 25%)}
+.creatorNetworkShell{position:relative;display:grid;gap:26px;width:100%}.creatorNetworkTop{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding-bottom:22px;border-bottom:1px solid #eadde3}.creatorNetworkEyebrow{color:#c82f68;font-size:10px;font-weight:850;letter-spacing:.18em;text-transform:uppercase}.creatorNetworkTitle{margin:7px 0 4px;font-family:Georgia,"Times New Roman",serif;font-size:clamp(34px,4vw,58px);line-height:.98}.creatorNetworkSub{margin:0;color:#68656a;font-size:12px;line-height:1.6}.creatorNetworkBadge{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;background:#111;color:#fff;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.creatorNetworkBadge:before{content:"";width:7px;height:7px;border-radius:50%;background:#ff4f98;box-shadow:0 0 0 5px rgba(255,79,152,.16)}
+.creatorSummaryGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.creatorSummaryCard{padding:22px;border:1px solid #f0dce5;border-radius:20px;background:rgba(255,255,255,.82);box-shadow:0 16px 42px rgba(82,39,58,.07)}.creatorSummaryLabel{color:#797279;font-size:9px;font-weight:850;letter-spacing:.12em;text-transform:uppercase}.creatorSummaryValue{margin-top:8px;font-family:Georgia,"Times New Roman",serif;font-size:34px;line-height:1}
+.creatorSection{overflow:hidden;border:1px solid #eddce4;border-radius:22px;background:rgba(255,255,255,.88);box-shadow:0 18px 52px rgba(72,38,52,.065)}.creatorSectionHead{display:flex;justify-content:space-between;gap:16px;padding:20px 22px;border-bottom:1px solid #f0e2e8}.creatorSectionTitle{font-family:Georgia,"Times New Roman",serif;font-size:20px}.creatorSectionMeta{margin-top:4px;color:#777177;font-size:10px}.creatorTableScroll{overflow-x:auto}.creatorTable{width:100%;min-width:820px;border-collapse:collapse}.creatorTable th,.creatorTable td{padding:14px 16px;border-bottom:1px solid #f2e7ec;text-align:left;font-size:10px}.creatorTable th{color:#777177;font-size:8px;letter-spacing:.1em;text-transform:uppercase}.creatorTable tbody tr:last-child td{border-bottom:0}.creatorTable tbody tr:hover{background:#fff8fb}
+.creatorApplicant{display:flex;align-items:center;gap:11px;min-width:190px}.creatorApplicantAvatar{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:#111;color:#fff;font-size:12px;font-weight:850}.creatorApplicant strong{display:block;color:#111;font-size:11px}.creatorApplicant span{display:block;margin-top:3px;color:#817a81;font-size:9px}.creatorLinks{display:flex;flex-wrap:wrap;gap:7px}.creatorLink{display:inline-flex;align-items:center;min-height:28px;padding:0 10px;border:1px solid #e7ccd8;border-radius:999px;background:#fff;color:#9d2452;text-decoration:none;font-size:9px;font-weight:800}.creatorLink:hover{border-color:#c82f68;background:#c82f68;color:#fff}.creatorStatus{display:inline-flex;padding:6px 9px;border-radius:999px;background:#fff0f6;color:#ad275a;font-size:8px;font-weight:850;letter-spacing:.06em;text-transform:uppercase}.creatorEmpty{padding:28px!important;color:#80777d;text-align:center!important;font-size:11px!important}.creatorRank{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#111;color:#fff;font-weight:850}
+@media(max-width:960px){#panel-creators{padding:24px 20px}.creatorNetworkTop{align-items:flex-start;flex-direction:column}.creatorSummaryGrid{grid-template-columns:1fr}}@media(max-width:620px){#panel-creators{padding:20px 16px}.creatorNetworkTitle{font-size:38px}.creatorSectionHead{padding:18px}}
+
 </style>
 
 </head>
@@ -3265,6 +3309,11 @@ img{
     >
       <span class="navIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V9"/><path d="M10 19V5"/><path d="M16 19v-7"/><path d="M22 19H2"/></svg></span>
       Network Management
+    </button>
+
+    <button class="tabButton" data-tab="creators" data-admin-only hidden>
+      <span class="navIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M2.5 20c.5-4 2.4-6 5.5-6s5 2 5.5 6"/><path d="M13.5 15.5c1-.9 2.2-1.4 3.5-1.4 2.7 0 4.2 1.8 4.5 5.4"/></svg></span>
+      Creator Network
     </button>
 
   </nav>
@@ -3407,14 +3456,23 @@ img{
   hidden
 >
   <div class="analyticsShell">
+    <section class="analyticsHotAlerts"><div class="analyticsHotHead"><div class="analyticsHotTitle"><span></span>Hot new products</div><div class="analyticsHotMeta">OpenAI watchlist · first 14 days · top 10 alerts</div></div><div id="analyticsHotList" class="analyticsHotList"></div></section>
     <div class="analyticsTopbar">
       <div>
         <div class="analyticsEyebrow"><span class="analyticsLiveDot"></span>Live commerce signal</div>
         <h1 class="analyticsTitle">Network Management</h1>
         <p class="analyticsSub">Storefront behavior, verified orders, and paid-social attribution in one live view.</p>
+        <article class="analyticsLiveCompact"><div class="analyticsPanelHead"><div><div class="analyticsLiveHead"><span class="analyticsLiveDot"></span><div class="analyticsPanelTitle">Live visitor tracker</div><span id="analyticsLiveCount" class="analyticsLiveCount">0</span></div><div class="analyticsPanelMeta">Refreshes every 8 seconds.</div></div></div><div id="analyticsLiveRows" class="analyticsLiveList"></div></article>
       </div>
-      <div>
+      <div class="analyticsControlColumn">
         <div class="analyticsControls">
+          <div class="analyticsRange" aria-label="Analytics date range">
+            <button class="analyticsRangeButton" data-range-days="1" type="button">Day</button>
+            <button class="analyticsRangeButton" data-range-days="7" type="button">Week</button>
+            <button class="analyticsRangeButton active" data-range-days="30" type="button">Month</button>
+            <button class="analyticsRangeButton" data-range-days="90" type="button">Quarter</button>
+            <button class="analyticsRangeButton" data-range-days="365" type="button">Year</button>
+          </div>
           <input id="analyticsMonth" type="month" aria-label="Dashboard month" style="height:36px;border:1px solid rgba(255,255,255,.11);border-radius:10px;background:rgba(255,255,255,.055);color:#fff;padding:0 12px">
           <button id="analyticsRefresh" class="analyticsRefresh" type="button"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0 2 5"/><path d="M20 4v7h-7"/></svg>Refresh</button>
         </div>
@@ -3422,7 +3480,12 @@ img{
       </div>
     </div>
 
-    <div class="analyticsGrid analyticsKpis" id="analyticsKpis">
+    <article class="analyticsCard analyticsTableCard">
+      <div class="analyticsTableHeader"><div><div class="analyticsPanelTitle">Live product views</div><div class="analyticsPanelMeta">Overall automatically ranks the 10 strongest products.</div></div><div class="analyticsTableActions"><span class="analyticsFilterLabel">Filter by</span><select id="analyticsMetricFilter" class="analyticsFilterSelect" aria-label="Filter products by metric"><option value="overall">Overall</option><option value="views">Views</option><option value="favorites">Favorites</option><option value="shares">Shares</option><option value="addToCart">Add to cart</option><option value="checkouts">Checkout</option><option value="purchases">Purchases</option></select><select id="analyticsOrderFilter" class="analyticsFilterSelect" aria-label="Product ranking order"><option value="desc">Highest</option><option value="asc">Lowest</option></select><button id="analyticsShowAll" class="analyticsTableAction" type="button">Show all products</button></div></div>
+      <div class="analyticsTableScroll"><table class="analyticsTable"><thead><tr><th>Product</th><th>Views</th><th>Favorites</th><th>Shares</th><th>Add to cart</th><th>Checkout</th><th>Purchase</th></tr></thead><tbody id="analyticsProductRows"></tbody></table></div>
+    </article>
+
+    <div class="analyticsGrid analyticsKpis" id="analyticsKpis" hidden style="display:none">
       <article class="analyticsCard analyticsKpi live"><div class="analyticsKpiLabel">Live now</div><div id="analyticsLiveVisitors" class="analyticsKpiValue">—</div><div class="analyticsKpiMeta">active in the last 45 seconds</div></article>
       <article class="analyticsCard analyticsKpi"><div class="analyticsKpiLabel">Product views</div><div id="analyticsViews" class="analyticsKpiValue">—</div><div class="analyticsKpiMeta">real product detail views</div></article>
       <article class="analyticsCard analyticsKpi"><div class="analyticsKpiLabel">Add to cart</div><div id="analyticsCart" class="analyticsKpiValue">—</div><div class="analyticsKpiMeta">successful cart additions</div></article>
@@ -3441,7 +3504,7 @@ img{
       <article class="analyticsCard analyticsKpi"><div class="analyticsKpiLabel">Gross profit</div><div id="analyticsGrossProfit" class="analyticsKpiValue">—</div><div id="analyticsGrossMargin" class="analyticsKpiMeta">revenue − COGS</div></article>
     </div>
 
-    <div class="analyticsGrid analyticsTwoCol">
+    <div class="analyticsGrid analyticsTwoCol" hidden style="display:none">
       <article class="analyticsCard analyticsPanel">
         <div class="analyticsPanelHead"><div><div class="analyticsPanelTitle">Marketing performance</div><div class="analyticsPanelMeta">WhatsApp, Instagram, TikTok, and direct.</div></div></div>
         <div class="analyticsDonutWrap"><canvas id="analyticsDonutCanvas"></canvas><div class="analyticsDonutCenter"><strong id="analyticsSessionTotal">—</strong><span>sessions</span></div></div>
@@ -3452,28 +3515,27 @@ img{
       </article>
     </div>
 
-    <div class="analyticsGrid analyticsThreeCol">
+    <div class="analyticsGrid analyticsThreeCol" hidden style="display:none">
       <article class="analyticsCard analyticsPanel"><div class="analyticsPanelHead"><div><div class="analyticsPanelTitle">Commerce funnel</div><div class="analyticsPanelMeta">Unique sessions at each step.</div></div></div><div id="analyticsFunnel" class="analyticsFunnel"></div></article>
       <article class="analyticsCard analyticsPanel"><div class="analyticsPanelHead"><div><div class="analyticsPanelTitle">Channel performance</div><div class="analyticsPanelMeta">Sessions, purchases, revenue, and ROAS.</div></div></div><div id="analyticsChannels" class="analyticsChannelList"></div></article>
       <article class="analyticsCard analyticsPanel"><div class="analyticsPanelHead"><div><div class="analyticsPanelTitle">Monthly inputs</div><div class="analyticsPanelMeta">Advertising and inventory investment for the selected month.</div></div></div><div class="analyticsSettings"><div class="analyticsSetting"><label for="analyticsSpendWhatsapp">WhatsApp ads</label><input id="analyticsSpendWhatsapp" type="number" min="0" step="1000"></div><div class="analyticsSetting"><label for="analyticsSpendInstagram">Instagram ads</label><input id="analyticsSpendInstagram" type="number" min="0" step="1000"></div><div class="analyticsSetting"><label for="analyticsSpendTiktok">TikTok ads</label><input id="analyticsSpendTiktok" type="number" min="0" step="1000"></div><div class="analyticsSetting"><label for="analyticsInventoryInput">Inventory spend</label><input id="analyticsInventoryInput" type="number" min="0" step="1000"></div><button id="analyticsSaveSettings" class="analyticsSave" type="button">Save Monthly Inputs</button><div id="analyticsBusinessReadout" class="analyticsPanelMeta"></div></div></article>
     </div>
 
-    <article class="analyticsCard analyticsTableCard">
-      <div class="analyticsTableHeader"><div class="analyticsPanelTitle">Top products</div><div class="analyticsPanelMeta">Click any metric to rank the top 10 by that action.</div></div>
-      <div class="analyticsTableScroll"><table class="analyticsTable"><thead><tr><th data-product-sort="name">Product</th><th class="sorted" data-product-sort="views">Views</th><th data-product-sort="favorites">Favorites</th><th data-product-sort="shares">Shares</th><th data-product-sort="addToCart">Add to cart</th><th data-product-sort="checkouts">Checkout</th><th data-product-sort="purchases">Purchase</th></tr></thead><tbody id="analyticsProductRows"></tbody></table></div>
-    </article>
-
-    <article class="analyticsCard analyticsTableCard">
-      <div class="analyticsTableHeader"><div class="analyticsPanelTitle">Creator applications</div><div class="analyticsPanelMeta">Newest applicants first. Open their social profiles to verify them quickly.</div></div>
-      <div class="analyticsTableScroll"><table class="analyticsTable"><thead><tr><th>Applicant</th><th>City</th><th>Contact</th><th>Social profiles</th><th>How they heard</th><th>Status</th><th>Submitted</th></tr></thead><tbody id="creatorApplicationRows"></tbody></table></div>
-    </article>
-
-    <div class="analyticsGrid analyticsBottom">
-      <article class="analyticsCard analyticsPanel"><div class="analyticsPanelHead"><div><div class="analyticsLiveHead"><span class="analyticsLiveDot"></span><div class="analyticsPanelTitle">Live visitor tracker</div><span id="analyticsLiveCount" class="analyticsLiveCount">0</span></div><div class="analyticsPanelMeta">Refreshes every 8 seconds. Unknown locations stay unknown.</div></div></div><div id="analyticsLiveRows" class="analyticsLiveList"></div></article>
-      <article class="analyticsCard analyticsPanel"><div class="analyticsPanelHead"><div><div class="analyticsPanelTitle">Campaign pulse</div><div class="analyticsPanelMeta">UTM campaign activity and verified revenue.</div></div></div><div id="analyticsCampaigns" class="analyticsCampaignList"></div></article>
-    </div>
   </div>
 </section>
+
+
+<!-- ==========================================================
+     CREATOR NETWORK
+     ========================================================== -->
+<section id="panel-creators" class="panel" data-admin-only hidden>
+<div class="creatorNetworkShell">
+<header class="creatorNetworkTop"><div><div class="creatorNetworkEyebrow">CajaModa Colombia · Red de creadoras</div><h1 class="creatorNetworkTitle">Creator Network</h1><p class="creatorNetworkSub">Revisa solicitudes, sigue a las creadoras seleccionadas y descubre quién está generando el mayor impacto.</p></div><div class="creatorNetworkBadge">Panel en vivo</div></header>
+<div class="creatorSummaryGrid"><article class="creatorSummaryCard"><div class="creatorSummaryLabel">Solicitudes nuevas</div><div id="creatorIncomingCount" class="creatorSummaryValue">0</div></article><article class="creatorSummaryCard"><div class="creatorSummaryLabel">Creadoras seleccionadas</div><div id="creatorSelectedCount" class="creatorSummaryValue">0</div></article><article class="creatorSummaryCard"><div class="creatorSummaryLabel">Ranking activo</div><div id="creatorRankedCount" class="creatorSummaryValue">0</div></article></div>
+<article class="creatorSection"><div class="creatorSectionHead"><div><div class="creatorSectionTitle">Solicitudes entrantes</div><div class="creatorSectionMeta">Abre WhatsApp, Instagram o TikTok para revisar cada perfil rápidamente.</div></div></div><div class="creatorTableScroll"><table class="creatorTable"><thead><tr><th>Solicitante</th><th>Ubicación</th><th>WhatsApp</th><th>Redes</th><th>Cómo llegó</th><th>Estado</th><th>Fecha</th></tr></thead><tbody id="creatorIncomingRows"></tbody></table></div></article>
+<article class="creatorSection"><div class="creatorSectionHead"><div><div class="creatorSectionTitle">Creadoras seleccionadas</div><div class="creatorSectionMeta">La lista de creadoras aprobadas para el programa CajaModa.</div></div></div><div class="creatorTableScroll"><table class="creatorTable"><thead><tr><th>Creadora</th><th>Ubicación</th><th>WhatsApp</th><th>Redes</th><th>Estado</th><th>Seleccionada</th></tr></thead><tbody id="creatorSelectedRows"></tbody></table></div></article>
+<article class="creatorSection"><div class="creatorSectionHead"><div><div class="creatorSectionTitle">Top 10 creadoras</div><div class="creatorSectionMeta">Clasificación por actividad real atribuida a cada creadora. No se muestran números inventados.</div></div></div><div class="creatorTableScroll"><table class="creatorTable"><thead><tr><th>Posición</th><th>Creadora</th><th>Visitas</th><th>Pedidos pagados</th><th>Ventas</th><th>Conversión</th></tr></thead><tbody id="creatorRankingRows"></tbody></table></div></article>
+</div></section>
 
 <!-- ==========================================================
      PRODUCTS
@@ -3979,7 +4041,7 @@ img{
     qsa("[data-admin-only]").forEach(element => {
       element.hidden = !allowed;
     });
-    if(!allowed && $("panel-analytics")?.classList.contains("active")){
+    if(!allowed && ($("panel-analytics")?.classList.contains("active") || $("panel-creators")?.classList.contains("active"))){
       showPanel("dashboard");
     }
   }
@@ -4587,7 +4649,7 @@ function displayOrderNumber(order){
       behavior:"smooth"
     });
 
-    if(name === "analytics"){
+    if(name === "analytics" || name === "creators"){
       loadAnalytics();
       startAnalyticsPolling();
     }else{

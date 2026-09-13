@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const API_BASE = "https://cajamoda-storeload-api.onrender.com";
+  const API_BASE = "";
   const TOKEN_KEY = "cajamoda-store-loader-token";
   const colors = {
     views: "#7f8dff",
@@ -10,7 +10,9 @@
   };
   let currentData = null;
   let days = 30;
-  let sortKey = "views";
+  let sortKey = "overall";
+  let sortDirection = "desc";
+  let showAllProducts = false;
   let pollTimer = null;
   let loading = false;
   let drawToken = 0;
@@ -212,15 +214,20 @@
     const body = $("analyticsProductRows");
     if (!body || !currentData) return;
     qsa("[data-product-sort]").forEach(header => {
-      header.classList.toggle("sorted", header.dataset.productSort === sortKey);
+      header.classList.toggle("sorted", header.dataset.productSort === sortKey && header.dataset.sortDirection === sortDirection);
     });
-    const products = [...(currentData.topProducts || [])]
+    const allProducts = [...(currentData.topProducts || [])]
       .sort((left, right) => {
-        if (sortKey === "name") return String(left.name).localeCompare(String(right.name));
-        return Number(right[sortKey] || 0) - Number(left[sortKey] || 0) ||
-          Number(right.views || 0) - Number(left.views || 0);
-      })
-      .slice(0, 10);
+        const score = product => ["views", "favorites", "shares", "addToCart", "checkouts", "purchases"]
+          .reduce((total, key) => total + Number(product[key] || 0), 0);
+        const leftValue = sortKey === "overall" ? score(left) : Number(left[sortKey] || 0);
+        const rightValue = sortKey === "overall" ? score(right) : Number(right[sortKey] || 0);
+        const result = sortDirection === "asc" ? leftValue - rightValue : rightValue - leftValue;
+        return result || Number(right.views || 0) - Number(left.views || 0) || String(left.name).localeCompare(String(right.name));
+      });
+    const products = showAllProducts ? allProducts : allProducts.slice(0, 10);
+    const showAllButton = $("analyticsShowAll");
+    if (showAllButton) showAllButton.textContent = showAllProducts ? "Show top 10" : `Show all (${allProducts.length})`;
     body.innerHTML = products.length ? products.map(product => {
       const image = product.image
         ? '<img src="' + escapeHtml(product.image) + '" alt="" loading="lazy">'
@@ -245,34 +252,14 @@
     });
   }
 
-  function renderCreatorApplications(rows) {
-    const body = $("creatorApplicationRows");
-    if (!body) return;
-    const applications = Array.isArray(rows) ? rows : [];
-    body.innerHTML = applications.length ? applications.map(application => {
-      const firstName = String(application.first_name || "");
-      const lastName = String(application.last_name || "");
-      const initials = (firstName.slice(0, 1) + lastName.slice(0, 1)).toUpperCase() || "CM";
-      const instagram = String(application.instagram_username || "").replace(/^@/, "");
-      const tiktok = String(application.tiktok_username || "").replace(/^@/, "");
-      const socialLinks = [
-        instagram ? '<a class="creatorLink" href="https://www.instagram.com/' + encodeURIComponent(instagram) + '" target="_blank" rel="noopener">Instagram</a>' : "",
-        tiktok ? '<a class="creatorLink" href="https://www.tiktok.com/@' + encodeURIComponent(tiktok) + '" target="_blank" rel="noopener">TikTok</a>' : ""
-      ].filter(Boolean).join("");
-      const phoneDigits = String(application.phone || "").replace(/\D/g, "");
-      const submitted = application.created_at
-        ? new Intl.DateTimeFormat("es-CO", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Bogota" }).format(new Date(application.created_at))
-        : "—";
-      return '<tr>' +
-        '<td><div class="creatorApplicant"><span class="creatorApplicantAvatar">' + escapeHtml(initials) + '</span><div><strong>' + escapeHtml(firstName + " " + lastName) + '</strong><span>' + escapeHtml(application.email || "") + '</span></div></div></td>' +
-        '<td>' + escapeHtml([application.city, application.department].filter(Boolean).join(", ") || "—") + '</td>' +
-        '<td><a class="creatorLink" href="https://wa.me/' + encodeURIComponent(phoneDigits) + '" target="_blank" rel="noopener">WhatsApp</a></td>' +
-        '<td><div class="creatorLinks">' + socialLinks + '</div></td>' +
-        '<td>' + escapeHtml(application.heard_about || "—") + '</td>' +
-        '<td><span class="creatorStatus">' + escapeHtml(application.status || "new") + '</span></td>' +
-        '<td>' + escapeHtml(submitted) + '</td>' +
-      '</tr>';
-    }).join("") : '<tr><td colspan="7"><div class="analyticsEmpty">New creator applications will appear here automatically.</div></td></tr>';
+  function renderHotProducts(products = []) {
+    const root = $("analyticsHotList");
+    if (!root) return;
+    root.innerHTML = products.length ? products.map((product,index) => '<article class="analyticsHotItem">' +
+      '<span class="analyticsHotRank">' + (index + 1) + '</span>' +
+      '<div><strong>' + escapeHtml(product.name || "Product") + '</strong><span>' + escapeHtml(product.status || "Watch") + ' · ' + escapeHtml(product.reason || "New activity detected.") + '</span></div>' +
+      '<b>' + number(product.signalScore) + '</b>' +
+    '</article>').join("") : '<div class="analyticsHotEmpty">No new-product momentum alerts yet. Alerts appear as real activity arrives.</div>';
   }
 
   function renderFunnel(rows) {
@@ -303,6 +290,12 @@
       '</div>';
     }).join("");
   }
+
+
+  function creatorPerson(a){const f=String(a?.first_name||""),l=String(a?.last_name||""),instagram=String(a?.instagram_username||"").replace(/^@/,""),tiktok=String(a?.tiktok_username||"").replace(/^@/,""),phoneDigits=String(a?.phone||"").replace(/\D/g,"");return{name:(f+" "+l).trim()||"Creadora CajaModa",email:String(a?.email||""),location:[a?.city,a?.department].filter(Boolean).join(", ")||"—",instagram,tiktok,phoneDigits,initials:(f.slice(0,1)+l.slice(0,1)).toUpperCase()||"CM",submitted:a?.created_at?new Intl.DateTimeFormat("es-CO",{dateStyle:"medium",timeZone:"America/Bogota"}).format(new Date(a.created_at)):"—",status:String(a?.status||"new"),visits:Number(a?.visits||a?.analytics?.visits||0),orders:Number(a?.paid_orders||a?.analytics?.paid_orders||0),sales:Number(a?.sales_total||a?.analytics?.sales_total||0),conversion:Number(a?.conversion_rate||a?.analytics?.conversion_rate||0)}}
+  function creatorProfileLinks(p){return[p.instagram?'<a class="creatorLink" href="https://www.instagram.com/'+encodeURIComponent(p.instagram)+'" target="_blank" rel="noopener">Instagram</a>':"",p.tiktok?'<a class="creatorLink" href="https://www.tiktok.com/@'+encodeURIComponent(p.tiktok)+'" target="_blank" rel="noopener">TikTok</a>':""].filter(Boolean).join("")}
+  function creatorIdentity(p){return'<div class="creatorApplicant"><span class="creatorApplicantAvatar">'+escapeHtml(p.initials)+'</span><div><strong>'+escapeHtml(p.name)+'</strong><span>'+escapeHtml(p.email)+'</span></div></div>'}
+  function renderCreatorNetwork(rows){const apps=(Array.isArray(rows)?rows:[]).map(application=>({application,person:creatorPerson(application)})),incoming=apps.filter(x=>["new","verifying"].includes(x.person.status)),selected=apps.filter(x=>x.person.status==="approved"),ranked=selected.filter(x=>x.person.visits>0||x.person.orders>0||x.person.sales>0).sort((a,b)=>(b.person.sales-a.person.sales)||(b.person.orders-a.person.orders)||(b.person.visits-a.person.visits)).slice(0,10);setText("creatorIncomingCount",number(incoming.length));setText("creatorSelectedCount",number(selected.length));setText("creatorRankedCount",number(ranked.length));const ib=$("creatorIncomingRows");if(ib)ib.innerHTML=incoming.length?incoming.map(({application,person:p})=>'<tr><td>'+creatorIdentity(p)+'</td><td>'+escapeHtml(p.location)+'</td><td><a class="creatorLink" href="https://wa.me/'+encodeURIComponent(p.phoneDigits)+'" target="_blank" rel="noopener">WhatsApp</a></td><td><div class="creatorLinks">'+creatorProfileLinks(p)+'</div></td><td>'+escapeHtml(application.heard_about||"—")+'</td><td><span class="creatorStatus">'+escapeHtml(p.status)+'</span></td><td>'+escapeHtml(p.submitted)+'</td></tr>').join(""):'<tr><td class="creatorEmpty" colspan="7">Las solicitudes nuevas aparecerán aquí automáticamente.</td></tr>';const sb=$("creatorSelectedRows");if(sb)sb.innerHTML=selected.length?selected.map(({person:p})=>'<tr><td>'+creatorIdentity(p)+'</td><td>'+escapeHtml(p.location)+'</td><td><a class="creatorLink" href="https://wa.me/'+encodeURIComponent(p.phoneDigits)+'" target="_blank" rel="noopener">WhatsApp</a></td><td><div class="creatorLinks">'+creatorProfileLinks(p)+'</div></td><td><span class="creatorStatus">Seleccionada</span></td><td>'+escapeHtml(p.submitted)+'</td></tr>').join(""):'<tr><td class="creatorEmpty" colspan="6">Las creadoras aprobadas aparecerán aquí.</td></tr>';const rb=$("creatorRankingRows");if(rb)rb.innerHTML=ranked.length?ranked.map(({person:p},i)=>'<tr><td><span class="creatorRank">'+(i+1)+'</span></td><td>'+creatorIdentity(p)+'</td><td>'+number(p.visits)+'</td><td>'+number(p.orders)+'</td><td>'+money(p.sales)+'</td><td>'+percent(p.conversion/100)+'</td></tr>').join(""):'<tr><td class="creatorEmpty" colspan="6">El Top 10 aparecerá cuando las creadoras seleccionadas comiencen a generar actividad atribuida.</td></tr>'}
 
   function renderLive(realtime) {
     const rows = realtime?.sessions || [];
@@ -385,7 +378,8 @@
     renderFunnel(data.funnel || []);
     renderChannels(data.channels || []);
     renderProducts();
-    renderCreatorApplications(data.creatorApplications || []);
+    renderCreatorNetwork(data.creatorApplications || []);
+    renderHotProducts(data.hotProducts || []);
     renderLive(data.realtime || {});
     renderCampaigns(data.campaigns || []);
     populateSettings(data.settings || {});
@@ -399,7 +393,7 @@
     setText("analyticsStatus", "Refreshing live data…");
     try {
       const month = $("analyticsMonth")?.value || new Date().toISOString().slice(0, 7);
-      render(await request("/api/store-owner/analytics?month=" + encodeURIComponent(month)));
+      render(await request("/api/store-owner/analytics?days=" + encodeURIComponent(days) + "&month=" + encodeURIComponent(month)));
     } catch (error) {
       setText("analyticsStatus", error?.message || "Analytics could not be loaded.");
     } finally {
@@ -421,6 +415,13 @@
     clearInterval(pollTimer);
     pollTimer = null;
   }
+
+  function refreshWhenVisible() {
+    if ($("panel-analytics")?.classList.contains("active") && document.visibilityState === "visible") load(true);
+  }
+
+  window.addEventListener("focus", refreshWhenVisible);
+  document.addEventListener("visibilitychange", refreshWhenVisible);
 
   async function saveSettings() {
     const button = $("analyticsSaveSettings");
@@ -454,11 +455,31 @@
     $("analyticsMonth").value = new Date().toISOString().slice(0, 7);
     $("analyticsMonth").addEventListener("change", () => load(true));
   }
+  qsa("[data-range-days]").forEach(button => {
+    button.addEventListener("click", () => {
+      days = Number(button.dataset.rangeDays || 30);
+      qsa("[data-range-days]").forEach(candidate => candidate.classList.toggle("active", candidate === button));
+      load(true);
+    });
+  });
   qsa("[data-product-sort]").forEach(header => {
     header.addEventListener("click", () => {
-      sortKey = header.dataset.productSort || "views";
+      sortKey = header.dataset.productSort || "overall";
+      sortDirection = header.dataset.sortDirection || "desc";
       renderProducts();
     });
+  });
+  $("analyticsMetricFilter")?.addEventListener("change", event => {
+    sortKey = event.target.value || "overall";
+    renderProducts();
+  });
+  $("analyticsOrderFilter")?.addEventListener("change", event => {
+    sortDirection = event.target.value === "asc" ? "asc" : "desc";
+    renderProducts();
+  });
+  $("analyticsShowAll")?.addEventListener("click", () => {
+    showAllProducts = !showAllProducts;
+    renderProducts();
   });
   $("analyticsRefresh")?.addEventListener("click", () => load(true));
   $("analyticsSaveSettings")?.addEventListener("click", saveSettings);
@@ -469,13 +490,13 @@
     root.dataset.organized = "true";
     root.className = "analyticsMetricGroups";
     const groups = [
-      ["Marketing", ["analyticsShares"]],
-      ["Sales and Revenue", ["analyticsPurchases", "analyticsRevenue", "analyticsAov", "analyticsGrowth"]],
-      ["Customers and Conversion", ["analyticsCheckouts", "analyticsConversion", "analyticsAbandoned"]],
-      ["Inventory and Profit", ["analyticsInventorySpend", "analyticsCogs", "analyticsInventoryValue", "analyticsGrossProfit"]],
-      ["Product Performance", ["analyticsViews", "analyticsFavorites", "analyticsCart"]],
-      ["Live Activity", ["analyticsLiveVisitors"]]
+      ["Sales and Revenue", ["analyticsPurchases", "analyticsRevenue", "analyticsAov", "analyticsGrowth"]]
     ];
+    const visibleMetricIds = new Set(groups.flatMap(([, ids]) => ids));
+    root.querySelectorAll(":scope > .analyticsKpi").forEach(card => {
+      const value = card.querySelector("[id]");
+      if (!value || !visibleMetricIds.has(value.id)) card.style.display = "none";
+    });
     groups.forEach(([label, ids], index) => {
       const details = document.createElement("details");
       details.className = "analyticsMetricGroup";

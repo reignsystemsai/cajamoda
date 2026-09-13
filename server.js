@@ -5603,12 +5603,137 @@ async function handleAnalyticsEvents(request, response) {
   }
 }
 
+function livePresenceHeaders(extra = {}) {
+  const headers = {
+    apikey: SUPABASE_SECRET_KEY,
+    Accept: "application/json",
+    ...extra
+  };
+  if (SUPABASE_SECRET_KEY.startsWith("eyJ")) {
+    headers.Authorization = `Bearer ${SUPABASE_SECRET_KEY}`;
+  }
+  return headers;
+}
+
+function normalizeLivePresence(event) {
+  const source = event && typeof event === "object" ? event : {};
+  const sessionId = safeText(source.sessionId, 80);
+  if (!sessionId) {
+    const error = new Error("A live session ID is required.");
+    error.statusCode = 400;
+    throw error;
+  }
+  const durationSeconds = Math.max(
+    0,
+    Math.round(Number(source.properties?.durationSeconds || 0))
+  );
+  const lastTouch = source.lastTouch && typeof source.lastTouch === "object"
+    ? source.lastTouch
+    : {};
+  const location = source.location && typeof source.location === "object"
+    ? source.location
+    : {};
+  return {
+    session_id: sessionId,
+    visitor_id: safeText(source.visitorId, 80),
+    event_type: safeText(source.eventType, 40).toLowerCase() || "heartbeat",
+    page: safeText(source.page, 80),
+    path: safeText(source.path, 1000),
+    product_name: safeText(source.productName, 300),
+    city: safeText(location.city, 150),
+    region: safeText(location.region, 150),
+    country: safeText(location.country, 10),
+    channel: safeText(lastTouch.channel, 80) || "direct",
+    campaign: safeText(lastTouch.campaign, 180),
+    duration_seconds: Number.isFinite(durationSeconds) ? durationSeconds : 0,
+    last_seen_at: new Date().toISOString()
+  };
+}
+
+async function persistLivePresence(event) {
+  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
+    const error = new Error("Live presence storage is not configured.");
+    error.statusCode = 503;
+    throw error;
+  }
+
+  const row = normalizeLivePresence(event);
+  const isLeaving = row.event_type === "page_leave";
+  const endpoint = isLeaving
+    ? `${SUPABASE_URL}/rest/v1/live_sessions?session_id=eq.${encodeURIComponent(row.session_id)}`
+    : `${SUPABASE_URL}/rest/v1/live_sessions?on_conflict=session_id`;
+  const response = await fetch(endpoint, {
+    method: isLeaving ? "DELETE" : "POST",
+    headers: livePresenceHeaders(
+      isLeaving
+        ? {}
+        : {
+            "Content-Type": "application/json",
+            Prefer: "resolution=merge-duplicates,return=minimal"
+          }
+    ),
+    body: isLeaving ? undefined : JSON.stringify(row)
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    console.error("[Live presence] Supabase write failed:", response.status, detail);
+    const error = new Error("Live presence is temporarily unavailable.");
+    error.statusCode = 503;
+    throw error;
+  }
+
+  return { active: !isLeaving, sessionId: row.session_id };
+}
+
+async function getLivePresence() {
+  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
+    throw new Error("Live presence storage is not configured.");
+  }
+
+  const cutoff = new Date(Date.now() - 45 * 1000).toISOString();
+  const query = new URLSearchParams({
+    select: "session_id,visitor_id,event_type,page,path,product_name,city,region,country,channel,campaign,duration_seconds,last_seen_at",
+    last_seen_at: `gte.${cutoff}`,
+    order: "last_seen_at.desc",
+    limit: "100"
+  });
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/live_sessions?${query.toString()}`,
+    { headers: livePresenceHeaders() }
+  );
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    console.error("[Live presence] Supabase read failed:", response.status, detail);
+    throw new Error("Live presence is temporarily unavailable.");
+  }
+
+  const rows = await response.json();
+  return (Array.isArray(rows) ? rows : []).map(row => ({
+    sessionId: safeText(row.session_id, 80),
+    visitorId: safeText(row.visitor_id, 80),
+    page: safeText(row.page, 80) || "home",
+    path: safeText(row.path, 1000),
+    action: safeText(row.event_type, 40) || "heartbeat",
+    productName: safeText(row.product_name, 300),
+    city: safeText(row.city, 150),
+    region: safeText(row.region, 150),
+    country: safeText(row.country, 10),
+    channel: safeText(row.channel, 80) || "direct",
+    campaign: safeText(row.campaign, 180),
+    timeOnSiteSeconds: Math.max(0, Number(row.duration_seconds || 0)),
+    lastSeenAt: safeText(row.last_seen_at, 40)
+  }));
+}
+
 async function handleLivePresence(request, response) {
   try {
     const body = await readBody(request);
-    const result = analytics.touchLiveSession(body?.event);
+    const result = await persistLivePresence(body?.event);
     sendJson(response, 202, { ok: true, ...result });
   } catch (error) {
+    console.error("[Live presence] Request failed:", error);
     sendError(
       response,
       Number(error?.statusCode || 400),
@@ -5825,15 +5950,25 @@ async function handleStoreOwnerAnalytics(request, response, url) {
   const days = Number(url.searchParams.get("days") || 30);
   const month = safeText(url.searchParams.get("month"), 20);
   try {
-    const [result, creatorApplicationsResult] = await Promise.all([
+    const [result, creatorApplicationsResult, liveSessions] = await Promise.all([
       analytics.dashboard(days, month),
       getCreatorApplications().catch(error => {
         console.error("[Creator applications] Dashboard source unavailable:", error);
         return null;
-      })
+      }),
+      getLivePresence()
     ]);
     sendJson(response, 200, {
       ...result,
+      overview: {
+        ...(result?.overview || {}),
+        liveVisitors: liveSessions.length
+      },
+      realtime: {
+        ...(result?.realtime || {}),
+        activeVisitors: liveSessions.length,
+        sessions: liveSessions
+      },
       creatorApplications: Array.isArray(creatorApplicationsResult) ? creatorApplicationsResult : [],
       creatorApplicationsAvailable: Array.isArray(creatorApplicationsResult)
     });

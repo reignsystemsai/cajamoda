@@ -117,6 +117,10 @@ const ENVIA_ORIGIN_PHONE = safeEnv(process.env.ENVIA_ORIGIN_PHONE);
 const ENVIA_ORIGIN_STREET = safeEnv(process.env.ENVIA_ORIGIN_STREET);
 const ENVIA_ORIGIN_POSTAL_CODE = safeEnv(process.env.ENVIA_ORIGIN_POSTAL_CODE);
 const GOOGLE_MAPS_API_KEY = safeEnv(process.env.GOOGLE_MAPS_API_KEY);
+const SUPABASE_URL = safeEnv(process.env.SUPABASE_URL).replace(/\/$/, "");
+const SUPABASE_SECRET_KEY = safeEnv(
+  process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 const PICKUP_FEE_COP = 10000;
 const MOTO_BASE_FEE_COP = 8000;
 const MOTO_INCLUDED_KM = 3;
@@ -134,6 +138,7 @@ const enviaLabelLocks = new Map();
 const enviaWebhookProcessing = new Set();
 const processedEnviaWebhookIds = new Map();
 const enviaShipmentStatuses = new Map();
+const creatorApplicationAttempts = new Map();
 const CARTAGENA_PICKUP_ADDRESS = "Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar, Colombia";
 const STOREFRONT_URL = String(
   process.env.STOREFRONT_URL || "https://www.cajamoda.com"
@@ -5594,6 +5599,144 @@ async function handleAnalyticsEvents(request, response) {
   }
 }
 
+function creatorApplicationIp(request) {
+  return safeText(request.headers["x-forwarded-for"] || request.socket?.remoteAddress, 120)
+    .split(",")[0]
+    .trim();
+}
+
+function enforceCreatorApplicationRateLimit(request) {
+  const ip = creatorApplicationIp(request) || "unknown";
+  const cutoff = Date.now() - (60 * 60 * 1000);
+  const attempts = (creatorApplicationAttempts.get(ip) || []).filter(value => value > cutoff);
+  if (attempts.length >= 5) {
+    const error = new Error("Has enviado varias solicitudes. Intenta nuevamente más tarde.");
+    error.statusCode = 429;
+    throw error;
+  }
+  attempts.push(Date.now());
+  creatorApplicationAttempts.set(ip, attempts);
+}
+
+function creatorSocialUsername(value) {
+  return safeText(value, 80)
+    .replace(/^https?:\/\/(?:www\.)?(?:instagram\.com|tiktok\.com)\//i, "")
+    .replace(/^@/, "")
+    .replace(/[/?#].*$/, "");
+}
+
+function creatorAttribution(value) {
+  const source = value && typeof value === "object" ? value : {};
+  return {
+    source: safeText(source.source, 120),
+    medium: safeText(source.medium, 120),
+    campaign: safeText(source.campaign, 180),
+    content: safeText(source.content, 180),
+    landingPage: safeText(source.landingPage, 500)
+  };
+}
+
+async function handleCreatorApplication(request, response) {
+  enforceCreatorApplicationRateLimit(request);
+  const body = await readBody(request);
+
+  if (safeText(body?.website, 200)) {
+    return sendJson(response, 201, { ok: true, ignored: true });
+  }
+
+  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
+    return sendError(response, 503, "Las solicitudes de creadoras aún no están disponibles.");
+  }
+
+  const firstName = safeText(body?.firstName, 80);
+  const lastName = safeText(body?.lastName, 80);
+  const email = safeText(body?.email, 254).toLowerCase();
+  const localPhone = safeText(body?.phone, 40).replace(/\D/g, "").replace(/^57(?=\d{10}$)/, "");
+  const instagramUsername = creatorSocialUsername(body?.instagramUsername);
+  const tiktokUsername = creatorSocialUsername(body?.tiktokUsername);
+  const city = safeText(body?.city, 120);
+  const referralSource = safeText(body?.referralSource, 120);
+
+  if (!firstName || !lastName || !city || !referralSource) {
+    return sendError(response, 400, "Completa todos los campos obligatorios.");
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return sendError(response, 400, "Ingresa un correo electrónico válido.");
+  }
+  if (!/^3\d{9}$/.test(localPhone)) {
+    return sendError(response, 400, "Ingresa un WhatsApp colombiano válido de 10 dígitos.");
+  }
+  if (!instagramUsername && !tiktokUsername) {
+    return sendError(response, 400, "Ingresa tu usuario de Instagram o TikTok.");
+  }
+  if (body?.isAdult !== true || body?.privacyConsent !== true) {
+    return sendError(response, 400, "Debes confirmar tu edad y autorizar el tratamiento de datos.");
+  }
+
+  const record = {
+    first_name: firstName,
+    last_name: lastName,
+    phone: `+57${localPhone}`,
+    email,
+    instagram_username: instagramUsername || null,
+    tiktok_username: tiktokUsername || null,
+    city,
+    heard_about: referralSource,
+    status: "new",
+    is_adult: true,
+    privacy_consent: true,
+    attribution: creatorAttribution(body?.attribution)
+  };
+
+  const headers = {
+    apikey: SUPABASE_SECRET_KEY,
+    "Content-Type": "application/json",
+    Prefer: "return=representation"
+  };
+  if (SUPABASE_SECRET_KEY.startsWith("eyJ")) {
+    headers.Authorization = `Bearer ${SUPABASE_SECRET_KEY}`;
+  }
+
+  const supabaseResponse = await fetch(
+    `${SUPABASE_URL}/rest/v1/creator_applications`,
+    { method: "POST", headers, body: JSON.stringify(record) }
+  );
+  const result = await supabaseResponse.json().catch(() => null);
+
+  if (!supabaseResponse.ok) {
+    if (result?.code === "23505") {
+      return sendJson(response, 200, { ok: true, alreadyReceived: true });
+    }
+    console.error("[Creator application] Supabase insert failed:", result);
+    return sendError(response, 503, "No pudimos guardar tu solicitud. Intenta nuevamente.");
+  }
+
+  sendJson(response, 201, { ok: true, applicationId: result?.[0]?.id || "" });
+}
+
+async function getCreatorApplications() {
+  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) return [];
+  const headers = { apikey: SUPABASE_SECRET_KEY, Accept: "application/json" };
+  if (SUPABASE_SECRET_KEY.startsWith("eyJ")) {
+    headers.Authorization = `Bearer ${SUPABASE_SECRET_KEY}`;
+  }
+  const fields = [
+    "id", "created_at", "first_name", "last_name", "phone", "email",
+    "instagram_username", "tiktok_username", "city", "heard_about", "status"
+  ].join(",");
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/creator_applications?select=${fields}&order=created_at.desc&limit=100`,
+    { headers }
+  );
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    console.error("[Creator applications] Supabase read failed:", response.status, detail);
+    throw new Error("Creator applications are temporarily unavailable.");
+  }
+  const rows = await response.json();
+  return Array.isArray(rows) ? rows : [];
+}
+
 async function handleStoreOwnerAnalytics(request, response, url) {
   if (!isAuthorized(request)) {
     return sendError(response, 401, "Sign in to Store Loader.");
@@ -5605,8 +5748,11 @@ async function handleStoreOwnerAnalytics(request, response, url) {
   const days = Number(url.searchParams.get("days") || 30);
   const month = safeText(url.searchParams.get("month"), 20);
   try {
-    const result = await analytics.dashboard(days, month);
-    sendJson(response, 200, result);
+    const [result, creatorApplications] = await Promise.all([
+      analytics.dashboard(days, month),
+      getCreatorApplications()
+    ]);
+    sendJson(response, 200, { ...result, creatorApplications });
   } catch (error) {
     console.error("[Analytics] Dashboard load failed:", error);
     sendError(response, 503, "Wix Data permission is required for Network Management.");
@@ -7017,6 +7163,11 @@ const server =
 
         if(request.method === "POST" && url.pathname === "/api/analytics/events"){
           await handleAnalyticsEvents(request,response);
+          return;
+        }
+
+        if(request.method === "POST" && url.pathname === "/api/creator-applications"){
+          await handleCreatorApplication(request,response);
           return;
         }
 

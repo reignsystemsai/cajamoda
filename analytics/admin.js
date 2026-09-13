@@ -245,6 +245,36 @@
     });
   }
 
+  function renderCreatorApplications(rows) {
+    const body = $("creatorApplicationRows");
+    if (!body) return;
+    const applications = Array.isArray(rows) ? rows : [];
+    body.innerHTML = applications.length ? applications.map(application => {
+      const firstName = String(application.first_name || "");
+      const lastName = String(application.last_name || "");
+      const initials = (firstName.slice(0, 1) + lastName.slice(0, 1)).toUpperCase() || "CM";
+      const instagram = String(application.instagram_username || "").replace(/^@/, "");
+      const tiktok = String(application.tiktok_username || "").replace(/^@/, "");
+      const socialLinks = [
+        instagram ? '<a class="creatorLink" href="https://www.instagram.com/' + encodeURIComponent(instagram) + '" target="_blank" rel="noopener">Instagram</a>' : "",
+        tiktok ? '<a class="creatorLink" href="https://www.tiktok.com/@' + encodeURIComponent(tiktok) + '" target="_blank" rel="noopener">TikTok</a>' : ""
+      ].filter(Boolean).join("");
+      const phoneDigits = String(application.phone || "").replace(/\D/g, "");
+      const submitted = application.created_at
+        ? new Intl.DateTimeFormat("es-CO", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Bogota" }).format(new Date(application.created_at))
+        : "—";
+      return '<tr>' +
+        '<td><div class="creatorApplicant"><span class="creatorApplicantAvatar">' + escapeHtml(initials) + '</span><div><strong>' + escapeHtml(firstName + " " + lastName) + '</strong><span>' + escapeHtml(application.email || "") + '</span></div></div></td>' +
+        '<td>' + escapeHtml(application.city || "—") + '</td>' +
+        '<td><a class="creatorLink" href="https://wa.me/' + encodeURIComponent(phoneDigits) + '" target="_blank" rel="noopener">WhatsApp</a></td>' +
+        '<td><div class="creatorLinks">' + socialLinks + '</div></td>' +
+        '<td>' + escapeHtml(application.heard_about || "—") + '</td>' +
+        '<td><span class="creatorStatus">' + escapeHtml(application.status || "new") + '</span></td>' +
+        '<td>' + escapeHtml(submitted) + '</td>' +
+      '</tr>';
+    }).join("") : '<tr><td colspan="7"><div class="analyticsEmpty">New creator applications will appear here automatically.</div></td></tr>';
+  }
+
   function renderFunnel(rows) {
     const root = $("analyticsFunnel");
     if (!root) return;
@@ -355,6 +385,7 @@
     renderFunnel(data.funnel || []);
     renderChannels(data.channels || []);
     renderProducts();
+    renderCreatorApplications(data.creatorApplications || []);
     renderLive(data.realtime || {});
     renderCampaigns(data.campaigns || []);
     populateSettings(data.settings || {});

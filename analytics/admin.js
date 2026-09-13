@@ -307,28 +307,53 @@
     }).join("");
   }
 
-  function creatorPerson(a){const f=String(a?.first_name||""),l=String(a?.last_name||""),instagram=String(a?.instagram_username||"").replace(/^@/,""),tiktok=String(a?.tiktok_username||"").replace(/^@/,""),phoneDigits=String(a?.phone||"").replace(/\D/g,"");return{id:String(a?.id||""),name:(f+" "+l).trim()||"Creadora CajaModa",email:String(a?.email||""),location:[a?.city,a?.department].filter(Boolean).join(", ")||"—",instagram,tiktok,phoneDigits,initials:(f.slice(0,1)+l.slice(0,1)).toUpperCase()||"CM",submitted:a?.created_at?new Intl.DateTimeFormat("es-CO",{dateStyle:"medium",timeZone:"America/Bogota"}).format(new Date(a.created_at)):"—",status:String(a?.status||"new"),onboardingStatus:String(a?.onboarding_status||""),slug:String(a?.creator_slug||""),tier:Number(a?.tier||0),commissionRate:Number(a?.commission_rate||0),visits:Number(a?.visits||a?.analytics?.visits||0),orders:Number(a?.paid_orders||a?.analytics?.paid_orders||0),sales:Number(a?.sales_total||a?.analytics?.sales_total||0),conversion:Number(a?.conversion_rate||a?.analytics?.conversion_rate||0)}}
+  function creatorPerson(a){const f=String(a?.first_name||""),l=String(a?.last_name||""),instagram=String(a?.instagram_username||"").replace(/^@/,""),tiktok=String(a?.tiktok_username||"").replace(/^@/,""),phoneDigits=String(a?.phone||"").replace(/\D/g,"");return{id:String(a?.id||""),name:(f+" "+l).trim()||"CajaModa Creator",email:String(a?.email||""),location:[a?.city,a?.department].filter(Boolean).join(", ")||"—",instagram,tiktok,phoneDigits,initials:(f.slice(0,1)+l.slice(0,1)).toUpperCase()||"CM",submitted:a?.created_at?new Intl.DateTimeFormat("en-US",{dateStyle:"medium",timeZone:"America/Bogota"}).format(new Date(a.created_at)):"—",status:String(a?.status||"new"),onboardingStatus:String(a?.onboarding_status||""),slug:String(a?.creator_slug||""),tier:Number(a?.tier||0),commissionRate:Number(a?.commission_rate||0),visits:Number(a?.visits||a?.analytics?.visits||0),orders:Number(a?.paid_orders||a?.analytics?.paid_orders||0),sales:Number(a?.sales_total||a?.analytics?.sales_total||0),conversion:Number(a?.conversion_rate||a?.analytics?.conversion_rate||0)}}
   function creatorProfileLinks(p){return[p.instagram?'<a class="creatorLink" href="https://www.instagram.com/'+encodeURIComponent(p.instagram)+'" target="_blank" rel="noopener">Instagram</a>':"",p.tiktok?'<a class="creatorLink" href="https://www.tiktok.com/@'+encodeURIComponent(p.tiktok)+'" target="_blank" rel="noopener">TikTok</a>':""].filter(Boolean).join("")}
   function creatorIdentity(p){return'<div class="creatorApplicant"><span class="creatorApplicantAvatar">'+escapeHtml(p.initials)+'</span><div><strong>'+escapeHtml(p.name)+'</strong><span>'+escapeHtml(p.email)+'</span></div></div>'}
   function creatorReferralUrl(slug){return "https://www.cajamoda.com/"+encodeURIComponent(slug)}
   function creatorAction(id,status,label,className=""){return'<button class="creatorAction '+className+'" type="button" data-creator-id="'+escapeHtml(id)+'" data-creator-status="'+escapeHtml(status)+'">'+escapeHtml(label)+'</button>'}
-  function creatorTierActions(p){return'<div class="creatorActions">'+[1,2,3].map(tier=>'<button class="creatorAction '+(p.tier===tier?'primary':'')+'" type="button" data-creator-id="'+escapeHtml(p.id)+'" data-creator-status="approved" data-creator-tier="'+tier+'">Nivel '+tier+'</button>').join("")+'</div>'}
+  function creatorTierActions(p){return'<div class="creatorActions">'+[1,2,3].map(tier=>'<button class="creatorAction '+(p.tier===tier?'primary':'')+'" type="button" data-creator-id="'+escapeHtml(p.id)+'" data-creator-status="approved" data-creator-tier="'+tier+'">Tier '+tier+'</button>').join("")+'</div>'}
   function creatorProductsSold(products){const rows=Array.isArray(products)?products:[];return rows.length?rows.map(item=>{const name=item?.productName||item?.name||"Product";const quantity=Math.max(1,Number(item?.quantity||1));const size=item?.size||item?.selectedSize||"";return escapeHtml(name)+" × "+number(quantity)+(size?" · "+escapeHtml(size):"")}).join("<br>"):"—"}
+  let activeCreatorSales=null;
+  function creatorSalesDate(value){if(!value)return"—";const date=new Date(value);return Number.isNaN(date.getTime())?"—":new Intl.DateTimeFormat("en-US",{dateStyle:"medium",timeZone:"America/Bogota"}).format(date)}
+  function creatorSalesStatusLabel(value){const status=String(value||"earned").toLowerCase();if(status==="authorized")return"Authorized";if(status==="paid")return"Paid";if(status==="reversed")return"Reversed";return"Commission earned"}
+  function renderCreatorSalesChart(series){
+    const chart=$("creatorSalesChart");if(!chart)return;
+    const values=(Array.isArray(series)?series:[]).map(point=>({date:String(point?.date||""),value:Math.max(0,Number(point?.value||0))})).filter(point=>point.date);
+    const width=760,height=220,left=52,right=18,top=16,bottom=34,plotWidth=width-left-right,plotHeight=height-top-bottom;
+    const maximum=Math.max(1,...values.map(point=>point.value));
+    const grid=Array.from({length:5},(_,index)=>{const y=top+(plotHeight/4)*index;const value=maximum-(maximum/4)*index;return'<line class="creatorSalesChartGrid" x1="'+left+'" y1="'+y+'" x2="'+(width-right)+'" y2="'+y+'"></line><text class="creatorSalesChartLabel" x="'+(left-8)+'" y="'+(y+3)+'" text-anchor="end">'+escapeHtml(number(value))+'</text>'}).join("");
+    if(!values.length){chart.innerHTML='<defs><linearGradient id="creatorSalesArea" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#d58aa5" stop-opacity=".28"/><stop offset="1" stop-color="#d58aa5" stop-opacity="0"/></linearGradient></defs>'+grid+'<text class="creatorSalesChartLabel" x="380" y="112" text-anchor="middle">No paid sales in this period</text>';return}
+    const points=values.map((point,index)=>{const x=values.length===1?left+plotWidth/2:left+(plotWidth*index)/(values.length-1);const y=top+plotHeight-(point.value/maximum)*plotHeight;return{x,y,...point}});
+    const path=points.map((point,index)=>(index?"L":"M")+point.x.toFixed(1)+" "+point.y.toFixed(1)).join(" ");
+    const area=path+" L "+points.at(-1).x.toFixed(1)+" "+(top+plotHeight)+" L "+points[0].x.toFixed(1)+" "+(top+plotHeight)+" Z";
+    const labels=points.map((point,index)=>index===0||index===points.length-1||index===Math.floor(points.length/2)?'<text class="creatorSalesChartLabel" x="'+point.x+'" y="'+(height-10)+'" text-anchor="middle">'+escapeHtml(creatorSalesDate(point.date))+'</text>':"").join("");
+    const dots=points.map(point=>'<circle class="creatorSalesChartDot" cx="'+point.x+'" cy="'+point.y+'" r="4"></circle>').join("");
+    chart.innerHTML='<defs><linearGradient id="creatorSalesArea" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#d58aa5" stop-opacity=".28"/><stop offset="1" stop-color="#d58aa5" stop-opacity="0"/></linearGradient></defs>'+grid+'<path class="creatorSalesChartArea" d="'+area+'"></path><path class="creatorSalesChartLine" d="'+path+'"></path>'+dots+labels;
+  }
+  function renderCreatorSales(data){
+    const creator=data?.creator||{},totals=data?.totals||{},activity=data?.activity||{},ledger=Array.isArray(data?.ledger)?data.ledger:[];
+    const fullName=[creator.firstName,creator.lastName].filter(Boolean).join(" ")||activeCreatorSales?.name||"Creator";
+    const initials=[creator.firstName,creator.lastName].filter(Boolean).map(value=>String(value).slice(0,1)).join("").toUpperCase()||"CM";
+    setText("creatorSalesTitle",fullName);setText("creatorSalesAvatar",initials);setText("creatorSalesLink","cajamoda.com/"+(creator.slug||""));setText("creatorSalesTier","Tier "+number(creator.tier)+" · "+number(creator.commissionRate)+"% commission");
+    const status=$("creatorSalesAccountStatus");if(status){status.textContent=String(creator.status||"inactive").toLowerCase()==="active"?"Active":"Deactivated";status.classList.toggle("inactive",String(creator.status||"").toLowerCase()!=="active")}
+    setText("creatorSalesRevenue",money(totals.productSales));setText("creatorSalesOrders",number(totals.orders));setText("creatorSalesAuthorized",number(totals.authorizedOrders));setText("creatorSalesCommission",money(totals.commission));setText("creatorSalesDueFirst",money(totals.dueOnFirst));setText("creatorSalesDueFifteenth",money(totals.dueOnFifteenth));
+    setText("creatorActivityVisits",number(activity.visits));setText("creatorActivityViews",number(activity.productViews));setText("creatorActivityLikes",number(activity.likes));setText("creatorActivityShares",number(activity.shares));setText("creatorActivityFavorites",number(activity.favorites));setText("creatorActivityCarts",number(activity.carts));setText("creatorActivityCheckouts",number(activity.checkouts));setText("creatorActivityConversion",percent(activity.conversion));
+    renderCreatorSalesChart(data?.series);
+    const body=$("creatorSalesRows");if(!body)return;
+    body.innerHTML=ledger.length?ledger.map(sale=>{const state=String(sale.status||"earned").toLowerCase();const amountDue=state==="authorized"?"Pending capture":money(sale.amountDue);const payout=state==="authorized"?"After capture":creatorSalesDate(sale.payoutDate);return'<tr><td>'+escapeHtml(creatorSalesDate(sale.orderDate))+'</td><td class="creatorSalesProducts">'+creatorProductsSold(sale.products)+'</td><td>'+money(sale.orderTotal)+'</td><td>'+number(sale.commissionRate)+'% · '+money(sale.commissionAmount)+'</td><td>'+escapeHtml(amountDue)+'</td><td>'+escapeHtml(payout)+'</td><td><span class="creatorLedgerStatus '+(state==="authorized"?"authorized":state==="paid"?"paid":state==="reversed"?"reversed":"")+'">'+escapeHtml(creatorSalesStatusLabel(state))+'</span></td></tr>'}).join(""):'<tr><td class="creatorSalesEmpty" colspan="7">No orders have been attributed to this creator in this period.</td></tr>';
+  }
   function closeCreatorSales(){const modal=$("creatorSalesModal");if(modal)modal.hidden=true}
-  async function openCreatorSales(id,name){
+  async function openCreatorSales(id,name,period="30d"){
     const modal=$("creatorSalesModal"),body=$("creatorSalesRows");
     if(!modal||!body)return;
-    modal.hidden=false;
+    activeCreatorSales={id,name,period};modal.hidden=false;
+    document.querySelectorAll("[data-creator-sales-period]").forEach(button=>button.classList.toggle("active",button.dataset.creatorSalesPeriod===period));
     setText("creatorSalesTitle",(name||"Creator")+" Sales");
-    setText("creatorSalesOrders","—");setText("creatorSalesRevenue","—");setText("creatorSalesCommission","—");
-    body.innerHTML='<tr><td class="creatorSalesEmpty" colspan="7">Loading paid sales…</td></tr>';
+    ["creatorSalesOrders","creatorSalesAuthorized","creatorSalesRevenue","creatorSalesCommission","creatorSalesDueFirst","creatorSalesDueFifteenth"].forEach(key=>setText(key,"—"));
+    body.innerHTML='<tr><td class="creatorSalesEmpty" colspan="7">Loading creator activity…</td></tr>';
     try{
-      const data=await request("/api/store-owner/creator-applications/"+encodeURIComponent(id)+"/sales");
-      setText("creatorSalesOrders",number(data.totals?.orders));
-      setText("creatorSalesRevenue",money(data.totals?.productSales));
-      setText("creatorSalesCommission",money(data.totals?.commission));
-      const rows=Array.isArray(data.sales)?data.sales:[];
-      body.innerHTML=rows.length?rows.map(sale=>'<tr><td>'+escapeHtml(sale.earned_at?new Intl.DateTimeFormat("en-US",{dateStyle:"medium",timeStyle:"short",timeZone:"America/Bogota"}).format(new Date(sale.earned_at)):"—")+'</td><td>'+escapeHtml(sale.order_id||"—")+'</td><td class="creatorSalesProducts">'+creatorProductsSold(sale.products)+'</td><td>'+money(sale.product_subtotal)+'</td><td>'+money(sale.commission_amount)+' <small>('+number(sale.commission_rate)+'%)</small></td><td>'+escapeHtml(String(sale.payment_method||"—").toUpperCase())+'</td><td><span class="creatorSalesStatus">'+escapeHtml(sale.status||"earned")+'</span></td></tr>').join(""):'<tr><td class="creatorSalesEmpty" colspan="7">No paid sales have been attributed to this creator yet.</td></tr>';
+      const data=await request("/api/store-owner/creator-applications/"+encodeURIComponent(id)+"/sales?period="+encodeURIComponent(period));renderCreatorSales(data);
     }catch(error){body.innerHTML='<tr><td class="creatorSalesEmpty" colspan="7">'+escapeHtml(error?.message||"Creator sales could not be loaded.")+'</td></tr>'}
   }
   function renderCreatorNetwork(rows){
@@ -338,19 +363,21 @@
     const ranked=selected.filter(x=>x.person.visits>0||x.person.orders>0||x.person.sales>0).sort((a,b)=>(b.person.sales-a.person.sales)||(b.person.orders-a.person.orders)||(b.person.visits-a.person.visits)).slice(0,10);
     setText("creatorIncomingCount",number(incoming.length));setText("creatorSelectedCount",number(selected.length));setText("creatorRankedCount",number(ranked.length));
     const ib=$("creatorIncomingRows");
-    if(ib)ib.innerHTML=incoming.length?incoming.map(({application,person:p})=>'<tr><td>'+creatorIdentity(p)+'</td><td>'+escapeHtml(p.location)+'</td><td><a class="creatorLink" href="https://wa.me/'+encodeURIComponent(p.phoneDigits)+'" target="_blank" rel="noopener">WhatsApp</a></td><td><div class="creatorLinks">'+creatorProfileLinks(p)+'</div></td><td>'+escapeHtml(application.heard_about||"—")+'</td><td><span class="creatorStatus">'+escapeHtml(p.status)+"</span></td><td><div class=\"creatorActions\">"+creatorAction(p.id,"verifying","Verificando")+creatorAction(p.id,"approved","Aprobar","primary")+creatorAction(p.id,"declined","No seleccionar","danger")+"</div></td></tr>").join(""):'<tr><td class="creatorEmpty" colspan="7">Las solicitudes nuevas aparecerán aquí automáticamente.</td></tr>';
+    if(ib)ib.innerHTML=incoming.length?incoming.map(({application,person:p})=>'<tr><td>'+creatorIdentity(p)+'</td><td>'+escapeHtml(p.location)+'</td><td><a class="creatorLink" href="https://wa.me/'+encodeURIComponent(p.phoneDigits)+'" target="_blank" rel="noopener">WhatsApp</a></td><td><div class="creatorLinks">'+creatorProfileLinks(p)+'</div></td><td>'+escapeHtml(application.heard_about||"—")+'</td><td><span class="creatorStatus">'+escapeHtml(p.status)+"</span></td><td><div class=\"creatorActions\">"+creatorAction(p.id,"verifying","Verifying")+creatorAction(p.id,"approved","Approve","primary")+creatorAction(p.id,"declined","Decline","danger")+"</div></td></tr>").join(""):'<tr><td class="creatorEmpty" colspan="7">New applications will appear here automatically.</td></tr>';
     const sb=$("creatorSelectedRows");
-    if(sb)sb.innerHTML=selected.length?selected.map(({person:p})=>{const link=creatorReferralUrl(p.slug);const state=p.onboardingStatus==="active"?"Activa":p.onboardingStatus==="invited"?"Invitación enviada":"Pendiente";return'<tr><td>'+creatorIdentity(p)+'</td><td>'+escapeHtml(p.location)+'</td><td><div class="creatorShareLink"><code>'+escapeHtml(link)+'</code><button class="creatorAction" type="button" data-copy-creator-link="'+escapeHtml(link)+'">Copiar</button></div><span class="creatorStatus">'+escapeHtml(state)+'</span></td><td><button class="creatorAction primary" type="button" data-creator-sales-id="'+escapeHtml(p.id)+'" data-creator-sales-name="'+escapeHtml(p.name)+'">View Sales</button><div>'+number(p.orders)+' orders · '+money(p.sales)+'</div></td><td><span class="creatorStatus">Nivel '+number(p.tier)+'</span></td><td>'+number(p.commissionRate)+'%</td><td>'+creatorTierActions(p)+creatorAction(p.id,"declined","Desactivar","danger")+'</td></tr>'}).join(""):'<tr><td class="creatorEmpty" colspan="7">Las creadoras aprobadas aparecerán aquí.</td></tr>';
-    const rb=$("creatorRankingRows");if(rb)rb.innerHTML=ranked.length?ranked.map(({person:p},i)=>'<tr><td><span class="creatorRank">'+(i+1)+'</span></td><td>'+creatorIdentity(p)+'</td><td>'+number(p.visits)+'</td><td>'+number(p.orders)+'</td><td>'+money(p.sales)+'</td><td>'+percent(p.conversion/100)+'</td></tr>').join(""):'<tr><td class="creatorEmpty" colspan="6">El Top 10 aparecerá cuando las creadoras seleccionadas comiencen a generar actividad atribuida.</td></tr>'
+    if(sb)sb.innerHTML=selected.length?selected.map(({person:p})=>{const link=creatorReferralUrl(p.slug);const state=p.onboardingStatus==="active"?"Active":p.onboardingStatus==="invited"?"Invitation sent":"Pending";return'<tr><td>'+creatorIdentity(p)+'</td><td>'+escapeHtml(p.location)+'</td><td><div class="creatorShareLink"><code>'+escapeHtml(link)+'</code><button class="creatorAction" type="button" data-copy-creator-link="'+escapeHtml(link)+'">Copy</button></div><span class="creatorStatus">'+escapeHtml(state)+'</span></td><td><button class="creatorAction primary" type="button" data-creator-sales-id="'+escapeHtml(p.id)+'" data-creator-sales-name="'+escapeHtml(p.name)+'">View Sales</button><div>'+number(p.orders)+' orders · '+money(p.sales)+'</div></td><td><span class="creatorStatus">Tier '+number(p.tier)+'</span></td><td>'+number(p.commissionRate)+'%</td><td>'+creatorTierActions(p)+creatorAction(p.id,"declined","Deactivate","danger")+'</td></tr>'}).join(""):'<tr><td class="creatorEmpty" colspan="7">Approved creators will appear here.</td></tr>';
+    const rb=$("creatorRankingRows");if(rb)rb.innerHTML=ranked.length?ranked.map(({person:p},i)=>'<tr><td><span class="creatorRank">'+(i+1)+'</span></td><td>'+creatorIdentity(p)+'</td><td>'+number(p.visits)+'</td><td>'+number(p.orders)+'</td><td>'+money(p.sales)+'</td><td>'+percent(p.conversion/100)+'</td></tr>').join(""):'<tr><td class="creatorEmpty" colspan="6">The Top 10 will appear when approved creators generate attributed activity.</td></tr>'
   }
 
   document.addEventListener("click",async event=>{
     const salesModal=$("creatorSalesModal");
     if(event.target.closest("[data-close-creator-sales]")||event.target===salesModal){closeCreatorSales();return}
+    const periodButton=event.target.closest("[data-creator-sales-period]");
+    if(periodButton&&activeCreatorSales){await openCreatorSales(activeCreatorSales.id,activeCreatorSales.name,periodButton.dataset.creatorSalesPeriod||"30d");return}
     const salesButton=event.target.closest("[data-creator-sales-id]");
     if(salesButton){await openCreatorSales(salesButton.dataset.creatorSalesId,salesButton.dataset.creatorSalesName);return}
     const copyButton=event.target.closest("[data-copy-creator-link]");
-    if(copyButton){await navigator.clipboard.writeText(copyButton.dataset.copyCreatorLink||"");copyButton.textContent="Copiado";setTimeout(()=>copyButton.textContent="Copiar",1200);return}
+    if(copyButton){await navigator.clipboard.writeText(copyButton.dataset.copyCreatorLink||"");copyButton.textContent="Copied";setTimeout(()=>copyButton.textContent="Copy",1200);return}
     const button=event.target.closest("[data-creator-status]");
     if(!button)return;
     const id=button.dataset.creatorId;
@@ -358,7 +385,7 @@
     const tier=Number(button.dataset.creatorTier||1);
     button.disabled=true;
     try{await request("/api/store-owner/creator-applications/"+encodeURIComponent(id),{method:"PATCH",body:{status,tier}});await load(true)}
-    catch(error){window.alert(error?.message||"No pudimos actualizar la creadora.")}
+    catch(error){window.alert(error?.message||"The creator could not be updated.")}
     finally{button.disabled=false}
   });
 

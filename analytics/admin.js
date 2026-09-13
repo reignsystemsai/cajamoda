@@ -225,7 +225,13 @@
           Number(product.shares || 0) * 5 +
           Number(product.addToCart || 0) * 8 +
           Number(product.checkouts || 0) * 15 +
-          Number(product.purchases || 0) * 30;
+          Number(product.purchases || 0) * 100;
+        if (sortKey === "overall") {
+          const purchaseResult = sortDirection === "asc"
+            ? Number(left.purchases || 0) - Number(right.purchases || 0)
+            : Number(right.purchases || 0) - Number(left.purchases || 0);
+          if (purchaseResult) return purchaseResult;
+        }
         const leftValue = sortKey === "overall" ? score(left) : Number(left[sortKey] || 0);
         const rightValue = sortKey === "overall" ? score(right) : Number(right[sortKey] || 0);
         const result = sortDirection === "asc" ? leftValue - rightValue : rightValue - leftValue;

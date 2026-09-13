@@ -5479,6 +5479,11 @@ function normalizeStripeAuthorization(intent, lines = stripeIntentLines(intent))
     paymentStatus: "AUTHORIZED",
     paymentMethod: "card",
     source: "stripeAuthorization",
+    campaign: safeText(intent?.metadata?.analyticsCampaign, 180),
+    productSubtotal: lines.reduce(
+      (sum, line) => sum + Math.max(0, Number(line.amount || 0)) * Math.max(1, Number(line.quantity || 1)),
+      0
+    ),
     canCapturePayment: intent.status === "requires_capture",
     canCancelPayment: intent.status === "requires_capture",
     delivery: safeText(intent?.metadata?.deliverySummary, 300)
@@ -5538,6 +5543,32 @@ async function getStripeAuthorizations() {
     included.add(intent.id);
   }
   return authorizations;
+}
+
+async function syncPendingStripeCheckoutSessions() {
+  if (!stripe || !wix) return;
+
+  const sessions = await stripe.checkout.sessions.list({
+    status: "complete",
+    limit: 100
+  });
+  const pending = sessions.data.filter(session =>
+    session.payment_status === "paid" &&
+    safeText(session?.metadata?.source, 80) === "cajamoda-storefront" &&
+    safeText(session?.metadata?.wixSync, 20) !== "complete"
+  );
+
+  const results = await Promise.allSettled(
+    pending.map(session => syncCompletedStripeSession(session))
+  );
+  results.forEach((result, index) => {
+    if (result.status === "rejected") {
+      console.error(
+        `[Stripe] Pending checkout synchronization failed for ${pending[index]?.id}:`,
+        result.reason
+      );
+    }
+  });
 }
 
 async function handleCaptureStripeAuthorization(request, response, intentId) {
@@ -6565,17 +6596,52 @@ async function getStoreOwnerCreatorSales(request, response, applicationId) {
   if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) return sendError(response, 503, "Creator sales are not configured.");
 
   const profileResponse = await fetch(
-    `${SUPABASE_URL}/rest/v1/creator_profiles?application_id=eq.${encodeURIComponent(applicationId)}&select=id,first_name,last_name,slug,tier,commission_rate&limit=1`,
+    `${SUPABASE_URL}/rest/v1/creator_profiles?application_id=eq.${encodeURIComponent(applicationId)}&select=id,first_name,last_name,slug,status,tier,commission_rate&limit=1`,
     { headers: livePresenceHeaders() }
   );
   const profiles = profileResponse.ok ? await profileResponse.json().catch(() => []) : [];
   const profile = Array.isArray(profiles) ? profiles[0] : null;
   if (!profile) return sendError(response, 404, "Creator profile not found.");
 
-  const commissionResponse = await fetch(
-    `${SUPABASE_URL}/rest/v1/creator_commissions?creator_id=eq.${encodeURIComponent(profile.id)}&select=order_id,payment_method,product_subtotal,commission_rate,commission_amount,products,status,earned_at,paid_at&order=earned_at.desc&limit=250`,
-    { headers: livePresenceHeaders() }
-  );
+  const period = safeText(new URL(request.url, "http://localhost").searchParams.get("period"), 20) || "30d";
+  const now = new Date();
+  const since = new Date(now);
+  if (period === "day") since.setUTCHours(0, 0, 0, 0);
+  else if (period === "week") since.setUTCDate(since.getUTCDate() - 7);
+  else if (period === "month") {
+    since.setUTCDate(1);
+    since.setUTCHours(0, 0, 0, 0);
+  }
+  else if (period === "quarter") {
+    since.setUTCMonth(Math.floor(since.getUTCMonth() / 3) * 3, 1);
+    since.setUTCHours(0, 0, 0, 0);
+  } else if (period === "year") {
+    since.setUTCMonth(0, 1);
+    since.setUTCHours(0, 0, 0, 0);
+  }
+  else since.setUTCDate(since.getUTCDate() - 30);
+
+  const analyticsQuery = new URLSearchParams({
+    select: "event_type,occurred_at,session_id,product_id,product_name,quantity,value,order_id,server_verified",
+    source: "eq.creator",
+    campaign: `eq.${profile.slug}`,
+    occurred_at: `gte.${since.toISOString()}`,
+    order: "occurred_at.asc",
+    limit: "5000"
+  });
+  const [commissionResponse, analyticsResponse, stripeAuthorizations] = await Promise.all([
+    fetch(
+      `${SUPABASE_URL}/rest/v1/creator_commissions?creator_id=eq.${encodeURIComponent(profile.id)}&earned_at=gte.${encodeURIComponent(since.toISOString())}&select=order_id,payment_method,product_subtotal,commission_rate,commission_amount,products,status,earned_at,paid_at&order=earned_at.desc&limit=250`,
+      { headers: livePresenceHeaders() }
+    ),
+    fetch(`${SUPABASE_URL}/rest/v1/analytics_events?${analyticsQuery.toString()}`, {
+      headers: livePresenceHeaders()
+    }),
+    getStripeAuthorizations().catch(error => {
+      console.error("[Creator sales] Stripe authorizations unavailable:", error);
+      return [];
+    })
+  ]);
   if (!commissionResponse.ok) {
     const detail = await commissionResponse.text().catch(() => "");
     console.error("[Creator sales] Supabase read failed:", commissionResponse.status, detail);
@@ -6583,13 +6649,89 @@ async function getStoreOwnerCreatorSales(request, response, applicationId) {
   }
   const sales = await commissionResponse.json().catch(() => []);
   const rows = Array.isArray(sales) ? sales : [];
+  const events = analyticsResponse.ok
+    ? await analyticsResponse.json().catch(() => [])
+    : [];
+  const attributedEvents = Array.isArray(events) ? events : [];
+  const paidPurchaseByOrder = new Map(
+    attributedEvents
+      .filter(event => event.event_type === "purchase" && event.server_verified === true && event.order_id)
+      .map(event => [String(event.order_id), event])
+  );
   const totals = rows.reduce((result, row) => {
     if (row.status === "reversed") return result;
     result.orders += 1;
     result.productSales += Math.max(0, Number(row.product_subtotal || 0));
     result.commission += Math.max(0, Number(row.commission_amount || 0));
+    if (row.status !== "paid") {
+      const earned = new Date(row.earned_at);
+      if (earned.getUTCDate() <= 15) result.dueOnFirst += Math.max(0, Number(row.commission_amount || 0));
+      else result.dueOnFifteenth += Math.max(0, Number(row.commission_amount || 0));
+    }
     return result;
-  }, { orders: 0, productSales: 0, commission: 0 });
+  }, { orders: 0, productSales: 0, commission: 0, dueOnFirst: 0, dueOnFifteenth: 0 });
+
+  function payoutDate(value) {
+    const earned = new Date(value);
+    if (Number.isNaN(earned.getTime())) return "";
+    const day = earned.getUTCDate() <= 15 ? 1 : 15;
+    return new Date(Date.UTC(earned.getUTCFullYear(), earned.getUTCMonth() + 1, day)).toISOString();
+  }
+
+  const authorized = (Array.isArray(stripeAuthorizations) ? stripeAuthorizations : [])
+    .filter(order =>
+      safeText(order?.campaign, 180) === profile.slug &&
+      new Date(order.date).getTime() >= since.getTime()
+    );
+  const ledger = [
+    ...authorized.map(order => ({
+      orderDate: order.date,
+      orderId: order.id,
+      products: order.items,
+      orderTotal: Math.max(0, Number(order.total || 0)),
+      commissionRate: Math.max(0, Number(profile.commission_rate || 0)),
+      commissionAmount: Math.round(Math.max(0, Number(order.productSubtotal || 0)) * Math.max(0, Number(profile.commission_rate || 0))) / 100,
+      amountDue: 0,
+      payoutDate: "",
+      status: "authorized"
+    })),
+    ...rows.map(sale => ({
+      orderDate: sale.earned_at,
+      orderId: sale.order_id,
+      products: sale.products,
+      orderTotal: Math.max(0, Number(paidPurchaseByOrder.get(String(sale.order_id))?.value || sale.product_subtotal || 0)),
+      commissionRate: Math.max(0, Number(sale.commission_rate || 0)),
+      commissionAmount: Math.max(0, Number(sale.commission_amount || 0)),
+      amountDue: ["paid", "reversed"].includes(sale.status) ? 0 : Math.max(0, Number(sale.commission_amount || 0)),
+      payoutDate: sale.paid_at || payoutDate(sale.earned_at),
+      status: sale.status || "earned"
+    }))
+  ].sort((left, right) => new Date(right.orderDate) - new Date(left.orderDate));
+
+  const visits = new Set(attributedEvents.map(event => event.session_id).filter(Boolean)).size;
+  const count = type => attributedEvents.filter(event => event.event_type === type).length;
+  const sessionsFor = type => new Set(
+    attributedEvents
+      .filter(event => event.event_type === type)
+      .map(event => event.session_id)
+      .filter(Boolean)
+  ).size;
+  const activity = {
+    visits,
+    productViews: count("product_view"),
+    likes: count("like"),
+    shares: count("share"),
+    favorites: count("favorite"),
+    carts: sessionsFor("add_to_cart"),
+    checkouts: sessionsFor("checkout"),
+    conversion: visits ? totals.orders / visits : 0
+  };
+  const seriesByDate = new Map();
+  rows.filter(row => row.status !== "reversed").forEach(row => {
+    const date = safeText(row.earned_at, 40).slice(0, 10);
+    if (date) seriesByDate.set(date, (seriesByDate.get(date) || 0) + Math.max(0, Number(row.product_subtotal || 0)));
+  });
+  const series = [...seriesByDate.entries()].map(([date, value]) => ({ date, value }));
 
   sendJson(response, 200, {
     ok: true,
@@ -6597,10 +6739,15 @@ async function getStoreOwnerCreatorSales(request, response, applicationId) {
       firstName: profile.first_name,
       lastName: profile.last_name,
       slug: profile.slug,
+      status: profile.status,
       tier: profile.tier,
       commissionRate: profile.commission_rate
     },
-    totals,
+    period,
+    totals: { ...totals, authorizedOrders: authorized.length },
+    activity,
+    series,
+    ledger,
     sales: rows
   });
 }

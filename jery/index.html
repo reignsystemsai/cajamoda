@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex,follow" />
+  <meta name="theme-color" content="#ffffff" />
+  <title>Jery × CajaModa Colombia</title>
+  <style>
+    *{box-sizing:border-box}html,body{min-height:100%;margin:0}body{display:grid;place-items:center;background:linear-gradient(145deg,#fff 0%,#fff6fa 48%,#fff 100%);color:#111;font-family:Arial,sans-serif}.brand{text-align:center}.mark{font-family:Georgia,"Times New Roman",serif;font-size:78px;line-height:.72;letter-spacing:-.15em}.name{margin-top:20px;font-size:20px;letter-spacing:.34em}.country{margin-top:8px;color:#c82f68;font-size:10px;font-weight:800;letter-spacing:.42em}.sparkle{margin:28px auto 0;width:10px;height:10px;background:#dc2f72;transform:rotate(45deg);animation:pulse 1s ease-in-out infinite alternate}.message{margin-top:20px;color:#6f6870;font-size:13px;letter-spacing:.04em}@keyframes pulse{to{transform:rotate(45deg) scale(1.7);opacity:.45}}@media(max-width:480px){.mark{font-size:64px}.name{font-size:17px}}
+  </style>
+</head>
+<body>
+  <main class="brand" aria-live="polite">
+    <div class="mark" aria-hidden="true">CM</div>
+    <div class="name">CAJAMODA</div>
+    <div class="country">COLOMBIA</div>
+    <div class="sparkle" aria-hidden="true"></div>
+    <p class="message" id="message">Entrando a la tienda con Jery…</p>
+  </main>
+  <script>
+    (() => {
+      const slug = "jery";
+      const api = "https://cajamoda-storeload-api.onrender.com";
+      const store = new URL("/", window.location.origin);
+      const continueToStore = active => {
+        if (active) {
+          store.searchParams.set("utm_source", "creator");
+          store.searchParams.set("utm_medium", "creator");
+          store.searchParams.set("utm_campaign", slug);
+          store.searchParams.set("utm_content", "creator-link");
+        }
+        window.location.replace(store.toString());
+      };
+      fetch(`${api}/api/creator-links/${slug}`, { headers: { Accept: "application/json" } })
+        .then(response => response.ok ? response.json() : { active: false })
+        .then(result => continueToStore(result.active === true))
+        .catch(() => continueToStore(false));
+    })();
+  </script>
+</body>
+</html>

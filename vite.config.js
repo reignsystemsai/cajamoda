@@ -19,6 +19,10 @@ export default defineConfig({
           resolve(outputDirectory, "analytics/client.js"),
         );
         copyFileSync(
+          resolve(import.meta.dirname, "storefront.js"),
+          resolve(outputDirectory, "storefront.js"),
+        );
+        copyFileSync(
           resolve(import.meta.dirname, "analytics/admin.js"),
           resolve(outputDirectory, "analytics/admin.js"),
         );

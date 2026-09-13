@@ -107,8 +107,7 @@ function setShareBusy(busy) {
 }
 
 function setStatus(message, error = false) {
-  $("statusText").textContent = message;
-  $("statusText").classList.toggle("error", error);
+  if (error && message) console.warn("[CajaModa] Confirmation detail unavailable.");
 }
 
 function renderShipmentCards(shipments) {
@@ -229,6 +228,7 @@ async function loadConfirmation() {
     $("deliveryMessage").textContent = confirmation.delivery?.message || "Te enviaremos actualizaciones por correo.";
     renderCheckoutContext(confirmation);
     setReferralAvailable(Boolean(checkoutId));
+    try { sessionStorage.removeItem("cajamoda-checkout-attempt"); } catch {}
     return;
   }
   if (!checkoutId) throw new Error("No encontramos el identificador de tu compra.");

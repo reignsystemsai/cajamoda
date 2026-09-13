@@ -997,8 +997,8 @@ function splitCustomerName(value) {
 }
 
 function stripeImportedOrderNumber(externalId) {
-  const suffix = crypto.createHash("sha256").update(String(externalId)).digest("hex").slice(0, 10).toUpperCase();
-  return `CM-${suffix}`;
+  const suffix = crypto.createHash("sha256").update(String(externalId)).digest("hex").slice(0, 15);
+  return BigInt(`0x${suffix}`).toString(10);
 }
 
 async function findCajaModaCheckoutSession(paymentIntentId) {

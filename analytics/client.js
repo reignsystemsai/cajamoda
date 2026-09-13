@@ -4,13 +4,14 @@
   if (window.CajaModaAnalytics) return;
 
   const ENDPOINT = "https://cajamoda-storeload-api.onrender.com/api/analytics/events";
+  const PRESENCE_ENDPOINT = "https://cajamoda-storeload-api.onrender.com/api/live-presence";
   const VISITOR_KEY = "cajamoda-analytics-visitor";
   const SESSION_KEY = "cajamoda-analytics-session";
   const FIRST_TOUCH_KEY = "cajamoda-analytics-first-touch";
   const LAST_TOUCH_KEY = "cajamoda-analytics-last-touch";
   const LOCATION_KEY = "cajamoda-analytics-location";
   const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
-  const HEARTBEAT_MS = 15 * 1000;
+  const HEARTBEAT_MS = 10 * 1000;
   const queue = [];
   let flushTimer = 0;
   const startedAt = Date.now();
@@ -254,6 +255,25 @@
     if (queue.length) flushTimer = window.setTimeout(() => flush(false), 250);
   }
 
+  function sendPresence(eventType = "HEARTBEAT", useBeacon = false) {
+    const body = JSON.stringify({
+      event: baseEvent(eventType, {
+        durationSeconds: Math.round((Date.now() - startedAt) / 1000)
+      })
+    });
+    if (useBeacon && navigator.sendBeacon) {
+      navigator.sendBeacon(PRESENCE_ENDPOINT, new Blob([body], { type: "text/plain;charset=UTF-8" }));
+      return;
+    }
+    fetch(PRESENCE_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=UTF-8" },
+      body,
+      keepalive: true,
+      credentials: "omit"
+    }).catch(() => {});
+  }
+
   function track(name, properties = {}) {
     queue.push(baseEvent(name, properties));
     if (queue.length >= 10) flush(false);
@@ -294,6 +314,7 @@
     title: document.title,
     viewport: String(window.innerWidth) + "x" + String(window.innerHeight)
   });
+  sendPresence("PAGE_VIEW");
 
   if (eventPage() === "checkout") {
     window.setTimeout(() => {
@@ -317,9 +338,7 @@
 
   const heartbeat = window.setInterval(() => {
     if (document.visibilityState === "visible") {
-      track("HEARTBEAT", {
-        durationSeconds: Math.round((Date.now() - startedAt) / 1000)
-      });
+      sendPresence("HEARTBEAT");
     }
   }, HEARTBEAT_MS);
 
@@ -328,6 +347,7 @@
     queue.push(baseEvent("PAGE_LEAVE", {
       durationSeconds: Math.round((Date.now() - startedAt) / 1000)
     }));
+    sendPresence("PAGE_LEAVE", true);
     flush(true);
   });
 })();

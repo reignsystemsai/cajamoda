@@ -5603,6 +5603,20 @@ async function handleAnalyticsEvents(request, response) {
   }
 }
 
+async function handleLivePresence(request, response) {
+  try {
+    const body = await readBody(request);
+    const result = analytics.touchLiveSession(body?.event);
+    sendJson(response, 202, { ok: true, ...result });
+  } catch (error) {
+    sendError(
+      response,
+      Number(error?.statusCode || 400),
+      safeText(error?.message, 250) || "The live-presence event was rejected."
+    );
+  }
+}
+
 function creatorApplicationIp(request) {
   return safeText(request.headers["x-forwarded-for"] || request.socket?.remoteAddress, 120)
     .split(",")[0]
@@ -7215,6 +7229,11 @@ const server =
 
         if(request.method === "POST" && url.pathname === "/api/analytics/events"){
           await handleAnalyticsEvents(request,response);
+          return;
+        }
+
+        if(request.method === "POST" && url.pathname === "/api/live-presence"){
+          await handleLivePresence(request,response);
           return;
         }
 

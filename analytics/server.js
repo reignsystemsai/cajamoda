@@ -395,6 +395,25 @@ export function createAnalyticsService({ wix, getOrders, getProducts }) {
     });
   }
 
+  function touchLiveSession(rawEvent = {}) {
+    const event = {
+      ...rawEvent,
+      eventType: safeText(rawEvent?.eventType, 50).toLowerCase(),
+      sessionId: safeText(rawEvent?.sessionId, 100),
+      visitorId: safeText(rawEvent?.visitorId, 100),
+      properties: compactValue(rawEvent?.properties || {}),
+      lastTouch: compactValue(rawEvent?.lastTouch || {}),
+      location: compactValue(rawEvent?.location || {})
+    };
+    if (!["heartbeat", "page_view", "page_leave"].includes(event.eventType) || !event.sessionId) {
+      const error = new Error("A valid live-presence event is required.");
+      error.statusCode = 400;
+      throw error;
+    }
+    updateLiveSession(event);
+    return { active: event.eventType !== "page_leave" };
+  }
+
   function allowRequest(request, events) {
     const sessionId = safeText(events?.[0]?.sessionId, 100);
     const forwarded = safeText(request?.headers?.["x-forwarded-for"], 200).split(",")[0].trim();
@@ -1038,6 +1057,7 @@ export function createAnalyticsService({ wix, getOrders, getProducts }) {
   return {
     ensureCollection,
     ingestClientEvents,
+    touchLiveSession,
     dashboard,
     saveSettings,
     chat,

@@ -122,7 +122,7 @@
     const success = document.querySelector("#success");
     const submit = form.querySelector("button[type='submit']");
     const wixClientId = import.meta.env.VITE_WIX_CLIENT_ID;
-    const wixEmailId = import.meta.env.VITE_WIX_CREATOR_APPLICATION_EMAIL_ID;
+    const wixEmailId = "creator_application_received";
     const sessionKey = "wixSession";
 
     function readTokens() {
@@ -145,7 +145,7 @@
         locale: "es-CO"
       });
       await wix.triggeredEmails.emailContact(wixEmailId, identity.contactId, {
-        variables: { firstName: values.firstName }
+        variables: { "contact.Name.first": values.firstName }
       });
     }
 

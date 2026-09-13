@@ -145,6 +145,7 @@
     if (path.startsWith("/product")) return "product";
     if (path.startsWith("/checkout")) return "checkout";
     if (path.startsWith("/order-confirmation")) return "order-confirmation";
+    if (path.startsWith("/creadores")) return "creator-application";
     return "home";
   }
 

@@ -241,7 +241,15 @@ const analytics =
     getOrders:
       getWixOrdersForAnalytics,
     getProducts:
-      getWixProductsForAnalytics
+      getWixProductsForAnalytics,
+    eventStore: {
+      writeEvents:
+        writeSupabaseAnalyticsEvents,
+      queryEvents:
+        querySupabaseAnalyticsEvents,
+      findOrderContext:
+        findSupabaseAnalyticsOrderContext
+    }
   });
 
 /* ============================================================
@@ -5725,6 +5733,158 @@ async function getLivePresence() {
     timeOnSiteSeconds: Math.max(0, Number(row.duration_seconds || 0)),
     lastSeenAt: safeText(row.last_seen_at, 40)
   }));
+}
+
+function supabaseAnalyticsRecord(item = {}) {
+  return {
+    event_id: safeText(item.eventId, 100),
+    event_type: safeText(item.eventType, 50).toLowerCase(),
+    occurred_at: new Date(item.occurredAt || Date.now()).toISOString(),
+    received_at: new Date(item.receivedAt || Date.now()).toISOString(),
+    session_id: safeText(item.sessionId, 100),
+    visitor_id: safeText(item.visitorId, 100),
+    page: safeText(item.page, 80),
+    path: safeText(item.path, 1000),
+    product_id: safeText(item.productId, 120),
+    product_name: safeText(item.productName, 300),
+    product_image: safeText(item.productImage, 1500),
+    category_id: safeText(item.categoryId, 120),
+    quantity: Number(item.quantity || 0),
+    value: Number(item.value || 0),
+    currency: safeText(item.currency, 10) || "COP",
+    channel: safeText(item.channel, 80) || "direct",
+    source: safeText(item.source, 120),
+    medium: safeText(item.medium, 120),
+    campaign: safeText(item.campaign, 180),
+    content: safeText(item.content, 180),
+    term: safeText(item.term, 180),
+    click_id: safeText(item.clickId, 300),
+    first_channel: safeText(item.firstChannel, 80) || "direct",
+    first_source: safeText(item.firstSource, 120),
+    city: safeText(item.city, 150),
+    region: safeText(item.region, 150),
+    country: safeText(item.country, 10),
+    locale: safeText(item.locale, 40),
+    timezone: safeText(item.timezone, 80),
+    referrer: safeText(item.referrer, 1000),
+    properties: item.properties && typeof item.properties === "object" ? item.properties : {},
+    order_id: safeText(item.orderId, 150),
+    payment_method: safeText(item.paymentMethod, 40),
+    server_verified: item.serverVerified === true
+  };
+}
+
+function analyticsEventFromSupabase(row = {}) {
+  return {
+    eventId: safeText(row.event_id, 100),
+    eventType: safeText(row.event_type, 50),
+    occurredAt: safeText(row.occurred_at, 40),
+    receivedAt: safeText(row.received_at, 40),
+    sessionId: safeText(row.session_id, 100),
+    visitorId: safeText(row.visitor_id, 100),
+    page: safeText(row.page, 80),
+    path: safeText(row.path, 1000),
+    productId: safeText(row.product_id, 120),
+    productName: safeText(row.product_name, 300),
+    productImage: safeText(row.product_image, 1500),
+    categoryId: safeText(row.category_id, 120),
+    quantity: Number(row.quantity || 0),
+    value: Number(row.value || 0),
+    currency: safeText(row.currency, 10) || "COP",
+    channel: safeText(row.channel, 80) || "direct",
+    source: safeText(row.source, 120),
+    medium: safeText(row.medium, 120),
+    campaign: safeText(row.campaign, 180),
+    content: safeText(row.content, 180),
+    term: safeText(row.term, 180),
+    clickId: safeText(row.click_id, 300),
+    firstChannel: safeText(row.first_channel, 80) || "direct",
+    firstSource: safeText(row.first_source, 120),
+    city: safeText(row.city, 150),
+    region: safeText(row.region, 150),
+    country: safeText(row.country, 10),
+    locale: safeText(row.locale, 40),
+    timezone: safeText(row.timezone, 80),
+    referrer: safeText(row.referrer, 1000),
+    properties: row.properties && typeof row.properties === "object" ? row.properties : {},
+    orderId: safeText(row.order_id, 150),
+    paymentMethod: safeText(row.payment_method, 40),
+    serverVerified: row.server_verified === true
+  };
+}
+
+async function writeSupabaseAnalyticsEvents(items = []) {
+  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
+    throw new Error("Production analytics storage is not configured.");
+  }
+  const records = items.map(supabaseAnalyticsRecord).filter(item => item.event_id);
+  if (!records.length) return 0;
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/analytics_events?on_conflict=event_id`,
+    {
+      method: "POST",
+      headers: livePresenceHeaders({
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=minimal"
+      }),
+      body: JSON.stringify(records)
+    }
+  );
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    console.error("[Analytics] Supabase write failed:", response.status, detail);
+    throw new Error("Production analytics storage is temporarily unavailable.");
+  }
+  return records.length;
+}
+
+async function querySupabaseAnalyticsEvents(since) {
+  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
+    throw new Error("Production analytics storage is not configured.");
+  }
+  const rows = [];
+  const pageSize = 1000;
+  for (let offset = 0; offset < 5000; offset += pageSize) {
+    const query = new URLSearchParams({
+      select: "*",
+      occurred_at: `gte.${new Date(since).toISOString()}`,
+      order: "occurred_at.desc",
+      limit: String(pageSize),
+      offset: String(offset)
+    });
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/analytics_events?${query.toString()}`,
+      { headers: livePresenceHeaders() }
+    );
+    if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      console.error("[Analytics] Supabase read failed:", response.status, detail);
+      throw new Error("Production analytics storage is temporarily unavailable.");
+    }
+    const page = await response.json();
+    const current = Array.isArray(page) ? page : [];
+    rows.push(...current);
+    if (current.length < pageSize) break;
+  }
+  return rows.map(analyticsEventFromSupabase);
+}
+
+async function findSupabaseAnalyticsOrderContext(orderId) {
+  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY || !safeText(orderId, 150)) return null;
+  const query = new URLSearchParams({
+    select: "*",
+    order_id: `eq.${safeText(orderId, 150)}`,
+    order: "occurred_at.desc",
+    limit: "10"
+  });
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/analytics_events?${query.toString()}`,
+    { headers: livePresenceHeaders() }
+  );
+  if (!response.ok) return null;
+  const rows = await response.json();
+  const events = (Array.isArray(rows) ? rows : []).map(analyticsEventFromSupabase);
+  return events.find(item => item.eventType === "order_created" || item.eventType === "purchase") || null;
 }
 
 async function handleLivePresence(request, response) {

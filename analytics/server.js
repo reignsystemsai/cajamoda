@@ -214,7 +214,7 @@ function displayAction(eventType) {
   return labels[eventType] || safeText(eventType, 80).replaceAll("_", " ");
 }
 
-export function createAnalyticsService({ wix, getOrders }) {
+export function createAnalyticsService({ wix, getOrders, getProducts }) {
   let collectionReady = null;
   const activeSessions = new Map();
   const rateLimits = new Map();
@@ -649,11 +649,32 @@ export function createAnalyticsService({ wix, getOrders }) {
     const selected = selectedMonthBounds(monthInput);
     const days = selected.days;
     const since = selected.start;
-    const [rawEvents, allOrders, settings] = await Promise.all([
+    const [eventsResult, ordersResult, settingsResult, productsResult] = await Promise.allSettled([
       queryEvents(since),
       getOrders(),
-      readSettings(selected.key)
+      readSettings(selected.key),
+      typeof getProducts === "function" ? getProducts() : Promise.resolve([])
     ]);
+    const rawEvents = eventsResult.status === "fulfilled" && Array.isArray(eventsResult.value)
+      ? eventsResult.value
+      : [];
+    const allOrders = ordersResult.status === "fulfilled" && Array.isArray(ordersResult.value)
+      ? ordersResult.value
+      : [];
+    const settings = settingsResult.status === "fulfilled"
+      ? settingsResult.value
+      : {
+          month: selected.key,
+          adSpendWhatsapp: 0,
+          adSpendInstagram: 0,
+          adSpendTiktok: 0,
+          inventorySpend: 0,
+          grossMarginPercent: 0,
+          updatedAt: null
+        };
+    const catalogProducts = productsResult.status === "fulfilled" && Array.isArray(productsResult.value)
+      ? productsResult.value
+      : [];
     const events = rawEvents.filter(event => eventDate(event.occurredAt) < selected.end);
     const orders = (Array.isArray(allOrders) ? allOrders : [])
       .filter(order => paidOrder(order) && eventDate(order.date) >= since && eventDate(order.date) < selected.end);
@@ -694,6 +715,10 @@ export function createAnalyticsService({ wix, getOrders }) {
       if (candidateName && record.name === "Product") record.name = candidateName;
       if (candidateImage && !record.image) record.image = candidateImage;
       return record;
+    }
+
+    for (const product of catalogProducts) {
+      productRecord(product.productId || product.id || product._id, product);
     }
 
     for (const event of events) {
@@ -904,10 +929,16 @@ export function createAnalyticsService({ wix, getOrders }) {
       generatedAt: new Date().toISOString(),
       rangeDays: days,
       storage: {
-        connected: true,
+        connected: eventsResult.status === "fulfilled",
         collection: COLLECTION_ID,
         eventCount: events.length,
-        capped: events.length >= MAX_QUERY_ITEMS
+        capped: events.length >= MAX_QUERY_ITEMS,
+        sources: {
+          events: eventsResult.status === "fulfilled",
+          orders: ordersResult.status === "fulfilled",
+          products: productsResult.status === "fulfilled",
+          settings: settingsResult.status === "fulfilled"
+        }
       },
       overview: {
         sessions: sessionMap.size,

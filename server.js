@@ -5480,6 +5480,8 @@ function normalizeStripeAuthorization(intent, lines = stripeIntentLines(intent))
     paymentMethod: "card",
     source: "stripeAuthorization",
     campaign: safeText(intent?.metadata?.analyticsCampaign, 180),
+    analyticsSessionId: safeText(intent?.metadata?.analyticsSessionId, 100),
+    analyticsVisitorId: safeText(intent?.metadata?.analyticsVisitorId, 100),
     productSubtotal: lines.reduce(
       (sum, line) => sum + Math.max(0, Number(line.amount || 0)) * Math.max(1, Number(line.quantity || 1)),
       0
@@ -5508,39 +5510,35 @@ async function getStripeAuthorizations() {
     stripe.paymentIntents.list({ limit: 100 }),
     stripe.checkout.sessions.list({ status: "complete", limit: 100 })
   ]);
-  const pendingById = new Map(
-    intentResult.data
-      .filter(intent => intent.status === "requires_capture")
-      .map(intent => [intent.id, intent])
-  );
-  const authorizations = intentResult.data
-    .filter(intent => intent.status === "requires_capture" && isCajaModaStripeIntent(intent))
-    .map(normalizeStripeAuthorization);
-  const included = new Set(authorizations.map(order => order.id));
-
-  for (const session of sessionResult.data) {
+  const cajaModaSessionsByIntent = new Map();
+  for (const session of sessionResult.data || []) {
     const intentId = typeof session?.payment_intent === "string"
       ? session.payment_intent
       : session?.payment_intent?.id;
-    const intent = pendingById.get(intentId);
-    if (
-      !intent ||
-      included.has(intent.id) ||
-      safeText(session?.metadata?.source, 80) !== "cajamoda-storefront"
-    ) continue;
-    const lines = await getStripePurchasedLines(session);
+    if (intentId && safeText(session?.metadata?.source, 80) === "cajamoda-storefront") {
+      cajaModaSessionsByIntent.set(intentId, session);
+    }
+  }
+
+  const authorizations = [];
+  for (const intent of intentResult.data || []) {
+    if (intent.status !== "requires_capture") continue;
+    const session = cajaModaSessionsByIntent.get(intent.id);
+    if (!session && !isCajaModaStripeIntent(intent)) continue;
+    const lines = session
+      ? await getStripePurchasedLines(session).catch(() => stripeIntentLines(intent))
+      : stripeIntentLines(intent);
     const customer = session?.customer_details || {};
     authorizations.push(normalizeStripeAuthorization({
       ...intent,
       metadata: {
         ...intent.metadata,
-        ...session.metadata,
-        customerName: safeText(session?.metadata?.customerName || customer?.name, 160),
-        customerPhone: safeText(session?.metadata?.customerPhone || customer?.phone, 80),
-        customerEmail: safeText(customer?.email || session?.customer_email, 250)
+        ...(session?.metadata || {}),
+        customerName: safeText(session?.metadata?.customerName || customer?.name || intent?.metadata?.customerName, 160),
+        customerPhone: safeText(session?.metadata?.customerPhone || customer?.phone || intent?.metadata?.customerPhone, 80),
+        customerEmail: safeText(customer?.email || session?.customer_email || intent?.metadata?.customerEmail, 250)
       }
     }, lines));
-    included.add(intent.id);
   }
   return authorizations;
 }
@@ -6622,7 +6620,7 @@ async function getStoreOwnerCreatorSales(request, response, applicationId) {
   else since.setUTCDate(since.getUTCDate() - 30);
 
   const analyticsQuery = new URLSearchParams({
-    select: "event_type,occurred_at,session_id,product_id,product_name,quantity,value,order_id,server_verified",
+    select: "event_type,occurred_at,session_id,visitor_id,product_id,product_name,quantity,value,order_id,server_verified",
     source: "eq.creator",
     campaign: `eq.${profile.slug}`,
     occurred_at: `gte.${since.toISOString()}`,
@@ -6678,11 +6676,24 @@ async function getStoreOwnerCreatorSales(request, response, applicationId) {
     return new Date(Date.UTC(earned.getUTCFullYear(), earned.getUTCMonth() + 1, day)).toISOString();
   }
 
+  const attributedSessionIds = new Set(
+    attributedEvents.map(event => safeText(event?.session_id, 100)).filter(Boolean)
+  );
+  const attributedVisitorIds = new Set(
+    attributedEvents.map(event => safeText(event?.visitor_id, 100)).filter(Boolean)
+  );
   const authorized = (Array.isArray(stripeAuthorizations) ? stripeAuthorizations : [])
-    .filter(order =>
-      safeText(order?.campaign, 180) === profile.slug &&
-      new Date(order.date).getTime() >= since.getTime()
-    );
+    .filter(order => {
+      const campaign = creatorSlug(order?.campaign);
+      const sessionMatch = attributedSessionIds.has(safeText(order?.analyticsSessionId, 100));
+      const visitorMatch = attributedVisitorIds.has(safeText(order?.analyticsVisitorId, 100));
+      const creatorMatch = campaign === profile.slug || (!campaign && (sessionMatch || visitorMatch));
+      return creatorMatch && new Date(order.date).getTime() >= since.getTime();
+    });
+  const authorizedProductSales = authorized.reduce(
+    (sum, order) => sum + Math.max(0, Number(order?.productSubtotal || 0)),
+    0
+  );
   const ledger = [
     ...authorized.map(order => ({
       orderDate: order.date,
@@ -6692,7 +6703,7 @@ async function getStoreOwnerCreatorSales(request, response, applicationId) {
       commissionRate: Math.max(0, Number(profile.commission_rate || 0)),
       commissionAmount: Math.round(Math.max(0, Number(order.productSubtotal || 0)) * Math.max(0, Number(profile.commission_rate || 0))) / 100,
       amountDue: 0,
-      payoutDate: "",
+      payoutDate: payoutDate(order.date),
       status: "authorized"
     })),
     ...rows.map(sale => ({
@@ -6731,7 +6742,20 @@ async function getStoreOwnerCreatorSales(request, response, applicationId) {
     const date = safeText(row.earned_at, 40).slice(0, 10);
     if (date) seriesByDate.set(date, (seriesByDate.get(date) || 0) + Math.max(0, Number(row.product_subtotal || 0)));
   });
-  const series = [...seriesByDate.entries()].map(([date, value]) => ({ date, value }));
+  authorized.forEach(order => {
+    const date = safeText(order.date, 40).slice(0, 10);
+    if (date) seriesByDate.set(date, (seriesByDate.get(date) || 0) + Math.max(0, Number(order.productSubtotal || 0)));
+  });
+  const series = [];
+  const seriesCursor = new Date(since);
+  seriesCursor.setUTCHours(0, 0, 0, 0);
+  const seriesEnd = new Date(now);
+  seriesEnd.setUTCHours(0, 0, 0, 0);
+  while (seriesCursor <= seriesEnd && series.length < 370) {
+    const date = seriesCursor.toISOString().slice(0, 10);
+    series.push({ date, value: seriesByDate.get(date) || 0 });
+    seriesCursor.setUTCDate(seriesCursor.getUTCDate() + 1);
+  }
 
   sendJson(response, 200, {
     ok: true,
@@ -6744,7 +6768,12 @@ async function getStoreOwnerCreatorSales(request, response, applicationId) {
       commissionRate: profile.commission_rate
     },
     period,
-    totals: { ...totals, authorizedOrders: authorized.length },
+    totals: {
+      ...totals,
+      grossSales: totals.productSales + authorizedProductSales,
+      authorizedProductSales,
+      authorizedOrders: authorized.length
+    },
     activity,
     series,
     ledger,

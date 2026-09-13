@@ -4037,6 +4037,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
       });
       paymentElement = checkoutElements.create("payment", {
         layout: "accordion",
+        wallets: { link: "never" },
         fields: { billingDetails: { name: "never", email: "never", phone: "never", address: "never" } }
       });
       paymentElement.on("ready", () => {

@@ -1598,6 +1598,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
   let stripeSessionTotalMinorUnits = null;
   let stripeLastPaymentError = null;
   let stripeInitializing = false;
+  let stripeSubmitting = false;
   let stripeSessionUpdate = Promise.resolve();
   let stripeSessionCartKey = "";
   let stripeSessionUpdating = false;
@@ -1877,6 +1878,19 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
     return window.crypto?.randomUUID
       ? window.crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+
+  function checkoutAttemptId(cart = readCart()) {
+    const key = currentDeliveryQuoteKey(cart);
+    try {
+      const existing = JSON.parse(sessionStorage.getItem("cajamoda-checkout-attempt") || "null");
+      if (existing?.key === key && existing?.id) return existing.id;
+      const attempt = { key, id: createId() };
+      sessionStorage.setItem("cajamoda-checkout-attempt", JSON.stringify(attempt));
+      return attempt.id;
+    } catch {
+      return createId();
+    }
   }
 
   function escapeHtml(value) {
@@ -3517,7 +3531,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
       country: "CO"
     });
     return {
-      requestId: createId(),
+      requestId: checkoutAttemptId(cart),
       cart,
       analytics: {
         ...(window.CajaModaAnalytics?.context?.() || {}),
@@ -4093,6 +4107,8 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
   }
 
   async function submitStripePayment() {
+    if (stripeSubmitting) return;
+    stripeSubmitting = true;
     const button = checkoutView === "review" ? $("submitOrderButton") : $("stripePayButton");
     const errorBox = $("stripeError");
     const originalLabel = button.textContent;
@@ -4105,6 +4121,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
       if (result?.type === "error") throw result.error || result;
       location.href = `${location.origin}/order-confirmation/?stripeSessionId=${encodeURIComponent(stripeSessionId)}`;
     } catch (error) {
+      stripeSubmitting = false;
       if (![CART_ITEM_UNAVAILABLE_CODE, PRONTO_LOCATION_UNAVAILABLE_CODE].includes(error?.code)) {
         errorBox.textContent = stripeCustomerError(error);
         if ($("reviewError")) $("reviewError").textContent = errorBox.textContent;

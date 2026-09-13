@@ -12,7 +12,8 @@
   let days = 30;
   let sortKey = "overall";
   let sortDirection = "desc";
-  let showAllProducts = false;
+  let productPageSize = 10;
+  let productPage = 1;
   let pollTimer = null;
   let loading = false;
   let drawToken = 0;
@@ -218,17 +219,27 @@
     });
     const allProducts = [...(currentData.topProducts || [])]
       .sort((left, right) => {
-        const score = product => ["views", "favorites", "shares", "addToCart", "checkouts", "purchases"]
-          .reduce((total, key) => total + Number(product[key] || 0), 0);
+        const score = product =>
+          Number(product.views || 0) +
+          Number(product.favorites || 0) * 4 +
+          Number(product.shares || 0) * 5 +
+          Number(product.addToCart || 0) * 8 +
+          Number(product.checkouts || 0) * 15 +
+          Number(product.purchases || 0) * 30;
         const leftValue = sortKey === "overall" ? score(left) : Number(left[sortKey] || 0);
         const rightValue = sortKey === "overall" ? score(right) : Number(right[sortKey] || 0);
         const result = sortDirection === "asc" ? leftValue - rightValue : rightValue - leftValue;
         return result || Number(right.views || 0) - Number(left.views || 0) || String(left.name).localeCompare(String(right.name));
       });
-    const products = showAllProducts ? allProducts : allProducts.slice(0, 10);
-    const showAllButton = $("analyticsShowAll");
-    if (showAllButton) showAllButton.textContent = showAllProducts ? "Show top 10" : `Show all (${allProducts.length})`;
-    body.innerHTML = products.length ? products.map(product => {
+    const totalPages = Math.max(1,Math.ceil(allProducts.length / productPageSize));
+    productPage = Math.min(productPage,totalPages);
+    const start = (productPage - 1) * productPageSize;
+    const products = allProducts.slice(start,start + productPageSize);
+    setText("analyticsProductCount",`${allProducts.length} products loaded · ${productPageSize} slots shown`);
+    qsa("[data-page-size]").forEach(button => button.classList.toggle("active",Number(button.dataset.pageSize) === productPageSize));
+    if ($("analyticsPreviousPage")) $("analyticsPreviousPage").disabled = productPage <= 1;
+    if ($("analyticsNextPage")) $("analyticsNextPage").disabled = productPage >= totalPages;
+    const productRows = products.map(product => {
       const image = product.image
         ? '<img src="' + escapeHtml(product.image) + '" alt="" loading="lazy">'
         : '<span class="analyticsProductFallback">CM</span>';
@@ -241,7 +252,10 @@
         '<td>' + number(product.checkouts) + '</td>' +
         '<td>' + number(product.purchases) + '</td>' +
       '</tr>';
-    }).join("") : '<tr><td colspan="7"><div class="analyticsEmpty">No product events have been recorded in this range yet.</div></td></tr>';
+    });
+    const emptySlotCount = Math.max(0,productPageSize - productRows.length);
+    const emptyRows = Array.from({length:emptySlotCount},(_,index) => '<tr class="analyticsEmptyProductSlot"><td><div class="analyticsProduct"><span class="analyticsProductFallback">' + (start + products.length + index + 1) + '</span><div><strong>Available product slot</strong><span>No product loaded</span></div></div></td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>');
+    body.innerHTML = [...productRows,...emptyRows].join("");
     body.querySelectorAll("img").forEach(image => {
       image.addEventListener("error", () => {
         const fallback = document.createElement("span");
@@ -256,10 +270,12 @@
     const root = $("analyticsHotList");
     if (!root) return;
     root.innerHTML = products.length ? products.map((product,index) => '<article class="analyticsHotItem">' +
-      '<span class="analyticsHotRank">' + (index + 1) + '</span>' +
-      '<div><strong>' + escapeHtml(product.name || "Product") + '</strong><span>' + escapeHtml(product.status || "Watch") + ' · ' + escapeHtml(product.reason || "New activity detected.") + '</span></div>' +
-      '<b>' + number(product.signalScore) + '</b>' +
+      (product.image ? '<img class="analyticsHotThumb" src="' + escapeHtml(product.image) + '" alt="" loading="lazy">' : '<span class="analyticsHotThumb analyticsHotThumbFallback">CM</span>') +
+      '<div><strong>' + escapeHtml(product.name || "Product") + '</strong><small>SKU ' + escapeHtml(product.sku || product.productId || "—") + '</small><span>' + escapeHtml(product.status || "Watch") + ' · ' + escapeHtml(product.reason || "New activity detected.") + '</span></div>' +
+      '<b class="analyticsHotScore">' + number(product.signalScore) + ' pts</b>' +
+      '<span class="analyticsHotRank" aria-label="Rank ' + (index + 1) + '">' + (index + 1) + '</span>' +
     '</article>').join("") : '<div class="analyticsHotEmpty">No new-product momentum alerts yet. Alerts appear as real activity arrives.</div>';
+    root.querySelectorAll("img").forEach(image => image.addEventListener("error",() => { const fallback = document.createElement("span"); fallback.className = "analyticsHotThumb analyticsHotThumbFallback"; fallback.textContent = "CM"; image.replaceWith(fallback); },{once:true}));
   }
 
   function renderFunnel(rows) {
@@ -290,7 +306,6 @@
       '</div>';
     }).join("");
   }
-
 
   function creatorPerson(a){const f=String(a?.first_name||""),l=String(a?.last_name||""),instagram=String(a?.instagram_username||"").replace(/^@/,""),tiktok=String(a?.tiktok_username||"").replace(/^@/,""),phoneDigits=String(a?.phone||"").replace(/\D/g,"");return{name:(f+" "+l).trim()||"Creadora CajaModa",email:String(a?.email||""),location:[a?.city,a?.department].filter(Boolean).join(", ")||"—",instagram,tiktok,phoneDigits,initials:(f.slice(0,1)+l.slice(0,1)).toUpperCase()||"CM",submitted:a?.created_at?new Intl.DateTimeFormat("es-CO",{dateStyle:"medium",timeZone:"America/Bogota"}).format(new Date(a.created_at)):"—",status:String(a?.status||"new"),visits:Number(a?.visits||a?.analytics?.visits||0),orders:Number(a?.paid_orders||a?.analytics?.paid_orders||0),sales:Number(a?.sales_total||a?.analytics?.sales_total||0),conversion:Number(a?.conversion_rate||a?.analytics?.conversion_rate||0)}}
   function creatorProfileLinks(p){return[p.instagram?'<a class="creatorLink" href="https://www.instagram.com/'+encodeURIComponent(p.instagram)+'" target="_blank" rel="noopener">Instagram</a>':"",p.tiktok?'<a class="creatorLink" href="https://www.tiktok.com/@'+encodeURIComponent(p.tiktok)+'" target="_blank" rel="noopener">TikTok</a>':""].filter(Boolean).join("")}
@@ -471,16 +486,17 @@
   });
   $("analyticsMetricFilter")?.addEventListener("change", event => {
     sortKey = event.target.value || "overall";
+    productPage = 1;
     renderProducts();
   });
   $("analyticsOrderFilter")?.addEventListener("change", event => {
     sortDirection = event.target.value === "asc" ? "asc" : "desc";
+    productPage = 1;
     renderProducts();
   });
-  $("analyticsShowAll")?.addEventListener("click", () => {
-    showAllProducts = !showAllProducts;
-    renderProducts();
-  });
+  qsa("[data-page-size]").forEach(button => button.addEventListener("click", () => { productPageSize = Number(button.dataset.pageSize || 10); productPage = 1; renderProducts(); }));
+  $("analyticsPreviousPage")?.addEventListener("click", () => { if (productPage > 1) { productPage -= 1; renderProducts(); } });
+  $("analyticsNextPage")?.addEventListener("click", () => { productPage += 1; renderProducts(); });
   $("analyticsRefresh")?.addEventListener("click", () => load(true));
   $("analyticsSaveSettings")?.addEventListener("click", saveSettings);
 

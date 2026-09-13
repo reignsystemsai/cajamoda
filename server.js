@@ -7014,6 +7014,40 @@ async function updateCreatorApplication(request, response, applicationId) {
   sendJson(response, 200, { ok: true, application: result?.[0] || null });
 }
 
+async function deleteCreatorApplication(request, response, applicationId) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Sign in to Store Loader.");
+  if (!isPlatformAdmin(request)) return sendError(response, 403, "Creator management is reserved for CajaModa administration.");
+  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) return sendError(response, 503, "Creator management is not configured.");
+
+  const headers = {
+    apikey: SUPABASE_SECRET_KEY,
+    Accept: "application/json",
+    "Content-Type": "application/json"
+  };
+  if (SUPABASE_SECRET_KEY.startsWith("eyJ")) headers.Authorization = `Bearer ${SUPABASE_SECRET_KEY}`;
+  const lookup = await fetch(
+    `${SUPABASE_URL}/rest/v1/creator_applications?id=eq.${encodeURIComponent(applicationId)}&select=id,status&limit=1`,
+    { headers }
+  );
+  const applications = lookup.ok ? await lookup.json().catch(() => []) : [];
+  const application = Array.isArray(applications) ? applications[0] : null;
+  if (!application) return sendError(response, 404, "Creator application not found.");
+  if (!["new", "verifying"].includes(safeText(application.status, 30).toLowerCase())) {
+    return sendError(response, 409, "Only incoming applications can be deleted.");
+  }
+
+  const deleted = await fetch(
+    `${SUPABASE_URL}/rest/v1/creator_applications?id=eq.${encodeURIComponent(applicationId)}`,
+    { method: "DELETE", headers: { ...headers, Prefer: "return=representation" } }
+  );
+  const result = await deleted.json().catch(() => null);
+  if (!deleted.ok) {
+    console.error("[Creator applications] Delete failed:", result);
+    return sendError(response, 503, "The creator application could not be deleted.");
+  }
+  sendJson(response, 200, { ok: true, deleted: applicationId });
+}
+
 async function getWixProductsForAnalytics() {
   if (!wix) return [];
   const [v3Result, legacyResult] = await Promise.allSettled([
@@ -8561,6 +8595,10 @@ const server =
         const creatorApplicationMatch = url.pathname.match(/^\/api\/store-owner\/creator-applications\/([0-9a-f-]+)$/i);
         if(request.method === "PATCH" && creatorApplicationMatch){
           await updateCreatorApplication(request,response,creatorApplicationMatch[1]);
+          return;
+        }
+        if(request.method === "DELETE" && creatorApplicationMatch){
+          await deleteCreatorApplication(request,response,creatorApplicationMatch[1]);
           return;
         }
 

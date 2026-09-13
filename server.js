@@ -737,11 +737,19 @@ async function stripeLineItemFromCartItem(item) {
     throw new Error(`Selecciona un método de entrega válido para ${safeText(product?.name, 80)}.`);
   }
 
+  const size = existingVariantSize(variant) || safeText(item?.size, 50).toUpperCase();
+  const color = existingVariantChoice(variant, ["color", "colour"]) || safeText(item?.color, 100);
+  const image = getProductImageUrl(product);
+
   return {
     cartLineId,
     quantity,
     fulfillmentCode: normalizedFulfillmentCode,
     selectedDeliveryMode,
+    sku: fulfillmentSku,
+    size,
+    color,
+    image,
     price_data: {
       currency: "cop",
       // Stripe treats COP as a two-decimal currency in API requests.
@@ -749,7 +757,16 @@ async function stripeLineItemFromCartItem(item) {
       product_data: {
         name: safeText(product?.name, 80) || "Producto CajaModa",
         description: stripeChoiceText(item) || undefined,
-        metadata: { productId, variantId, fulfillmentCode: normalizedFulfillmentCode, selectedDeliveryMode }
+        images: image ? [image] : undefined,
+        metadata: {
+          productId,
+          variantId,
+          fulfillmentCode: normalizedFulfillmentCode,
+          selectedDeliveryMode,
+          sku: safeText(fulfillmentSku, 100),
+          size: safeText(size, 50),
+          color: safeText(color, 100)
+        }
       }
     }
   };
@@ -1029,9 +1046,42 @@ async function getStripePurchasedLines(session) {
       amount,
       name: safeText(line?.description || stripeProduct?.name, 300) || "Producto CajaModa",
       fulfillmentCode: safeText(stripeProduct?.metadata?.fulfillmentCode, 10).toUpperCase(),
-      selectedDeliveryMode: safeText(stripeProduct?.metadata?.selectedDeliveryMode, 20).toLowerCase()
+      selectedDeliveryMode: safeText(stripeProduct?.metadata?.selectedDeliveryMode, 20).toLowerCase(),
+      sku: safeText(stripeProduct?.metadata?.sku, 100).toUpperCase(),
+      size: safeText(stripeProduct?.metadata?.size, 50),
+      color: safeText(stripeProduct?.metadata?.color, 100),
+      image: safeText(stripeProduct?.images?.[0], 1500)
     };
   });
+}
+
+function wixOrderLineItem(line) {
+  const descriptionLines = [
+    ["Talla", line.size],
+    ["Color", line.color],
+    ["SKU", line.sku],
+    ["Entrega", selectedDeliveryLabel(line.selectedDeliveryMode)]
+  ].filter(([, value]) => safeText(value, 200)).map(([name, value]) => ({
+    name: { original: name },
+    plainText: { original: safeText(value, 200) }
+  }));
+  return {
+    productName: { original: line.name },
+    descriptionLines,
+    image: safeText(line.image, 1500) || undefined,
+    quantity: line.quantity,
+    price: { amount: String(line.amount) },
+    itemType: { preset: "PHYSICAL" },
+    physicalProperties: {
+      shippable: true,
+      sku: safeText(line.sku, 40).toUpperCase() || undefined
+    },
+    catalogReference: {
+      appId: WIX_STORES_APP_ID,
+      catalogItemId: line.productId,
+      options: { variantId: line.variantId }
+    }
+  };
 }
 
 async function findStripeWixOrder(sessionId) {
@@ -1096,22 +1146,7 @@ async function importStripeOrderIntoWix(session, lines) {
         }
       }
     },
-    lineItems: lines.map(line => ({
-      productName: { original: line.name },
-      descriptionLines: [{
-        name: { original: "Entrega" },
-        plainText: { original: selectedDeliveryLabel(line.selectedDeliveryMode) }
-      }],
-      quantity: line.quantity,
-      price: { amount: String(line.amount) },
-      itemType: { preset: "PHYSICAL" },
-      physicalProperties: { shippable: true },
-      catalogReference: {
-        appId: WIX_STORES_APP_ID,
-        catalogItemId: line.productId,
-        options: { variantId: line.variantId }
-      }
-    })),
+    lineItems: lines.map(wixOrderLineItem),
     priceSummary: {
       subtotal: { amount: String(subtotal) },
       shipping: { amount: String(Math.max(0, total - subtotal)) },
@@ -1248,7 +1283,11 @@ function stripeIntentMetadata(lines, body, delivery) {
       a: line.amount,
       n: safeText(line.name, 180),
       f: safeText(line.fulfillmentCode, 10).toUpperCase(),
-      d: safeText(line.selectedDeliveryMode, 20).toLowerCase()
+      d: safeText(line.selectedDeliveryMode, 20).toLowerCase(),
+      k: safeText(line.sku, 100).toUpperCase(),
+      s: safeText(line.size, 50),
+      c: safeText(line.color, 100),
+      i: safeText(wixMediaId(line.image), 150)
     })).toString("base64url");
   });
   return metadata;
@@ -1266,7 +1305,11 @@ function stripeIntentLines(intent) {
       amount: Number(item.a || 0),
       name: safeText(item.n, 300) || "Producto CajaModa",
       fulfillmentCode: safeText(item.f, 10).toUpperCase(),
-      selectedDeliveryMode: safeText(item.d, 20).toLowerCase()
+      selectedDeliveryMode: safeText(item.d, 20).toLowerCase(),
+      sku: safeText(item.k, 100).toUpperCase(),
+      size: safeText(item.s, 50),
+      color: safeText(item.c, 100),
+      image: item.i ? `https://static.wixstatic.com/media/${safeText(item.i, 150)}` : ""
     };
   }).filter(line => line.productId && line.variantId && Number.isFinite(line.amount) && line.amount >= 1);
 }
@@ -1289,7 +1332,11 @@ async function handleCreateStripePaymentIntent(request, response) {
     amount: Number(line?.price_data?.unit_amount || 0) / 100,
     name: safeText(line?.price_data?.product_data?.name, 300) || "Producto CajaModa",
     fulfillmentCode: safeText(line?.fulfillmentCode, 10).toUpperCase(),
-    selectedDeliveryMode: safeText(line?.selectedDeliveryMode, 20).toLowerCase()
+    selectedDeliveryMode: safeText(line?.selectedDeliveryMode, 20).toLowerCase(),
+    sku: safeText(line?.sku, 100).toUpperCase(),
+    size: safeText(line?.size, 50),
+    color: safeText(line?.color, 100),
+    image: safeText(line?.image, 1500)
   }));
   const captureMethod = stripeCaptureMethod(lines);
   const delivery = await checkoutDelivery(body, lines);
@@ -1390,12 +1437,7 @@ async function importStripeIntentIntoWix(intent, lines) {
         phone: safeText(intent.metadata.customerPhone, 80)
       } } }
     },
-    lineItems: lines.map(line => ({
-      productName: { original: line.name }, quantity: line.quantity,
-      price: { amount: String(line.amount) }, itemType: { preset: "PHYSICAL" },
-      physicalProperties: { shippable: true },
-      catalogReference: { appId: WIX_STORES_APP_ID, catalogItemId: line.productId, options: { variantId: line.variantId } }
-    })),
+    lineItems: lines.map(wixOrderLineItem),
     priceSummary: {
       subtotal: { amount: String(subtotal) }, shipping: { amount: String(Math.max(0, total - subtotal)) },
       tax: { amount: "0" }, discount: { amount: "0" }, total: { amount: String(total) }
@@ -4360,14 +4402,21 @@ async function handleCreateProduct(
 }
 
 function existingVariantSize(variant){
+  const size = existingVariantChoice(variant, ["size", "talla"]).toUpperCase();
+  if(["S","M","L","XL"].includes(size)) return size;
+  const sku = safeText(variant?.sku, 160).toUpperCase();
+  return sku.match(/-(XL|L|M|S)$/)?.[1] || "";
+}
+
+function existingVariantChoice(variant, optionNames){
+  const accepted = new Set((optionNames || []).map(value => String(value).toLowerCase()));
   for(const choice of Array.isArray(variant?.choices) ? variant.choices : []){
     const names = choice?.optionChoiceNames || choice?.choiceNames || choice;
     const optionName = safeText(names?.optionName || names?.name, 50).toLowerCase();
-    const choiceName = safeText(names?.choiceName || names?.value, 20).toUpperCase();
-    if((optionName === "size" || optionName === "talla") && ["S","M","L","XL"].includes(choiceName)) return choiceName;
+    const choiceName = safeText(names?.choiceName || names?.value, 100);
+    if(accepted.has(optionName) && choiceName) return choiceName;
   }
-  const sku = safeText(variant?.sku, 160).toUpperCase();
-  return sku.match(/-(XL|L|M|S)$/)?.[1] || "";
+  return "";
 }
 
 function existingSkuPrefix(sku){
@@ -5387,6 +5436,40 @@ async function getWixOrders() {
     );
 }
 
+async function enrichOrdersWithCatalogDetails(orders) {
+  const normalized = Array.isArray(orders) ? orders : [];
+  const productIds = [...new Set(
+    normalized.flatMap(order => order.items || []).map(item => item.productId).filter(Boolean)
+  )];
+  const productsById = new Map();
+  for (let index = 0; index < productIds.length; index += 10) {
+    const entries = await Promise.all(productIds.slice(index, index + 10).map(async productId => {
+      const result = await wix.productsV3.getProduct(productId, {
+        fields: ["MEDIA_ITEMS_INFO", "THUMBNAIL"]
+      }).catch(() => null);
+      return [productId, result?.product || result];
+    }));
+    entries.forEach(([productId, product]) => productsById.set(productId, product));
+  }
+  return normalized.map(order => ({
+    ...order,
+    items: (order.items || []).map(item => {
+      const product = productsById.get(item.productId);
+      const variants = product?.variantsInfo?.variants || product?.variants || [];
+      const variant = variants.find(candidate =>
+        String(candidate?._id || candidate?.id || candidate?.variantId) === String(item.variantId)
+      );
+      return {
+        ...item,
+        image: item.image || getProductImageUrl(product),
+        sku: item.sku || safeText(variant?.sku, 100).toUpperCase(),
+        size: item.size || existingVariantSize(variant),
+        color: item.color || existingVariantChoice(variant, ["color", "colour"])
+      };
+    })
+  }));
+}
+
 async function getWixOrdersForAnalytics() {
   if (!wix) {
     throw new Error("El servidor todavía no está conectado a Wix.");
@@ -5638,6 +5721,10 @@ async function handleGetOrders(
     getWixOrders(),
     getStripeAuthorizations()
   ]);
+  const visibleOrders = await enrichOrdersWithCatalogDetails([
+    ...stripeAuthorizations,
+    ...orderList
+  ]);
 
   sendJson(
     response,
@@ -5647,7 +5734,7 @@ async function handleGetOrders(
       ok:
         true,
 
-      orders: [...stripeAuthorizations, ...orderList]
+      orders: visibleOrders
         .sort((left, right) => new Date(right.date) - new Date(left.date))
         .map(order => ({
           ...order,

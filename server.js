@@ -147,6 +147,7 @@ const STOREFRONT_URL = String(
 const CREATOR_AGREEMENT_VERSION = "2026-09-13";
 const CREATOR_ACCESS_TTL_MS = 48 * 60 * 60 * 1000;
 const CREATOR_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const CREATOR_MARKETING_RESERVE_PER_ITEM_COP = 12000;
 
 const stripe = STRIPE_SECRET_KEY
   ? new Stripe(STRIPE_SECRET_KEY)
@@ -2484,14 +2485,15 @@ async function handleConfirmNequiOrder(request, response, orderId) {
   try {
     const confirmed = await confirmation;
     const commissionItems = (Array.isArray(confirmed?.lineItems) ? confirmed.lineItems : [])
-      .map(normalizeWixOrderLineItem)
-      .map(line => ({
-        productId: line.productId,
-        productName: line.name,
-        productImage: line.image,
-        quantity: line.quantity,
-        value: 0
-      }));
+      .map(item => {
+        const line = normalizeWixOrderLineItem(item);
+        return {
+          ...line,
+          productName: line.name,
+          productImage: line.image,
+          value: Math.max(0, Number(item?.price?.amount || 0))
+        };
+      });
     await analytics.recordPurchase({
       externalId: "nequi-" + orderId,
       order: confirmed,
@@ -6881,7 +6883,53 @@ async function recordCreatorCommission({ orderId, paymentMethod, productSubtotal
   const profile = Array.isArray(profiles) ? profiles[0] : null;
   if (!profile) return null;
   const rate = Number(profile.commission_rate || 0);
-  const amount = Math.round(Number(productSubtotal) * rate) / 100;
+  const productIds = [...new Set((Array.isArray(items) ? items : [])
+    .map(item => safeText(item?.productId, 80))
+    .filter(Boolean))];
+  const productsById = new Map(await Promise.all(productIds.map(async productId => {
+    const result = wix?.productsV3
+      ? await wix.productsV3.getProduct(productId).catch(() => null)
+      : null;
+    return [productId, result?.product || result || null];
+  })));
+  const commissionProducts = (Array.isArray(items) ? items : []).map(item => {
+    const productId = safeText(item?.productId, 80);
+    const variantId = safeText(item?.variantId, 150);
+    const product = productsById.get(productId);
+    const variants = Array.isArray(product?.variantsInfo?.variants) ? product.variantsInfo.variants : [];
+    const variant = variants.find(candidate =>
+      safeText(candidate?._id || candidate?.id || candidate?.variantId, 150) === variantId
+    ) || variants.find(candidate =>
+      safeText(candidate?.sku, 100).toUpperCase() === safeText(item?.sku, 100).toUpperCase()
+    );
+    const availableCosts = variants
+      .map(candidate => candidate?.revenueDetails?.cost?.amount)
+      .filter(value => value !== undefined && value !== null && Number.isFinite(Number(value)))
+      .map(Number);
+    const uniqueCosts = [...new Set(availableCosts)];
+    const rawCost = variant?.revenueDetails?.cost?.amount ??
+      (uniqueCosts.length === 1 ? uniqueCosts[0] : undefined);
+    const costKnown = rawCost !== undefined && rawCost !== null && Number.isFinite(Number(rawCost));
+    const unitCost = costKnown ? Math.max(0, Number(rawCost)) : null;
+    const unitSalePrice = Math.max(0, Number(item?.amount ?? item?.value ?? 0));
+    const quantity = Math.max(1, Math.floor(Number(item?.quantity || 1)));
+    const commissionableProfit = costKnown
+      ? Math.max(0, unitSalePrice - unitCost - CREATOR_MARKETING_RESERVE_PER_ITEM_COP) * quantity
+      : 0;
+    return {
+      ...item,
+      quantity,
+      unitSalePrice,
+      unitCost,
+      marketingReservePerItem: CREATOR_MARKETING_RESERVE_PER_ITEM_COP,
+      commissionableProfit
+    };
+  });
+  const commissionableProfit = commissionProducts.reduce(
+    (sum, item) => sum + Number(item.commissionableProfit || 0),
+    0
+  );
+  const amount = Math.round(commissionableProfit * rate / 100);
   const result = await fetch(`${SUPABASE_URL}/rest/v1/creator_commissions?on_conflict=order_id`, {
     method: "POST",
     headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" }),
@@ -6892,7 +6940,7 @@ async function recordCreatorCommission({ orderId, paymentMethod, productSubtotal
       product_subtotal: Number(productSubtotal),
       commission_rate: rate,
       commission_amount: amount,
-      products: Array.isArray(items) ? items.slice(0, 50) : []
+      products: commissionProducts.slice(0, 50)
     })
   });
   if (!result.ok) {

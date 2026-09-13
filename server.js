@@ -6027,19 +6027,111 @@ async function getCreatorApplications() {
   }
   const fields = [
     "id", "created_at", "first_name", "last_name", "phone", "email",
-    "instagram_username", "tiktok_username", "department", "city", "heard_about", "status"
+    "instagram_username", "tiktok_username", "department", "city", "heard_about", "status",
+    "creator_slug", "tier", "commission_rate", "approved_at", "reviewed_at",
+    "confirmation_email_status"
   ].join(",");
-  const response = await fetch(
-    `${SUPABASE_URL}/rest/v1/creator_applications?select=${fields}&order=created_at.desc&limit=100`,
-    { headers }
-  );
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    console.error("[Creator applications] Supabase read failed:", response.status, detail);
+  const [applicationsResponse, eventsResponse] = await Promise.all([
+    fetch(
+      `${SUPABASE_URL}/rest/v1/creator_applications?select=${fields}&order=created_at.desc&limit=100`,
+      { headers }
+    ),
+    fetch(
+      `${SUPABASE_URL}/rest/v1/analytics_events?select=event_type,session_id,order_id,value,campaign,server_verified&source=eq.creator&campaign=not.is.null&limit=5000`,
+      { headers }
+    )
+  ]);
+  if (!applicationsResponse.ok) {
+    const detail = await applicationsResponse.text().catch(() => "");
+    console.error("[Creator applications] Supabase read failed:", applicationsResponse.status, detail);
     throw new Error("Creator applications are temporarily unavailable.");
   }
-  const rows = await response.json();
-  return Array.isArray(rows) ? rows : [];
+  const rows = await applicationsResponse.json();
+  const events = eventsResponse.ok ? await eventsResponse.json() : [];
+  const metrics = new Map();
+  for (const event of Array.isArray(events) ? events : []) {
+    const slug = safeText(event?.campaign, 120);
+    if (!slug) continue;
+    if (!metrics.has(slug)) metrics.set(slug, { sessions: new Set(), orders: new Set(), sales: 0 });
+    const current = metrics.get(slug);
+    if (event?.session_id) current.sessions.add(String(event.session_id));
+    if (event?.event_type === "purchase" && event?.server_verified === true) {
+      if (event?.order_id) current.orders.add(String(event.order_id));
+      current.sales += Math.max(0, Number(event?.value || 0));
+    }
+  }
+  return (Array.isArray(rows) ? rows : []).map(application => {
+    const current = metrics.get(String(application?.creator_slug || ""));
+    const visits = current?.sessions.size || 0;
+    const paidOrders = current?.orders.size || 0;
+    const salesTotal = current?.sales || 0;
+    return {
+      ...application,
+      visits,
+      paid_orders: paidOrders,
+      sales_total: salesTotal,
+      commission_earned: salesTotal * Number(application?.commission_rate || 0) / 100,
+      conversion_rate: visits > 0 ? paidOrders / visits * 100 : 0
+    };
+  });
+}
+
+function creatorSlug(value) {
+  return safeText(value, 120)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+}
+
+async function updateCreatorApplication(request, response, applicationId) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Sign in to Store Loader.");
+  if (!isPlatformAdmin(request)) return sendError(response, 403, "Creator management is reserved for CajaModa administration.");
+  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) return sendError(response, 503, "Creator management is not configured.");
+
+  const body = await readBody(request);
+  const requestedStatus = safeText(body?.status, 30).toLowerCase();
+  const status = requestedStatus === "rejected" ? "declined" : requestedStatus;
+  if (!["verifying", "approved", "declined"].includes(status)) {
+    return sendError(response, 400, "Choose a valid creator status.");
+  }
+  const headers = {
+    apikey: SUPABASE_SECRET_KEY,
+    Accept: "application/json",
+    "Content-Type": "application/json"
+  };
+  if (SUPABASE_SECRET_KEY.startsWith("eyJ")) headers.Authorization = `Bearer ${SUPABASE_SECRET_KEY}`;
+  const lookup = await fetch(
+    `${SUPABASE_URL}/rest/v1/creator_applications?id=eq.${encodeURIComponent(applicationId)}&select=*&limit=1`,
+    { headers }
+  );
+  const applications = lookup.ok ? await lookup.json() : [];
+  const application = Array.isArray(applications) ? applications[0] : null;
+  if (!application) return sendError(response, 404, "Creator application not found.");
+
+  const now = new Date().toISOString();
+  const updates = { status, reviewed_at: now };
+  if (status === "approved") {
+    const tier = [1, 2, 3].includes(Number(body?.tier)) ? Number(body.tier) : 1;
+    const baseSlug = creatorSlug(body?.creatorSlug || application.creator_slug || application.instagram_username || `${application.first_name}-${application.last_name}`) || `creadora-${application.id.slice(0, 8)}`;
+    updates.creator_slug = baseSlug;
+    updates.tier = tier;
+    updates.commission_rate = tier * 10;
+    updates.approved_at = application.approved_at || now;
+  }
+  const saved = await fetch(
+    `${SUPABASE_URL}/rest/v1/creator_applications?id=eq.${encodeURIComponent(applicationId)}`,
+    { method: "PATCH", headers: { ...headers, Prefer: "return=representation" }, body: JSON.stringify(updates) }
+  );
+  const result = await saved.json().catch(() => null);
+  if (!saved.ok) {
+    if (result?.code === "23505") return sendError(response, 409, "Ese enlace de creadora ya está en uso.");
+    console.error("[Creator applications] Update failed:", result);
+    return sendError(response, 503, "No pudimos actualizar la solicitud.");
+  }
+  sendJson(response, 200, { ok: true, application: result?.[0] || null });
 }
 
 async function getWixProductsForAnalytics() {
@@ -7557,6 +7649,12 @@ const server =
 
         if(request.method === "POST" && url.pathname === "/api/creator-applications"){
           await handleCreatorApplication(request,response);
+          return;
+        }
+
+        const creatorApplicationMatch = url.pathname.match(/^\/api\/store-owner\/creator-applications\/([0-9a-f-]+)$/i);
+        if(request.method === "PATCH" && creatorApplicationMatch){
+          await updateCreatorApplication(request,response,creatorApplicationMatch[1]);
           return;
         }
 

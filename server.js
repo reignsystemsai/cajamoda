@@ -5556,7 +5556,8 @@ function normalizeStripeAuthorization(intent, lines = stripeIntentLines(intent))
       delivery: selectedDeliveryLabel(line.selectedDeliveryMode),
       quantity: line.quantity,
       productId: line.productId,
-      variantId: line.variantId
+      variantId: line.variantId,
+      amount: Math.max(0, Number(line.amount || 0))
     })),
     products: lines.map(line => `${line.quantity} × ${line.name}`).join(", "),
     total: Number(intent.amount || 0) / 100,
@@ -6645,16 +6646,105 @@ async function consumeCreatorLogin(request, response) {
   sendJson(response, 200, { ok: true, sessionToken });
 }
 
+async function calculateCreatorCommission(items, commissionRate) {
+  const rate = Math.max(0, Number(commissionRate || 0));
+  const sourceItems = Array.isArray(items) ? items : [];
+  const productIds = [...new Set(sourceItems
+    .map(item => safeText(item?.productId, 80))
+    .filter(Boolean))];
+  const productsById = new Map(await Promise.all(productIds.map(async productId => {
+    const result = wix?.productsV3
+      ? await wix.productsV3.getProduct(productId).catch(() => null)
+      : null;
+    return [productId, result?.product || result || null];
+  })));
+  const products = sourceItems.map(item => {
+    const productId = safeText(item?.productId, 80);
+    const variantId = safeText(item?.variantId, 150);
+    const product = productsById.get(productId);
+    const variants = Array.isArray(product?.variantsInfo?.variants) ? product.variantsInfo.variants : [];
+    const variant = variants.find(candidate =>
+      safeText(candidate?._id || candidate?.id || candidate?.variantId, 150) === variantId
+    ) || variants.find(candidate =>
+      safeText(candidate?.sku, 100).toUpperCase() === safeText(item?.sku, 100).toUpperCase()
+    );
+    const availableCosts = variants
+      .map(candidate => candidate?.revenueDetails?.cost?.amount)
+      .filter(value => value !== undefined && value !== null && Number.isFinite(Number(value)))
+      .map(Number);
+    const uniqueCosts = [...new Set(availableCosts)];
+    const rawCost = variant?.revenueDetails?.cost?.amount ??
+      (uniqueCosts.length === 1 ? uniqueCosts[0] : undefined);
+    const costKnown = rawCost !== undefined && rawCost !== null && Number.isFinite(Number(rawCost));
+    const unitCost = costKnown ? Math.max(0, Number(rawCost)) : null;
+    const unitSalePrice = Math.max(0, Number(item?.unitSalePrice ?? item?.amount ?? item?.value ?? 0));
+    const quantity = Math.max(1, Math.floor(Number(item?.quantity || 1)));
+    const commissionableProfit = costKnown
+      ? Math.max(0, unitSalePrice - unitCost - CREATOR_MARKETING_RESERVE_PER_ITEM_COP) * quantity
+      : 0;
+    return {
+      ...item,
+      quantity,
+      unitSalePrice,
+      unitCost,
+      marketingReservePerItem: CREATOR_MARKETING_RESERVE_PER_ITEM_COP,
+      commissionableProfit
+    };
+  });
+  const commissionableProfit = products.reduce(
+    (sum, item) => sum + Number(item.commissionableProfit || 0),
+    0
+  );
+  return {
+    products: products.slice(0, 50),
+    amount: Math.round(commissionableProfit * rate / 100)
+  };
+}
+
+function usesCurrentCreatorCommissionFormula(row) {
+  const products = Array.isArray(row?.products) ? row.products : [];
+  return products.length > 0 && products.every(product =>
+    Number(product?.marketingReservePerItem) === CREATOR_MARKETING_RESERVE_PER_ITEM_COP &&
+    Number.isFinite(Number(product?.commissionableProfit))
+  );
+}
+
+async function reconcileCreatorCommissions(rows) {
+  return Promise.all((Array.isArray(rows) ? rows : []).map(async row => {
+    if (row?.status !== "earned" || usesCurrentCreatorCommissionFormula(row)) return row;
+    const calculated = await calculateCreatorCommission(row?.products, row?.commission_rate);
+    const corrected = {
+      ...row,
+      commission_amount: calculated.amount,
+      products: calculated.products
+    };
+    if (!row?.id) return corrected;
+    const result = await fetch(`${SUPABASE_URL}/rest/v1/creator_commissions?id=eq.${encodeURIComponent(row.id)}`, {
+      method: "PATCH",
+      headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+      body: JSON.stringify({
+        commission_amount: calculated.amount,
+        products: calculated.products
+      })
+    });
+    if (!result.ok) {
+      const detail = await result.text().catch(() => "");
+      console.error("[Creator commission] Could not reconcile commission:", result.status, detail);
+    }
+    return corrected;
+  }));
+}
+
 async function getCreatorPortal(request, response) {
   const profile = await creatorProfileForSession(request);
   if (!profile) return sendError(response, 401, "Inicia sesión como creadora.");
   const [payoutResponse, commissionResponse] = await Promise.all([
     fetch(`${SUPABASE_URL}/rest/v1/creator_payout_accounts?creator_id=eq.${encodeURIComponent(profile.id)}&select=method,destination_masked,status&limit=1`, { headers: livePresenceHeaders() }),
-    fetch(`${SUPABASE_URL}/rest/v1/creator_commissions?creator_id=eq.${encodeURIComponent(profile.id)}&select=order_id,product_subtotal,commission_rate,commission_amount,products,status,earned_at,paid_at&order=earned_at.desc&limit=100`, { headers: livePresenceHeaders() })
+    fetch(`${SUPABASE_URL}/rest/v1/creator_commissions?creator_id=eq.${encodeURIComponent(profile.id)}&select=id,order_id,product_subtotal,commission_rate,commission_amount,products,status,earned_at,paid_at&order=earned_at.desc&limit=100`, { headers: livePresenceHeaders() })
   ]);
   const payouts = payoutResponse.ok ? await payoutResponse.json().catch(() => []) : [];
   const commissions = commissionResponse.ok ? await commissionResponse.json().catch(() => []) : [];
-  const rows = Array.isArray(commissions) ? commissions : [];
+  const rows = await reconcileCreatorCommissions(Array.isArray(commissions) ? commissions : []);
   const totals = rows.reduce((result, row) => {
     result.earned += Number(row.commission_amount || 0);
     if (row.status === "paid") result.paid += Number(row.commission_amount || 0);
@@ -6718,7 +6808,7 @@ async function getStoreOwnerCreatorSales(request, response, applicationId) {
   });
   const [commissionResponse, analyticsResponse, stripeAuthorizations] = await Promise.all([
     fetch(
-      `${SUPABASE_URL}/rest/v1/creator_commissions?creator_id=eq.${encodeURIComponent(profile.id)}&earned_at=gte.${encodeURIComponent(since.toISOString())}&select=order_id,payment_method,product_subtotal,commission_rate,commission_amount,products,status,earned_at,paid_at&order=earned_at.desc&limit=250`,
+      `${SUPABASE_URL}/rest/v1/creator_commissions?creator_id=eq.${encodeURIComponent(profile.id)}&earned_at=gte.${encodeURIComponent(since.toISOString())}&select=id,order_id,payment_method,product_subtotal,commission_rate,commission_amount,products,status,earned_at,paid_at&order=earned_at.desc&limit=250`,
       { headers: livePresenceHeaders() }
     ),
     fetch(`${SUPABASE_URL}/rest/v1/analytics_events?${analyticsQuery.toString()}`, {
@@ -6735,7 +6825,7 @@ async function getStoreOwnerCreatorSales(request, response, applicationId) {
     return sendError(response, 503, "Creator sales are temporarily unavailable.");
   }
   const sales = await commissionResponse.json().catch(() => []);
-  const rows = Array.isArray(sales) ? sales : [];
+  const rows = await reconcileCreatorCommissions(Array.isArray(sales) ? sales : []);
   const events = analyticsResponse.ok
     ? await analyticsResponse.json().catch(() => [])
     : [];
@@ -6783,14 +6873,18 @@ async function getStoreOwnerCreatorSales(request, response, applicationId) {
     (sum, order) => sum + Math.max(0, Number(order?.productSubtotal || 0)),
     0
   );
+  const authorizedCommissions = await Promise.all(authorized.map(async order => ({
+    order,
+    calculated: await calculateCreatorCommission(order.items, profile.commission_rate)
+  })));
   const ledger = [
-    ...authorized.map(order => ({
+    ...authorizedCommissions.map(({ order, calculated }) => ({
       orderDate: order.date,
       orderId: order.id,
-      products: order.items,
+      products: calculated.products,
       orderTotal: Math.max(0, Number(order.total || 0)),
       commissionRate: Math.max(0, Number(profile.commission_rate || 0)),
-      commissionAmount: Math.round(Math.max(0, Number(order.productSubtotal || 0)) * Math.max(0, Number(profile.commission_rate || 0))) / 100,
+      commissionAmount: calculated.amount,
       amountDue: 0,
       payoutDate: payoutDate(order.date),
       status: "authorized"
@@ -6883,53 +6977,8 @@ async function recordCreatorCommission({ orderId, paymentMethod, productSubtotal
   const profile = Array.isArray(profiles) ? profiles[0] : null;
   if (!profile) return null;
   const rate = Number(profile.commission_rate || 0);
-  const productIds = [...new Set((Array.isArray(items) ? items : [])
-    .map(item => safeText(item?.productId, 80))
-    .filter(Boolean))];
-  const productsById = new Map(await Promise.all(productIds.map(async productId => {
-    const result = wix?.productsV3
-      ? await wix.productsV3.getProduct(productId).catch(() => null)
-      : null;
-    return [productId, result?.product || result || null];
-  })));
-  const commissionProducts = (Array.isArray(items) ? items : []).map(item => {
-    const productId = safeText(item?.productId, 80);
-    const variantId = safeText(item?.variantId, 150);
-    const product = productsById.get(productId);
-    const variants = Array.isArray(product?.variantsInfo?.variants) ? product.variantsInfo.variants : [];
-    const variant = variants.find(candidate =>
-      safeText(candidate?._id || candidate?.id || candidate?.variantId, 150) === variantId
-    ) || variants.find(candidate =>
-      safeText(candidate?.sku, 100).toUpperCase() === safeText(item?.sku, 100).toUpperCase()
-    );
-    const availableCosts = variants
-      .map(candidate => candidate?.revenueDetails?.cost?.amount)
-      .filter(value => value !== undefined && value !== null && Number.isFinite(Number(value)))
-      .map(Number);
-    const uniqueCosts = [...new Set(availableCosts)];
-    const rawCost = variant?.revenueDetails?.cost?.amount ??
-      (uniqueCosts.length === 1 ? uniqueCosts[0] : undefined);
-    const costKnown = rawCost !== undefined && rawCost !== null && Number.isFinite(Number(rawCost));
-    const unitCost = costKnown ? Math.max(0, Number(rawCost)) : null;
-    const unitSalePrice = Math.max(0, Number(item?.amount ?? item?.value ?? 0));
-    const quantity = Math.max(1, Math.floor(Number(item?.quantity || 1)));
-    const commissionableProfit = costKnown
-      ? Math.max(0, unitSalePrice - unitCost - CREATOR_MARKETING_RESERVE_PER_ITEM_COP) * quantity
-      : 0;
-    return {
-      ...item,
-      quantity,
-      unitSalePrice,
-      unitCost,
-      marketingReservePerItem: CREATOR_MARKETING_RESERVE_PER_ITEM_COP,
-      commissionableProfit
-    };
-  });
-  const commissionableProfit = commissionProducts.reduce(
-    (sum, item) => sum + Number(item.commissionableProfit || 0),
-    0
-  );
-  const amount = Math.round(commissionableProfit * rate / 100);
+  const calculated = await calculateCreatorCommission(items, rate);
+  const amount = calculated.amount;
   const result = await fetch(`${SUPABASE_URL}/rest/v1/creator_commissions?on_conflict=order_id`, {
     method: "POST",
     headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" }),
@@ -6940,7 +6989,7 @@ async function recordCreatorCommission({ orderId, paymentMethod, productSubtotal
       product_subtotal: Number(productSubtotal),
       commission_rate: rate,
       commission_amount: amount,
-      products: commissionProducts.slice(0, 50)
+      products: calculated.products
     })
   });
   if (!result.ok) {

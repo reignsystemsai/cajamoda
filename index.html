@@ -1265,6 +1265,8 @@ svg{
   font-weight:800;
 }
 
+.productPriceDisplay{display:flex;align-items:center;gap:5px;flex-wrap:wrap}.productPriceOriginal{color:#8a8a8a;font-size:.82em;font-weight:600;text-decoration:line-through}.productPriceCurrent{color:#111;font-weight:850}.productDiscountBadge{display:inline-flex;align-items:center;padding:2px 5px;border-radius:999px;background:#f7e8ed;color:#9c3158;font-size:6.5px;font-weight:850;letter-spacing:.03em}.quickPreviewPrice .productPriceDisplay,.favoriteMiniPrice .productPriceDisplay{justify-content:center}
+
 /* ============================================================
    ESPACIOS RESERVADOS
    ============================================================ */
@@ -3951,6 +3953,16 @@ body:not(.storefrontLoading) .storefrontLoader{
     );
   }
 
+  function productPriceMarkup(product){
+    const price = Math.round(Number(product?.price || 0));
+    const originalPrice = Math.round(Number(product?.originalPrice || price));
+    const discountPercent = Number(product?.discountPercent || 0);
+    if(originalPrice > price && discountPercent > 0){
+      return `<span class="productPriceDisplay"><span class="productPriceOriginal">${money(originalPrice)}</span><span class="productPriceCurrent">${money(price)}</span><span class="productDiscountBadge">-${discountPercent}%</span></span>`;
+    }
+    return `<span class="productPriceDisplay"><span class="productPriceCurrent">${money(price)}</span></span>`;
+  }
+
   function categoryById(
     id
   ){
@@ -4912,7 +4924,7 @@ body:not(.storefrontLoading) .storefrontLoader{
           </div>
 
           <div class="productPrice">
-            ${money(product.price)}
+            ${productPriceMarkup(product)}
           </div>
 
         </div>
@@ -5152,7 +5164,7 @@ body:not(.storefrontLoading) .storefrontLoader{
       </div>
     `).join("");
     $("quickPreviewName").textContent = product.name;
-    $("quickPreviewPrice").textContent = money(product.price);
+    $("quickPreviewPrice").innerHTML = productPriceMarkup(product);
     syncQuickPreviewHeart();
     openOverlay($("quickPreviewOverlay"));
     $("quickPreviewOverlay").setAttribute("aria-hidden","false");
@@ -5596,7 +5608,7 @@ url.searchParams.set(
                 </div>
 
                 <div class="favoriteMiniPrice">
-                  ${money(product.price)}
+                  ${productPriceMarkup(product)}
                 </div>
 
               </button>

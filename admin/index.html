@@ -3204,6 +3204,9 @@ body:has(#panel-creators.active),.loaderApp:has(#panel-creators.active){backgrou
 .creatorSalesTablePanel{margin:0 30px 28px;padding:0;overflow:hidden}.creatorSalesTableHead{padding:20px 20px 12px}.creatorSalesTableWrap{max-height:310px;overflow:auto;padding:0}.creatorSalesTable{min-width:1040px}.creatorSalesTable th,.creatorSalesTable td{padding:13px 15px;border-color:#eceef1;font-size:9px}.creatorSalesTable th{background:rgba(255,255,255,.96);font-size:7px}.creatorLedgerStatus{display:inline-flex;padding:6px 9px;border:1px solid #dedfe3;border-radius:999px;background:#fff;color:#4e5259;font-size:7px;font-weight:850;letter-spacing:.07em;text-transform:uppercase}.creatorLedgerStatus.authorized{border-color:#d6a444;background:#fffaf0;color:#8a641c}.creatorLedgerStatus.paid{border-color:#96ccb7;background:#f2fbf7;color:#227453}.creatorLedgerStatus.reversed{border-color:#dab1bc;background:#fff5f7;color:#92334c}
 @media(max-width:1120px){.creatorSalesSummary{grid-template-columns:repeat(3,1fr)}.creatorSalesInsights{grid-template-columns:1fr}}@media(max-width:960px){.creatorSalesHead{padding:22px 20px 14px}.creatorSalesProfile{display:none}.creatorSalesPeriods{width:calc(100% - 40px);margin:8px 20px 16px;overflow-x:auto;grid-template-columns:repeat(6,minmax(86px,1fr))}.creatorSalesSummary,.creatorSalesInsights{padding-left:20px;padding-right:20px}.creatorSalesTablePanel{margin-left:20px;margin-right:20px}}@media(max-width:620px){.creatorSalesTitle{font-size:34px}.creatorSalesSubtitle{max-width:240px}.creatorSalesHeaderActions{grid-template-columns:1fr}.creatorSalesStatus{grid-column:1;grid-row:2}.creatorSalesClose{grid-column:1;grid-row:1}.creatorSalesSummary{grid-template-columns:repeat(2,1fr)}.creatorSalesStat{grid-template-columns:38px 1fr;min-height:88px}.creatorMetricIcon{width:38px;height:38px}.creatorSalesChart{height:180px}}
 
+/* Product discount pricing */
+.productInformationCard{height:auto!important;overflow:visible!important}.discountFieldHelp{color:#777;font-size:8px;line-height:1.35}.productDiscountPanel,.quickDiscountPanel{display:grid;grid-template-columns:minmax(150px,.62fr) minmax(190px,.8fr) minmax(250px,1.25fr);align-items:end;gap:12px;margin-top:14px;padding:14px;border:1px solid rgba(17,17,17,.09);border-radius:16px;background:rgba(255,255,255,.72);box-shadow:0 12px 30px rgba(40,35,30,.055);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}.discountPricePreview{display:grid;grid-template-columns:auto auto 1fr;align-items:baseline;gap:6px 10px;min-height:42px;padding:10px 12px;border-radius:12px;background:#111;color:#fff}.discountPricePreview strong{font:800 17px/1 Arial,sans-serif}.discountPreviewOriginal{color:#aeb0b4;font-size:10px;text-decoration:line-through}.discountPreviewBadge{justify-self:start;padding:4px 7px;border-radius:999px;background:#f9e8ee;color:#992f55;font-size:8px;font-weight:850}.discountPricePreview small{grid-column:1/-1;color:#c8c9cd;font-size:8px}.quickDiscountPanel{margin-top:0}.quickDiscountPanel .discountPricePreview{min-height:58px}.quickDiscountPanel label small{display:block;margin-top:4px;color:#777;font-size:8px;font-weight:500}@media(max-width:760px){.productDiscountPanel,.quickDiscountPanel{grid-template-columns:1fr}}
+
 /* Creator sales mock parity */
 .creatorSalesPeriods{width:min(780px,calc(100% - 88px));margin:8px 44px 18px}
 .creatorSalesSummary{padding-left:44px;padding-right:44px}
@@ -3684,8 +3687,14 @@ body:has(#panel-creators.active),.loaderApp:has(#panel-creators.active){backgrou
 
       <div class="field"><label for="productCost">Costo del producto (COP)</label><input id="productCost" type="number" min="0" step="1" placeholder="0"></div>
 
-      <div class="field"><label for="productPrice">Precio de venta (COP)</label><input id="productPrice" type="number" min="0" step="1" placeholder="0" readonly></div>
+      <div class="field"><label for="productPrice">Precio original (COP)</label><input id="productPrice" type="number" min="0" step="1" placeholder="0" readonly><small class="discountFieldHelp">Se conserva para tus registros.</small></div>
 
+    </div>
+
+    <div class="productDiscountPanel">
+      <div class="field"><label for="productDiscountPercent">Descuento</label><select id="productDiscountPercent"><option value="0">Sin descuento</option><option value="5">5%</option><option value="10">10%</option><option value="15">15%</option><option value="20">20%</option><option value="25">25%</option><option value="30">30%</option><option value="40">40%</option><option value="50">50%</option></select></div>
+      <div class="field"><label for="productDiscountedPrice">Precio con descuento (COP)</label><input id="productDiscountedPrice" class="quickCalculatedPrice" type="number" min="0" step="1" readonly></div>
+      <div class="discountPricePreview" aria-live="polite"><span id="productPreviewOriginalPrice" class="discountPreviewOriginal"></span><strong id="productPreviewDiscountedPrice"></strong><span id="productPreviewDiscountBadge" class="discountPreviewBadge" hidden></span><small>Precio listo para sincronizar con Wix.</small></div>
     </div></section>
 
     <section class="productFormCard productMediaCard"><div class="mediaHeading"><h2>Multimedia</h2><p class="formSectionHelp">Agrega hasta 5 fotos.</p><button id="photoUndo" class="secondaryButton" type="button" disabled>Deshacer</button></div>
@@ -4976,8 +4985,26 @@ if(
     return safeCost > 0 ? Math.round(safeCost * 2.816) : 0;
   }
 
+  function calculateDiscountedPrice(originalPrice, discountPercent){
+    const original = Math.max(0, Number(originalPrice || 0));
+    const discount = Math.max(0, Math.min(50, Number(discountPercent || 0)));
+    return original > 0 ? Math.round(original * (1 - discount / 100)) : 0;
+  }
+
+  function formatAdminCop(value){
+    return `COP ${Math.round(Number(value || 0)).toLocaleString("es-CO")}`;
+  }
+
   function updateCalculatedPrice(){
-    $("productPrice").value = calculateSalePrice($("productCost").value) || "";
+    const originalPrice = calculateSalePrice($("productCost").value);
+    const discountPercent = Number($("productDiscountPercent").value || 0);
+    const discountedPrice = calculateDiscountedPrice(originalPrice, discountPercent);
+    $("productPrice").value = originalPrice || "";
+    $("productDiscountedPrice").value = discountedPrice || "";
+    $("productPreviewOriginalPrice").textContent = discountPercent > 0 ? formatAdminCop(originalPrice) : "";
+    $("productPreviewDiscountedPrice").textContent = formatAdminCop(discountedPrice);
+    $("productPreviewDiscountBadge").hidden = discountPercent <= 0;
+    $("productPreviewDiscountBadge").textContent = discountPercent > 0 ? `${discountPercent}% menos` : "";
   }
 
   function skuText(value){
@@ -5223,6 +5250,8 @@ if(
         "";
 
     $("productCost").value = "";
+    $("productDiscountPercent").value = "0";
+    updateCalculatedPrice();
     productSuggestionHistory.name = [];
     productSuggestionHistory.description = [];
 
@@ -5318,7 +5347,9 @@ if(
         .trim();
 
     const cost = Math.max(0, Number($("productCost").value || 0));
-    const price = calculateSalePrice(cost);
+    const originalPrice = calculateSalePrice(cost);
+    const discountPercent = Number($("productDiscountPercent").value || 0);
+    const price = calculateDiscountedPrice(originalPrice, discountPercent);
     const trackInventory = $("trackInventory").checked;
     const stockStatus = $("productStockStatus").value;
     const allowPreorder = $("allowPreorder").checked;
@@ -5438,7 +5469,7 @@ if(
           quantity:stockStatus === "OUT_OF_STOCK" ? 0 : variant.quantity
         }));
         await saveExistingProductChanges(currentId, {
-          name, description, cost, price, photos, category, visible:true, variantUpdates
+          name, description, cost, price, discountPercent, photos, category, visible:true, variantUpdates
         });
         await loadRealInventory(true);
         resetProductForm();
@@ -5468,6 +5499,8 @@ if(
               description,
 
               price,
+
+              discountPercent,
 
               cost,
 
@@ -5590,6 +5623,7 @@ if(
 
   $("productName").addEventListener("input", renderVariantPreview);
   $("productCost").addEventListener("input", updateCalculatedPrice);
+  $("productDiscountPercent").addEventListener("change", updateCalculatedPrice);
   $("productColors").addEventListener("input", renderVariantPreview);
   qsa("[data-color-choice]").forEach(button => button.onclick = () => {
     const current = collectColors();
@@ -5634,8 +5668,10 @@ if(
       $("productName").value = detail.name || product.name || "";
       $("productDescription").value = detail.description || product.description || "";
       const existingPrice = Math.round(Number(detail.price || product.price || 0));
+      const existingOriginalPrice = Math.round(Number(detail.originalPrice || existingPrice));
       const existingCost = Math.max(0, Number(detail.cost || 0));
-      $("productCost").value = existingCost || Math.max(0, Math.round(existingPrice / 2.816));
+      $("productCost").value = existingCost || Math.max(0, Math.round(existingOriginalPrice / 2.816));
+      $("productDiscountPercent").value = String(Number(detail.discountPercent || 0));
       updateCalculatedPrice();
       $("productCategory").value = detail.category || product.category || "quick";
       const totalQuantity = rows.reduce((sum,row) => sum + row.quantity, 0);
@@ -5694,6 +5730,10 @@ if(
       let quickCurrentSlot = Number(quickCategoryProduct?.showcaseSlot || detail.showcaseSlot || product.showcaseSlot || 0) || null;
       let quickTargetSlot = quickCurrentSlot;
       const totalQuantity = quickVariants.reduce((sum,row) => sum + row.quantity, 0);
+      const quickOriginalPrice = Math.round(Number(detail.originalPrice || (Number(detail.cost || 0) > 0 ? Number(detail.cost) * 2.816 : Number(detail.price || product.price || 0))));
+      const quickCost = Math.round(Number(detail.cost || 0)) || Math.max(0, Math.round(quickOriginalPrice / 2.816));
+      const quickDiscountPercent = Number(detail.discountPercent || 0);
+      const quickDiscountedPrice = calculateDiscountedPrice(quickOriginalPrice, quickDiscountPercent);
       $("productQuickTitle").textContent = detail.name || product.name || "Producto";
       $("productQuickBody").innerHTML = `<div class="productQuickGrid">
         <div class="quickMediaPanel">
@@ -5705,9 +5745,14 @@ if(
           <div class="quickAssistField"><label>Nombre<input id="quickProductName" maxlength="80" value="${escapeHtml(detail.name || product.name || "")}"></label><button id="quickNameProduct" class="secondaryButton quickAssistButton" type="button">Ponle nombre</button></div>
           <div class="quickEditColumns">
             <label>Categoría<select id="quickProductCategory"><option value="late" ${quickCategory === "late" ? "selected" : ""}>Noches Largas</option><option value="chill" ${quickCategory === "chill" ? "selected" : ""}>Días Tranquilos</option><option value="quick" ${quickCategory === "quick" ? "selected" : ""}>Rápido y Fácil</option><option value="sun" ${quickCategory === "sun" ? "selected" : ""}>Baño de Sol</option></select></label>
-            <label>Costo de compra COP<input id="quickProductCost" inputmode="numeric" type="number" min="0" step="1" value="${Math.round(Number(detail.cost || 0))}"></label>
-            <label>Precio de venta COP<input id="quickProductPrice" class="quickCalculatedPrice" inputmode="numeric" type="number" value="${Math.round(Number(detail.cost || 0) > 0 ? Number(detail.cost) * 2.816 : Number(detail.price || product.price || 0))}" readonly></label>
+            <label>Costo de compra COP<input id="quickProductCost" inputmode="numeric" type="number" min="0" step="1" value="${quickCost}"></label>
+            <label>Precio original COP<input id="quickProductPrice" class="quickCalculatedPrice" inputmode="numeric" type="number" value="${quickOriginalPrice}" readonly><small>Se conserva para tus registros.</small></label>
             <label>Estado<select id="quickProductStatus"><option value="in" ${totalQuantity > 0 ? "selected" : ""}>En stock</option><option value="out" ${totalQuantity <= 0 ? "selected" : ""}>Agotado</option></select></label>
+          </div>
+          <div class="quickDiscountPanel">
+            <label>Descuento<select id="quickProductDiscount"><option value="0" ${quickDiscountPercent === 0 ? "selected" : ""}>Sin descuento</option><option value="5" ${quickDiscountPercent === 5 ? "selected" : ""}>5%</option><option value="10" ${quickDiscountPercent === 10 ? "selected" : ""}>10%</option><option value="15" ${quickDiscountPercent === 15 ? "selected" : ""}>15%</option><option value="20" ${quickDiscountPercent === 20 ? "selected" : ""}>20%</option><option value="25" ${quickDiscountPercent === 25 ? "selected" : ""}>25%</option><option value="30" ${quickDiscountPercent === 30 ? "selected" : ""}>30%</option><option value="40" ${quickDiscountPercent === 40 ? "selected" : ""}>40%</option><option value="50" ${quickDiscountPercent === 50 ? "selected" : ""}>50%</option></select></label>
+            <label>Precio con descuento COP<input id="quickDiscountedPrice" class="quickCalculatedPrice" inputmode="numeric" type="number" value="${quickDiscountedPrice}" readonly></label>
+            <div class="discountPricePreview" aria-live="polite"><span id="quickPreviewOriginalPrice" class="discountPreviewOriginal"></span><strong id="quickPreviewDiscountedPrice"></strong><span id="quickPreviewDiscountBadge" class="discountPreviewBadge" hidden></span><small>Precio listo para sincronizar con Wix.</small></div>
           </div>
           <div class="quickAssistField"><label>Descripción<textarea id="quickProductDescription" maxlength="16000">${escapeHtml(detail.description || "")}</textarea></label><button id="quickDescribeProduct" class="secondaryButton quickAssistButton" type="button">Descríbelo</button></div>
           <div class="quickShowcase"><div class="quickShowcaseHead"><strong>Posición en vitrina</strong><small id="quickShowcaseCategory"></small></div><div id="quickSlotGrid" class="quickSlotGrid"></div><div class="quickShowcaseAction"><small id="quickShowcaseMessage">Arrastra el producto a otra posición.</small><button id="quickShowcaseMove" class="secondaryButton" type="button" disabled>Cambiar posición</button></div></div>
@@ -5877,10 +5922,21 @@ if(
       }
       $("quickNameProduct").onclick = () => assistQuickField("name");
       $("quickDescribeProduct").onclick = () => assistQuickField("description");
-      $("quickProductCost").oninput = () => {
+      function updateQuickPricing(){
         const cost = Math.max(0, Number($("quickProductCost").value || 0));
-        $("quickProductPrice").value = cost > 0 ? Math.round(cost * 2.816) : "";
-      };
+        const originalPrice = calculateSalePrice(cost);
+        const discountPercent = Number($("quickProductDiscount").value || 0);
+        const discountedPrice = calculateDiscountedPrice(originalPrice, discountPercent);
+        $("quickProductPrice").value = originalPrice || "";
+        $("quickDiscountedPrice").value = discountedPrice || "";
+        $("quickPreviewOriginalPrice").textContent = discountPercent > 0 ? formatAdminCop(originalPrice) : "";
+        $("quickPreviewDiscountedPrice").textContent = formatAdminCop(discountedPrice);
+        $("quickPreviewDiscountBadge").hidden = discountPercent <= 0;
+        $("quickPreviewDiscountBadge").textContent = discountPercent > 0 ? `${discountPercent}% menos` : "";
+      }
+      $("quickProductCost").oninput = updateQuickPricing;
+      $("quickProductDiscount").onchange = updateQuickPricing;
+      updateQuickPricing();
       $("quickDeleteProduct").onclick = async () => {
         if(!confirm(`¿Eliminar "${detail.name || product.name || "este producto"}" de Wix, el inventario y la tienda? Esta acción no se puede deshacer.`)) return;
         try{
@@ -5941,7 +5997,8 @@ if(
             name:$("quickProductName").value.trim(),
             description:$("quickProductDescription").value.trim(),
             cost:Number($("quickProductCost").value),
-            price:Number($("quickProductPrice").value || detail.price || product.price || 0),
+            price:Number($("quickDiscountedPrice").value || detail.price || product.price || 0),
+            discountPercent:Number($("quickProductDiscount").value || 0),
             category:$("quickProductCategory").value,
             photos:quickPhotoValues.filter(Boolean),
             visible:$("quickProductVisible").checked,

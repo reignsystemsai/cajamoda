@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 
 const checkout = await readFile(new URL("../checkout/index.html", import.meta.url), "utf8");
+const server = await readFile(new URL("../server.js", import.meta.url), "utf8");
 const initializeStart = checkout.indexOf("async function initializeStripePaymentElement()");
 const mountAt = checkout.indexOf('paymentElement.mount("#paymentElement")', initializeStart);
 const initializeEnd = checkout.indexOf("async function finalizeStripePayment()", initializeStart);
@@ -18,7 +19,11 @@ const checks = [
   ["Card Payment Element mounts", mountAt > initializeStart && mountAt < initializeEnd],
   ["Mount does not wait for a backend request", !initializeStripe.includes("/api/stripe/")],
   ["Mount does not require a Checkout Session", !initializeStripe.includes("initCheckoutElementsSdk") && !initializeStripe.includes("clientSecret")],
-  ["Payment is created only after card confirmation", confirmationTokenAt > initializeEnd && paymentIntentAt > confirmationTokenAt]
+  ["Payment is created only after card confirmation", confirmationTokenAt > initializeEnd && paymentIntentAt > confirmationTokenAt],
+  ["Libéralo never falls back to Rápido", server.includes('if (mode === "ship") return "Libéralo";') && server.includes('if (mode === "fast") return "Rápido Nacional";')],
+  ["Authorized Stripe orders stay pending in Wix", server.includes('paymentStatus: intent.status === "requires_capture" ? "PENDING_MERCHANT" : "PAID"')],
+  ["Captured Stripe orders are marked paid in Wix", server.includes("paymentCollectionMarkOrderAsPaid")],
+  ["Stripe order emails are itemized and idempotent", server.includes("stripeOrderEmailHtml") && server.includes('idempotencyKey: `stripe-order-${intent.id}-${state}`')]
 ];
 
 const failed = checks.filter(([, passed]) => !passed);

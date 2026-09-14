@@ -209,6 +209,7 @@ function normalizePrice(
       const nestedCandidates = [
         candidate.amount,
         candidate.value,
+        candidate.actualPrice,
         candidate.discountedPrice,
         candidate.price
       ];
@@ -269,10 +270,29 @@ function getPrice(
 ) {
   return normalizePrice(
     product?.priceData?.discountedPrice,
+    product?.price?.actualPrice,
     product?.priceData?.price,
     product?.price,
     product?.discountedPrice
   );
+}
+
+function getOriginalPrice(product, actualPrice) {
+  const originalPrice = normalizePrice(
+    product?.price?.compareAtPrice,
+    product?.priceData?.price,
+    product?.compareAtPrice,
+    actualPrice
+  );
+  return originalPrice > Number(actualPrice || 0) ? originalPrice : Number(actualPrice || 0);
+}
+
+function discountPercentFromPrices(originalPrice, actualPrice) {
+  const original = Number(originalPrice || 0);
+  const actual = Number(actualPrice || 0);
+  return original > actual && original > 0
+    ? Math.max(0, Math.min(50, Math.round((1 - actual / original) * 100)))
+    : 0;
 }
 
 
@@ -579,13 +599,20 @@ function normalizeVariant(
   const price =
   normalizePrice(
     raw?.priceData?.discountedPrice,
+    raw?.price?.actualPrice,
     raw?.priceData?.price,
     variant?.priceData?.discountedPrice,
+    variant?.price?.actualPrice,
     variant?.priceData?.price,
     raw?.price,
     variant?.price,
     basePrice
   );
+  const originalPrice = getOriginalPrice({
+    price: raw?.price || variant?.price,
+    priceData: raw?.priceData || variant?.priceData,
+    compareAtPrice: raw?.compareAtPrice || variant?.compareAtPrice
+  }, price);
 
   const inStock =
     raw
@@ -631,6 +658,11 @@ function normalizeVariant(
 
     price,
 
+    originalPrice,
+
+    discountPercent:
+      discountPercentFromPrices(originalPrice, price),
+
     inStock,
 
     inventoryQuantity:
@@ -659,6 +691,7 @@ function normalizeProduct(
     getPrice(
       product
     );
+  const originalPrice = getOriginalPrice(product, basePrice);
 
   const rawVariants =
     Array.isArray(
@@ -798,6 +831,11 @@ function normalizeProduct(
 
     price:
       basePrice,
+
+    originalPrice,
+
+    discountPercent:
+      discountPercentFromPrices(originalPrice, basePrice),
 
     media:
       getImages(

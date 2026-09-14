@@ -593,6 +593,46 @@ function wixVariantPrice(variant) {
   return null;
 }
 
+function wixVariantOriginalPrice(variant) {
+  const actualPrice = wixVariantPrice(variant);
+  const compareAtPrice = Number(variant?.price?.compareAtPrice?.amount);
+  return Number.isFinite(compareAtPrice) && compareAtPrice > Number(actualPrice || 0)
+    ? Math.round(compareAtPrice)
+    : actualPrice;
+}
+
+function discountPercentFromPrices(originalPrice, actualPrice) {
+  const original = Number(originalPrice);
+  const actual = Number(actualPrice);
+  if (!Number.isFinite(original) || original <= 0 || !Number.isFinite(actual) || actual >= original) return 0;
+  return Math.max(0, Math.min(50, Math.round((1 - actual / original) * 100)));
+}
+
+function normalizeDiscountPercent(value, fallback = 0) {
+  if (value === undefined || value === null || value === "") return fallback;
+  const percent = Number(value);
+  if (!Number.isInteger(percent) || percent < 0 || percent > 50) {
+    throw new Error("El descuento debe ser un porcentaje entero entre 0% y 50%.");
+  }
+  return percent;
+}
+
+function discountedProductPrice(originalPrice, discountPercent) {
+  const original = Number(originalPrice);
+  if (!Number.isFinite(original) || original <= 0) return 0;
+  return Math.max(1, Math.round(original * (1 - Number(discountPercent) / 100)));
+}
+
+function wixVariantPriceFields(currentPrice, originalPrice, actualPrice) {
+  const price = {
+    ...(currentPrice || {}),
+    actualPrice: { amount: String(Math.round(actualPrice)) }
+  };
+  if (originalPrice > actualPrice) price.compareAtPrice = { amount: String(Math.round(originalPrice)) };
+  else delete price.compareAtPrice;
+  return price;
+}
+
 const CHECKOUT_ITEM_UNAVAILABLE_CODE = "CART_ITEM_UNAVAILABLE";
 const CHECKOUT_ITEM_UNAVAILABLE_MESSAGE = "Uno de los productos de tu bolsa ya no está disponible.";
 const PRONTO_LOCATION_UNAVAILABLE_CODE = "PRONTO_LOCATION_UNAVAILABLE";
@@ -3247,6 +3287,7 @@ function buildVariants(
   sizes,
   colors,
   price,
+  originalPrice,
   cost,
   quantity,
   trackInventory,
@@ -3335,16 +3376,7 @@ function buildVariants(
             combination
           ),
 
-        price: {
-
-          actualPrice: {
-
-            amount:
-              String(
-                price
-              )
-          }
-        },
+        price: wixVariantPriceFields({}, originalPrice, price),
 
         revenueDetails: cost > 0 ? { cost: { amount: String(cost) } } : undefined,
 
@@ -3842,7 +3874,9 @@ async function createWixProduct(
     );
 
   const cost = Math.max(0, Number(input.cost || 0));
-  const price = cost > 0 ? Math.round(cost * 2.816) : 0;
+  const originalPrice = cost > 0 ? Math.round(cost * 2.816) : 0;
+  const discountPercent = normalizeDiscountPercent(input.discountPercent, 0);
+  const price = discountedProductPrice(originalPrice, discountPercent);
   const trackInventory = input.trackInventory !== false;
   const stockStatus = input.stockStatus === "OUT_OF_STOCK" ? "OUT_OF_STOCK" : "IN_STOCK";
   const allowPreorder = Boolean(input.allowPreorder);
@@ -3931,6 +3965,7 @@ async function createWixProduct(
       sizes,
       colors,
       price,
+      originalPrice,
       cost,
       quantity,
       trackInventory,
@@ -4446,19 +4481,26 @@ function productVariantDetails(product, inventory){
   return productVariants.map(variant => {
     const variantId = safeText(variant?._id || variant?.id || variant?.variantId, 150);
     const stock = inventoryByVariant.get(variantId);
+    const price = wixVariantPrice(variant);
+    const originalPrice = wixVariantOriginalPrice(variant);
     return {
       variantId,
       inventoryId:safeText(stock?.id, 150),
       size:existingVariantSize(variant) || (variant === legacySmall ? "S" : ""),
       sku:safeText(variant?.sku, 160).toUpperCase(),
       quantity:Math.max(0, Number(stock?.quantity || 0)),
-      enabled:variant?.visible !== false
+      enabled:variant?.visible !== false,
+      price,
+      originalPrice,
+      discountPercent:discountPercentFromPrices(originalPrice, price)
     };
   });
 }
 
 function normalizedProductDetail(product, inventory, showcaseSlot, category){
   const variants = productVariantDetails(product, inventory);
+  const price = variants[0]?.price || 0;
+  const originalPrice = variants[0]?.originalPrice || price;
   return {
     id:product?._id || product?.id,
     name:safeText(product?.name, 80),
@@ -4467,7 +4509,9 @@ function normalizedProductDetail(product, inventory, showcaseSlot, category){
     image:getProductImageUrl(product),
     photos:getProductImageUrls(product),
     cost:Number(product?.variantsInfo?.variants?.[0]?.revenueDetails?.cost?.amount || 0),
-    price:Number(product?.variantsInfo?.variants?.[0]?.price?.actualPrice?.amount || 0),
+    price,
+    originalPrice,
+    discountPercent:discountPercentFromPrices(originalPrice, price),
     variants,
     showcaseSlot:Number(showcaseSlot || 0) || null,
     category:safeText(category, 30)
@@ -4517,8 +4561,13 @@ async function handleUpdateProduct(request, response, productId) {
   const name = safeText(body?.name, 80) || safeText(current.name, 80);
   const description = safeText(body?.description, 16000);
   const cost = Math.max(0, Number(body?.cost || 0));
-  const currentPrice = Number(current?.variantsInfo?.variants?.[0]?.price?.actualPrice?.amount || 0);
-  const price = cost > 0 ? Math.round(cost * 2.816) : Number(body?.price || currentPrice);
+  const currentVariant = current?.variantsInfo?.variants?.[0];
+  const currentPrice = wixVariantPrice(currentVariant) || 0;
+  const currentOriginalPrice = wixVariantOriginalPrice(currentVariant) || currentPrice;
+  const currentDiscountPercent = discountPercentFromPrices(currentOriginalPrice, currentPrice);
+  const discountPercent = normalizeDiscountPercent(body?.discountPercent, currentDiscountPercent);
+  const originalPrice = cost > 0 ? Math.round(cost * 2.816) : Number(body?.originalPrice || currentOriginalPrice);
+  const price = discountedProductPrice(originalPrice, discountPercent);
   if(!name) return sendError(response, 400, "El producto necesita conservar su nombre.");
   if(!Number.isFinite(price) || price <= 0) return sendError(response, 400, "Agrega un precio válido.");
 
@@ -4608,7 +4657,7 @@ async function handleUpdateProduct(request, response, productId) {
         sku,
         visible:requested.enabled,
         choices:buildVariantChoices({size:requested.size,color:""}),
-        price:{...(source?.price || {}),actualPrice:{amount:String(Math.round(price))}},
+        price:wixVariantPriceFields(source?.price, originalPrice, price),
         revenueDetails:cost > 0 ? {...(source?.revenueDetails || {}),cost:{amount:String(cost)}} : source?.revenueDetails,
         inventoryItem:inventoryItem
           ? {
@@ -4648,7 +4697,7 @@ async function handleUpdateProduct(request, response, productId) {
     update.variantsInfo = {
       variants:currentVariants.map(variant => ({
         ...variant,
-        price:{...(variant.price || {}),actualPrice:{amount:String(Math.round(price))}},
+        price:wixVariantPriceFields(variant.price, originalPrice, price),
         revenueDetails:cost > 0 ? {...(variant.revenueDetails || {}),cost:{amount:String(cost)}} : variant.revenueDetails
       }))
     };
@@ -4698,6 +4747,7 @@ async function handleUpdateProduct(request, response, productId) {
   let confirmedProduct;
   let confirmedInventory;
   let variantsConfirmed = !requestedVariants.length;
+  let pricesConfirmed = false;
   let confirmationFailure = "";
 
   for(let attempt = 0; attempt < 8; attempt += 1){
@@ -4706,11 +4756,24 @@ async function handleUpdateProduct(request, response, productId) {
     });
     confirmedProduct = confirmedResult?.product || confirmedResult;
     confirmedInventory = await getWixInventory();
-    if(!requestedVariants.length) break;
-
     const details = productVariantDetails(confirmedProduct, confirmedInventory);
     confirmationFailure = "";
     let needsAnotherRead = false;
+
+    pricesConfirmed = details.length > 0 && details.every(item =>
+      Number(item.price) === Number(price) &&
+      Number(item.originalPrice) === Number(originalPrice)
+    );
+    if(!pricesConfirmed){
+      confirmationFailure = "Wix todavía no confirmó el precio y el descuento.";
+      needsAnotherRead = true;
+    }
+
+    if(!requestedVariants.length){
+      if(pricesConfirmed) break;
+      if(attempt < 7) await new Promise(resolve => setTimeout(resolve, 750));
+      continue;
+    }
 
     for(const expected of requestedVariants){
       const actual = details.find(item => item.size === expected.size);
@@ -4743,7 +4806,7 @@ async function handleUpdateProduct(request, response, productId) {
       }
     }
 
-    if(!needsAnotherRead){
+    if(!needsAnotherRead && pricesConfirmed){
       variantsConfirmed = true;
       break;
     }
@@ -4752,6 +4815,9 @@ async function handleUpdateProduct(request, response, productId) {
 
   if(requestedVariants.length && !variantsConfirmed){
     throw new Error(confirmationFailure || "Wix no confirmó todas las tallas, cantidades y métodos de entrega.");
+  }
+  if(!pricesConfirmed){
+    throw new Error(confirmationFailure || "Wix no confirmó el precio y el descuento.");
   }
 
   const [showcases, categoryRoutes] = await Promise.all([

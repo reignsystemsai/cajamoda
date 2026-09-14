@@ -826,7 +826,15 @@ function selectedDeliveryLabel(value) {
   const mode = safeText(value, 20).toLowerCase();
   if (mode === "pickup") return "Pronto";
   if (mode === "ship") return "Libéralo";
-  return "Rápido Nacional";
+  if (mode === "fast") return "Rápido Nacional";
+  return "Entrega por confirmar";
+}
+
+function selectedDeliverySummary(lines = []) {
+  const labels = ["pickup", "fast", "ship"]
+    .filter(mode => lines.some(line => safeText(line?.selectedDeliveryMode, 20).toLowerCase() === mode))
+    .map(selectedDeliveryLabel);
+  return labels.join(" + ") || "Entrega por confirmar";
 }
 
 async function handleCreateStripeCheckout(request, response) {
@@ -1399,7 +1407,9 @@ async function handleCreateStripePaymentIntent(request, response) {
     capture_method: captureMethod,
     payment_method_types: ["card"],
     receipt_email: customerEmail || undefined,
-    description: `CajaModa · ${lines.length} producto${lines.length === 1 ? "" : "s"}`,
+    description: lines.length === 1
+      ? `CajaModa · ${safeText(lines[0].name, 300)}`
+      : `CajaModa · ${safeText(lines[0].name, 240)} + ${lines.length - 1} producto${lines.length === 2 ? "" : "s"}`,
     shipping: {
       name: customerName,
       phone: customerPhone || undefined,
@@ -1457,7 +1467,7 @@ async function importStripeIntentIntoWix(intent, lines) {
   const imported = await wix.orders.importOrder({
     number: stripeImportedOrderNumber(intent.id),
     status: "APPROVED",
-    paymentStatus: "PAID",
+    paymentStatus: intent.status === "requires_capture" ? "PENDING_MERCHANT" : "PAID",
     fulfillmentStatus: "NOT_FULFILLED",
     channelInfo: { type: "OTHER_PLATFORM", externalOrderId: intent.id },
     currency: "COP",
@@ -1473,7 +1483,7 @@ async function importStripeIntentIntoWix(intent, lines) {
       address
     },
     shippingInfo: {
-      title: `Stripe – ${safeText(intent.metadata.deliverySummary, 300) || selectedDeliveryLabel(lines[0]?.selectedDeliveryMode)}`,
+      title: `Stripe – ${selectedDeliverySummary(lines)}`,
       cost: { amount: String(Math.max(0, total - subtotal)) },
       logistics: { shippingDestination: { address, contactDetails: {
         firstName: name.firstName, lastName: name.lastName,
@@ -1488,6 +1498,60 @@ async function importStripeIntentIntoWix(intent, lines) {
     }
   });
   return { order: imported?.order || imported, created: true };
+}
+
+function formatStripeOrderCop(value) {
+  return `COP ${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 }).format(Math.max(0, Math.round(Number(value || 0))))}`;
+}
+
+function stripeOrderDateTime(intent) {
+  return new Intl.DateTimeFormat("es-CO", {
+    timeZone: "America/Bogota",
+    dateStyle: "long",
+    timeStyle: "short"
+  }).format(new Date(Number(intent?.created || Math.floor(Date.now() / 1000)) * 1000));
+}
+
+function stripeOrderEmailHtml(intent, lines, order, state) {
+  const orderNumber = safeText(order?.number, 80) || `S-${intent.id.slice(-12).toUpperCase()}`;
+  const subtotal = lines.reduce((sum, line) => sum + line.amount * line.quantity, 0);
+  const total = Number(intent.amount_received || intent.amount || 0) / 100;
+  const deliveryFee = Math.max(0, total - subtotal);
+  const authorized = state === "authorized";
+  const itemRows = lines.map(line => {
+    const details = [
+      line.size ? `Talla: ${escapeHtml(line.size)}` : "",
+      line.color ? `Color: ${escapeHtml(line.color)}` : "",
+      `Entrega: ${escapeHtml(selectedDeliveryLabel(line.selectedDeliveryMode))}`
+    ].filter(Boolean).join(" · ");
+    return `<tr><td style="padding:16px 0;border-bottom:1px solid #e8e8e8"><div style="font-size:16px;font-weight:700">${escapeHtml(line.name)} × ${line.quantity}</div><div style="margin-top:6px;color:#606060;font-size:13px">${details}</div></td><td align="right" style="padding:16px 0;border-bottom:1px solid #e8e8e8;font-size:15px;font-weight:700;white-space:nowrap">${formatStripeOrderCop(line.amount * line.quantity)}</td></tr>`;
+  }).join("");
+  return `<!doctype html><html lang="es"><body style="margin:0;background:#f5f5f3;font-family:Arial,sans-serif;color:#111"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" style="padding:28px 14px"><table role="presentation" width="620" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:620px;background:rgba(255,255,255,.96);border:1px solid #dedede;border-radius:24px;overflow:hidden"><tr><td align="center" style="padding:28px 24px 20px;border-bottom:1px solid #e8e8e8"><div style="font-family:Georgia,serif;font-size:40px;letter-spacing:-5px">CM</div><div style="font-size:15px;letter-spacing:6px">CAJAMODA</div><div style="margin-top:7px;font-size:9px;font-weight:700;letter-spacing:4px">COLOMBIA</div></td></tr><tr><td style="padding:30px"><div style="font-size:11px;font-weight:700;letter-spacing:2px">PEDIDO ${escapeHtml(orderNumber)}</div><h1 style="margin:10px 0 8px;font:400 30px/1.2 Georgia,serif">${authorized ? "Tu pedido fue autorizado" : "Confirmamos tu pago"}</h1><p style="margin:0 0 22px;color:#606060;font-size:14px;line-height:1.55">${escapeHtml(stripeOrderDateTime(intent))}${authorized ? " · El cobro de Libéralo permanece pendiente hasta su captura." : ""}</p><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">${itemRows}<tr><td style="padding:18px 0 6px;color:#606060">Subtotal</td><td align="right" style="padding:18px 0 6px">${formatStripeOrderCop(subtotal)}</td></tr><tr><td style="padding:6px 0;color:#606060">Entrega</td><td align="right" style="padding:6px 0">${formatStripeOrderCop(deliveryFee)}</td></tr><tr><td style="padding:16px 0 0;border-top:1px solid #111;font:700 20px Georgia,serif">Total</td><td align="right" style="padding:16px 0 0;border-top:1px solid #111;font:700 20px Georgia,serif">${formatStripeOrderCop(total)}</td></tr></table></td></tr><tr><td align="center" style="padding:22px;background:#111;color:#fff;font-size:11px;letter-spacing:2px">CAJAMODA COLOMBIA</td></tr></table></td></tr></table></body></html>`;
+}
+
+async function sendStripeOrderEmail(intent, lines, order, state) {
+  const email = safeText(intent?.receipt_email || intent?.metadata?.customerEmail, 250).toLowerCase();
+  if (!email || !WIX_API_KEY || !WIX_SITE_ID) return;
+  const customerName = safeText(intent?.metadata?.customerName, 160) || "Cliente CajaModa";
+  const orderNumber = safeText(order?.number, 80) || `S-${intent.id.slice(-12).toUpperCase()}`;
+  const transmission = await fetch("https://www.wixapis.com/email-transmissions/v1/email-transmissions/send", {
+    method: "POST",
+    headers: { Authorization: WIX_API_KEY, "wix-site-id": WIX_SITE_ID, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      emailTransmission: {
+        emailSubject: `${state === "authorized" ? "Pedido autorizado" : "Pago confirmado"} · ${orderNumber}`,
+        emailHtmlContent: stripeOrderEmailHtml(intent, lines, order, state),
+        senderName: "CajaModa Colombia",
+        toRecipients: [{ name: customerName, emailAddress: email }],
+        type: "TRANSACTIONAL"
+      },
+      idempotencyKey: `stripe-order-${intent.id}-${state}`
+    })
+  });
+  const payload = await transmission.json().catch(() => ({}));
+  if (!transmission.ok) {
+    throw new Error(safeText(payload?.message || payload?.error, 300) || `Wix email rejected (${transmission.status}).`);
+  }
 }
 
 async function syncSucceededStripeIntent(paymentIntent) {
@@ -1505,6 +1569,10 @@ async function syncSucceededStripeIntent(paymentIntent) {
       order = imported.order;
       if (imported.created) await decrementStripeInventory(lines);
     }
+    if (latest.status === "succeeded" && !["PAID", "PARTIALLY_PAID"].includes(safeText(order?.paymentStatus, 40).toUpperCase())) {
+      const markedPaid = await wix.orders.paymentCollectionMarkOrderAsPaid(safeText(order?._id || order?.id, 80));
+      order = markedPaid?.order || order;
+    }
     if (latest?.metadata?.wixSync !== "complete") await stripe.paymentIntents.update(latest.id, { metadata: {
         ...latest.metadata,
         wixSync: "complete",
@@ -1516,6 +1584,8 @@ async function syncSucceededStripeIntent(paymentIntent) {
       await analytics.recordPurchase({ externalId: latest.id, order, stripeMetadata: latest.metadata, items: lines, value: Number(latest.amount_received || latest.amount || 0) / 100, paymentMethod: "stripe" });
       await recordCreatorCommission({ orderId, paymentMethod: "stripe", productSubtotal: subtotal, items: lines, campaign: latest?.metadata?.analyticsCampaign });
     }
+    await sendStripeOrderEmail(latest, lines, order, latest.status === "requires_capture" ? "authorized" : "paid")
+      .catch(error => console.error(`[Stripe] Customer order email failed for ${latest.id}:`, error));
   })();
   stripeIntentSyncLocks.set(paymentIntent.id, sync);
   try {
@@ -1542,13 +1612,7 @@ async function handleStripeIntentConfirmation(request, response, url) {
 
   const authorized = intent.status === "requires_capture";
 
-  const deliveryTitle =
-    safeText(intent.metadata.deliverySummary, 300) ||
-    (intent.metadata.deliveryMethod === "pickup"
-      ? "Pronto: Recoger en punto · 24–48 h"
-      : intent.metadata.deliveryMethod === "national"
-        ? "Rápido Nacional · 4–7 días"
-        : "Pronto a domicilio · 24–48 h");
+  const deliveryTitle = selectedDeliverySummary(stripeIntentLines(intent));
 
   sendJson(response, 200, {
     ok: true,

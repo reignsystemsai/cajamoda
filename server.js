@@ -157,6 +157,8 @@ const PRODUCT_OPERATION_FEE_RATE = 0.25;
 const PRODUCT_MIN_CAJAMODA_MARGIN_RATE = 0.15;
 const CREATOR_MAX_COMMISSION_RATE = 0.30;
 const CREATOR_COMMISSION_FORMULA_VERSION = "2026-09-15-operation-fee";
+const CREATOR_TIER_2_SALES_COP = 300000;
+const CREATOR_TIER_3_SALES_COP = 1000000;
 
 const stripe = STRIPE_SECRET_KEY
   ? new Stripe(STRIPE_SECRET_KEY)
@@ -7119,6 +7121,64 @@ function creatorCommissionBase(products) {
   )));
 }
 
+function creatorTierForProductSales(productSales) {
+  const sales = Math.max(0, Number(productSales || 0));
+  if (sales >= CREATOR_TIER_3_SALES_COP) return { number: 3, rate: 30 };
+  if (sales >= CREATOR_TIER_2_SALES_COP) return { number: 2, rate: 20 };
+  return { number: 1, rate: 10 };
+}
+
+function creatorValidProductSales(rows) {
+  return Math.max(0, Math.round((Array.isArray(rows) ? rows : []).reduce(
+    (sum, row) => row?.status === "reversed" ? sum : sum + Math.max(0, Number(row?.product_subtotal || 0)),
+    0
+  )));
+}
+
+function creatorTierProgress(productSales) {
+  const sales = Math.max(0, Math.round(Number(productSales || 0)));
+  const current = creatorTierForProductSales(sales);
+  const next = current.number === 1
+    ? { number: 2, rate: 20, target: CREATOR_TIER_2_SALES_COP }
+    : current.number === 2
+      ? { number: 3, rate: 30, target: CREATOR_TIER_3_SALES_COP }
+      : null;
+  return {
+    lifetimeProductSales: sales,
+    currentTier: current.number,
+    currentRate: current.rate,
+    nextTier: next?.number || null,
+    nextRate: next?.rate || null,
+    nextTarget: next?.target || null,
+    remaining: next ? Math.max(0, next.target - sales) : 0,
+    progressPercent: next ? Math.min(100, Math.round((sales / next.target) * 1000) / 10) : 100
+  };
+}
+
+async function syncCreatorTier(profile, productSales) {
+  const tier = creatorTierForProductSales(productSales);
+  if (Number(profile?.tier) === tier.number && Number(profile?.commission_rate) === tier.rate) return profile;
+  const updatedAt = new Date().toISOString();
+  const updates = { tier: tier.number, commission_rate: tier.rate, updated_at: updatedAt };
+  const requests = [
+    fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?id=eq.${encodeURIComponent(profile.id)}`, {
+      method: "PATCH",
+      headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+      body: JSON.stringify(updates)
+    })
+  ];
+  if (profile?.application_id) {
+    requests.push(fetch(`${SUPABASE_URL}/rest/v1/creator_applications?id=eq.${encodeURIComponent(profile.application_id)}`, {
+      method: "PATCH",
+      headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+      body: JSON.stringify(updates)
+    }));
+  }
+  const results = await Promise.all(requests);
+  if (results.some(result => !result.ok)) throw new Error("No pudimos actualizar el nivel de la creadora.");
+  return { ...profile, ...updates };
+}
+
 function creatorOwnerBreakdown(products, commissionAmount) {
   const totals = (Array.isArray(products) ? products : []).reduce((result, product) => {
     const quantity = Math.max(1, Math.floor(Number(product?.quantity || 1)));
@@ -7146,11 +7206,14 @@ async function getCreatorPortal(request, response) {
   if (!profile) return sendError(response, 401, "Inicia sesión como creadora.");
   const [payoutResponse, commissionResponse] = await Promise.all([
     fetch(`${SUPABASE_URL}/rest/v1/creator_payout_accounts?creator_id=eq.${encodeURIComponent(profile.id)}&select=method,destination_masked,status&limit=1`, { headers: livePresenceHeaders() }),
-    fetch(`${SUPABASE_URL}/rest/v1/creator_commissions?creator_id=eq.${encodeURIComponent(profile.id)}&select=id,order_id,commission_rate,commission_amount,products,status,earned_at,paid_at&order=earned_at.desc&limit=100`, { headers: livePresenceHeaders() })
+    fetch(`${SUPABASE_URL}/rest/v1/creator_commissions?creator_id=eq.${encodeURIComponent(profile.id)}&select=id,order_id,product_subtotal,commission_rate,commission_amount,products,status,earned_at,paid_at&order=earned_at.desc&limit=5000`, { headers: livePresenceHeaders() })
   ]);
   const payouts = payoutResponse.ok ? await payoutResponse.json().catch(() => []) : [];
   const commissions = commissionResponse.ok ? await commissionResponse.json().catch(() => []) : [];
   const rows = await reconcileCreatorCommissions(Array.isArray(commissions) ? commissions : []);
+  const lifetimeProductSales = creatorValidProductSales(rows);
+  const activeProfile = await syncCreatorTier(profile, lifetimeProductSales);
+  const tierProgress = creatorTierProgress(lifetimeProductSales);
   const totals = rows.reduce((result, row) => {
     const amount = Number(row.commission_amount || 0);
     if (row.status !== "reversed") result.earned += amount;
@@ -7176,13 +7239,14 @@ async function getCreatorPortal(request, response) {
       firstName: profile.first_name,
       lastName: profile.last_name,
       slug: profile.slug,
-      tier: profile.tier,
-      commissionRate: profile.commission_rate,
-      agreementRequired: profile.agreement_version !== CREATOR_AGREEMENT_VERSION,
+      tier: activeProfile.tier,
+      commissionRate: activeProfile.commission_rate,
+      agreementRequired: activeProfile.agreement_version !== CREATOR_AGREEMENT_VERSION,
       link: `${STOREFRONT_URL}/${profile.slug}`,
       payout: Array.isArray(payouts) ? payouts[0] || null : null
     },
     totals,
+    tierProgress,
     sales: rows.map(row => ({
       products: creatorVisibleProducts(row.products),
       commission_base: creatorCommissionBase(row.products),
@@ -7429,11 +7493,24 @@ async function recordCreatorCommission({ orderId, paymentMethod, productSubtotal
     if (safeText(context?.source, 80).toLowerCase() === "creator") slug = creatorSlug(context?.campaign);
   }
   if (!slug) return null;
-  const profileResponse = await fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?slug=eq.${encodeURIComponent(slug)}&status=eq.active&select=id,commission_rate&limit=1`, { headers: livePresenceHeaders() });
+  const profileResponse = await fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?slug=eq.${encodeURIComponent(slug)}&status=eq.active&select=id,application_id,tier,commission_rate&limit=1`, { headers: livePresenceHeaders() });
   const profiles = profileResponse.ok ? await profileResponse.json().catch(() => []) : [];
   const profile = Array.isArray(profiles) ? profiles[0] : null;
   if (!profile) return null;
-  const rate = Number(profile.commission_rate || 0);
+  const historyResponse = await fetch(
+    `${SUPABASE_URL}/rest/v1/creator_commissions?creator_id=eq.${encodeURIComponent(profile.id)}&select=order_id,product_subtotal,commission_amount,status&limit=5000`,
+    { headers: livePresenceHeaders() }
+  );
+  const history = historyResponse.ok ? await historyResponse.json().catch(() => []) : [];
+  const rows = Array.isArray(history) ? history : [];
+  const existing = rows.find(row => String(row?.order_id || "") === String(orderId));
+  if (existing) {
+    await syncCreatorTier(profile, creatorValidProductSales(rows));
+    return Math.max(0, Number(existing.commission_amount || 0));
+  }
+  const lifetimeProductSales = creatorValidProductSales(rows);
+  const activeProfile = await syncCreatorTier(profile, lifetimeProductSales);
+  const rate = Number(activeProfile.commission_rate || 10);
   const calculated = await calculateCreatorCommission(items, rate);
   const amount = calculated.amount;
   const result = await fetch(`${SUPABASE_URL}/rest/v1/creator_commissions?on_conflict=order_id`, {
@@ -7454,6 +7531,7 @@ async function recordCreatorCommission({ orderId, paymentMethod, productSubtotal
     console.error("[Creator commission] Could not record commission:", result.status, detail);
     return null;
   }
+  await syncCreatorTier(activeProfile, lifetimeProductSales + Number(productSubtotal));
   return amount;
 }
 

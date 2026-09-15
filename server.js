@@ -145,9 +145,10 @@ const STOREFRONT_URL = String(
   process.env.STOREFRONT_URL || "https://www.cajamoda.com"
 ).replace(/\/$/, "");
 const CREATOR_AGREEMENT_VERSION = "2026-09-15-earnings-es";
+const CREATOR_AGREEMENT_DISPLAY_VERSION = "15 de septiembre de 2026";
 const CREATOR_AGREEMENT_CONSENT = "Declaro que he leído y acepto el Acuerdo del Programa de Creadoras de CajaModa, los Términos y Condiciones y la Política de Privacidad. Entiendo que al marcar esta casilla y seleccionar Aceptar y continuar realizo mi firma electrónica. Acepto recibir y conservar estos registros por medios electrónicos.";
 const CREATOR_COMMISSION_EXPLANATION = "CajaModa asigna a cada producto una base de ganancias después de considerar sus costos internos. Tus ganancias corresponden al porcentaje de tu nivel aplicado a esa base. Los costos y cálculos internos de CajaModa son confidenciales.";
-const CREATOR_AGREEMENT_TEXT = `Acuerdo del Programa de Creadoras CajaModa. La creadora participa como creadora independiente, no como empleada, propietaria de tienda, socia, agente, franquiciada ni representante legal de CajaModa. ${CREATOR_COMMISSION_EXPLANATION} Ejemplo de Nivel 1: una base de ganancias de COP 5.585 multiplicada por 10% genera COP 559. Ejemplo de Nivel 2: una base de ganancias de COP 16.800 multiplicada por 20% genera COP 3.360. Los pagos autorizados pero no capturados permanecen pendientes y no generan ganancias. Las ganancias obtenidas del día 1 al 15 se programan para pagarse alrededor del último día calendario de ese mes. Las ganancias obtenidas del día 16 al final del mes se programan para pagarse alrededor del día 15 del mes siguiente. La creadora es responsable de cumplir las leyes, divulgaciones, impuestos y regulaciones de su país. Cualquiera de las partes puede terminar la participación en cualquier momento. Se prohíben el fraude, robo, estafas, contracargos, manipulación y actividades ilegales; CajaModa puede retener o revertir las ganancias relacionadas, retirar participantes y tomar medidas legales para recuperar pérdidas. CajaModa es una empresa estadounidense y no ofrece reembolsos discrecionales, excepto cuando la ley aplicable los exija.`;
+const CREATOR_AGREEMENT_TEXT = `Acuerdo del Programa de Creadoras CajaModa. La creadora participa como creadora independiente, no como empleada, propietaria de tienda, socia, agente, franquiciada ni representante legal de CajaModa. ${CREATOR_COMMISSION_EXPLANATION} 1. Ejemplo de Nivel 1: una base de ganancias de COP 5.585 multiplicada por 10% genera COP 559. 2. Ejemplo de Nivel 2: una base de ganancias de COP 16.800 multiplicada por 20% genera COP 3.360. 3. Ejemplo de Nivel 3: una base de ganancias de COP 16.800 multiplicada por 30% genera COP 5.040. Los pagos autorizados pero no capturados permanecen pendientes y no generan ganancias. Las ganancias obtenidas del día 1 al 15 se programan para pagarse alrededor del último día calendario de ese mes. Las ganancias obtenidas del día 16 al final del mes se programan para pagarse alrededor del día 15 del mes siguiente. La creadora es responsable de cumplir las leyes, divulgaciones, impuestos y regulaciones de su país. Cualquiera de las partes puede terminar la participación en cualquier momento. Se prohíben el fraude, robo, estafas, contracargos, manipulación y actividades ilegales; CajaModa puede retener o revertir las ganancias relacionadas, retirar participantes y tomar medidas legales para recuperar pérdidas. CajaModa es una empresa estadounidense y no ofrece reembolsos discrecionales, excepto cuando la ley aplicable los exija.`;
 const CREATOR_AGREEMENT_SHA256 = crypto.createHash("sha256").update(CREATOR_AGREEMENT_TEXT).digest("hex");
 const CREATOR_ACCESS_TTL_MS = 48 * 60 * 60 * 1000;
 const CREATOR_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -6670,9 +6671,9 @@ function creatorAccessUrl(path, token) {
   return url.toString();
 }
 
-function creatorEmailFrame(firstName, heading, message, buttonLabel, buttonUrl, note = "") {
+function creatorEmailFrame(firstName, heading, message, buttonLabel, buttonUrl, note = "", banner = "ESTÁS INVITADA ✦") {
   const safeName = escapeHtml(firstName || "Creadora");
-  return `<!doctype html><html lang="es"><body style="margin:0;background:#fff5fa;font-family:Arial,sans-serif;color:#171217"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" style="padding:30px 14px"><table role="presentation" width="620" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:620px;background:#fff;border-radius:26px;overflow:hidden;border:1px solid #f1c7da"><tr><td align="center" style="padding:28px 24px 20px"><div style="font-family:Georgia,serif;font-size:42px;letter-spacing:-5px">CM</div><div style="font-family:Georgia,serif;font-size:17px;letter-spacing:7px">CAJAMODA</div><div style="margin-top:7px;color:#c92b69;font-size:9px;font-weight:700;letter-spacing:4px">COLOMBIA</div></td></tr><tr><td><img src="https://static.wixstatic.com/media/9459df_9c4306fd63b249e59878019f20341fe8~mv2.png" width="620" alt="CajaModa" style="display:block;width:100%;height:auto"></td></tr><tr><td align="center" style="padding:34px 34px 38px"><div style="color:#cf2d6d;font-size:10px;font-weight:700;letter-spacing:3px">ESTÁS INVITADA ✦</div><h1 style="margin:12px 0 14px;font:400 34px/1.1 Georgia,serif">Hola ${safeName},</h1><h2 style="margin:0 0 14px;font:400 25px/1.25 Georgia,serif">${escapeHtml(heading)}</h2><p style="margin:0 auto 24px;max-width:480px;color:#4f454c;font-size:15px;line-height:1.65">${escapeHtml(message)}</p><a href="${escapeHtml(buttonUrl)}" style="display:inline-block;padding:15px 30px;border-radius:999px;background:linear-gradient(90deg,#bf1f5d,#ec1870);color:#fff;text-decoration:none;font-size:12px;font-weight:800;letter-spacing:1.5px">${escapeHtml(buttonLabel)}</a>${note ? `<p style="margin:22px auto 0;max-width:470px;color:#83747d;font-size:11px;line-height:1.55">${escapeHtml(note)}</p>` : ""}</td></tr><tr><td align="center" style="padding:25px;background:#171217;color:#fff"><div style="font-family:Georgia,serif;font-size:17px;letter-spacing:3px">CAJAMODA COLOMBIA</div></td></tr></table></td></tr></table></body></html>`;
+  return `<!doctype html><html lang="es"><body style="margin:0;background:#fff5fa;font-family:Arial,sans-serif;color:#171217"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" style="padding:30px 14px"><table role="presentation" width="620" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:620px;background:#fff;border-radius:26px;overflow:hidden;border:1px solid #f1c7da"><tr><td align="center" style="padding:28px 24px 20px"><div style="font-family:Georgia,serif;font-size:42px;letter-spacing:-5px">CM</div><div style="font-family:Georgia,serif;font-size:17px;letter-spacing:7px">CAJAMODA</div><div style="margin-top:7px;color:#c92b69;font-size:9px;font-weight:700;letter-spacing:4px">COLOMBIA</div></td></tr><tr><td><img src="https://static.wixstatic.com/media/9459df_9c4306fd63b249e59878019f20341fe8~mv2.png" width="620" alt="CajaModa" style="display:block;width:100%;height:auto"></td></tr><tr><td align="center" style="padding:34px 34px 38px"><div style="color:#cf2d6d;font-size:10px;font-weight:700;letter-spacing:3px">${escapeHtml(banner)}</div><h1 style="margin:12px 0 14px;font:400 34px/1.1 Georgia,serif">Hola ${safeName},</h1><h2 style="margin:0 0 14px;font:400 25px/1.25 Georgia,serif">${escapeHtml(heading)}</h2><p style="margin:0 auto 24px;max-width:480px;color:#4f454c;font-size:15px;line-height:1.65">${escapeHtml(message)}</p><a href="${escapeHtml(buttonUrl)}" style="display:inline-block;padding:15px 30px;border-radius:999px;background:linear-gradient(90deg,#bf1f5d,#ec1870);color:#fff;text-decoration:none;font-size:12px;font-weight:800;letter-spacing:1.5px">${escapeHtml(buttonLabel)}</a>${note ? `<p style="margin:22px auto 0;max-width:470px;color:#83747d;font-size:11px;line-height:1.55">${escapeHtml(note)}</p>` : ""}</td></tr><tr><td align="center" style="padding:25px;background:#171217;color:#fff"><div style="font-family:Georgia,serif;font-size:17px;letter-spacing:3px">CAJAMODA COLOMBIA</div></td></tr></table></td></tr></table></body></html>`;
 }
 
 function wixEmailIdempotencyGuid(value) {
@@ -6683,7 +6684,7 @@ function wixEmailIdempotencyGuid(value) {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-async function sendCreatorTransactionalEmail({ firstName, lastName, email, subject, heading, message, buttonLabel, buttonUrl, note, idempotencyKey }) {
+async function sendCreatorTransactionalEmail({ firstName, lastName, email, subject, heading, message, buttonLabel, buttonUrl, note, banner, idempotencyKey }) {
   if (!WIX_API_KEY || !WIX_SITE_ID) throw new Error("Wix email is not configured.");
   const transmission = await fetch("https://www.wixapis.com/email-transmissions/v1/email-transmissions/send", {
     method: "POST",
@@ -6691,7 +6692,7 @@ async function sendCreatorTransactionalEmail({ firstName, lastName, email, subje
     body: JSON.stringify({
       emailTransmission: {
         emailSubject: subject,
-        emailHtmlContent: creatorEmailFrame(firstName, heading, message, buttonLabel, buttonUrl, note),
+        emailHtmlContent: creatorEmailFrame(firstName, heading, message, buttonLabel, buttonUrl, note, banner),
         senderName: "CajaModa Colombia",
         toRecipients: [{ name: `${firstName} ${lastName}`.trim(), emailAddress: email }],
         type: "TRANSACTIONAL"
@@ -6723,6 +6724,7 @@ async function approveCreatorAndSendInvite(application) {
     lastName: application.last_name,
     email: application.email,
     subject: "Fuiste seleccionada para ser creadora CajaModa",
+    banner: "ESTÁS INVITADA ✦",
     heading: "¡Fuiste seleccionada!",
     message: `${CREATOR_COMMISSION_EXPLANATION} Acepta la invitación para conocer tu nivel, firmar el acuerdo y elegir cómo recibir tus pagos.`,
     buttonLabel: "ACEPTAR INVITACIÓN",
@@ -6864,8 +6866,9 @@ async function completeCreatorOnboarding(request, response) {
     lastName: profile.last_name,
     email: profile.email,
     subject: "Tu Acuerdo del Programa de Creadoras CajaModa",
+    banner: "ACUERDO FIRMADO ✦",
     heading: "Tu acuerdo está firmado",
-    message: `Registramos tu aceptación electrónica del Acuerdo del Programa de Creadoras, versión ${CREATOR_AGREEMENT_VERSION}, el ${activatedAt}. ${CREATOR_COMMISSION_EXPLANATION}`,
+    message: `Registramos tu aceptación electrónica del Acuerdo del Programa de Creadoras, versión ${CREATOR_AGREEMENT_DISPLAY_VERSION}, el ${activatedAt}. ${CREATOR_COMMISSION_EXPLANATION}`,
     buttonLabel: "VER MI ACUERDO",
     buttonUrl: `${STOREFRONT_URL}/creators/terms/`,
     note: "Conserva este correo para tus registros.",
@@ -6935,8 +6938,9 @@ async function acceptCurrentCreatorAgreement(request, response) {
     lastName: profile.last_name,
     email: profile.email,
     subject: "Actualización de tu Acuerdo de Creadora CajaModa",
+    banner: "ACUERDO ACTUALIZADO ✦",
     heading: "Tu acuerdo está actualizado",
-    message: `Registramos tu aceptación electrónica de la versión ${CREATOR_AGREEMENT_VERSION}. ${CREATOR_COMMISSION_EXPLANATION}`,
+    message: `Registramos tu aceptación electrónica de la versión ${CREATOR_AGREEMENT_DISPLAY_VERSION}. ${CREATOR_COMMISSION_EXPLANATION}`,
     buttonLabel: "VER MI ACUERDO",
     buttonUrl: `${STOREFRONT_URL}/creators/terms/`,
     note: "Conserva este correo para tus registros.",
@@ -6997,6 +7001,7 @@ async function requestCreatorLogin(request, response) {
     lastName: profile.last_name,
     email: profile.email,
     subject: "Tu acceso al portal de creadoras CajaModa",
+    banner: "ACCESO SEGURO ✦",
     heading: "Tu portal está listo",
     message: "Entra para ver tus productos vendidos, bases de ganancias, nivel, ganancias y próximos pagos.",
     buttonLabel: "ENTRAR A MI PORTAL",

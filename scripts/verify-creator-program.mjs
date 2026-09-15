@@ -42,7 +42,10 @@ const checks = [
   [server.includes("function creatorVisibleProducts(products)") && server.includes("products: creatorVisibleProducts(row.products)") && server.includes("commission_base: creatorCommissionBase(row.products)") && server.includes("tier: {") && !/sales: rows\.map[\s\S]{0,800}(?:unitCost|packagingCost|operationFee|product_subtotal|commission_rate:)/.test(server), "Creator API returns only the approved private-safe commission fields"],
   [server.includes("function creatorOwnerBreakdown(products, commissionAmount)") && admin.includes("Product Cost") && admin.includes("Commission Base") && adminScript.includes("sale.productCost") && adminScript.includes("sale.margin"), "Owner ledger retains the full private breakdown"],
   [server.includes('url.pathname === "/api/creators/agreement"') && server.includes("agreementRequired: profile.agreement_version !== CREATOR_AGREEMENT_VERSION"), "Existing creators can accept the current agreement"],
-  [portal.includes('lang="es"') && acceptance.includes('lang="es"'), "The complete creator experience is Spanish"]
+  [portal.includes('lang="es"') && acceptance.includes('lang="es"'), "The complete creator experience is Spanish"],
+  [server.includes("function creatorValidCommissionBase(rows)") && server.includes("creatorCommissionBase(row?.products)") && server.includes("eligibleCommissionBaseTotal") && !server.includes("lifetimeProductSales"), "Tier gates use only cumulative private-safe commission base"],
+  [portal.includes('id="photoInput"') && server.includes('/api/creators/profile-photo') && server.includes("creatorProfilePhotoUrl") && adminScript.includes("creator.profilePhotoUrl"), "Creator profile photo upload appears in creator and owner views"],
+  [!portal.includes('id="tier"') && portal.includes("Base acumulada:"), "Duplicate tier bubble is removed and tier progress is spaced around the safe base"]
 ];
 
 let failed = false;

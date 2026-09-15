@@ -159,6 +159,7 @@ const CREATOR_MAX_COMMISSION_RATE = 0.30;
 const CREATOR_COMMISSION_FORMULA_VERSION = "2026-09-15-operation-fee";
 const CREATOR_TIER_2_SALES_COP = 300000;
 const CREATOR_TIER_3_SALES_COP = 1000000;
+const CREATOR_PROFILE_PHOTO_BUCKET = "creator-profile-photos";
 
 const stripe = STRIPE_SECRET_KEY
   ? new Stripe(STRIPE_SECRET_KEY)
@@ -405,7 +406,7 @@ function setCors(
 
   response.setHeader(
     "Access-Control-Allow-Methods",
-    "GET,POST,PATCH,DELETE,OPTIONS"
+    "GET,POST,PUT,PATCH,DELETE,OPTIONS"
   );
 
   response.setHeader(
@@ -7121,42 +7122,42 @@ function creatorCommissionBase(products) {
   )));
 }
 
-function creatorTierForProductSales(productSales) {
-  const sales = Math.max(0, Number(productSales || 0));
-  if (sales >= CREATOR_TIER_3_SALES_COP) return { number: 3, rate: 30 };
-  if (sales >= CREATOR_TIER_2_SALES_COP) return { number: 2, rate: 20 };
+function creatorTierForCommissionBase(commissionBase) {
+  const total = Math.max(0, Number(commissionBase || 0));
+  if (total >= CREATOR_TIER_3_SALES_COP) return { number: 3, rate: 30 };
+  if (total >= CREATOR_TIER_2_SALES_COP) return { number: 2, rate: 20 };
   return { number: 1, rate: 10 };
 }
 
-function creatorValidProductSales(rows) {
+function creatorValidCommissionBase(rows) {
   return Math.max(0, Math.round((Array.isArray(rows) ? rows : []).reduce(
-    (sum, row) => row?.status === "reversed" ? sum : sum + Math.max(0, Number(row?.product_subtotal || 0)),
+    (sum, row) => row?.status === "reversed" ? sum : sum + creatorCommissionBase(row?.products),
     0
   )));
 }
 
-function creatorTierProgress(productSales) {
-  const sales = Math.max(0, Math.round(Number(productSales || 0)));
-  const current = creatorTierForProductSales(sales);
+function creatorTierProgress(commissionBase) {
+  const total = Math.max(0, Math.round(Number(commissionBase || 0)));
+  const current = creatorTierForCommissionBase(total);
   const next = current.number === 1
     ? { number: 2, rate: 20, target: CREATOR_TIER_2_SALES_COP }
     : current.number === 2
       ? { number: 3, rate: 30, target: CREATOR_TIER_3_SALES_COP }
       : null;
   return {
-    lifetimeProductSales: sales,
+    eligibleCommissionBaseTotal: total,
     currentTier: current.number,
     currentRate: current.rate,
     nextTier: next?.number || null,
     nextRate: next?.rate || null,
     nextTarget: next?.target || null,
-    remaining: next ? Math.max(0, next.target - sales) : 0,
-    progressPercent: next ? Math.min(100, Math.round((sales / next.target) * 1000) / 10) : 100
+    remaining: next ? Math.max(0, next.target - total) : 0,
+    progressPercent: next ? Math.min(100, Math.round((total / next.target) * 1000) / 10) : 100
   };
 }
 
-async function syncCreatorTier(profile, productSales) {
-  const tier = creatorTierForProductSales(productSales);
+async function syncCreatorTier(profile, commissionBase) {
+  const tier = creatorTierForCommissionBase(commissionBase);
   if (Number(profile?.tier) === tier.number && Number(profile?.commission_rate) === tier.rate) return profile;
   const updatedAt = new Date().toISOString();
   const updates = { tier: tier.number, commission_rate: tier.rate, updated_at: updatedAt };
@@ -7201,6 +7202,79 @@ function creatorOwnerBreakdown(products, commissionAmount) {
   };
 }
 
+function creatorStorageObjectPath(path) {
+  return safeText(path, 500).split("/").filter(Boolean).map(encodeURIComponent).join("/");
+}
+
+async function creatorProfilePhotoUrl(path) {
+  const objectPath = creatorStorageObjectPath(path);
+  if (!objectPath) return null;
+  const signed = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/${CREATOR_PROFILE_PHOTO_BUCKET}/${objectPath}`, {
+    method: "POST",
+    headers: livePresenceHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ expiresIn: 3600 })
+  });
+  if (!signed.ok) return null;
+  const payload = await signed.json().catch(() => ({}));
+  const signedPath = safeText(payload?.signedURL || payload?.signedUrl, 2000);
+  return signedPath ? new URL(signedPath, SUPABASE_URL).toString() : null;
+}
+
+function creatorProfilePhotoData(value) {
+  const match = String(value || "").match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/);
+  if (!match) throw new Error("Sube una imagen JPG, PNG o WebP.");
+  const bytes = Buffer.from(match[2], "base64");
+  if (!bytes.length || bytes.length > 5 * 1024 * 1024) throw new Error("La foto debe pesar menos de 5 MB.");
+  const extension = match[1] === "image/jpeg" ? "jpg" : match[1].split("/")[1];
+  return { bytes, contentType: match[1], extension };
+}
+
+async function updateCreatorProfilePhoto(request, response) {
+  const profile = await creatorProfileForSession(request);
+  if (!profile) return sendError(response, 401, "Inicia sesión en tu cuenta de creadora.");
+  let photo;
+  try { photo = creatorProfilePhotoData((await readBody(request))?.photo); }
+  catch (error) { return sendError(response, 400, error.message); }
+  const path = `${profile.id}/profile.${photo.extension}`;
+  const upload = await fetch(`${SUPABASE_URL}/storage/v1/object/${CREATOR_PROFILE_PHOTO_BUCKET}/${creatorStorageObjectPath(path)}`, {
+    method: "POST",
+    headers: livePresenceHeaders({ "Content-Type": photo.contentType, "x-upsert": "true" }),
+    body: photo.bytes
+  });
+  if (!upload.ok) return sendError(response, 503, "No pudimos guardar tu foto.");
+  const saved = await fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?id=eq.${encodeURIComponent(profile.id)}`, {
+    method: "PATCH",
+    headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+    body: JSON.stringify({ profile_photo_path: path, updated_at: new Date().toISOString() })
+  });
+  if (!saved.ok) return sendError(response, 503, "No pudimos actualizar tu perfil.");
+  if (profile.profile_photo_path && profile.profile_photo_path !== path) {
+    fetch(`${SUPABASE_URL}/storage/v1/object/${CREATOR_PROFILE_PHOTO_BUCKET}/${creatorStorageObjectPath(profile.profile_photo_path)}`, {
+      method: "DELETE",
+      headers: livePresenceHeaders()
+    }).catch(() => {});
+  }
+  sendJson(response, 200, { ok: true, profilePhotoUrl: await creatorProfilePhotoUrl(path) });
+}
+
+async function deleteCreatorProfilePhoto(request, response) {
+  const profile = await creatorProfileForSession(request);
+  if (!profile) return sendError(response, 401, "Inicia sesión en tu cuenta de creadora.");
+  if (profile.profile_photo_path) {
+    await fetch(`${SUPABASE_URL}/storage/v1/object/${CREATOR_PROFILE_PHOTO_BUCKET}/${creatorStorageObjectPath(profile.profile_photo_path)}`, {
+      method: "DELETE",
+      headers: livePresenceHeaders()
+    }).catch(() => {});
+  }
+  const saved = await fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?id=eq.${encodeURIComponent(profile.id)}`, {
+    method: "PATCH",
+    headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+    body: JSON.stringify({ profile_photo_path: null, updated_at: new Date().toISOString() })
+  });
+  if (!saved.ok) return sendError(response, 503, "No pudimos actualizar tu perfil.");
+  sendJson(response, 200, { ok: true, profilePhotoUrl: null });
+}
+
 async function getCreatorPortal(request, response) {
   const profile = await creatorProfileForSession(request);
   if (!profile) return sendError(response, 401, "Inicia sesión como creadora.");
@@ -7211,9 +7285,9 @@ async function getCreatorPortal(request, response) {
   const payouts = payoutResponse.ok ? await payoutResponse.json().catch(() => []) : [];
   const commissions = commissionResponse.ok ? await commissionResponse.json().catch(() => []) : [];
   const rows = await reconcileCreatorCommissions(Array.isArray(commissions) ? commissions : []);
-  const lifetimeProductSales = creatorValidProductSales(rows);
-  const activeProfile = await syncCreatorTier(profile, lifetimeProductSales);
-  const tierProgress = creatorTierProgress(lifetimeProductSales);
+  const lifetimeCommissionBase = creatorValidCommissionBase(rows);
+  const activeProfile = await syncCreatorTier(profile, lifetimeCommissionBase);
+  const tierProgress = creatorTierProgress(lifetimeCommissionBase);
   const totals = rows.reduce((result, row) => {
     const amount = Number(row.commission_amount || 0);
     if (row.status !== "reversed") result.earned += amount;
@@ -7233,6 +7307,7 @@ async function getCreatorPortal(request, response) {
   totals.nextPayoutAmount = totals.nextPayoutAt
     ? rows.filter(row => ["earned", "batched"].includes(row.status) && creatorPayoutDate(row.earned_at) === totals.nextPayoutAt).reduce((sum, row) => sum + Number(row.commission_amount || 0), 0)
     : 0;
+  const profilePhotoUrl = await creatorProfilePhotoUrl(profile.profile_photo_path);
   sendJson(response, 200, {
     ok: true,
     creator: {
@@ -7241,6 +7316,7 @@ async function getCreatorPortal(request, response) {
       slug: profile.slug,
       tier: activeProfile.tier,
       commissionRate: activeProfile.commission_rate,
+      profilePhotoUrl,
       agreementRequired: profile.agreement_version !== CREATOR_AGREEMENT_VERSION,
       link: `${STOREFRONT_URL}/${profile.slug}`,
       payout: Array.isArray(payouts) ? payouts[0] || null : null
@@ -7291,7 +7367,7 @@ async function getStoreOwnerCreatorSales(request, response, applicationId) {
   if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) return sendError(response, 503, "Creator sales are not configured.");
 
   const profileResponse = await fetch(
-    `${SUPABASE_URL}/rest/v1/creator_profiles?application_id=eq.${encodeURIComponent(applicationId)}&select=id,first_name,last_name,slug,status,tier,commission_rate&limit=1`,
+    `${SUPABASE_URL}/rest/v1/creator_profiles?application_id=eq.${encodeURIComponent(applicationId)}&select=id,first_name,last_name,slug,status,tier,commission_rate,profile_photo_path&limit=1`,
     { headers: livePresenceHeaders() }
   );
   const profiles = profileResponse.ok ? await profileResponse.json().catch(() => []) : [];
@@ -7469,7 +7545,8 @@ async function getStoreOwnerCreatorSales(request, response, applicationId) {
       slug: profile.slug,
       status: profile.status,
       tier: profile.tier,
-      commissionRate: profile.commission_rate
+      commissionRate: profile.commission_rate,
+      profilePhotoUrl: await creatorProfilePhotoUrl(profile.profile_photo_path)
     },
     period,
     totals: {
@@ -7498,18 +7575,18 @@ async function recordCreatorCommission({ orderId, paymentMethod, productSubtotal
   const profile = Array.isArray(profiles) ? profiles[0] : null;
   if (!profile) return null;
   const historyResponse = await fetch(
-    `${SUPABASE_URL}/rest/v1/creator_commissions?creator_id=eq.${encodeURIComponent(profile.id)}&select=order_id,product_subtotal,commission_amount,status&limit=5000`,
+    `${SUPABASE_URL}/rest/v1/creator_commissions?creator_id=eq.${encodeURIComponent(profile.id)}&select=order_id,products,commission_amount,status&limit=5000`,
     { headers: livePresenceHeaders() }
   );
   const history = historyResponse.ok ? await historyResponse.json().catch(() => []) : [];
   const rows = Array.isArray(history) ? history : [];
   const existing = rows.find(row => String(row?.order_id || "") === String(orderId));
   if (existing) {
-    await syncCreatorTier(profile, creatorValidProductSales(rows));
+    await syncCreatorTier(profile, creatorValidCommissionBase(rows));
     return Math.max(0, Number(existing.commission_amount || 0));
   }
-  const lifetimeProductSales = creatorValidProductSales(rows);
-  const activeProfile = await syncCreatorTier(profile, lifetimeProductSales);
+  const lifetimeCommissionBase = creatorValidCommissionBase(rows);
+  const activeProfile = await syncCreatorTier(profile, lifetimeCommissionBase);
   const rate = Number(activeProfile.commission_rate || 10);
   const calculated = await calculateCreatorCommission(items, rate);
   const amount = calculated.amount;
@@ -7531,7 +7608,7 @@ async function recordCreatorCommission({ orderId, paymentMethod, productSubtotal
     console.error("[Creator commission] Could not record commission:", result.status, detail);
     return null;
   }
-  await syncCreatorTier(activeProfile, lifetimeProductSales + Number(productSubtotal));
+  await syncCreatorTier(activeProfile, lifetimeCommissionBase + creatorCommissionBase(calculated.products));
   return amount;
 }
 
@@ -9248,6 +9325,16 @@ const server =
 
         if(request.method === "PUT" && url.pathname === "/api/creators/payout-account"){
           await updateCreatorPayoutAccount(request,response);
+          return;
+        }
+
+        if(request.method === "PUT" && url.pathname === "/api/creators/profile-photo"){
+          await updateCreatorProfilePhoto(request,response);
+          return;
+        }
+
+        if(request.method === "DELETE" && url.pathname === "/api/creators/profile-photo"){
+          await deleteCreatorProfilePhoto(request,response);
           return;
         }
 

@@ -6595,6 +6595,14 @@ function creatorEmailFrame(firstName, heading, message, buttonLabel, buttonUrl, 
   return `<!doctype html><html lang="es"><body style="margin:0;background:#fff5fa;font-family:Arial,sans-serif;color:#171217"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" style="padding:30px 14px"><table role="presentation" width="620" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:620px;background:#fff;border-radius:26px;overflow:hidden;border:1px solid #f1c7da"><tr><td align="center" style="padding:28px 24px 20px"><div style="font-family:Georgia,serif;font-size:42px;letter-spacing:-5px">CM</div><div style="font-family:Georgia,serif;font-size:17px;letter-spacing:7px">CAJAMODA</div><div style="margin-top:7px;color:#c92b69;font-size:9px;font-weight:700;letter-spacing:4px">COLOMBIA</div></td></tr><tr><td><img src="https://static.wixstatic.com/media/9459df_9c4306fd63b249e59878019f20341fe8~mv2.png" width="620" alt="CajaModa" style="display:block;width:100%;height:auto"></td></tr><tr><td align="center" style="padding:34px 34px 38px"><div style="color:#cf2d6d;font-size:10px;font-weight:700;letter-spacing:3px">ESTÁS INVITADA ✦</div><h1 style="margin:12px 0 14px;font:400 34px/1.1 Georgia,serif">Hola ${safeName},</h1><h2 style="margin:0 0 14px;font:400 25px/1.25 Georgia,serif">${escapeHtml(heading)}</h2><p style="margin:0 auto 24px;max-width:480px;color:#4f454c;font-size:15px;line-height:1.65">${escapeHtml(message)}</p><a href="${escapeHtml(buttonUrl)}" style="display:inline-block;padding:15px 30px;border-radius:999px;background:linear-gradient(90deg,#bf1f5d,#ec1870);color:#fff;text-decoration:none;font-size:12px;font-weight:800;letter-spacing:1.5px">${escapeHtml(buttonLabel)}</a>${note ? `<p style="margin:22px auto 0;max-width:470px;color:#83747d;font-size:11px;line-height:1.55">${escapeHtml(note)}</p>` : ""}</td></tr><tr><td align="center" style="padding:25px;background:#171217;color:#fff"><div style="font-family:Georgia,serif;font-size:17px;letter-spacing:3px">CAJAMODA COLOMBIA</div></td></tr></table></td></tr></table></body></html>`;
 }
 
+function wixEmailIdempotencyGuid(value) {
+  const bytes = crypto.createHash("sha256").update(String(value)).digest().subarray(0, 16);
+  bytes[6] = (bytes[6] & 0x0f) | 0x50;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = bytes.toString("hex");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 async function sendCreatorTransactionalEmail({ firstName, lastName, email, subject, heading, message, buttonLabel, buttonUrl, note, idempotencyKey }) {
   if (!WIX_API_KEY || !WIX_SITE_ID) throw new Error("Wix email is not configured.");
   const transmission = await fetch("https://www.wixapis.com/email-transmissions/v1/email-transmissions/send", {
@@ -6608,7 +6616,7 @@ async function sendCreatorTransactionalEmail({ firstName, lastName, email, subje
         toRecipients: [{ name: `${firstName} ${lastName}`.trim(), emailAddress: email }],
         type: "TRANSACTIONAL"
       },
-      idempotencyKey
+      idempotencyKey: wixEmailIdempotencyGuid(idempotencyKey)
     })
   });
   const payload = await transmission.json().catch(() => ({}));

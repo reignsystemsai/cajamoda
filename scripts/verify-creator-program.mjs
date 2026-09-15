@@ -9,6 +9,7 @@ const checks = [
   [server.includes("CREATOR_MARKETING_RESERVE_PER_ITEM_COP = 12000"), "COP 12,000 marketing reserve is fixed"],
   [server.includes('if (latest.status === "succeeded")'), "Creator commission waits for captured Stripe payment"],
   [server.includes("creatorPayoutDate(row.earned_at)"), "Payout dates are derived from commission timestamps"],
+  [server.includes("function wixEmailIdempotencyGuid(value)") && server.includes("idempotencyKey: wixEmailIdempotencyGuid(idempotencyKey)"), "Creator emails use Wix-compatible GUID idempotency keys"],
   [server.includes("/api/creators/payout-account"), "Creator payment-method endpoint is registered"],
   [server.includes("markCreatorCommissionsPaid") && server.includes("creatorPayoutMatch"), "Owner payout recording endpoint is registered"],
   [migration.includes("creator_agreement_acceptances") && migration.includes("enable row level security"), "Immutable agreement evidence table has RLS"],

@@ -15,6 +15,10 @@ export default defineConfig({
           resolve(outputDirectory, "startup/index.html"),
         );
         copyFileSync(
+          resolve(outputDirectory, "creator-link/index.html"),
+          resolve(outputDirectory, "404.html"),
+        );
+        copyFileSync(
           resolve(import.meta.dirname, "analytics/client.js"),
           resolve(outputDirectory, "analytics/client.js"),
         );

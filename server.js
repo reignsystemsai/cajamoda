@@ -7241,7 +7241,7 @@ async function getCreatorPortal(request, response) {
       slug: profile.slug,
       tier: activeProfile.tier,
       commissionRate: activeProfile.commission_rate,
-      agreementRequired: activeProfile.agreement_version !== CREATOR_AGREEMENT_VERSION,
+      agreementRequired: profile.agreement_version !== CREATOR_AGREEMENT_VERSION,
       link: `${STOREFRONT_URL}/${profile.slug}`,
       payout: Array.isArray(payouts) ? payouts[0] || null : null
     },

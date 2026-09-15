@@ -144,13 +144,18 @@ const CARTAGENA_PICKUP_ADDRESS = "Cl. 35 #10-22, piso 1, local 1, San Diego, Car
 const STOREFRONT_URL = String(
   process.env.STOREFRONT_URL || "https://www.cajamoda.com"
 ).replace(/\/$/, "");
-const CREATOR_AGREEMENT_VERSION = "2026-09-13-es";
+const CREATOR_AGREEMENT_VERSION = "2026-09-15-es";
 const CREATOR_AGREEMENT_CONSENT = "Declaro que he leído y acepto el Acuerdo del Programa de Creadoras de CajaModa, los Términos y Condiciones y la Política de Privacidad. Entiendo que al marcar esta casilla y seleccionar Aceptar y continuar realizo mi firma electrónica. Acepto recibir y conservar estos registros por medios electrónicos.";
-const CREATOR_AGREEMENT_TEXT = "Acuerdo del Programa de Creadoras CajaModa. La creadora participa como creadora independiente, no como empleada, propietaria de tienda, socia, agente, franquiciada ni representante legal de CajaModa. La comisión equivale al porcentaje del nivel de la creadora multiplicado por el margen comisionable no negativo de cada artículo atribuido y capturado: precio de venta cobrado por el artículo, sin entrega, impuestos ni cargos, menos el costo de adquisición de CajaModa y menos COP 12.000 de reserva de mercadeo por artículo. Los pagos autorizados pero no capturados permanecen pendientes y no generan comisión. Las comisiones ganadas del día 1 al 15 se programan para pagarse alrededor del último día calendario de ese mes. Las comisiones ganadas del día 16 al final del mes se programan para pagarse alrededor del día 15 del mes siguiente. La creadora es responsable de cumplir las leyes, divulgaciones, impuestos y regulaciones de su país. Cualquiera de las partes puede terminar la participación en cualquier momento. Se prohíben el fraude, robo, estafas, contracargos, manipulación y actividades ilegales; CajaModa puede retener o revertir las comisiones relacionadas, retirar participantes y tomar medidas legales para recuperar pérdidas. CajaModa es una empresa estadounidense y no ofrece reembolsos discrecionales, excepto cuando la ley aplicable los exija.";
+const CREATOR_AGREEMENT_TEXT = "Acuerdo del Programa de Creadoras CajaModa. La creadora participa como creadora independiente, no como empleada, propietaria de tienda, socia, agente, franquiciada ni representante legal de CajaModa. La comisión equivale al porcentaje del nivel de la creadora multiplicado por el margen comisionable no negativo de cada artículo atribuido y capturado: precio de venta cobrado por el artículo, sin entrega, impuestos ni cargos, menos el costo de adquisición de CajaModa, menos COP 2.700 de empaque por artículo y menos una tarifa de operación equivalente al 25% del precio de venta cobrado por el artículo. Los pagos autorizados pero no capturados permanecen pendientes y no generan comisión. Las comisiones ganadas del día 1 al 15 se programan para pagarse alrededor del último día calendario de ese mes. Las comisiones ganadas del día 16 al final del mes se programan para pagarse alrededor del día 15 del mes siguiente. La creadora es responsable de cumplir las leyes, divulgaciones, impuestos y regulaciones de su país. Cualquiera de las partes puede terminar la participación en cualquier momento. Se prohíben el fraude, robo, estafas, contracargos, manipulación y actividades ilegales; CajaModa puede retener o revertir las comisiones relacionadas, retirar participantes y tomar medidas legales para recuperar pérdidas. CajaModa es una empresa estadounidense y no ofrece reembolsos discrecionales, excepto cuando la ley aplicable los exija.";
 const CREATOR_AGREEMENT_SHA256 = crypto.createHash("sha256").update(CREATOR_AGREEMENT_TEXT).digest("hex");
 const CREATOR_ACCESS_TTL_MS = 48 * 60 * 60 * 1000;
 const CREATOR_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-const CREATOR_MARKETING_RESERVE_PER_ITEM_COP = 12000;
+const PRODUCT_PRICE_MULTIPLIER = 2.816;
+const PRODUCT_PACKAGING_COST_COP = 2700;
+const PRODUCT_OPERATION_FEE_RATE = 0.25;
+const PRODUCT_MIN_CAJAMODA_MARGIN_RATE = 0.15;
+const CREATOR_MAX_COMMISSION_RATE = 0.30;
+const CREATOR_COMMISSION_FORMULA_VERSION = "2026-09-15-operation-fee";
 
 const stripe = STRIPE_SECRET_KEY
   ? new Stripe(STRIPE_SECRET_KEY)
@@ -623,6 +628,54 @@ function discountedProductPrice(originalPrice, discountPercent) {
   return Math.max(1, Math.round(original * (1 - Number(discountPercent) / 100)));
 }
 
+function productProfitability(cost, originalPrice, discountPercent, creatorRate = CREATOR_MAX_COMMISSION_RATE) {
+  const unitCost = Math.max(0, Number(cost || 0));
+  const original = Math.max(0, Math.round(Number(originalPrice || 0)));
+  const discount = Math.max(0, Number(discountPercent || 0));
+  const unitSalePrice = discountedProductPrice(original, discount);
+  const operationFee = Math.round(unitSalePrice * PRODUCT_OPERATION_FEE_RATE);
+  const commissionableProfit = Math.max(
+    0,
+    unitSalePrice - unitCost - PRODUCT_PACKAGING_COST_COP - operationFee
+  );
+  const normalizedCreatorRate = Math.max(0, Number(creatorRate || 0));
+  const creatorCommission = Math.round(commissionableProfit * normalizedCreatorRate);
+  const cajamodaContribution = Math.max(0, commissionableProfit - creatorCommission);
+  const cajamodaMarginRate = unitSalePrice > 0 ? cajamodaContribution / unitSalePrice : 0;
+  return {
+    unitCost,
+    originalPrice: original,
+    discountPercent: discount,
+    unitSalePrice,
+    packagingCost: PRODUCT_PACKAGING_COST_COP,
+    operationFeeRate: PRODUCT_OPERATION_FEE_RATE,
+    operationFee,
+    creatorRate: normalizedCreatorRate,
+    creatorCommission,
+    commissionableProfit,
+    cajamodaContribution,
+    cajamodaMarginRate
+  };
+}
+
+function maximumSafeDiscountPercent(cost, originalPrice) {
+  let maximum = 0;
+  for (let discount = 0; discount <= 50; discount += 1) {
+    const result = productProfitability(cost, originalPrice, discount);
+    if (result.cajamodaMarginRate >= PRODUCT_MIN_CAJAMODA_MARGIN_RATE) maximum = discount;
+  }
+  return maximum;
+}
+
+function assertProtectedProductMargin(cost, originalPrice, discountPercent) {
+  const result = productProfitability(cost, originalPrice, discountPercent);
+  if (result.cajamodaMarginRate + Number.EPSILON < PRODUCT_MIN_CAJAMODA_MARGIN_RATE) {
+    const maximum = maximumSafeDiscountPercent(cost, originalPrice);
+    throw new Error(`Este descuento reduce el margen protegido de CajaModa. El máximo seguro para este producto es ${maximum}%.`);
+  }
+  return result;
+}
+
 function wixVariantPriceFields(currentPrice, originalPrice, actualPrice) {
   const price = {
     ...(currentPrice || {}),
@@ -751,6 +804,8 @@ async function stripeLineItemFromCartItem(item) {
   if (!Number.isInteger(unitAmount) || unitAmount < 1) {
     throw new Error(`No pudimos verificar el precio de ${safeText(product?.name, 80)}.`);
   }
+  const rawUnitCost = variant?.revenueDetails?.cost?.amount;
+  const unitCost = Number.isFinite(Number(rawUnitCost)) ? Math.max(0, Number(rawUnitCost)) : null;
 
   const fulfillmentSku = safeText(variant?.sku || product?.sku, 100).toUpperCase();
   const fulfillmentSegments = fulfillmentSku.split("-").filter(Boolean);
@@ -794,6 +849,7 @@ async function stripeLineItemFromCartItem(item) {
     size,
     color,
     image,
+    unitCost,
     price_data: {
       currency: "cop",
       // Stripe treats COP as a two-decimal currency in API requests.
@@ -809,7 +865,8 @@ async function stripeLineItemFromCartItem(item) {
           selectedDeliveryMode,
           sku: safeText(fulfillmentSku, 100),
           size: safeText(size, 50),
-          color: safeText(color, 100)
+          color: safeText(color, 100),
+          ...(unitCost === null ? {} : { unitCost: String(unitCost) })
         }
       }
     }
@@ -851,7 +908,7 @@ async function handleCreateStripeCheckout(request, response) {
   const catalogLines = await verifiedCheckoutCatalogItems(items);
   // Keep CajaModa fulfillment data server-side. Stripe only accepts documented
   // line item properties, so never forward fulfillmentCode at this level.
-  const lineItems = catalogLines.map(({ cartLineId, fulfillmentCode, selectedDeliveryMode, ...line }) => line);
+  const lineItems = catalogLines.map(({ cartLineId, fulfillmentCode, selectedDeliveryMode, unitCost, ...line }) => line);
   const customerEmail = safeText(body?.customer?.email, 250);
   const prepareOnly = body?.prepareOnly === true;
   const delivery = prepareOnly
@@ -874,6 +931,7 @@ async function handleCreateStripeCheckout(request, response) {
     variantId: safeText(line?.price_data?.product_data?.metadata?.variantId, 80),
     quantity: Math.max(1, Math.floor(Number(line?.quantity || 1))),
     amount: Number(line?.price_data?.unit_amount || 0) / 100,
+    unitCost: line?.unitCost,
     name: safeText(line?.price_data?.product_data?.name, 300) || "Producto CajaModa",
     fulfillmentCode: safeText(line?.fulfillmentCode, 10).toUpperCase(),
     selectedDeliveryMode: safeText(line?.selectedDeliveryMode, 20).toLowerCase()
@@ -1102,7 +1160,12 @@ async function getStripePurchasedLines(session) {
       sku: safeText(stripeProduct?.metadata?.sku, 100).toUpperCase(),
       size: safeText(stripeProduct?.metadata?.size, 50),
       color: safeText(stripeProduct?.metadata?.color, 100),
-      image: safeText(stripeProduct?.images?.[0], 1500)
+      image: safeText(stripeProduct?.images?.[0], 1500),
+      unitCost: stripeProduct?.metadata?.unitCost !== undefined &&
+        stripeProduct?.metadata?.unitCost !== "" &&
+        Number.isFinite(Number(stripeProduct.metadata.unitCost))
+        ? Math.max(0, Number(stripeProduct.metadata.unitCost))
+        : null
     };
   });
 }
@@ -1339,7 +1402,10 @@ function stripeIntentMetadata(lines, body, delivery) {
       k: safeText(line.sku, 100).toUpperCase(),
       s: safeText(line.size, 50),
       c: safeText(line.color, 100),
-      i: safeText(wixMediaId(line.image), 150)
+      i: safeText(wixMediaId(line.image), 150),
+      u: line.unitCost !== null && line.unitCost !== undefined && Number.isFinite(Number(line.unitCost))
+        ? Math.max(0, Number(line.unitCost))
+        : null
     })).toString("base64url");
   });
   return metadata;
@@ -1361,7 +1427,10 @@ function stripeIntentLines(intent) {
       sku: safeText(item.k, 100).toUpperCase(),
       size: safeText(item.s, 50),
       color: safeText(item.c, 100),
-      image: item.i ? `https://static.wixstatic.com/media/${safeText(item.i, 150)}` : ""
+      image: item.i ? `https://static.wixstatic.com/media/${safeText(item.i, 150)}` : "",
+      unitCost: item.u !== null && item.u !== undefined && Number.isFinite(Number(item.u))
+        ? Math.max(0, Number(item.u))
+        : null
     };
   }).filter(line => line.productId && line.variantId && Number.isFinite(line.amount) && line.amount >= 1);
 }
@@ -1382,6 +1451,7 @@ async function handleCreateStripePaymentIntent(request, response) {
     variantId: safeText(line?.price_data?.product_data?.metadata?.variantId, 80),
     quantity: Math.max(1, Math.floor(Number(line.quantity || 1))),
     amount: Number(line?.price_data?.unit_amount || 0) / 100,
+    unitCost: line?.unitCost,
     name: safeText(line?.price_data?.product_data?.name, 300) || "Producto CajaModa",
     fulfillmentCode: safeText(line?.fulfillmentCode, 10).toUpperCase(),
     selectedDeliveryMode: safeText(line?.selectedDeliveryMode, 20).toLowerCase(),
@@ -3938,9 +4008,10 @@ async function createWixProduct(
     );
 
   const cost = Math.max(0, Number(input.cost || 0));
-  const originalPrice = cost > 0 ? Math.round(cost * 2.816) : 0;
+  const originalPrice = cost > 0 ? Math.round(cost * PRODUCT_PRICE_MULTIPLIER) : 0;
   const discountPercent = normalizeDiscountPercent(input.discountPercent, 0);
   const price = discountedProductPrice(originalPrice, discountPercent);
+  assertProtectedProductMargin(cost, originalPrice, discountPercent);
   const trackInventory = input.trackInventory !== false;
   const stockStatus = input.stockStatus === "OUT_OF_STOCK" ? "OUT_OF_STOCK" : "IN_STOCK";
   const allowPreorder = Boolean(input.allowPreorder);
@@ -4630,10 +4701,15 @@ async function handleUpdateProduct(request, response, productId) {
   const currentOriginalPrice = wixVariantOriginalPrice(currentVariant) || currentPrice;
   const currentDiscountPercent = discountPercentFromPrices(currentOriginalPrice, currentPrice);
   const discountPercent = normalizeDiscountPercent(body?.discountPercent, currentDiscountPercent);
-  const originalPrice = cost > 0 ? Math.round(cost * 2.816) : Number(body?.originalPrice || currentOriginalPrice);
+  const originalPrice = cost > 0 ? Math.round(cost * PRODUCT_PRICE_MULTIPLIER) : Number(body?.originalPrice || currentOriginalPrice);
   const price = discountedProductPrice(originalPrice, discountPercent);
   if(!name) return sendError(response, 400, "El producto necesita conservar su nombre.");
   if(!Number.isFinite(price) || price <= 0) return sendError(response, 400, "Agrega un precio válido.");
+  try {
+    assertProtectedProductMargin(cost, originalPrice, discountPercent);
+  } catch (error) {
+    return sendError(response, 400, error.message);
+  }
 
   const requestedVariants = Array.isArray(body?.variantUpdates)
     ? body.variantUpdates.slice(0, 10).map(item => ({
@@ -6900,21 +6976,29 @@ async function calculateCreatorCommission(items, commissionRate) {
       .filter(value => value !== undefined && value !== null && Number.isFinite(Number(value)))
       .map(Number);
     const uniqueCosts = [...new Set(availableCosts)];
-    const rawCost = variant?.revenueDetails?.cost?.amount ??
+    const snapshotCost = item?.unitCost;
+    const rawCost = (snapshotCost !== undefined && snapshotCost !== null && Number.isFinite(Number(snapshotCost)))
+      ? snapshotCost
+      : variant?.revenueDetails?.cost?.amount ??
       (uniqueCosts.length === 1 ? uniqueCosts[0] : undefined);
     const costKnown = rawCost !== undefined && rawCost !== null && Number.isFinite(Number(rawCost));
     const unitCost = costKnown ? Math.max(0, Number(rawCost)) : null;
     const unitSalePrice = Math.max(0, Number(item?.unitSalePrice ?? item?.amount ?? item?.value ?? 0));
     const quantity = Math.max(1, Math.floor(Number(item?.quantity || 1)));
-    const commissionableProfit = costKnown
-      ? Math.max(0, unitSalePrice - unitCost - CREATOR_MARKETING_RESERVE_PER_ITEM_COP) * quantity
+    const operationFeePerItem = Math.round(unitSalePrice * PRODUCT_OPERATION_FEE_RATE);
+    const commissionableProfitPerItem = costKnown
+      ? Math.max(0, unitSalePrice - unitCost - PRODUCT_PACKAGING_COST_COP - operationFeePerItem)
       : 0;
+    const commissionableProfit = commissionableProfitPerItem * quantity;
     return {
       ...item,
       quantity,
       unitSalePrice,
       unitCost,
-      marketingReservePerItem: CREATOR_MARKETING_RESERVE_PER_ITEM_COP,
+      packagingCostPerItem: PRODUCT_PACKAGING_COST_COP,
+      operationFeeRate: PRODUCT_OPERATION_FEE_RATE,
+      operationFeePerItem,
+      formulaVersion: CREATOR_COMMISSION_FORMULA_VERSION,
       commissionableProfit
     };
   });
@@ -6931,14 +7015,22 @@ async function calculateCreatorCommission(items, commissionRate) {
 function usesCurrentCreatorCommissionFormula(row) {
   const products = Array.isArray(row?.products) ? row.products : [];
   return products.length > 0 && products.every(product =>
-    Number(product?.marketingReservePerItem) === CREATOR_MARKETING_RESERVE_PER_ITEM_COP &&
+    product?.formulaVersion === CREATOR_COMMISSION_FORMULA_VERSION &&
+    Number(product?.packagingCostPerItem) === PRODUCT_PACKAGING_COST_COP &&
+    Number(product?.operationFeeRate) === PRODUCT_OPERATION_FEE_RATE &&
     Number.isFinite(Number(product?.commissionableProfit))
   );
 }
 
 async function reconcileCreatorCommissions(rows) {
   return Promise.all((Array.isArray(rows) ? rows : []).map(async row => {
-    if (row?.status !== "earned" || usesCurrentCreatorCommissionFormula(row)) return row;
+    const products = Array.isArray(row?.products) ? row.products : [];
+    const hasStoredLegacySnapshot = products.length > 0 && products.every(product =>
+      Number.isFinite(Number(product?.unitSalePrice)) &&
+      Number.isFinite(Number(product?.unitCost)) &&
+      Number.isFinite(Number(product?.commissionableProfit))
+    );
+    if (row?.status !== "earned" || usesCurrentCreatorCommissionFormula(row) || hasStoredLegacySnapshot) return row;
     const calculated = await calculateCreatorCommission(row?.products, row?.commission_rate);
     const corrected = {
       ...row,

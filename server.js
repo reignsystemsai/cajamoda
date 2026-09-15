@@ -144,10 +144,10 @@ const CARTAGENA_PICKUP_ADDRESS = "Cl. 35 #10-22, piso 1, local 1, San Diego, Car
 const STOREFRONT_URL = String(
   process.env.STOREFRONT_URL || "https://www.cajamoda.com"
 ).replace(/\/$/, "");
-const CREATOR_AGREEMENT_VERSION = "2026-09-15-private-base-es";
+const CREATOR_AGREEMENT_VERSION = "2026-09-15-earnings-es";
 const CREATOR_AGREEMENT_CONSENT = "Declaro que he leído y acepto el Acuerdo del Programa de Creadoras de CajaModa, los Términos y Condiciones y la Política de Privacidad. Entiendo que al marcar esta casilla y seleccionar Aceptar y continuar realizo mi firma electrónica. Acepto recibir y conservar estos registros por medios electrónicos.";
-const CREATOR_COMMISSION_EXPLANATION = "CajaModa asigna a cada producto una base de comisión después de considerar sus costos internos. Tu comisión corresponde al porcentaje de tu nivel aplicado a esa base. Los costos y cálculos internos de CajaModa son confidenciales.";
-const CREATOR_AGREEMENT_TEXT = `Acuerdo del Programa de Creadoras CajaModa. La creadora participa como creadora independiente, no como empleada, propietaria de tienda, socia, agente, franquiciada ni representante legal de CajaModa. ${CREATOR_COMMISSION_EXPLANATION} Ejemplo de Nivel 1: una base de comisión de COP 5.585 multiplicada por 10% genera COP 559. Ejemplo de Nivel 2: una base de comisión de COP 16.800 multiplicada por 20% genera COP 3.360. Los pagos autorizados pero no capturados permanecen pendientes y no generan comisión. Las comisiones ganadas del día 1 al 15 se programan para pagarse alrededor del último día calendario de ese mes. Las comisiones ganadas del día 16 al final del mes se programan para pagarse alrededor del día 15 del mes siguiente. La creadora es responsable de cumplir las leyes, divulgaciones, impuestos y regulaciones de su país. Cualquiera de las partes puede terminar la participación en cualquier momento. Se prohíben el fraude, robo, estafas, contracargos, manipulación y actividades ilegales; CajaModa puede retener o revertir las comisiones relacionadas, retirar participantes y tomar medidas legales para recuperar pérdidas. CajaModa es una empresa estadounidense y no ofrece reembolsos discrecionales, excepto cuando la ley aplicable los exija.`;
+const CREATOR_COMMISSION_EXPLANATION = "CajaModa asigna a cada producto una base de ganancias después de considerar sus costos internos. Tus ganancias corresponden al porcentaje de tu nivel aplicado a esa base. Los costos y cálculos internos de CajaModa son confidenciales.";
+const CREATOR_AGREEMENT_TEXT = `Acuerdo del Programa de Creadoras CajaModa. La creadora participa como creadora independiente, no como empleada, propietaria de tienda, socia, agente, franquiciada ni representante legal de CajaModa. ${CREATOR_COMMISSION_EXPLANATION} Ejemplo de Nivel 1: una base de ganancias de COP 5.585 multiplicada por 10% genera COP 559. Ejemplo de Nivel 2: una base de ganancias de COP 16.800 multiplicada por 20% genera COP 3.360. Los pagos autorizados pero no capturados permanecen pendientes y no generan ganancias. Las ganancias obtenidas del día 1 al 15 se programan para pagarse alrededor del último día calendario de ese mes. Las ganancias obtenidas del día 16 al final del mes se programan para pagarse alrededor del día 15 del mes siguiente. La creadora es responsable de cumplir las leyes, divulgaciones, impuestos y regulaciones de su país. Cualquiera de las partes puede terminar la participación en cualquier momento. Se prohíben el fraude, robo, estafas, contracargos, manipulación y actividades ilegales; CajaModa puede retener o revertir las ganancias relacionadas, retirar participantes y tomar medidas legales para recuperar pérdidas. CajaModa es una empresa estadounidense y no ofrece reembolsos discrecionales, excepto cuando la ley aplicable los exija.`;
 const CREATOR_AGREEMENT_SHA256 = crypto.createHash("sha256").update(CREATOR_AGREEMENT_TEXT).digest("hex");
 const CREATOR_ACCESS_TTL_MS = 48 * 60 * 60 * 1000;
 const CREATOR_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -6954,6 +6954,24 @@ function creatorPayoutDate(value) {
   return new Date(Date.UTC(earned.getUTCFullYear(), earned.getUTCMonth() + 1, 15, 23, 59, 59)).toISOString();
 }
 
+function creatorUpcomingPayoutBuckets(rows, value = now()) {
+  const today = new Date(value);
+  const year = today.getUTCFullYear();
+  const month = today.getUTCMonth();
+  const firstHalf = today.getUTCDate() <= 15;
+  const monthEnd = new Date(Date.UTC(year, month + (firstHalf ? 1 : 2), 0, 23, 59, 59)).toISOString();
+  const fifteenth = new Date(Date.UTC(year, month + 1, 15, 23, 59, 59)).toISOString();
+  const dueRows = (Array.isArray(rows) ? rows : []).filter(row => ["earned", "batched"].includes(row?.status));
+  const amountFor = payoutAt => dueRows
+    .filter(row => creatorPayoutDate(row?.earned_at) === payoutAt)
+    .reduce((sum, row) => sum + Number(row?.commission_amount || 0), 0);
+  return {
+    monthEnd: { payoutAt: monthEnd, amount: Math.round(amountFor(monthEnd)) },
+    fifteenth: { payoutAt: fifteenth, amount: Math.round(amountFor(fifteenth)) },
+    currentPeriodPayoutAt: firstHalf ? monthEnd : fifteenth
+  };
+}
+
 async function requestCreatorLogin(request, response) {
   if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) return sendError(response, 503, "El acceso de creadoras no está disponible.");
   const body = await readBody(request);
@@ -6980,7 +6998,7 @@ async function requestCreatorLogin(request, response) {
     email: profile.email,
     subject: "Tu acceso al portal de creadoras CajaModa",
     heading: "Tu portal está listo",
-    message: "Entra para ver tus productos vendidos, bases de comisión, nivel, comisiones y próximos pagos.",
+    message: "Entra para ver tus productos vendidos, bases de ganancias, nivel, ganancias y próximos pagos.",
     buttonLabel: "ENTRAR A MI PORTAL",
     buttonUrl: creatorAccessUrl("/creators/", token),
     note: "Este enlace personal vence en 48 horas.",
@@ -7144,15 +7162,23 @@ function creatorTierProgress(commissionBase) {
     : current.number === 2
       ? { number: 3, rate: 30, target: CREATOR_TIER_3_SALES_COP }
       : null;
+  const currentRangeMin = current.number === 1 ? 0 : current.number === 2 ? CREATOR_TIER_2_SALES_COP : CREATOR_TIER_3_SALES_COP;
+  const currentRangeMax = current.number === 1 ? CREATOR_TIER_2_SALES_COP - 1 : current.number === 2 ? CREATOR_TIER_3_SALES_COP - 1 : null;
+  const currentLevelProgressPercent = next
+    ? Math.min(100, Math.max(0, ((total - currentRangeMin) / (next.target - currentRangeMin)) * 100))
+    : 100;
   return {
     eligibleCommissionBaseTotal: total,
     currentTier: current.number,
     currentRate: current.rate,
+    currentRangeMin,
+    currentRangeMax,
+    currentLevelProgressPercent: Math.round(currentLevelProgressPercent * 10) / 10,
     nextTier: next?.number || null,
     nextRate: next?.rate || null,
     nextTarget: next?.target || null,
     remaining: next ? Math.max(0, next.target - total) : 0,
-    progressPercent: next ? Math.min(100, Math.round((total / next.target) * 1000) / 10) : 100
+    progressPercent: currentLevelProgressPercent
   };
 }
 
@@ -7308,6 +7334,7 @@ async function getCreatorPortal(request, response) {
     ? rows.filter(row => ["earned", "batched"].includes(row.status) && creatorPayoutDate(row.earned_at) === totals.nextPayoutAt).reduce((sum, row) => sum + Number(row.commission_amount || 0), 0)
     : 0;
   const profilePhotoUrl = await creatorProfilePhotoUrl(profile.profile_photo_path);
+  const payoutBuckets = creatorUpcomingPayoutBuckets(rows);
   sendJson(response, 200, {
     ok: true,
     creator: {
@@ -7323,6 +7350,7 @@ async function getCreatorPortal(request, response) {
     },
     totals,
     tierProgress,
+    payoutBuckets,
     sales: rows.map(row => ({
       products: creatorVisibleProducts(row.products),
       commission_base: creatorCommissionBase(row.products),

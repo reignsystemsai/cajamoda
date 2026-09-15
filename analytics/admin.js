@@ -388,6 +388,8 @@
   document.addEventListener("click",async event=>{
     const creatorToggle=event.target.closest("[data-toggle-approved-creator]");
     if(creatorToggle){const card=creatorToggle.closest(".creatorApprovedCard");const collapsed=card?.classList.toggle("is-collapsed");creatorToggle.setAttribute("aria-expanded",String(!collapsed));creatorToggle.setAttribute("aria-label",collapsed?"Show creator details":"Hide creator details");return}
+    const sectionToggle=event.target.closest("[data-toggle-creator-section]");
+    if(sectionToggle){const section=sectionToggle.closest(".creatorSection");const collapsed=section?.classList.toggle("is-collapsed");const label=sectionToggle.dataset.sectionLabel||"section";sectionToggle.setAttribute("aria-expanded",String(!collapsed));sectionToggle.setAttribute("aria-label",(collapsed?"Show ":"Hide ")+label);return}
     const salesModal=$("creatorSalesModal");
     if(event.target.closest("[data-close-creator-sales]")||event.target===salesModal){closeCreatorSales();return}
     const periodButton=event.target.closest("[data-creator-sales-period]");

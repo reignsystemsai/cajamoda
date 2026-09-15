@@ -5,7 +5,9 @@ const portal = readFileSync(new URL("../creators/index.html", import.meta.url), 
 const acceptance = readFileSync(new URL("../creators/accept/index.html", import.meta.url), "utf8");
 const terms = readFileSync(new URL("../creators/terms/index.html", import.meta.url), "utf8");
 const admin = readFileSync(new URL("../admin/index.html", import.meta.url), "utf8");
+const adminScript = readFileSync(new URL("../analytics/admin.js", import.meta.url), "utf8");
 const migration = readFileSync(new URL("../supabase/migrations/202609130006_finalize_creator_agreements.sql", import.meta.url), "utf8");
+const publicCommissionExplanation = "CajaModa asigna a cada producto una base de comisión después de considerar sus costos internos. Tu comisión corresponde al porcentaje de tu nivel aplicado a esa base. Los costos y cálculos internos de CajaModa son confidenciales.";
 
 function protectedMargin(cost, discountPercent) {
   const originalPrice = Math.round(cost * 2.816);
@@ -29,13 +31,17 @@ const checks = [
   [server.includes("markCreatorCommissionsPaid") && server.includes("creatorPayoutMatch"), "Owner payout recording endpoint is registered"],
   [migration.includes("creator_agreement_acceptances") && migration.includes("enable row level security"), "Immutable agreement evidence table has RLS"],
   [acceptance.includes('id="agreement" type="checkbox"') && acceptance.includes('id="activate" disabled'), "Electronic signature requires an explicit unchecked checkbox"],
-  [acceptance.includes("COP 2.700 de empaque") && acceptance.includes("25% del precio de venta"), "Creator acceptance shows the current commission formula"],
-  [terms.includes("COP 2.700 de empaque") && terms.includes("tarifa de operación del 25%"), "Creator terms show the current commission formula"],
+  [acceptance.includes(publicCommissionExplanation) && !acceptance.includes("costo de adquisición") && !acceptance.includes("COP 2.700"), "Creator acceptance uses the approved private-base explanation"],
+  [terms.includes(publicCommissionExplanation) && terms.includes("COP 5.585") && terms.includes("COP 16.800") && !terms.includes("tarifa de operación del 25%"), "Creator terms use the approved private-base explanation and examples"],
   [admin.includes('id="productProfitabilitySummary"') && admin.includes('id="quickProfitabilitySummary"'), "Main and quick editors show protected profitability"],
   [protectedMargin(12014, 15) >= 0.15 && protectedMargin(12014, 20) < 0.15, "The reference product allows 15% and blocks 20% at Tier 3"],
   [portal.includes("Comisión ganada") && portal.includes("Último pago") && portal.includes("Próximo pago") && portal.includes("Pagos acumulados"), "Creator earnings cards are present in Spanish"],
-  [portal.includes("<th>Fecha</th><th>Hora</th><th>Producto</th><th>Comisión</th><th>Estado</th>"), "Creator ledger contains only promised Spanish columns"],
+  [portal.includes("<th>Fecha</th><th>Hora</th><th>Producto</th><th>Base de comisión</th><th>Nivel</th><th>Comisión</th><th>Fecha de pago</th><th>Estado</th>"), "Creator ledger contains the promised Spanish commission-base columns"],
   [!portal.includes("Order Total") && !portal.includes("Gross Sales") && !portal.includes("product_subtotal"), "Creator portal does not expose sale totals"],
+  [portal.includes(publicCommissionExplanation) && server.includes("CREATOR_COMMISSION_EXPLANATION"), "Creator portal and transactional messages use the approved explanation"],
+  [server.includes("function creatorVisibleProducts(products)") && server.includes("products: creatorVisibleProducts(row.products)") && server.includes("commission_base: creatorCommissionBase(row.products)") && server.includes("tier: {") && !/sales: rows\.map[\s\S]{0,800}(?:unitCost|packagingCost|operationFee|product_subtotal|commission_rate:)/.test(server), "Creator API returns only the approved private-safe commission fields"],
+  [server.includes("function creatorOwnerBreakdown(products, commissionAmount)") && admin.includes("Product Cost") && admin.includes("Commission Base") && adminScript.includes("sale.productCost") && adminScript.includes("sale.margin"), "Owner ledger retains the full private breakdown"],
+  [server.includes('url.pathname === "/api/creators/agreement"') && server.includes("agreementRequired: profile.agreement_version !== CREATOR_AGREEMENT_VERSION"), "Existing creators can accept the current agreement"],
   [portal.includes('lang="es"') && acceptance.includes('lang="es"'), "The complete creator experience is Spanish"]
 ];
 

@@ -349,7 +349,7 @@
     setText("creatorActivityVisits",number(activity.visits));setText("creatorActivityViews",number(activity.productViews));setText("creatorActivityLikes",number(activity.likes));setText("creatorActivityShares",number(activity.shares));setText("creatorActivityFavorites",number(activity.favorites));setText("creatorActivityCarts",number(activity.carts));setText("creatorActivityCheckouts",number(activity.checkouts));setText("creatorActivityConversion",percent(activity.conversion));
     renderCreatorSalesChart(data?.series);
     const body=$("creatorSalesRows");if(!body)return;
-    body.innerHTML=ledger.length?ledger.map(sale=>{const state=String(sale.status||"earned").toLowerCase();const amountDue=state==="authorized"?"Pending capture":money(sale.amountDue);const payout=creatorSalesDate(sale.payoutDate);return'<tr><td>'+escapeHtml(creatorSalesDate(sale.orderDate))+'</td><td class="creatorSalesProducts">'+creatorProductsSold(sale.products)+'</td><td>'+money(sale.orderTotal)+'</td><td>'+number(sale.commissionRate)+'% · '+money(sale.commissionAmount)+'</td><td>'+escapeHtml(amountDue)+'</td><td>'+escapeHtml(payout)+'</td><td><span class="creatorLedgerStatus '+(state==="authorized"?"authorized":state==="paid"?"paid":state==="reversed"?"reversed":"")+'">'+escapeHtml(creatorSalesStatusLabel(state))+'</span></td></tr>'}).join(""):'<tr><td class="creatorSalesEmpty" colspan="7">No orders have been attributed to this creator in this period.</td></tr>';
+    body.innerHTML=ledger.length?ledger.map(sale=>{const state=String(sale.status||"earned").toLowerCase();const amountDue=state==="authorized"?"Pending capture":money(sale.amountDue);const payout=creatorSalesDate(sale.payoutDate);return'<tr><td>'+escapeHtml(creatorSalesDate(sale.orderDate))+'</td><td class="creatorSalesProducts">'+creatorProductsSold(sale.products)+'</td><td>'+money(sale.salePrice??sale.orderTotal)+'</td><td>'+money(sale.productCost)+'</td><td>'+money(sale.packaging)+'</td><td>'+money(sale.operationFee)+'</td><td>'+money(sale.commissionBase)+'</td><td>'+number(sale.commissionRate)+'% · '+money(sale.commissionAmount)+'</td><td>'+money(sale.margin)+'</td><td>'+escapeHtml(amountDue)+'</td><td>'+escapeHtml(payout)+'</td><td><span class="creatorLedgerStatus '+(state==="authorized"?"authorized":state==="paid"?"paid":state==="reversed"?"reversed":"")+'">'+escapeHtml(creatorSalesStatusLabel(state))+'</span></td></tr>'}).join(""):'<tr><td class="creatorSalesEmpty" colspan="12">No orders have been attributed to this creator in this period.</td></tr>';
   }
   function closeCreatorSales(){const modal=$("creatorSalesModal");if(modal)modal.hidden=true}
   async function openCreatorSales(id,name,period="30d"){
@@ -359,10 +359,10 @@
     document.querySelectorAll("[data-creator-sales-period]").forEach(button=>button.classList.toggle("active",button.dataset.creatorSalesPeriod===period));
     setText("creatorSalesTitle",(name||"Creator")+" Sales");
     ["creatorSalesOrders","creatorSalesAuthorized","creatorSalesRevenue","creatorSalesCommission","creatorSalesDueFirst","creatorSalesDueFifteenth"].forEach(key=>setText(key,"—"));
-    body.innerHTML='<tr><td class="creatorSalesEmpty" colspan="7">Loading creator activity…</td></tr>';
+    body.innerHTML='<tr><td class="creatorSalesEmpty" colspan="12">Loading creator activity…</td></tr>';
     try{
       const data=await request("/api/store-owner/creator-applications/"+encodeURIComponent(id)+"/sales?period="+encodeURIComponent(period));renderCreatorSales(data);
-    }catch(error){body.innerHTML='<tr><td class="creatorSalesEmpty" colspan="7">'+escapeHtml(error?.message||"Creator sales could not be loaded.")+'</td></tr>'}
+    }catch(error){body.innerHTML='<tr><td class="creatorSalesEmpty" colspan="12">'+escapeHtml(error?.message||"Creator sales could not be loaded.")+'</td></tr>'}
   }
   function renderCreatorNetwork(rows){
     const apps=(Array.isArray(rows)?rows:[]).map(application=>({application,person:creatorPerson(application)}));

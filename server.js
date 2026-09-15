@@ -144,9 +144,10 @@ const CARTAGENA_PICKUP_ADDRESS = "Cl. 35 #10-22, piso 1, local 1, San Diego, Car
 const STOREFRONT_URL = String(
   process.env.STOREFRONT_URL || "https://www.cajamoda.com"
 ).replace(/\/$/, "");
-const CREATOR_AGREEMENT_VERSION = "2026-09-15-es";
+const CREATOR_AGREEMENT_VERSION = "2026-09-15-private-base-es";
 const CREATOR_AGREEMENT_CONSENT = "Declaro que he leído y acepto el Acuerdo del Programa de Creadoras de CajaModa, los Términos y Condiciones y la Política de Privacidad. Entiendo que al marcar esta casilla y seleccionar Aceptar y continuar realizo mi firma electrónica. Acepto recibir y conservar estos registros por medios electrónicos.";
-const CREATOR_AGREEMENT_TEXT = "Acuerdo del Programa de Creadoras CajaModa. La creadora participa como creadora independiente, no como empleada, propietaria de tienda, socia, agente, franquiciada ni representante legal de CajaModa. La comisión equivale al porcentaje del nivel de la creadora multiplicado por el margen comisionable no negativo de cada artículo atribuido y capturado: precio de venta cobrado por el artículo, sin entrega, impuestos ni cargos, menos el costo de adquisición de CajaModa, menos COP 2.700 de empaque por artículo y menos una tarifa de operación equivalente al 25% del precio de venta cobrado por el artículo. Los pagos autorizados pero no capturados permanecen pendientes y no generan comisión. Las comisiones ganadas del día 1 al 15 se programan para pagarse alrededor del último día calendario de ese mes. Las comisiones ganadas del día 16 al final del mes se programan para pagarse alrededor del día 15 del mes siguiente. La creadora es responsable de cumplir las leyes, divulgaciones, impuestos y regulaciones de su país. Cualquiera de las partes puede terminar la participación en cualquier momento. Se prohíben el fraude, robo, estafas, contracargos, manipulación y actividades ilegales; CajaModa puede retener o revertir las comisiones relacionadas, retirar participantes y tomar medidas legales para recuperar pérdidas. CajaModa es una empresa estadounidense y no ofrece reembolsos discrecionales, excepto cuando la ley aplicable los exija.";
+const CREATOR_COMMISSION_EXPLANATION = "CajaModa asigna a cada producto una base de comisión después de considerar sus costos internos. Tu comisión corresponde al porcentaje de tu nivel aplicado a esa base. Los costos y cálculos internos de CajaModa son confidenciales.";
+const CREATOR_AGREEMENT_TEXT = `Acuerdo del Programa de Creadoras CajaModa. La creadora participa como creadora independiente, no como empleada, propietaria de tienda, socia, agente, franquiciada ni representante legal de CajaModa. ${CREATOR_COMMISSION_EXPLANATION} Ejemplo de Nivel 1: una base de comisión de COP 5.585 multiplicada por 10% genera COP 559. Ejemplo de Nivel 2: una base de comisión de COP 16.800 multiplicada por 20% genera COP 3.360. Los pagos autorizados pero no capturados permanecen pendientes y no generan comisión. Las comisiones ganadas del día 1 al 15 se programan para pagarse alrededor del último día calendario de ese mes. Las comisiones ganadas del día 16 al final del mes se programan para pagarse alrededor del día 15 del mes siguiente. La creadora es responsable de cumplir las leyes, divulgaciones, impuestos y regulaciones de su país. Cualquiera de las partes puede terminar la participación en cualquier momento. Se prohíben el fraude, robo, estafas, contracargos, manipulación y actividades ilegales; CajaModa puede retener o revertir las comisiones relacionadas, retirar participantes y tomar medidas legales para recuperar pérdidas. CajaModa es una empresa estadounidense y no ofrece reembolsos discrecionales, excepto cuando la ley aplicable los exija.`;
 const CREATOR_AGREEMENT_SHA256 = crypto.createHash("sha256").update(CREATOR_AGREEMENT_TEXT).digest("hex");
 const CREATOR_ACCESS_TTL_MS = 48 * 60 * 60 * 1000;
 const CREATOR_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -6720,7 +6721,7 @@ async function approveCreatorAndSendInvite(application) {
     email: application.email,
     subject: "Fuiste seleccionada para ser creadora CajaModa",
     heading: "¡Fuiste seleccionada!",
-    message: "Acepta la invitación para conocer tu nivel de comisión, firmar el acuerdo de creadora independiente y elegir cómo recibir tus pagos.",
+    message: `${CREATOR_COMMISSION_EXPLANATION} Acepta la invitación para conocer tu nivel, firmar el acuerdo y elegir cómo recibir tus pagos.`,
     buttonLabel: "ACEPTAR INVITACIÓN",
     buttonUrl: creatorAccessUrl("/creators/accept/", token),
     note: "Este enlace es personal y estará disponible durante 48 horas.",
@@ -6861,7 +6862,7 @@ async function completeCreatorOnboarding(request, response) {
     email: profile.email,
     subject: "Tu Acuerdo del Programa de Creadoras CajaModa",
     heading: "Tu acuerdo está firmado",
-    message: `Registramos tu aceptación electrónica del Acuerdo del Programa de Creadoras, versión ${CREATOR_AGREEMENT_VERSION}, el ${activatedAt}.`,
+    message: `Registramos tu aceptación electrónica del Acuerdo del Programa de Creadoras, versión ${CREATOR_AGREEMENT_VERSION}, el ${activatedAt}. ${CREATOR_COMMISSION_EXPLANATION}`,
     buttonLabel: "VER MI ACUERDO",
     buttonUrl: `${STOREFRONT_URL}/creators/terms/`,
     note: "Conserva este correo para tus registros.",
@@ -6890,6 +6891,55 @@ async function updateCreatorPayoutAccount(request, response) {
   });
   if (!saved.ok) return sendError(response, 503, "No pudimos guardar tu método de pago.");
   sendJson(response, 200, { ok: true, payout: { method, destination_masked: payout.masked, status: "verified" } });
+}
+
+async function acceptCurrentCreatorAgreement(request, response) {
+  const profile = await creatorProfileForSession(request);
+  if (!profile) return sendError(response, 401, "Inicia sesión en tu cuenta de creadora.");
+  const body = await readBody(request);
+  if (body?.agreementAccepted !== true) return sendError(response, 400, "Debes aceptar el acuerdo para continuar.");
+  const acceptedAt = new Date().toISOString();
+  const acceptanceResponse = await fetch(`${SUPABASE_URL}/rest/v1/creator_agreement_acceptances?on_conflict=creator_id,agreement_version`, {
+    method: "POST",
+    headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" }),
+    body: JSON.stringify({
+      creator_id: profile.id,
+      agreement_version: CREATOR_AGREEMENT_VERSION,
+      agreement_sha256: CREATOR_AGREEMENT_SHA256,
+      agreement_text: CREATOR_AGREEMENT_TEXT,
+      consent_text: CREATOR_AGREEMENT_CONSENT,
+      legal_name: `${profile.first_name || ""} ${profile.last_name || ""}`.trim(),
+      email: profile.email,
+      signature_type: "clickwrap",
+      accepted_at: acceptedAt,
+      ip_address: safeText(request.headers["x-forwarded-for"] || request.socket?.remoteAddress, 120).split(",")[0].trim() || null,
+      user_agent: safeText(request.headers["user-agent"], 500) || null
+    })
+  });
+  if (!acceptanceResponse.ok) return sendError(response, 503, "No pudimos registrar la aceptación de tu acuerdo.");
+  const profileResponse = await fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?id=eq.${encodeURIComponent(profile.id)}`, {
+    method: "PATCH",
+    headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+    body: JSON.stringify({
+      agreement_version: CREATOR_AGREEMENT_VERSION,
+      agreement_accepted_at: acceptedAt,
+      updated_at: acceptedAt
+    })
+  });
+  if (!profileResponse.ok) return sendError(response, 503, "No pudimos actualizar tu acuerdo.");
+  await sendCreatorTransactionalEmail({
+    firstName: profile.first_name,
+    lastName: profile.last_name,
+    email: profile.email,
+    subject: "Actualización de tu Acuerdo de Creadora CajaModa",
+    heading: "Tu acuerdo está actualizado",
+    message: `Registramos tu aceptación electrónica de la versión ${CREATOR_AGREEMENT_VERSION}. ${CREATOR_COMMISSION_EXPLANATION}`,
+    buttonLabel: "VER MI ACUERDO",
+    buttonUrl: `${STOREFRONT_URL}/creators/terms/`,
+    note: "Conserva este correo para tus registros.",
+    idempotencyKey: `creator-agreement-${profile.id}-${CREATOR_AGREEMENT_VERSION}`
+  }).catch(error => console.error("[Creator agreement] Updated confirmation email failed:", error));
+  sendJson(response, 200, { ok: true, agreementVersion: CREATOR_AGREEMENT_VERSION, acceptedAt });
 }
 
 function creatorPayoutDate(value) {
@@ -6927,7 +6977,7 @@ async function requestCreatorLogin(request, response) {
     email: profile.email,
     subject: "Tu acceso al portal de creadoras CajaModa",
     heading: "Tu portal está listo",
-    message: "Entra para ver tus ventas, productos vendidos, nivel y comisiones.",
+    message: "Entra para ver tus productos vendidos, bases de comisión, nivel, comisiones y próximos pagos.",
     buttonLabel: "ENTRAR A MI PORTAL",
     buttonUrl: creatorAccessUrl("/creators/", token),
     note: "Este enlace personal vence en 48 horas.",
@@ -7054,6 +7104,43 @@ async function reconcileCreatorCommissions(rows) {
   }));
 }
 
+function creatorVisibleProducts(products) {
+  return (Array.isArray(products) ? products : []).slice(0, 50).map(product => ({
+    productName: safeText(product?.productName || product?.name, 180) || "Producto",
+    quantity: Math.max(1, Math.floor(Number(product?.quantity || 1))),
+    size: safeText(product?.size || product?.selectedSize, 40) || null
+  }));
+}
+
+function creatorCommissionBase(products) {
+  return Math.max(0, Math.round((Array.isArray(products) ? products : []).reduce(
+    (sum, product) => sum + Math.max(0, Number(product?.commissionableProfit || 0)),
+    0
+  )));
+}
+
+function creatorOwnerBreakdown(products, commissionAmount) {
+  const totals = (Array.isArray(products) ? products : []).reduce((result, product) => {
+    const quantity = Math.max(1, Math.floor(Number(product?.quantity || 1)));
+    result.salePrice += Math.max(0, Number(product?.unitSalePrice ?? product?.amount ?? 0)) * quantity;
+    result.productCost += Math.max(0, Number(product?.unitCost || 0)) * quantity;
+    result.packaging += Math.max(0, Number(product?.packagingCostPerItem || 0)) * quantity;
+    result.operationFee += Math.max(0, Number(product?.operationFeePerItem || 0)) * quantity;
+    result.commissionBase += Math.max(0, Number(product?.commissionableProfit || 0));
+    return result;
+  }, { salePrice: 0, productCost: 0, packaging: 0, operationFee: 0, commissionBase: 0 });
+  const commission = Math.max(0, Number(commissionAmount || 0));
+  return {
+    salePrice: Math.round(totals.salePrice),
+    productCost: Math.round(totals.productCost),
+    packaging: Math.round(totals.packaging),
+    operationFee: Math.round(totals.operationFee),
+    commissionBase: Math.round(totals.commissionBase),
+    commission: Math.round(commission),
+    margin: Math.max(0, Math.round(totals.commissionBase - commission))
+  };
+}
+
 async function getCreatorPortal(request, response) {
   const profile = await creatorProfileForSession(request);
   if (!profile) return sendError(response, 401, "Inicia sesión como creadora.");
@@ -7091,18 +7178,21 @@ async function getCreatorPortal(request, response) {
       slug: profile.slug,
       tier: profile.tier,
       commissionRate: profile.commission_rate,
+      agreementRequired: profile.agreement_version !== CREATOR_AGREEMENT_VERSION,
       link: `${STOREFRONT_URL}/${profile.slug}`,
       payout: Array.isArray(payouts) ? payouts[0] || null : null
     },
     totals,
     sales: rows.map(row => ({
-      id: row.id,
-      products: row.products,
-      commission_rate: row.commission_rate,
+      products: creatorVisibleProducts(row.products),
+      commission_base: creatorCommissionBase(row.products),
+      tier: {
+        number: Math.max(1, Math.min(3, Math.round(Number(row.commission_rate || 10) / 10))),
+        rate: Number(row.commission_rate || 0)
+      },
       commission_amount: row.commission_amount,
       status: row.status,
       earned_at: row.earned_at,
-      paid_at: row.paid_at,
       payout_at: creatorPayoutDate(row.earned_at)
     }))
   });
@@ -7111,10 +7201,13 @@ async function getCreatorPortal(request, response) {
 async function markCreatorCommissionsPaid(request, response, applicationId) {
   if (!isAuthorized(request)) return sendError(response, 401, "Sign in to Store Loader.");
   if (!isPlatformAdmin(request)) return sendError(response, 403, "Creator payouts are reserved for CajaModa administration.");
-  const profilesResponse = await fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?application_id=eq.${encodeURIComponent(applicationId)}&select=id&limit=1`, { headers: livePresenceHeaders() });
+  const profilesResponse = await fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?application_id=eq.${encodeURIComponent(applicationId)}&select=id,agreement_version&limit=1`, { headers: livePresenceHeaders() });
   const profiles = profilesResponse.ok ? await profilesResponse.json().catch(() => []) : [];
   const profile = Array.isArray(profiles) ? profiles[0] : null;
   if (!profile) return sendError(response, 404, "Creator profile not found.");
+  if (profile.agreement_version !== CREATOR_AGREEMENT_VERSION) {
+    return sendError(response, 409, "The creator must accept the current agreement before this payout can be marked paid.");
+  }
   const due = await fetch(`${SUPABASE_URL}/rest/v1/creator_commissions?creator_id=eq.${encodeURIComponent(profile.id)}&status=in.(earned,batched)&select=id,commission_amount`, { headers: livePresenceHeaders() });
   const rows = due.ok ? await due.json().catch(() => []) : [];
   if (!Array.isArray(rows) || !rows.length) return sendJson(response, 200, { ok: true, paidCount: 0, paidAmount: 0 });
@@ -7234,28 +7327,36 @@ async function getStoreOwnerCreatorSales(request, response, applicationId) {
     calculated: await calculateCreatorCommission(order.items, profile.commission_rate)
   })));
   const ledger = [
-    ...authorizedCommissions.map(({ order, calculated }) => ({
-      orderDate: order.date,
-      orderId: order.id,
-      products: calculated.products,
-      orderTotal: Math.max(0, Number(order.total || 0)),
-      commissionRate: Math.max(0, Number(profile.commission_rate || 0)),
-      commissionAmount: calculated.amount,
-      amountDue: 0,
-      payoutDate: payoutDate(order.date),
-      status: "authorized"
-    })),
-    ...rows.map(sale => ({
-      orderDate: sale.earned_at,
-      orderId: sale.order_id,
-      products: sale.products,
-      orderTotal: Math.max(0, Number(paidPurchaseByOrder.get(String(sale.order_id))?.value || sale.product_subtotal || 0)),
-      commissionRate: Math.max(0, Number(sale.commission_rate || 0)),
-      commissionAmount: Math.max(0, Number(sale.commission_amount || 0)),
-      amountDue: ["paid", "reversed"].includes(sale.status) ? 0 : Math.max(0, Number(sale.commission_amount || 0)),
-      payoutDate: sale.paid_at || payoutDate(sale.earned_at),
-      status: sale.status || "earned"
-    }))
+    ...authorizedCommissions.map(({ order, calculated }) => {
+      const breakdown = creatorOwnerBreakdown(calculated.products, calculated.amount);
+      return {
+        orderDate: order.date,
+        orderId: order.id,
+        products: calculated.products,
+        orderTotal: breakdown.salePrice,
+        ...breakdown,
+        commissionRate: Math.max(0, Number(profile.commission_rate || 0)),
+        commissionAmount: calculated.amount,
+        amountDue: 0,
+        payoutDate: payoutDate(order.date),
+        status: "authorized"
+      };
+    }),
+    ...rows.map(sale => {
+      const breakdown = creatorOwnerBreakdown(sale.products, sale.commission_amount);
+      return {
+        orderDate: sale.earned_at,
+        orderId: sale.order_id,
+        products: sale.products,
+        orderTotal: breakdown.salePrice || Math.max(0, Number(paidPurchaseByOrder.get(String(sale.order_id))?.value || sale.product_subtotal || 0)),
+        ...breakdown,
+        commissionRate: Math.max(0, Number(sale.commission_rate || 0)),
+        commissionAmount: Math.max(0, Number(sale.commission_amount || 0)),
+        amountDue: ["paid", "reversed"].includes(sale.status) ? 0 : Math.max(0, Number(sale.commission_amount || 0)),
+        payoutDate: sale.paid_at || payoutDate(sale.earned_at),
+        status: sale.status || "earned"
+      };
+    })
   ].sort((left, right) => new Date(right.orderDate) - new Date(left.orderDate));
 
   const visits = new Set(attributedEvents.map(event => event.session_id).filter(Boolean)).size;
@@ -9059,6 +9160,11 @@ const server =
 
         if(request.method === "GET" && url.pathname === "/api/creators/me"){
           await getCreatorPortal(request,response);
+          return;
+        }
+
+        if(request.method === "POST" && url.pathname === "/api/creators/agreement"){
+          await acceptCurrentCreatorAgreement(request,response);
           return;
         }
 

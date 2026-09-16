@@ -4135,7 +4135,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
   async function finalizeStripePayment() {
     if (!checkoutElements || !paymentElement) throw new Error("El formulario de Stripe todavía está cargando.");
     if (!validatePaymentDetails()) throw new Error("Completa tus datos de contacto y entrega.");
-    await refreshDeliveryQuote({ required: true });
+    if (!deliveryQuoteMatchesCart()) await refreshDeliveryQuote({ required: true });
     const firstName = $("customerFirstName")?.value.trim() || "";
     const lastName = $("customerLastName")?.value.trim() || "";
     const submitted = await checkoutElements.submit();
@@ -4158,6 +4158,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
       throw tokenResult?.error || new Error("No pudimos validar los datos de la tarjeta.");
     }
     const payload = checkoutPayload();
+    payload.requestId = tokenResult.confirmationToken.id;
     const response = await fetch(`${STORE_API_URL}/api/stripe/payment-intent`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },

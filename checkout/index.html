@@ -1973,6 +1973,20 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
       error.code = PRONTO_LOCATION_UNAVAILABLE_CODE;
     } else {
       error.code = "PAYMENT_PREPARATION_FAILED";
+      const diagnostic = [
+        result?.stage ? `Etapa ${String(result.stage)}` : "",
+        result?.providerCode ? `Código ${String(result.providerCode)}` : "",
+        result?.incidentId ? `Ref. ${String(result.incidentId)}` : ""
+      ].filter(Boolean).join(" · ");
+      if (diagnostic) error.message = `${PAYMENT_PREPARATION_ERROR} ${diagnostic}`;
+      error.checkoutStage = result?.stage || "";
+      error.providerCode = result?.providerCode || "";
+      error.incidentId = result?.incidentId || "";
+      console.error("[CajaModa] Checkout payment failure", {
+        stage: error.checkoutStage,
+        providerCode: error.providerCode,
+        incidentId: error.incidentId
+      });
     }
     return error;
   }

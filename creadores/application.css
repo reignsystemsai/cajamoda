@@ -1,0 +1,316 @@
+:root {
+  color-scheme: light;
+  --ink: #090909;
+  --pink: #e90067;
+  --deep-pink: #bd004f;
+  --blush: #fff5fa;
+  --line: rgba(191, 0, 79, .18);
+  --muted: #5f5960;
+}
+
+* { box-sizing: border-box; }
+
+html { background: #fff9fc; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #fff7fa;
+}
+
+button, input, select { font: inherit; }
+
+.shell {
+  width: min(1480px, 100%);
+  margin: 0 auto;
+  overflow: hidden;
+  background: #fff7fa;
+}
+
+.header {
+  height: 82px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 56px;
+  background: rgba(255, 255, 255, .97);
+  border-bottom: 1px solid rgba(0, 0, 0, .05);
+}
+
+.brandLockup {
+  width: 125px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  transform: scale(.72);
+  transform-origin: left center;
+}
+
+.brandMonogram {
+  position: relative;
+  width: 100px;
+  height: 57px;
+  font-family: "Bodoni Moda", Didot, Georgia, serif;
+}
+
+.brandC {
+  position: absolute;
+  left: 7px;
+  top: -12px;
+  font-size: 74px;
+  line-height: 1;
+  letter-spacing: -8px;
+  transform: scaleX(.89);
+}
+
+.brandM {
+  position: absolute;
+  left: 43px;
+  top: 8px;
+  font-size: 52px;
+  line-height: 1;
+  letter-spacing: -5px;
+  transform: scaleX(.9);
+}
+
+.brandWord {
+  margin-top: -2px;
+  padding-left: 6px;
+  font: 500 11px/1 "Bodoni Moda", Didot, Georgia, serif;
+  letter-spacing: 5.4px;
+}
+
+.brandCountryRow {
+  width: 145px;
+  margin-top: 7px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.brandCountryLine { height: 1px; background: rgba(0, 0, 0, .42); }
+.brandCountry { padding-left: 3px; font-size: 6px; font-weight: 700; letter-spacing: 3.1px; }
+
+.siteNav { display: flex; align-items: center; gap: 34px; }
+.siteNav a { color: #111; text-decoration: none; font-size: 12px; font-weight: 700; }
+
+.main { background: #fff1f6; }
+
+.layout {
+  position: relative;
+  min-height: 610px;
+  display: grid;
+  grid-template-columns: minmax(0, 68%) minmax(410px, 32%);
+  background-image: url('/assets/creator/application-hero-scene.png');
+  background-size: cover;
+  background-position: center 48%;
+  background-repeat: no-repeat;
+}
+
+.heroPanel { min-width: 0; }
+
+.invite {
+  width: 54%;
+  min-height: 610px;
+  padding: 39px 0 24px 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: left;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: var(--pink);
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: .27em;
+}
+
+h1 {
+  margin: 0;
+  font: 700 clamp(62px, 5.4vw, 86px)/.92 "Bodoni Moda", Didot, Georgia, serif;
+  letter-spacing: -.045em;
+}
+
+.tagline {
+  max-width: 445px;
+  margin: 10px 0 0;
+  font: 500 clamp(23px, 2vw, 31px)/1.05 "Bodoni Moda", Didot, Georgia, serif;
+}
+
+.intro {
+  max-width: 430px;
+  margin: 10px 0 17px;
+  color: #373238;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.benefitStrip {
+  max-width: 500px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 7px;
+}
+
+.benefitItem {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 750;
+  line-height: 1.25;
+}
+
+.benefitIcon {
+  height: 34px;
+  display: grid;
+  place-items: center;
+  color: var(--pink);
+  font-size: 27px;
+  font-weight: 400;
+}
+
+.community {
+  margin: 20px 0 0 8px;
+  color: var(--pink);
+  font: italic 35px/1.04 "Brush Script MT", cursive;
+  transform: rotate(-4deg);
+}
+
+.card {
+  position: relative;
+  z-index: 2;
+  align-self: center;
+  margin: 15px 28px 15px -12px;
+  padding: 22px 26px 24px;
+  border: 1px solid rgba(233, 0, 103, .13);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, .96);
+  box-shadow: 0 20px 55px rgba(72, 35, 52, .16);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.card h2 {
+  margin: 0;
+  font: 700 34px/1 "Bodoni Moda", Didot, Georgia, serif;
+  letter-spacing: -.03em;
+}
+
+.cardLead { margin: 5px 0 13px; color: var(--muted); font-size: 12px; line-height: 1.4; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
+.field { display: grid; gap: 3px; }
+.field.full { grid-column: 1 / -1; }
+label { font-size: 10px; font-weight: 750; }
+
+input, select {
+  width: 100%;
+  min-height: 39px;
+  padding: 0 11px;
+  border: 1px solid rgba(21, 16, 19, .14);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 12px;
+  outline: none;
+  transition: border-color .18s, box-shadow .18s;
+}
+
+input:focus, select:focus { border-color: var(--pink); box-shadow: 0 0 0 3px rgba(233, 0, 103, .1); }
+input::placeholder { color: #9b9599; }
+.phone { display: grid; grid-template-columns: 56px 1fr; gap: 7px; }
+.prefix { min-height: 39px; display: grid; place-items: center; border: 1px solid rgba(21, 16, 19, .14); border-radius: 8px; background: #fff; font-size: 13px; font-weight: 800; }
+.optional { color: #9b9599; font-weight: 500; }
+.locationHint { display: none; }
+.checks { display: grid; gap: 7px; margin: 11px 0; }
+.check { display: grid; grid-template-columns: 17px 1fr; gap: 8px; align-items: start; color: #595258; font-size: 10px; line-height: 1.4; }
+.check input { width: 17px; min-height: 17px; height: 17px; margin: 0; accent-color: var(--pink); }
+
+.submit {
+  width: 100%;
+  min-height: 45px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--deep-pink), #f0006b);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: .13em;
+  cursor: pointer;
+  box-shadow: 0 14px 30px rgba(213, 0, 91, .24);
+}
+
+.submit:hover { transform: translateY(-1px); }
+.submit:disabled { opacity: .5; cursor: wait; transform: none; }
+.message { display: none; margin: 12px 0 0; font-size: 12px; line-height: 1.4; text-align: center; }
+.message.error { display: block; color: #a42222; }
+.success { display: none; min-height: 480px; padding: 60px 0 12px; text-align: center; }
+.success.visible { display: block; }
+.successIcon { width: 68px; height: 68px; margin: 0 auto 22px; display: grid; place-items: center; border-radius: 50%; background: var(--pink); color: #fff; font-size: 32px; box-shadow: 0 10px 25px rgba(233, 0, 103, .25); }
+.success h2 { font: 700 38px/1 "Bodoni Moda", Didot, Georgia, serif; }
+.success p { max-width: 400px; margin: 16px auto 0; color: #555; line-height: 1.65; }
+.form.hidden { display: none; }
+.trap { position: absolute !important; left: -9999px !important; width: 1px !important; height: 1px !important; overflow: hidden !important; }
+
+.unboxingSection {
+  min-height: 360px;
+  display: grid;
+  grid-template-columns: 55% 45%;
+  align-items: center;
+  padding: 18px 48px;
+  background-image: url('/assets/creator/application-invitation-scene.png');
+  background-size: cover;
+  background-position: center 48%;
+  background-repeat: no-repeat;
+}
+
+.invitationVisual { min-height: 324px; }
+.selectionCopy { padding: 10px 22px 10px 28px; }
+.selectionCopy h2 { max-width: 520px; margin: 0; font: 700 clamp(30px, 3vw, 42px)/1.02 "Bodoni Moda", Didot, Georgia, serif; }
+.selectionCopy > p:not(.eyebrow) { display: none; }
+.selectionBenefits { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 18px; }
+.selectionBenefit { padding: 11px 12px; border: 1px solid rgba(233, 0, 103, .07); border-radius: 14px; background: rgba(255, 255, 255, .5); font-size: 13px; font-weight: 650; backdrop-filter: blur(8px); }
+.selectionBenefit span { margin-right: 7px; color: var(--pink); }
+
+.path, .levels, .support, .modelPhoto, .boxFrame, .benefits { display: none; }
+
+footer { padding: 24px; text-align: center; background: var(--blush); color: #766e73; font-size: 10px; font-weight: 750; letter-spacing: .16em; }
+
+@media (max-width: 1120px) {
+  .header { padding: 0 28px; }
+  .siteNav { gap: 18px; }
+  .layout { grid-template-columns: 1fr; padding-bottom: 24px; background-position: 58% top; }
+  .heroPanel { min-height: 620px; }
+  .invite { width: 57%; min-height: 620px; padding-left: 32px; }
+  .card { width: calc(100% - 40px); max-width: 700px; margin: -18px auto 0; }
+}
+
+@media (max-width: 760px) {
+  .header { height: 76px; padding: 0 18px; }
+  .siteNav a:not(:nth-child(3)) { display: none; }
+  .layout { background-size: auto 650px; background-position: 61% top; }
+  .heroPanel { min-height: 650px; }
+  .invite { width: 100%; min-height: 650px; justify-content: flex-start; padding: 30px 18px 0; background: linear-gradient(180deg, rgba(255, 249, 251, .94) 0%, rgba(255, 249, 251, .75) 50%, transparent 74%); }
+  h1 { font-size: 54px; }
+  .tagline { max-width: 390px; font-size: 24px; }
+  .intro { max-width: 390px; }
+  .benefitStrip { max-width: 390px; grid-template-columns: repeat(3, 1fr); }
+  .community { font-size: 29px; }
+  .card { padding: 24px 18px; }
+  .unboxingSection { min-height: 630px; grid-template-columns: 1fr; padding: 18px; background-size: auto 630px; background-position: 27% center; }
+  .invitationVisual { min-height: 355px; }
+  .selectionCopy { padding: 8px 0; }
+  .selectionBenefits { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 520px) {
+  .siteNav { display: none; }
+  .layout { background-position: 57% top; }
+  .grid { grid-template-columns: 1fr; }
+  .field.full { grid-column: auto; }
+  .card h2 { font-size: 32px; }
+}

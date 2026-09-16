@@ -3246,7 +3246,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
     if (submit) {
       submit.textContent = selectedPayment === "nequi" ? "Enviar pago Nequi" : `Enviar pago ${money(checkoutTotal())} COP`;
       submit.disabled = selectedPayment === "stripe"
-        ? !paymentElement || !stripeCanConfirm
+        ? !checkoutActions || !paymentElement || !stripeCanConfirm || stripeSessionUpdating || !stripeSessionTotalMatchesCheckout()
         : !$("nequiReference")?.value.trim();
     }
   }
@@ -3884,8 +3884,11 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
   }
 
   function updateStripePayAvailability() {
-    $("stripePayButton").disabled = !paymentElement ||
+    $("stripePayButton").disabled = !checkoutActions ||
+      !paymentElement ||
       !stripeCanConfirm ||
+      stripeSessionUpdating ||
+      !stripeSessionTotalMatchesCheckout() ||
       !deliveryQuoteMatchesCart();
   }
 
@@ -4053,18 +4056,27 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
       checkoutElements ||
       stripeInitializing ||
       !stripePublishableKey ||
-      !cart.items.length
+      !cart.items.length ||
+      !deliverySelectionsComplete(cart)
     ) return;
     void initializeStripePaymentElement();
   }
 
   function syncPaymentInBackground() {
-    if (activeStep === "payment" && selectedPayment === "stripe") prepareStripeInBackground();
+    if (activeStep !== "payment" || selectedPayment !== "stripe" || !deliveryQuoteMatchesCart()) return;
+    if (!checkoutElements || !stripeSessionId) {
+      prepareStripeInBackground();
+      return;
+    }
+    void syncStripeCheckoutSession().catch(error => {
+      console.error("[CajaModa] Stripe Checkout update error:", error);
+      updateStripePayAvailability();
+    });
   }
 
   async function initializeStripePaymentElement() {
     const cart = readCart();
-    if (checkoutElements || stripeInitializing || !cart.items.length) return;
+    if (checkoutElements || stripeInitializing || !cart.items.length || !deliverySelectionsComplete(cart)) return;
     stripeInitializing = true;
     const errorBox = $("stripeError");
     const status = $("stripeStatus");
@@ -4078,38 +4090,61 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
       status.hidden = false;
       status.textContent = "Preparando el formulario seguro de Stripe…";
       stripeClient ||= window.Stripe(stripePublishableKey);
-      if (typeof stripeClient.elements !== "function") {
+      if (typeof stripeClient.initCheckoutElementsSdk !== "function") {
         throw new Error("No se pudo cargar la versión actual del formulario de Stripe.");
       }
-      checkoutElements = stripeClient.elements({
-        mode: "payment",
-        amount: Math.max(1, Math.round(readCart().total * 100)),
-        currency: "cop",
-        paymentMethodTypes: ["card"],
-        appearance: {
-          theme: "stripe",
-          variables: { colorPrimary: "#080808", borderRadius: "13px", fontFamily: "Inter, Arial, sans-serif" }
+      const payload = { ...checkoutPayload(), prepareOnly: true };
+      const response = await fetch(`${STORE_API_URL}/api/stripe/checkout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result?.clientSecret || !result?.sessionId) {
+        throw paymentPreparationFailure(result);
+      }
+      const expectedAmountTotal = Math.round(readCart().total * 100);
+      if (Number(result.amountTotal) !== expectedAmountTotal) {
+        throw new Error("El subtotal inicial de Stripe no coincide con el pedido.");
+      }
+      stripeSessionCartKey = "";
+      unavailableProductIds.clear();
+      incompatibleProntoItemIds.clear();
+      saveJson("cajamoda-pending-checkout", payload);
+      saveJson("cajamoda-pending-stripe-session", result.sessionId);
+      stripeSessionId = result.sessionId;
+      checkoutElements = stripeClient.initCheckoutElementsSdk({
+        clientSecret: result.clientSecret,
+        elementsOptions: {
+          appearance: {
+            theme: "stripe",
+            variables: { colorPrimary: "#080808", borderRadius: "13px", fontFamily: "Inter, Arial, sans-serif" }
+          }
         }
       });
-      paymentElement = checkoutElements.create("payment", {
+      const loaded = await checkoutElements.loadActions();
+      if (loaded?.type === "error") throw new Error(loaded.error?.message || "No pudimos cargar el pago seguro.");
+      checkoutActions = loaded.actions;
+      paymentElement = checkoutElements.createPaymentElement({
         layout: "accordion",
-        wallets: { link: "never" },
-        fields: { billingDetails: { name: "never", email: "never", phone: "never", address: "never" } }
-      });
-      paymentElement.on("ready", () => {
-        status.hidden = true;
-        syncPanelHeight();
-      });
-      paymentElement.on("change", event => {
-        stripeCanConfirm = Boolean(event?.complete);
-        if (stripeCanConfirm) errorBox.textContent = "";
-        updateStripePayAvailability();
-        renderReviewCheckout();
-        syncPanelHeight();
+        fields: { billingDetails: "never" }
       });
       paymentElement.mount("#paymentElement");
       stripeCanConfirm = false;
+      stripeSessionTotalAmount = "";
+      stripeSessionTotalMinorUnits = null;
+      stripeLastPaymentError = null;
       updateStripePayAvailability();
+      checkoutElements.on("change", session => {
+        $("stripePayButton").textContent = "Continuar a revisión";
+        applyStripeSession(session);
+        stripeCanConfirm = Boolean(session.canConfirm);
+        if (stripeCanConfirm && stripeSessionTotalMatchesCheckout()) errorBox.textContent = "";
+        updateStripePayAvailability();
+        syncPanelHeight();
+      });
+      await syncStripeCheckoutSession();
+      status.hidden = true;
       syncPanelHeight();
     } catch (error) {
       stripeCanConfirm = false;
@@ -4132,54 +4167,6 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
     }
   }
 
-  async function finalizeStripePayment() {
-    if (!checkoutElements || !paymentElement) throw new Error("El formulario de Stripe todavía está cargando.");
-    if (!validatePaymentDetails()) throw new Error("Completa tus datos de contacto y entrega.");
-    if (!deliveryQuoteMatchesCart()) {
-      await refreshDeliveryQuote({ required: true });
-    }
-    const firstName = $("customerFirstName")?.value.trim() || "";
-    const lastName = $("customerLastName")?.value.trim() || "";
-    const submitted = await checkoutElements.submit();
-    if (submitted?.error) throw submitted.error;
-    const tokenResult = await stripeClient.createConfirmationToken({
-      elements: checkoutElements,
-      params: {
-        payment_method_data: {
-          billing_details: {
-            name: `${firstName} ${lastName}`.trim(),
-            email: $("email")?.value.trim() || undefined,
-            phone: `${$("phoneCountryCode")?.value || ""}${$("customerPhone")?.value.trim() || ""}` || undefined,
-            address: billingAddress()
-          }
-        },
-        return_url: `${location.origin}/order-confirmation/`
-      }
-    });
-    if (tokenResult?.error || !tokenResult?.confirmationToken?.id) {
-      throw tokenResult?.error || new Error("No pudimos validar los datos de la tarjeta.");
-    }
-    const payload = checkoutPayload();
-    const response = await fetch(`${STORE_API_URL}/api/stripe/payment-intent`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ ...payload, confirmationTokenId: tokenResult.confirmationToken.id })
-    });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok || !result?.paymentIntentId || !result?.clientSecret) {
-      throw paymentPreparationFailure(result);
-    }
-    unavailableProductIds.clear();
-    incompatibleProntoItemIds.clear();
-    saveJson("cajamoda-pending-checkout", payload);
-    try { sessionStorage.setItem("cajamoda-confirmation-payment-intent", result.paymentIntentId); } catch {}
-    if (result.status === "requires_action") {
-      const nextAction = await stripeClient.handleNextAction({ clientSecret: result.clientSecret });
-      if (nextAction?.error) throw nextAction.error;
-    }
-    location.href = `${location.origin}/order-confirmation/?paymentIntent=${encodeURIComponent(result.paymentIntentId)}`;
-  }
-
   async function submitStripePayment() {
     if (stripeSubmitting) return;
     stripeSubmitting = true;
@@ -4190,7 +4177,10 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
     errorBox.textContent = "";
     button.textContent = "Procesando pago…";
     try {
-      await finalizeStripePayment();
+      if (!checkoutActions || !paymentElement) throw new Error("El formulario de Stripe todavía está cargando.");
+      const result = await checkoutActions.confirm();
+      if (result?.type === "error") throw result.error || result;
+      location.href = `${location.origin}/order-confirmation/?stripeSessionId=${encodeURIComponent(stripeSessionId)}`;
     } catch (error) {
       stripeSubmitting = false;
       if (![CART_ITEM_UNAVAILABLE_CODE, PRONTO_LOCATION_UNAVAILABLE_CODE].includes(error?.code)) {

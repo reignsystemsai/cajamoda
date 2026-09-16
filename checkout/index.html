@@ -1717,14 +1717,26 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
     return readCart().total + checkoutDeliveryFee();
   }
 
+  function checkoutStripeCaptureMethod(cart = readCart()) {
+    return cart.items.some(item => normalizeDeliveryMode(item.selectedDeliveryMode) === "ship")
+      ? "manual"
+      : "automatic";
+  }
+
   function syncMountedStripeAmount() {
     const cart = readCart();
     if (!cart.items.length || !checkoutElements || typeof checkoutElements.update !== "function") return;
     try {
-      checkoutElements.update({
-        amount: Math.max(1, Math.round(checkoutTotal() * 100))
+      stripeSessionUpdate = Promise.resolve(checkoutElements.update({
+        amount: Math.max(1, Math.round(checkoutTotal() * 100)),
+        captureMethod: checkoutStripeCaptureMethod(cart)
+      }));
+      stripeSessionUpdate.catch(error => {
+        console.error("[CajaModa] No se pudo actualizar el total montado de Stripe:", error);
       });
     } catch (error) {
+      stripeSessionUpdate = Promise.reject(error);
+      stripeSessionUpdate.catch(() => {});
       console.error("[CajaModa] No se pudo actualizar el total montado de Stripe:", error);
     }
   }
@@ -4088,6 +4100,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
         mode: "payment",
         amount: Math.max(1, Math.round(readCart().total * 100)),
         currency: "cop",
+        captureMethod: checkoutStripeCaptureMethod(cart),
         paymentMethodTypes: ["card"],
         appearance: {
           theme: "stripe",
@@ -4138,6 +4151,8 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
   async function finalizeStripePayment() {
     if (!checkoutElements || !paymentElement) throw new Error("El formulario de Stripe todavía está cargando.");
     if (!deliveryQuoteToken) throw new Error("Confirma nuevamente la entrega.");
+    syncMountedStripeAmount();
+    await stripeSessionUpdate;
     const firstName = $("customerFirstName")?.value.trim() || "";
     const lastName = $("customerLastName")?.value.trim() || "";
     const submitted = await checkoutElements.submit();

@@ -7064,6 +7064,23 @@ async function calculateCreatorCommission(items, commissionRate) {
       : null;
     return [productId, result?.product || result || null];
   })));
+  const verifiedCostsByProductId = new Map();
+  if (SUPABASE_URL && SUPABASE_SECRET_KEY) {
+    const historyResponse = await fetch(
+      `${SUPABASE_URL}/rest/v1/creator_commissions?status=in.(earned,batched,paid)&select=products&limit=5000`,
+      { headers: livePresenceHeaders() }
+    ).catch(() => null);
+    const historyRows = historyResponse?.ok ? await historyResponse.json().catch(() => []) : [];
+    (Array.isArray(historyRows) ? historyRows : []).forEach(row => {
+      (Array.isArray(row?.products) ? row.products : []).forEach(product => {
+        const historicalProductId = safeText(product?.productId, 80);
+        const historicalCost = product?.unitCost;
+        if (!historicalProductId || historicalCost === null || historicalCost === undefined || !Number.isFinite(Number(historicalCost))) return;
+        if (!verifiedCostsByProductId.has(historicalProductId)) verifiedCostsByProductId.set(historicalProductId, new Set());
+        verifiedCostsByProductId.get(historicalProductId).add(Math.max(0, Number(historicalCost)));
+      });
+    });
+  }
   const normalizeCreatorChoice = value => safeText(value, 100).trim().toLowerCase();
   const products = sourceItems.map(item => {
     const productId = safeText(item?.productId, 80);
@@ -7087,11 +7104,16 @@ async function calculateCreatorCommission(items, commissionRate) {
       .filter(value => value !== undefined && value !== null && Number.isFinite(Number(value)))
       .map(Number);
     const uniqueCosts = [...new Set(availableCosts)];
+    const verifiedHistoricalCosts = [...(verifiedCostsByProductId.get(productId) || [])];
     const snapshotCost = item?.unitCost;
     const rawCost = (snapshotCost !== undefined && snapshotCost !== null && Number.isFinite(Number(snapshotCost)))
       ? snapshotCost
       : variant?.revenueDetails?.cost?.amount ??
-      (uniqueCosts.length === 1 ? uniqueCosts[0] : undefined);
+      (uniqueCosts.length === 1
+        ? uniqueCosts[0]
+        : verifiedHistoricalCosts.length === 1
+          ? verifiedHistoricalCosts[0]
+          : undefined);
     const costKnown = rawCost !== undefined && rawCost !== null && Number.isFinite(Number(rawCost));
     const unitCost = costKnown ? Math.max(0, Number(rawCost)) : null;
     const unitSalePrice = Math.max(0, Number(item?.unitSalePrice ?? item?.amount ?? item?.value ?? 0));

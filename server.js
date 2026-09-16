@@ -7064,16 +7064,24 @@ async function calculateCreatorCommission(items, commissionRate) {
       : null;
     return [productId, result?.product || result || null];
   })));
+  const normalizeCreatorChoice = value => safeText(value, 100).trim().toLowerCase();
   const products = sourceItems.map(item => {
     const productId = safeText(item?.productId, 80);
     const variantId = safeText(item?.variantId, 150);
     const product = productsById.get(productId);
     const variants = Array.isArray(product?.variantsInfo?.variants) ? product.variantsInfo.variants : [];
+    const itemSku = safeText(item?.sku, 100).toUpperCase();
+    const itemSize = normalizeCreatorChoice(item?.size || item?.selectedSize);
+    const itemColor = normalizeCreatorChoice(item?.color || item?.selectedColor);
     const variant = variants.find(candidate =>
       safeText(candidate?._id || candidate?.id || candidate?.variantId, 150) === variantId
     ) || variants.find(candidate =>
-      safeText(candidate?.sku, 100).toUpperCase() === safeText(item?.sku, 100).toUpperCase()
-    );
+      itemSku && safeText(candidate?.sku, 100).toUpperCase() === itemSku
+    ) || ((itemSize || itemColor) ? variants.find(candidate => {
+      const variantSize = normalizeCreatorChoice(existingVariantSize(candidate));
+      const variantColor = normalizeCreatorChoice(existingVariantChoice(candidate, ["color", "colour"]));
+      return (!itemSize || variantSize === itemSize) && (!itemColor || variantColor === itemColor);
+    }) : null);
     const availableCosts = variants
       .map(candidate => candidate?.revenueDetails?.cost?.amount)
       .filter(value => value !== undefined && value !== null && Number.isFinite(Number(value)))
@@ -7091,13 +7099,14 @@ async function calculateCreatorCommission(items, commissionRate) {
     const operationFeePerItem = Math.round(unitSalePrice * PRODUCT_OPERATION_FEE_RATE);
     const commissionableProfitPerItem = costKnown
       ? Math.max(0, unitSalePrice - unitCost - PRODUCT_PACKAGING_COST_COP - operationFeePerItem)
-      : 0;
-    const commissionableProfit = commissionableProfitPerItem * quantity;
+      : null;
+    const commissionableProfit = costKnown ? commissionableProfitPerItem * quantity : null;
     return {
       ...item,
       quantity,
       unitSalePrice,
       unitCost,
+      costKnown,
       packagingCostPerItem: PRODUCT_PACKAGING_COST_COP,
       operationFeeRate: PRODUCT_OPERATION_FEE_RATE,
       operationFeePerItem,
@@ -7105,13 +7114,14 @@ async function calculateCreatorCommission(items, commissionRate) {
       commissionableProfit
     };
   });
-  const commissionableProfit = products.reduce(
-    (sum, item) => sum + Number(item.commissionableProfit || 0),
-    0
-  );
+  const costsKnown = products.length > 0 && products.every(product => product.costKnown === true);
+  const commissionableProfit = costsKnown
+    ? products.reduce((sum, item) => sum + Number(item.commissionableProfit || 0), 0)
+    : 0;
   return {
     products: products.slice(0, 50),
-    amount: Math.round(commissionableProfit * rate / 100)
+    amount: costsKnown ? Math.round(commissionableProfit * rate / 100) : 0,
+    costsKnown
   };
 }
 
@@ -7121,7 +7131,12 @@ function usesCurrentCreatorCommissionFormula(row) {
     product?.formulaVersion === CREATOR_COMMISSION_FORMULA_VERSION &&
     Number(product?.packagingCostPerItem) === PRODUCT_PACKAGING_COST_COP &&
     Number(product?.operationFeeRate) === PRODUCT_OPERATION_FEE_RATE &&
-    Number.isFinite(Number(product?.commissionableProfit))
+    product?.unitCost !== null &&
+    product?.unitCost !== undefined &&
+    Number.isFinite(Number(product.unitCost)) &&
+    product?.commissionableProfit !== null &&
+    product?.commissionableProfit !== undefined &&
+    Number.isFinite(Number(product.commissionableProfit))
   );
 }
 
@@ -7130,8 +7145,12 @@ async function reconcileCreatorCommissions(rows) {
     const products = Array.isArray(row?.products) ? row.products : [];
     const hasStoredLegacySnapshot = products.length > 0 && products.every(product =>
       Number.isFinite(Number(product?.unitSalePrice)) &&
-      Number.isFinite(Number(product?.unitCost)) &&
-      Number.isFinite(Number(product?.commissionableProfit))
+      product?.unitCost !== null &&
+      product?.unitCost !== undefined &&
+      Number.isFinite(Number(product.unitCost)) &&
+      product?.commissionableProfit !== null &&
+      product?.commissionableProfit !== undefined &&
+      Number.isFinite(Number(product.commissionableProfit))
     );
     if (row?.status !== "earned" || usesCurrentCreatorCommissionFormula(row) || hasStoredLegacySnapshot) return row;
     const calculated = await calculateCreatorCommission(row?.products, row?.commission_rate);
@@ -7239,7 +7258,16 @@ async function syncCreatorTier(profile, commissionBase) {
 }
 
 function creatorOwnerBreakdown(products, commissionAmount) {
-  const totals = (Array.isArray(products) ? products : []).reduce((result, product) => {
+  const sourceProducts = Array.isArray(products) ? products : [];
+  const costKnown = sourceProducts.length > 0 && sourceProducts.every(product =>
+    product?.unitCost !== null &&
+    product?.unitCost !== undefined &&
+    Number.isFinite(Number(product.unitCost)) &&
+    product?.commissionableProfit !== null &&
+    product?.commissionableProfit !== undefined &&
+    Number.isFinite(Number(product.commissionableProfit))
+  );
+  const totals = sourceProducts.reduce((result, product) => {
     const quantity = Math.max(1, Math.floor(Number(product?.quantity || 1)));
     result.salePrice += Math.max(0, Number(product?.unitSalePrice ?? product?.amount ?? 0)) * quantity;
     result.productCost += Math.max(0, Number(product?.unitCost || 0)) * quantity;
@@ -7251,12 +7279,13 @@ function creatorOwnerBreakdown(products, commissionAmount) {
   const commission = Math.max(0, Number(commissionAmount || 0));
   return {
     salePrice: Math.round(totals.salePrice),
-    productCost: Math.round(totals.productCost),
+    productCost: costKnown ? Math.round(totals.productCost) : null,
     packaging: Math.round(totals.packaging),
     operationFee: Math.round(totals.operationFee),
-    commissionBase: Math.round(totals.commissionBase),
-    commission: Math.round(commission),
-    margin: Math.max(0, Math.round(totals.commissionBase - commission))
+    commissionBase: costKnown ? Math.round(totals.commissionBase) : null,
+    commission: costKnown ? Math.round(commission) : null,
+    margin: costKnown ? Math.max(0, Math.round(totals.commissionBase - commission)) : null,
+    costKnown
   };
 }
 
@@ -7536,7 +7565,7 @@ async function getStoreOwnerCreatorSales(request, response, applicationId) {
         orderTotal: breakdown.salePrice,
         ...breakdown,
         commissionRate: Math.max(0, Number(profile.commission_rate || 0)),
-        commissionAmount: calculated.amount,
+        commissionAmount: breakdown.costKnown ? calculated.amount : null,
         amountDue: 0,
         payoutDate: payoutDate(order.date),
         status: "authorized"
@@ -7551,7 +7580,7 @@ async function getStoreOwnerCreatorSales(request, response, applicationId) {
         orderTotal: breakdown.salePrice || Math.max(0, Number(paidPurchaseByOrder.get(String(sale.order_id))?.value || sale.product_subtotal || 0)),
         ...breakdown,
         commissionRate: Math.max(0, Number(sale.commission_rate || 0)),
-        commissionAmount: Math.max(0, Number(sale.commission_amount || 0)),
+        commissionAmount: breakdown.costKnown ? Math.max(0, Number(sale.commission_amount || 0)) : null,
         amountDue: ["paid", "reversed"].includes(sale.status) ? 0 : Math.max(0, Number(sale.commission_amount || 0)),
         payoutDate: sale.paid_at || payoutDate(sale.earned_at),
         status: sale.status || "earned"

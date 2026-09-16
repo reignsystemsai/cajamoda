@@ -752,11 +752,26 @@ async function verifiedCheckoutCatalogItems(items) {
   return results.map(result => result.value);
 }
 
+function checkoutErrorDiagnostic(error, label) {
+  const raw = error?.raw || {};
+  return {
+    incidentId: crypto.randomUUID().slice(0, 8).toUpperCase(),
+    source: safeText(label, 80) || "Checkout",
+    type: safeText(error?.type || raw?.type || error?.name, 100) || "Error",
+    code: safeText(error?.code || raw?.code, 120) || "UNKNOWN",
+    declineCode: safeText(error?.decline_code || raw?.decline_code, 120),
+    param: safeText(error?.param || raw?.param, 120),
+    requestId: safeText(error?.requestId || raw?.requestId || error?.request_id, 120),
+    message: safeText(error?.message || raw?.message, 300) || CHECKOUT_SAFE_ERROR_MESSAGE
+  };
+}
+
 async function protectCheckoutOperation(response, label, operation) {
   try {
     await operation();
   } catch (error) {
-    console.error(`[Checkout ${label}]`, error);
+    const diagnostic = checkoutErrorDiagnostic(error, label);
+    console.error(`[Checkout ${label} ${diagnostic.incidentId}]`, diagnostic, error);
     if (error instanceof CartItemUnavailableError) {
       sendJson(response, 409, {
         code: CHECKOUT_ITEM_UNAVAILABLE_CODE,
@@ -775,7 +790,8 @@ async function protectCheckoutOperation(response, label, operation) {
     }
     sendJson(response, 500, {
       code: "PAYMENT_PREPARATION_FAILED",
-      message: CHECKOUT_SAFE_ERROR_MESSAGE
+      message: CHECKOUT_SAFE_ERROR_MESSAGE,
+      diagnostic
     });
   }
 }

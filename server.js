@@ -752,16 +752,43 @@ async function verifiedCheckoutCatalogItems(items) {
   return results.map(result => result.value);
 }
 
+async function checkoutOperationStage(stage, operation) {
+  try {
+    return await operation();
+  } catch (error) {
+    try { error.checkoutStage = error.checkoutStage || stage; } catch {}
+    throw error;
+  }
+}
+
 async function protectCheckoutOperation(response, label, operation) {
   try {
     await operation();
   } catch (error) {
-    console.error(`[Checkout ${label}]`, error);
+    const incidentId = `CM-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
+    const stage = safeText(error?.checkoutStage, 80) || "UNCLASSIFIED";
+    const providerCode = safeText(error?.code || error?.type, 120);
+    console.error(`[Checkout ${label}] ${incidentId}`, {
+      incidentId,
+      label,
+      stage,
+      errorName: safeText(error?.name, 120),
+      message: safeText(error?.message, 1000),
+      providerCode,
+      providerType: safeText(error?.type, 120),
+      parameter: safeText(error?.param, 200),
+      declineCode: safeText(error?.decline_code || error?.declineCode, 120),
+      stripeRequestId: safeText(error?.requestId || error?.request_id, 200),
+      stripeRequestLogUrl: safeText(error?.request_log_url, 1000),
+      stack: safeText(error?.stack, 5000)
+    });
     if (error instanceof CartItemUnavailableError) {
       sendJson(response, 409, {
         code: CHECKOUT_ITEM_UNAVAILABLE_CODE,
         message: CHECKOUT_ITEM_UNAVAILABLE_MESSAGE,
-        productIds: error.productIds
+        productIds: error.productIds,
+        incidentId,
+        stage
       });
       return;
     }
@@ -769,13 +796,18 @@ async function protectCheckoutOperation(response, label, operation) {
       sendJson(response, 409, {
         code: PRONTO_LOCATION_UNAVAILABLE_CODE,
         message: PRONTO_LOCATION_UNAVAILABLE_MESSAGE,
-        cartLineIds: error.cartLineIds
+        cartLineIds: error.cartLineIds,
+        incidentId,
+        stage
       });
       return;
     }
     sendJson(response, 500, {
       code: "PAYMENT_PREPARATION_FAILED",
-      message: CHECKOUT_SAFE_ERROR_MESSAGE
+      message: CHECKOUT_SAFE_ERROR_MESSAGE,
+      incidentId,
+      stage,
+      providerCode
     });
   }
 }
@@ -1436,12 +1468,12 @@ function stripeIntentLines(intent) {
 
 async function handleCreateStripePaymentIntent(request, response) {
   if (!stripe) return sendError(response, 503, "Stripe todavía no está configurado en el servidor.");
-  const body = await readBody(request);
+  const body = await checkoutOperationStage("REQUEST_BODY", () => readBody(request));
   const confirmationTokenId = safeText(body?.confirmationTokenId, 120);
   if (!/^ctoken_[A-Za-z0-9_]+$/.test(confirmationTokenId)) {
     return sendError(response, 400, "Los datos de la tarjeta no son válidos.");
   }
-  const checkoutSnapshot = verifiedCheckoutQuotePayload(body);
+  const checkoutSnapshot = await checkoutOperationStage("SNAPSHOT_VERIFY", () => verifiedCheckoutQuotePayload(body));
   if (!checkoutSnapshot?.lines?.length) {
     return sendError(response, 400, "Confirma nuevamente la entrega.");
   }
@@ -1450,13 +1482,13 @@ async function handleCreateStripePaymentIntent(request, response) {
     return sendError(response, 400, "Confirma nuevamente la entrega.");
   }
   const captureMethod = stripeCaptureMethod(lines);
-  const delivery = await checkoutDelivery(body, lines);
+  const delivery = await checkoutOperationStage("DELIVERY_BUILD", () => checkoutDelivery(body, lines));
   const subtotalCents = lines.reduce((sum, line) => sum + Math.round(line.amount * 100) * line.quantity, 0);
   const totalCents = subtotalCents + Math.round(Math.max(0, Number(delivery.fee || 0)) * 100);
   const customerName = safeText(body?.customer?.customerName, 160) || "Cliente CajaModa";
   const customerEmail = safeText(body?.customer?.email, 250);
   const customerPhone = safeText(body?.customer?.customerPhone, 80);
-  const intent = await stripe.paymentIntents.create({
+  const intent = await checkoutOperationStage("STRIPE_CREATE", () => stripe.paymentIntents.create({
     amount: totalCents,
     currency: "cop",
     confirm: true,
@@ -1483,7 +1515,7 @@ async function handleCreateStripePaymentIntent(request, response) {
     metadata: stripeIntentMetadata(lines, body, delivery)
   }, {
     idempotencyKey: safeText(body?.requestId, 100) || undefined
-  });
+  }));
   sendJson(response, 200, {
     ok: true,
     clientSecret: intent.client_secret,

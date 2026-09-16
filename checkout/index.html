@@ -3717,17 +3717,6 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
 
   async function refreshDeliveryQuote(options = {}) {
     const profile = checkoutFulfillmentProfile();
-    if (profile.hasPronto && !profile.hasNational && selectedDelivery === "pickup") {
-      quoteRequestVersion += 1;
-      deliveryQuotePending = false;
-      deliveryQuoteError = "";
-      deliveryQuoteToken = "";
-      deliveryQuote = { method: "pickup", prontoMethod: "pickup", fee: PICKUP_FEE_COP, title: "Pronto: Recoger en punto · 24–48 h" };
-      quoteDestinationKey = currentDeliveryQuoteKey();
-      renderPaymentTotals();
-      syncPaymentInBackground();
-      return deliveryQuote;
-    }
     if (!deliveryDestinationActive) {
       quoteRequestVersion += 1;
       deliveryQuote = null;
@@ -4134,8 +4123,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
 
   async function finalizeStripePayment() {
     if (!checkoutElements || !paymentElement) throw new Error("El formulario de Stripe todavía está cargando.");
-    if (!validatePaymentDetails()) throw new Error("Completa tus datos de contacto y entrega.");
-    if (!deliveryQuoteMatchesCart()) await refreshDeliveryQuote({ required: true });
+    if (!deliveryQuoteToken) throw new Error("Confirma nuevamente la entrega.");
     const firstName = $("customerFirstName")?.value.trim() || "";
     const lastName = $("customerLastName")?.value.trim() || "";
     const submitted = await checkoutElements.submit();

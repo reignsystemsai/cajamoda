@@ -1441,23 +1441,14 @@ async function handleCreateStripePaymentIntent(request, response) {
   if (!/^ctoken_[A-Za-z0-9_]+$/.test(confirmationTokenId)) {
     return sendError(response, 400, "Los datos de la tarjeta no son válidos.");
   }
-  const items = Array.isArray(body?.cart?.items) ? body.cart.items.slice(0, 35) : [];
-  if (!items.length) return sendError(response, 400, "Tu bolsa está vacía.");
-  const verified = await verifiedCheckoutCatalogItems(items);
-  const lines = verified.map(line => ({
-    cartLineId: safeText(line?.cartLineId, 80),
-    productId: safeText(line?.price_data?.product_data?.metadata?.productId, 80),
-    variantId: safeText(line?.price_data?.product_data?.metadata?.variantId, 80),
-    quantity: Math.max(1, Math.floor(Number(line.quantity || 1))),
-    amount: Number(line?.price_data?.unit_amount || 0) / 100,
-    name: safeText(line?.price_data?.product_data?.name, 300) || "Producto CajaModa",
-    fulfillmentCode: safeText(line?.fulfillmentCode, 10).toUpperCase(),
-    selectedDeliveryMode: safeText(line?.selectedDeliveryMode, 20).toLowerCase(),
-    sku: safeText(line?.sku, 100).toUpperCase(),
-    size: safeText(line?.size, 50),
-    color: safeText(line?.color, 100),
-    image: safeText(line?.image, 1500)
-  }));
+  const checkoutSnapshot = verifiedCheckoutQuotePayload(body);
+  if (!checkoutSnapshot?.lines?.length) {
+    return sendError(response, 400, "Confirma nuevamente la entrega.");
+  }
+  const lines = checkoutLinesFromCatalog(checkoutSnapshot.lines);
+  if (lines.some(line => !line.productId || !line.variantId || !Number.isFinite(line.amount) || line.amount < 1)) {
+    return sendError(response, 400, "Confirma nuevamente la entrega.");
+  }
   const captureMethod = stripeCaptureMethod(lines);
   const delivery = await checkoutDelivery(body, lines);
   const subtotalCents = lines.reduce((sum, line) => sum + Math.round(line.amount * 100) * line.quantity, 0);
@@ -2250,9 +2241,11 @@ function deliveryQuoteFingerprint(body, lines = []) {
 }
 
 function createDeliveryQuoteToken(body, lines, quote) {
+  const lockedLines = checkoutLinesFromCatalog(lines);
   const encoded = Buffer.from(JSON.stringify({
     expiresAt: Date.now() + (30 * 60 * 1000),
-    fingerprint: deliveryQuoteFingerprint(body, lines),
+    fingerprint: deliveryQuoteFingerprint(body, lockedLines),
+    lines: lockedLines,
     quote
   })).toString("base64url");
   const signature = crypto
@@ -2262,8 +2255,8 @@ function createDeliveryQuoteToken(body, lines, quote) {
   return `${encoded}.${signature}`;
 }
 
-function verifiedDeliveryQuoteToken(body, lines) {
-  const token = safeText(body?.delivery?.quoteToken, 20000);
+function verifiedCheckoutQuotePayload(body, lines = []) {
+  const token = safeText(body?.delivery?.quoteToken, 100000);
   if (!token) return null;
   const parts = token.split(".");
   if (parts.length !== 2) throw new Error("Confirma nuevamente la entrega.");
@@ -2282,15 +2275,21 @@ function verifiedDeliveryQuoteToken(body, lines) {
   } catch {
     throw new Error("Confirma nuevamente la entrega.");
   }
+  const lockedLines = Array.isArray(payload?.lines) && payload.lines.length ? payload.lines : lines;
   if (
     Number(payload?.expiresAt || 0) < Date.now() ||
-    payload?.fingerprint !== deliveryQuoteFingerprint(body, lines) ||
+    !lockedLines.length ||
+    payload?.fingerprint !== deliveryQuoteFingerprint(body, lockedLines) ||
     !payload?.quote ||
     !Number.isFinite(Number(payload.quote.fee))
   ) {
     throw new Error("Confirma nuevamente la entrega.");
   }
-  return payload.quote;
+  return { ...payload, lines: lockedLines };
+}
+
+function verifiedDeliveryQuoteToken(body, lines) {
+  return verifiedCheckoutQuotePayload(body, lines)?.quote || null;
 }
 
 async function handleDeliveryQuote(request, response) {
@@ -2476,16 +2475,15 @@ async function checkoutDelivery(body, lines = []) {
   };
 }
 
-async function verifiedCheckoutLines(items) {
-  const verified = await verifiedCheckoutCatalogItems(items);
+function checkoutLinesFromCatalog(verified = []) {
   return verified.map(line => ({
     cartLineId: safeText(line.cartLineId, 80),
-    productId: line.price_data.product_data.metadata.productId,
-    variantId: line.price_data.product_data.metadata.variantId,
-    quantity: line.quantity,
-    amount: Number(line.price_data.unit_amount) / 100,
-    name: line.price_data.product_data.name,
-    description: line.price_data.product_data.description || "",
+    productId: safeText(line?.price_data?.product_data?.metadata?.productId || line?.productId, 80),
+    variantId: safeText(line?.price_data?.product_data?.metadata?.variantId || line?.variantId, 80),
+    quantity: Math.max(1, Math.floor(Number(line.quantity || 1))),
+    amount: Number(line?.price_data?.unit_amount || 0) / 100 || Number(line.amount || 0),
+    name: safeText(line?.price_data?.product_data?.name || line?.name, 300) || "Producto CajaModa",
+    description: safeText(line?.price_data?.product_data?.description || line?.description, 300),
     fulfillmentCode: safeText(line.fulfillmentCode, 10).toUpperCase(),
     selectedDeliveryMode: safeText(line.selectedDeliveryMode, 20).toLowerCase(),
     sku: safeText(line.sku, 100).toUpperCase(),
@@ -2493,6 +2491,10 @@ async function verifiedCheckoutLines(items) {
     color: safeText(line.color, 100),
     image: safeText(line.image, 1500)
   }));
+}
+
+async function verifiedCheckoutLines(items) {
+  return checkoutLinesFromCatalog(await verifiedCheckoutCatalogItems(items));
 }
 
 async function handleValidateCheckoutCart(request, response) {

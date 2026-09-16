@@ -1407,10 +1407,7 @@ function stripeIntentMetadata(lines, body, delivery) {
       k: safeText(line.sku, 100).toUpperCase(),
       s: safeText(line.size, 50),
       c: safeText(line.color, 100),
-      i: safeText(wixMediaId(line.image), 150),
-      u: line.unitCost !== null && line.unitCost !== undefined && Number.isFinite(Number(line.unitCost))
-        ? Math.max(0, Number(line.unitCost))
-        : null
+      i: safeText(wixMediaId(line.image), 150)
     })).toString("base64url");
   });
   return metadata;
@@ -1432,10 +1429,7 @@ function stripeIntentLines(intent) {
       sku: safeText(item.k, 100).toUpperCase(),
       size: safeText(item.s, 50),
       color: safeText(item.c, 100),
-      image: item.i ? `https://static.wixstatic.com/media/${safeText(item.i, 150)}` : "",
-      unitCost: item.u !== null && item.u !== undefined && Number.isFinite(Number(item.u))
-        ? Math.max(0, Number(item.u))
-        : null
+      image: item.i ? `https://static.wixstatic.com/media/${safeText(item.i, 150)}` : ""
     };
   }).filter(line => line.productId && line.variantId && Number.isFinite(line.amount) && line.amount >= 1);
 }
@@ -1456,7 +1450,6 @@ async function handleCreateStripePaymentIntent(request, response) {
     variantId: safeText(line?.price_data?.product_data?.metadata?.variantId, 80),
     quantity: Math.max(1, Math.floor(Number(line.quantity || 1))),
     amount: Number(line?.price_data?.unit_amount || 0) / 100,
-    unitCost: line?.unitCost,
     name: safeText(line?.price_data?.product_data?.name, 300) || "Producto CajaModa",
     fulfillmentCode: safeText(line?.fulfillmentCode, 10).toUpperCase(),
     selectedDeliveryMode: safeText(line?.selectedDeliveryMode, 20).toLowerCase(),

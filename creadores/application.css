@@ -244,37 +244,207 @@ input::placeholder { color: #9b9599; }
   display: none;
 }
 
+.benefitIcon svg,
+.selectionIcon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 @media (max-width: 900px) {
+  html,
+  body {
+    background: #fff5f8;
+  }
+
   .shell {
     width: 100%;
-    min-height: 1080px;
+    min-height: 100vh;
     aspect-ratio: auto;
-    overflow: visible;
-    background-size: auto 560px;
-    background-position: 42% top;
+    overflow: hidden;
+    background: #fff5f8;
+  }
+
+  .header {
+    min-height: 74px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, .97);
+  }
+
+  .siteNav { display: none; }
+
+  .brandLockup {
+    width: 102px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+  }
+
+  .brandMonogram {
+    position: relative;
+    width: 74px;
+    height: 40px;
+    font-family: "Bodoni Moda", Didot, Georgia, serif;
+  }
+
+  .brandC {
+    position: absolute;
+    left: 4px;
+    top: -9px;
+    font-size: 53px;
+    line-height: 1;
+    letter-spacing: -7px;
+    transform: scaleX(.89);
+  }
+
+  .brandM {
+    position: absolute;
+    left: 31px;
+    top: 5px;
+    font-size: 38px;
+    line-height: 1;
+    letter-spacing: -5px;
+    transform: scaleX(.9);
+  }
+
+  .brandWord {
+    margin-top: 1px;
+    padding-left: 4px;
+    font: 500 8px/1 "Bodoni Moda", Didot, Georgia, serif;
+    letter-spacing: 4px;
+  }
+
+  .brandCountryRow {
+    width: 98px;
+    margin-top: 5px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .brandCountryLine { height: 1px; background: rgba(0, 0, 0, .35); }
+  .brandCountry { padding-left: 2px; font-size: 4px; font-weight: 750; letter-spacing: 2px; }
+
+  .main {
+    background: #fff5f8;
   }
 
   .main,
   .layout {
     position: static;
+    width: 100%;
+    aspect-ratio: auto;
   }
 
-  .main {
-    padding: 500px 14px 32px;
+  .layout {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .heroPanel {
+    position: relative;
+    min-height: clamp(610px, 158vw, 760px);
+    display: block;
+    overflow: hidden;
+    background:
+      linear-gradient(90deg, rgba(255, 247, 250, .96) 0%, rgba(255, 247, 250, .68) 47%, rgba(255, 247, 250, .05) 73%),
+      url('/assets/creator/application-hero-mobile.webp') center top / cover no-repeat;
+  }
+
+  .invite {
+    position: relative;
+    min-height: inherit;
+    padding: 26px 16px 20px;
+  }
+
+  .eyebrow {
+    margin: 0 0 7px;
+    color: var(--pink);
+    font-size: clamp(9px, 2.6vw, 12px);
+    font-weight: 850;
+    letter-spacing: .22em;
+  }
+
+  h1 {
+    width: 62%;
+    margin: 0;
+    font: 700 clamp(42px, 12vw, 60px)/.87 "Bodoni Moda", Didot, Georgia, serif;
+    letter-spacing: -.055em;
+  }
+
+  .tagline {
+    width: 61%;
+    margin: 10px 0 0;
+    font: 600 clamp(20px, 5.8vw, 27px)/1.02 "Bodoni Moda", Didot, Georgia, serif;
+  }
+
+  .intro {
+    width: 59%;
+    margin: 9px 0 0;
+    color: #403a3e;
+    font-size: clamp(11px, 3vw, 14px);
+    line-height: 1.35;
+  }
+
+  .benefitStrip {
+    position: absolute;
+    right: 12px;
+    bottom: 96px;
+    left: 12px;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+  }
+
+  .benefitItem {
+    color: #171317;
+    text-align: center;
+    font-size: clamp(8px, 2.1vw, 10px);
+    font-weight: 720;
+    line-height: 1.15;
+  }
+
+  .benefitIcon {
+    width: 29px;
+    height: 29px;
+    margin: 0 auto 5px;
+    display: block;
+    color: var(--pink);
+  }
+
+  .community {
+    position: absolute;
+    bottom: 24px;
+    left: 18px;
+    margin: 0;
+    color: var(--pink);
+    font: italic clamp(28px, 8vw, 38px)/.92 "Brush Script MT", cursive;
+    transform: rotate(-4deg);
   }
 
   .card {
     position: static;
-    width: 100%;
+    z-index: 2;
+    width: calc(100% - 24px);
     height: auto;
+    margin: -8px auto 24px;
     padding: 26px 18px;
     border-radius: 24px;
     background: rgba(255, 255, 255, .97);
     box-shadow: 0 20px 55px rgba(72, 35, 52, .16);
   }
 
-  .card h2 { font-size: 36px; }
-  .cardLead { margin: 7px 0 18px; font-size: 13px; }
+  .card h2 { font-size: clamp(34px, 9vw, 44px); text-align: center; }
+  .cardLead { margin: 7px 0 18px; font-size: 13px; text-align: center; }
   .grid { gap: 11px 10px; }
   .field { gap: 4px; }
   label { font-size: 11px; }
@@ -299,9 +469,52 @@ input::placeholder { color: #9b9599; }
   .successIcon { width: 68px; height: 68px; margin-bottom: 20px; font-size: 32px; }
   .success h2 { font-size: 36px; }
   .success p { margin-top: 14px; font-size: 13px; }
-}
 
-@media (max-width: 520px) {
-  .grid { grid-template-columns: 1fr; }
-  .field.full { grid-column: auto; }
-}
+  .unboxingSection {
+    display: grid;
+    grid-template-columns: 1fr;
+    padding: 0 12px 28px;
+    background: #fff5f8;
+  }
+
+  .invitationVisual {
+    min-height: clamp(245px, 72vw, 360px);
+    border-radius: 24px 24px 0 0;
+    background: url('/assets/creator/application-page-background-v2.webp') 38% bottom / auto 430px no-repeat;
+  }
+
+  .selectionCopy {
+    padding: 20px 12px 4px;
+    text-align: center;
+  }
+
+  .selectionCopy h2 {
+    margin: 0;
+    font: 700 clamp(34px, 9.5vw, 46px)/.98 "Bodoni Moda", Didot, Georgia, serif;
+    letter-spacing: -.035em;
+  }
+
+  .selectionCopy h2::first-line { color: var(--ink); }
+  .selectionCopy > p:not(.eyebrow) { display: none; }
+
+  .selectionBenefits {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+    margin-top: 18px;
+  }
+
+  .selectionBenefit {
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 10px;
+    border: 1px solid rgba(233, 0, 103, .08);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, .62);
+    color: #211b20;
+    font-size: 11px;
+    font-weight: 650;
+    line-height: 1.25;
+    text-align: left;

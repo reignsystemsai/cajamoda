@@ -7,6 +7,7 @@ const terms = readFileSync(new URL("../creators/terms/index.html", import.meta.u
 const admin = readFileSync(new URL("../admin/index.html", import.meta.url), "utf8");
 const adminScript = readFileSync(new URL("../analytics/admin.js", import.meta.url), "utf8");
 const migration = readFileSync(new URL("../supabase/migrations/202609130006_finalize_creator_agreements.sql", import.meta.url), "utf8");
+const growthMigration = readFileSync(new URL("../supabase/migrations/202609160200_creator_growth_system.sql", import.meta.url), "utf8");
 const publicEarningsExplanation = "CajaModa asigna a cada producto una base de ganancias después de considerar sus costos internos. Tus ganancias corresponden al porcentaje de tu nivel aplicado a esa base. Los costos y cálculos internos de CajaModa son confidenciales.";
 
 function protectedMargin(cost, discountPercent) {
@@ -38,9 +39,9 @@ const checks = [
   [admin.includes('id="productProfitabilitySummary"') && admin.includes('id="quickProfitabilitySummary"'), "Main and quick editors show protected profitability"],
   [protectedMargin(12014, 15) >= 0.15 && protectedMargin(12014, 20) < 0.15, "The reference product allows 15% and blocks 20% at Tier 3"],
   [portal.includes("Ganancias obtenidas") && portal.includes("Fin de mes") && portal.includes("Pago del 15"), "Creator earnings and both payout cards are present in Spanish"],
-  [portal.includes("<th>Fecha</th><th>Hora</th><th>Producto</th><th>Base de ganancias</th><th>Nivel</th><th>Ganancias</th><th>Fecha de pago</th><th>Estado</th>"), "Creator ledger contains the promised Spanish earnings-base columns"],
+  [["Fecha", "Producto", "Base de ganancias", "Nivel", "Ganancias", "Pago", "Estado"].every(value => portal.includes(`<th>${value}</th>`)), "Creator ledger contains the promised Spanish earnings-base columns"],
   [!portal.includes("Order Total") && !portal.includes("Gross Sales") && !portal.includes("product_subtotal"), "Creator portal does not expose sale totals"],
-  [portal.includes(publicEarningsExplanation) && server.includes("CREATOR_COMMISSION_EXPLANATION"), "Creator portal and transactional messages use the approved explanation"],
+  [portal.includes("base elegible de cada producto") && server.includes("CREATOR_COMMISSION_EXPLANATION"), "Creator portal and transactional messages retain the private earnings-base explanation"],
   [server.includes("function creatorVisibleProducts(products)") && server.includes("products: creatorVisibleProducts(row.products)") && server.includes("commission_base: creatorCommissionBase(row.products)") && server.includes("tier: {") && !/sales: rows\.map[\s\S]{0,800}(?:unitCost|packagingCost|operationFee|product_subtotal|commission_rate:)/.test(server), "Creator API returns only the approved private-safe commission fields"],
   [server.includes("function creatorOwnerBreakdown(products, commissionAmount)") && admin.includes("Product Cost") && admin.includes("Commission Base") && adminScript.includes("sale.productCost") && adminScript.includes("sale.margin"), "Owner ledger retains the full private breakdown"],
   [server.includes("const itemSize = normalizeCreatorChoice") && server.includes("existingVariantSize(candidate)") && server.includes("existingVariantChoice(candidate"), "Network Manager resolves Wix variants by ID, SKU, or selected options"],
@@ -51,9 +52,13 @@ const checks = [
   [portal.includes('lang="es"') && acceptance.includes('lang="es"'), "The complete creator experience is Spanish"],
   [server.includes("function creatorValidCommissionBase(rows)") && server.includes("creatorCommissionBase(row?.products)") && server.includes("eligibleCommissionBaseTotal") && !server.includes("lifetimeProductSales"), "Tier gates use only cumulative private-safe commission base"],
   [portal.includes('id="photoInput"') && server.includes('/api/creators/profile-photo') && server.includes("creatorProfilePhotoUrl") && adminScript.includes("creator.profilePhotoUrl"), "Creator profile photo upload appears in creator and owner views"],
-  [!portal.includes('id="tier"') && portal.includes("TU CAMINO DE GANANCIAS") && portal.includes("COP 0–299.999") && portal.includes("COP 300.000–999.999") && portal.includes("COP 1.000.000+") && portal.includes("isNudging"), "Creator shows one dynamic current-level bar with all three earnings requirements"],
+  [portal.includes("TU PRÓXIMA META") && portal.includes('id="progressFill"') && portal.includes("NIVEL 3 DESBLOQUEADO") && portal.includes("CajaModa Unboxing Experience"), "Creator shows dynamic milestone progress and unlock states"],
   [server.includes("creatorUpcomingPayoutBuckets") && portal.includes("VENTAS ANTERIORES") && portal.includes('<details class="period" open>'), "Current pay-period sales and collapsed prior-period archive are wired"],
-  [![portal, acceptance, terms].some(page => /comisi[oó]n/i.test(page)), "Creator pages use earnings language without commission wording"]
+  [portal.includes("Centro de Marketing") && portal.includes("Recompensas") && portal.includes("Mis ventas") && portal.includes("Mi perfil"), "Creator dashboard includes the complete Spanish growth navigation"],
+  [growthMigration.includes("creator_marketing_assets") && growthMigration.includes("creator_reward_state") && growthMigration.includes("enable row level security") && growthMigration.includes("grant select, insert, update, delete") && !growthMigration.includes("grant select, insert, update, delete on table public.creator_marketing_assets to anon"), "Creator growth persistence is backend-only with RLS"],
+  [server.includes("creatorEligibleMarketingAssets") && server.includes("minimum_tier") && server.includes("asset.start_at") && server.includes("asset.end_at") && server.includes("cityMatch"), "Marketing assets are filtered by level, city, dates, and active status"],
+  [admin.includes("Marketing Library") && adminScript.includes("Create Asset") === false && adminScript.includes("renderMarketingAssets") && adminScript.includes("data-toggle-asset"), "Network Manager includes Marketing Library controls"],
+  [server.includes("cityCampaignEligible") && server.includes("leadershipEventEligible") && portal.includes("Elegible para consideración"), "Campaign and event benefits are presented as consideration, not guarantees"]
 ];
 
 let failed = false;

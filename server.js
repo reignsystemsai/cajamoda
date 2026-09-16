@@ -161,6 +161,7 @@ const CREATOR_COMMISSION_FORMULA_VERSION = "2026-09-15-operation-fee";
 const CREATOR_TIER_2_SALES_COP = 300000;
 const CREATOR_TIER_3_SALES_COP = 1000000;
 const CREATOR_PROFILE_PHOTO_BUCKET = "creator-profile-photos";
+const CREATOR_MARKETING_BUCKET = "creator-marketing-assets";
 
 const stripe = STRIPE_SECRET_KEY
   ? new Stripe(STRIPE_SECRET_KEY)
@@ -6355,7 +6356,7 @@ function creatorApplicationEmailHtml(firstName) {
         <tr><td align="center" style="padding:34px 34px 18px">
           <div style="color:#d1005a;font-size:11px;font-weight:700;letter-spacing:4px">TU SOLICITUD YA ESTÁ BRILLANDO ✦</div>
           <h1 style="margin:14px 0 16px;font-family:Georgia,'Times New Roman',serif;font-size:34px;font-weight:400;line-height:1.15">Hola ${name},</h1>
-          <p style="margin:0;color:#393139;font-size:16px;line-height:1.65">Gracias por considerar formar parte del programa de creadoras CajaModa. Estamos verificando tu número de WhatsApp y tus perfiles de Instagram o TikTok.</p>
+          <p style="margin:0;color:#393139;font-size:16px;line-height:1.65">Recibimos tu solicitud para formar parte del Programa de Creadoras CajaModa. Si eres seleccionada, tendrás tu propio enlace, un Centro de Marketing y recompensas que crecen con tus ventas, con el respaldo del marketing nacional de CajaModa.</p>
           <div style="display:inline-block;margin:22px 0 12px;padding:12px 24px;border-radius:999px;background:#111111;color:#ffffff;font-size:12px;font-weight:700;letter-spacing:2px">RESPUESTA EN 24 A 48 HORAS</div>
           <p style="margin:0;color:#6e6269;font-size:13px;line-height:1.5">Te enviaremos otro correo si has sido seleccionada.</p>
         </td></tr>
@@ -6371,7 +6372,7 @@ function creatorApplicationEmailHtml(firstName) {
         </td></tr>
         <tr><td align="center" style="padding:0 34px 32px">
           <div style="color:#d1005a;font-size:10px;font-weight:700;letter-spacing:3px">SI ERES SELECCIONADA, PODRÍAS</div>
-          <p style="margin:14px 0 0;color:#2c252a;font-size:14px;line-height:1.75">✦ Aparecer en campañas de CajaModa<br>✦ Acceder a descuentos exclusivos<br>✦ Participar en eventos especiales</p>
+          <p style="margin:14px 0 0;color:#2c252a;font-size:14px;line-height:1.75">✦ Tener tu propio enlace personal<br>✦ Acceder al Centro de Marketing<br>✦ Ganar comisiones por tus ventas<br>✦ Desbloquear recompensas al crecer<br>✦ Recibir apoyo de campañas nacionales CajaModa</p>
         </td></tr>
         <tr><td align="center" style="padding:28px 24px;background:#171217;color:#ffffff">
           <div style="font-family:Georgia,'Times New Roman',serif;font-size:18px;letter-spacing:3px">CAJAMODA COLOMBIA</div>
@@ -6602,7 +6603,7 @@ async function getCreatorApplications() {
     "creator_slug", "tier", "commission_rate", "approved_at", "reviewed_at",
     "confirmation_email_status"
   ].join(",");
-  const [applicationsResponse, eventsResponse, profilesResponse, commissionsResponse] = await Promise.all([
+  const [applicationsResponse, eventsResponse, profilesResponse, commissionsResponse, rewardsResponse] = await Promise.all([
     fetch(
       `${SUPABASE_URL}/rest/v1/creator_applications?select=${fields}&order=created_at.desc&limit=100`,
       { headers }
@@ -6612,7 +6613,8 @@ async function getCreatorApplications() {
       { headers }
     ),
     fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?select=id,application_id,status,agreement_version,agreement_accepted_at`, { headers }),
-    fetch(`${SUPABASE_URL}/rest/v1/creator_commissions?select=creator_id,commission_amount,status,earned_at,paid_at&limit=5000`, { headers })
+    fetch(`${SUPABASE_URL}/rest/v1/creator_commissions?select=creator_id,commission_amount,products,status,earned_at,paid_at&limit=5000`, { headers }),
+    fetch(`${SUPABASE_URL}/rest/v1/creator_reward_state?select=creator_id,unboxing_status`, { headers })
   ]);
   if (!applicationsResponse.ok) {
     const detail = await applicationsResponse.text().catch(() => "");
@@ -6638,6 +6640,8 @@ async function getCreatorApplications() {
     if (!commissionsByCreator.has(commission.creator_id)) commissionsByCreator.set(commission.creator_id, []);
     commissionsByCreator.get(commission.creator_id).push(commission);
   }
+  const rewardRows = rewardsResponse.ok ? await rewardsResponse.json().catch(() => []) : [];
+  const rewardsByCreator = new Map((Array.isArray(rewardRows) ? rewardRows : []).map(row => [row.creator_id, row]));
   const metrics = new Map();
   for (const event of Array.isArray(events) ? events : []) {
     const slug = safeText(event?.campaign, 120);
@@ -6660,6 +6664,8 @@ async function getCreatorApplications() {
     const commissionDue = creatorCommissions.filter(row => ["earned", "batched"].includes(row.status)).reduce((sum, row) => sum + Number(row.commission_amount || 0), 0);
     const nextPayoutAt = creatorCommissions.filter(row => ["earned", "batched"].includes(row.status)).map(row => creatorPayoutDate(row.earned_at)).filter(Boolean).sort()[0] || null;
     const lifetimePaid = creatorCommissions.filter(row => row.status === "paid").reduce((sum, row) => sum + Number(row.commission_amount || 0), 0);
+    const qualifiedCreatorSales = creatorValidCommissionBase(creatorCommissions);
+    const growth = creatorGrowthState(qualifiedCreatorSales, rewardsByCreator.get(creatorProfile?.id));
     return {
       ...application,
       onboarding_status: creatorProfile?.status || null,
@@ -6669,6 +6675,13 @@ async function getCreatorApplications() {
       commission_due: commissionDue,
       next_payout_at: nextPayoutAt,
       lifetime_paid: lifetimePaid,
+      qualified_creator_sales: growth.qualifiedCreatorSales,
+      next_milestone: growth.nextMilestone,
+      amount_remaining: growth.amountRemaining,
+      unboxing_status: growth.unboxingStatus,
+      creator_discount_percent: growth.creatorDiscountPercent,
+      city_campaign_eligible: growth.cityCampaignEligible,
+      leadership_event_eligible: growth.leadershipEventEligible,
       visits,
       paid_orders: paidOrders,
       sales_total: salesTotal,
@@ -6753,7 +6766,7 @@ async function approveCreatorAndSendInvite(application) {
     subject: "Fuiste seleccionada para ser creadora CajaModa",
     banner: "ESTÁS INVITADA ✦",
     heading: "¡Fuiste seleccionada!",
-    message: `${CREATOR_COMMISSION_EXPLANATION} Acepta la invitación para conocer tu nivel, firmar el acuerdo y elegir cómo recibir tus pagos.`,
+    message: `Ya eres parte de la comunidad de Creadoras CajaModa. Tendrás tu enlace personal, un Centro de Marketing con contenido listo para compartir, comisiones que crecen por nivel y recompensas al alcanzar tus metas. CajaModa te respalda con campañas nacionales, promoción de productos y visibilidad de marca. Acepta la invitación para firmar tu acuerdo y activar tu cuenta.`,
     buttonLabel: "ACEPTAR INVITACIÓN",
     buttonUrl: creatorAccessUrl("/creators/accept/", token),
     note: "Este enlace es personal y estará disponible durante 48 horas.",
@@ -7279,6 +7292,118 @@ async function syncCreatorTier(profile, commissionBase) {
   return { ...profile, ...updates };
 }
 
+function creatorGrowthState(commissionBase, rewardState = {}) {
+  const total = Math.max(0, Math.round(Number(commissionBase || 0)));
+  const progress = creatorTierProgress(total);
+  const level2 = total >= CREATOR_TIER_2_SALES_COP;
+  const level3 = total >= CREATOR_TIER_3_SALES_COP;
+  const automaticUnboxing = level2 ? "earned" : "locked";
+  const storedUnboxing = ["locked", "earned", "preparing", "sent"].includes(rewardState?.unboxing_status)
+    ? rewardState.unboxing_status
+    : automaticUnboxing;
+  return {
+    qualifiedCreatorSales: total,
+    nextMilestone: progress.nextTarget,
+    amountRemaining: progress.remaining,
+    unboxingStatus: level2 && storedUnboxing === "locked" ? "earned" : storedUnboxing,
+    creatorDiscountPercent: level3 ? 15 : 0,
+    cityCampaignEligible: level3,
+    leadershipEventEligible: level3
+  };
+}
+
+async function creatorRewardState(profile, commissionBase, { notify = false } = {}) {
+  const base = creatorGrowthState(commissionBase);
+  const created = await fetch(`${SUPABASE_URL}/rest/v1/creator_reward_state?on_conflict=creator_id`, {
+    method: "POST",
+    headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "resolution=ignore-duplicates,return=minimal" }),
+    body: JSON.stringify({ creator_id: profile.id, unboxing_status: base.unboxingStatus })
+  });
+  if (!created.ok) throw new Error("No pudimos cargar las recompensas de la creadora.");
+  const currentResponse = await fetch(`${SUPABASE_URL}/rest/v1/creator_reward_state?creator_id=eq.${encodeURIComponent(profile.id)}&select=*&limit=1`, { headers: livePresenceHeaders() });
+  const currentRows = currentResponse.ok ? await currentResponse.json().catch(() => []) : [];
+  let current = Array.isArray(currentRows) ? currentRows[0] || {} : {};
+  if (base.unboxingStatus === "earned" && current.unboxing_status === "locked") {
+    const updated = await fetch(`${SUPABASE_URL}/rest/v1/creator_reward_state?creator_id=eq.${encodeURIComponent(profile.id)}&unboxing_status=eq.locked`, {
+      method: "PATCH",
+      headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "return=representation" }),
+      body: JSON.stringify({ unboxing_status: "earned", updated_at: new Date().toISOString() })
+    });
+    const rows = updated.ok ? await updated.json().catch(() => []) : [];
+    if (Array.isArray(rows) && rows[0]) current = rows[0];
+  }
+  if (notify && profile?.email) {
+    const milestones = [
+      { reached: commissionBase >= CREATOR_TIER_2_SALES_COP, column: "level2_notified_at", level: 2, subject: "¡Desbloqueaste el Nivel 2 de CajaModa!", heading: "¡DESBLOQUEADO!", message: "Alcanzaste COP 300.000 en base de ganancias. Tu CajaModa Unboxing Experience está ganada y ahora ganas 20%. Sigue usando tu Centro de Marketing para avanzar hacia el Nivel 3." },
+      { reached: commissionBase >= CREATOR_TIER_3_SALES_COP, column: "level3_notified_at", level: 3, subject: "¡Desbloqueaste el Nivel 3 de CajaModa!", heading: "NIVEL 3 DESBLOQUEADO", message: "Alcanzaste COP 1.000.000 en base de ganancias. Ahora ganas 30%, tienes 15% de Descuento Creadora y eres elegible para consideración en campañas de ciudad, eventos y oportunidades especiales." }
+    ];
+    for (const milestone of milestones) {
+      if (!milestone.reached || current?.[milestone.column]) continue;
+      const timestamp = new Date().toISOString();
+      const claimed = await fetch(`${SUPABASE_URL}/rest/v1/creator_reward_state?creator_id=eq.${encodeURIComponent(profile.id)}&${milestone.column}=is.null`, {
+        method: "PATCH",
+        headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "return=representation" }),
+        body: JSON.stringify({ [milestone.column]: timestamp, updated_at: timestamp })
+      });
+      const claimedRows = claimed.ok ? await claimed.json().catch(() => []) : [];
+      if (!Array.isArray(claimedRows) || !claimedRows.length) continue;
+      current = claimedRows[0];
+      await sendCreatorTransactionalEmail({
+        firstName: profile.first_name,
+        lastName: profile.last_name,
+        email: profile.email,
+        subject: milestone.subject,
+        banner: `NIVEL ${milestone.level} ✦`,
+        heading: milestone.heading,
+        message: milestone.message,
+        buttonLabel: "IR A MI PANEL",
+        buttonUrl: `${STOREFRONT_URL}/creators/`,
+        note: "CajaModa te respalda con herramientas, campañas y contenido para ayudarte a seguir creciendo.",
+        idempotencyKey: `creator-level-${milestone.level}-${profile.id}`
+      }).catch(error => console.error(`[Creator milestone] Level ${milestone.level} email failed:`, error));
+    }
+  }
+  return { ...current, ...creatorGrowthState(commissionBase, current) };
+}
+
+async function creatorMarketingSignedUrl(path) {
+  const objectPath = creatorStorageObjectPath(path);
+  if (!objectPath) return null;
+  const signed = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/${CREATOR_MARKETING_BUCKET}/${objectPath}`, {
+    method: "POST",
+    headers: livePresenceHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ expiresIn: 3600 })
+  });
+  if (!signed.ok) return null;
+  const payload = await signed.json().catch(() => ({}));
+  const signedPath = safeText(payload?.signedURL || payload?.signedUrl, 2000);
+  return signedPath ? new URL(signedPath, SUPABASE_URL).toString() : null;
+}
+
+async function creatorMarketingAssetView(asset) {
+  return {
+    ...asset,
+    media_url: await creatorMarketingSignedUrl(asset?.media_path),
+    thumbnail_url: await creatorMarketingSignedUrl(asset?.thumbnail_path)
+  };
+}
+
+async function creatorEligibleMarketingAssets(profile) {
+  const query = new URLSearchParams({ select: "*", status: "eq.active", minimum_tier: `lte.${Math.max(1, Number(profile?.tier || 1))}`, order: "created_at.desc", limit: "250" });
+  const result = await fetch(`${SUPABASE_URL}/rest/v1/creator_marketing_assets?${query}`, { headers: livePresenceHeaders() });
+  if (!result.ok) return [];
+  const rows = await result.json().catch(() => []);
+  const moment = Date.now();
+  const city = safeText(profile?.city, 120).toLowerCase();
+  const eligible = (Array.isArray(rows) ? rows : []).filter(asset => {
+    const cityMatch = !asset.city || safeText(asset.city, 120).toLowerCase() === city;
+    const started = !asset.start_at || new Date(asset.start_at).getTime() <= moment;
+    const notEnded = !asset.end_at || new Date(asset.end_at).getTime() >= moment;
+    return cityMatch && started && notEnded;
+  });
+  return Promise.all(eligible.map(creatorMarketingAssetView));
+}
+
 function creatorOwnerBreakdown(products, commissionAmount) {
   const sourceProducts = Array.isArray(products) ? products : [];
   const costKnown = sourceProducts.length > 0 && sourceProducts.every(product =>
@@ -7384,6 +7509,143 @@ async function deleteCreatorProfilePhoto(request, response) {
   sendJson(response, 200, { ok: true, profilePhotoUrl: null });
 }
 
+function creatorMarketingAssetRecord(body = {}) {
+  const type = safeText(body.assetType || body.asset_type, 30).toLowerCase();
+  if (!["reel", "story", "photo", "whatsapp", "caption", "campaign", "guide"].includes(type)) throw new Error("Choose a valid asset type.");
+  const title = safeText(body.title, 180);
+  if (!title) throw new Error("Asset title is required.");
+  const status = safeText(body.status, 20).toLowerCase() === "active" ? "active" : "inactive";
+  const tier = Math.max(1, Math.min(3, Math.round(Number(body.minimumTier || body.minimum_tier || 1))));
+  const value = {
+    title,
+    asset_type: type,
+    suggested_text: safeText(body.suggestedText ?? body.suggested_text, 5000) || null,
+    related_product_id: safeText(body.relatedProductId ?? body.related_product_id, 180) || null,
+    related_product_name: safeText(body.relatedProductName ?? body.related_product_name, 300) || null,
+    related_product_url: safeText(body.relatedProductUrl ?? body.related_product_url, 2000) || null,
+    campaign: safeText(body.campaign, 180) || null,
+    city: safeText(body.city, 120) || null,
+    minimum_tier: tier,
+    start_at: body.startAt || body.start_at ? new Date(body.startAt || body.start_at).toISOString() : null,
+    end_at: body.endAt || body.end_at ? new Date(body.endAt || body.end_at).toISOString() : null,
+    status,
+    updated_at: new Date().toISOString()
+  };
+  if (value.start_at && value.end_at && new Date(value.end_at) < new Date(value.start_at)) throw new Error("End date must be after start date.");
+  return value;
+}
+
+function creatorMarketingFile(value, name = "asset") {
+  if (!value) return null;
+  const match = String(value).match(/^data:(image\/(?:jpeg|png|webp)|video\/mp4|application\/pdf);base64,([A-Za-z0-9+/=]+)$/);
+  if (!match) throw new Error("Use JPG, PNG, WebP, MP4, or PDF.");
+  const bytes = Buffer.from(match[2], "base64");
+  if (!bytes.length || bytes.length > 25 * 1024 * 1024) throw new Error("The file must be smaller than 25 MB.");
+  const fallback = match[1] === "image/jpeg" ? "jpg" : match[1] === "application/pdf" ? "pdf" : match[1].split("/")[1];
+  const cleanName = safeText(name, 180).replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || `asset.${fallback}`;
+  return { bytes, contentType: match[1], fileName: cleanName.includes(".") ? cleanName : `${cleanName}.${fallback}` };
+}
+
+async function uploadCreatorMarketingFile(assetId, value, name, label) {
+  const file = creatorMarketingFile(value, name);
+  if (!file) return null;
+  const path = `${assetId}/${label}-${Date.now()}-${file.fileName}`;
+  const upload = await fetch(`${SUPABASE_URL}/storage/v1/object/${CREATOR_MARKETING_BUCKET}/${creatorStorageObjectPath(path)}`, {
+    method: "POST",
+    headers: livePresenceHeaders({ "Content-Type": file.contentType, "x-upsert": "true" }),
+    body: file.bytes
+  });
+  if (!upload.ok) throw new Error("The marketing file could not be uploaded.");
+  return path;
+}
+
+async function getStoreOwnerMarketingAssets(request, response) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Sign in to Store Loader.");
+  if (!isPlatformAdmin(request)) return sendError(response, 403, "Marketing Library is reserved for CajaModa administration.");
+  const result = await fetch(`${SUPABASE_URL}/rest/v1/creator_marketing_assets?select=*&order=created_at.desc&limit=500`, { headers: livePresenceHeaders() });
+  if (!result.ok) return sendError(response, 503, "Marketing Library is temporarily unavailable.");
+  const rows = await result.json().catch(() => []);
+  sendJson(response, 200, { ok: true, assets: await Promise.all((Array.isArray(rows) ? rows : []).map(creatorMarketingAssetView)) });
+}
+
+async function createStoreOwnerMarketingAsset(request, response) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Sign in to Store Loader.");
+  if (!isPlatformAdmin(request)) return sendError(response, 403, "Marketing Library is reserved for CajaModa administration.");
+  const body = await readBody(request);
+  let record;
+  try { record = creatorMarketingAssetRecord(body); }
+  catch (error) { return sendError(response, 400, error.message); }
+  const id = crypto.randomUUID();
+  try {
+    record.id = id;
+    record.media_path = await uploadCreatorMarketingFile(id, body.mediaData, body.mediaName, "media");
+    record.thumbnail_path = await uploadCreatorMarketingFile(id, body.thumbnailData, body.thumbnailName, "thumbnail");
+  } catch (error) { return sendError(response, 400, error.message); }
+  const result = await fetch(`${SUPABASE_URL}/rest/v1/creator_marketing_assets`, {
+    method: "POST",
+    headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "return=representation" }),
+    body: JSON.stringify(record)
+  });
+  const rows = await result.json().catch(() => []);
+  if (!result.ok) return sendError(response, 503, "The marketing asset could not be saved.");
+  sendJson(response, 201, { ok: true, asset: await creatorMarketingAssetView(rows[0] || record) });
+}
+
+async function updateStoreOwnerMarketingAsset(request, response, assetId) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Sign in to Store Loader.");
+  if (!isPlatformAdmin(request)) return sendError(response, 403, "Marketing Library is reserved for CajaModa administration.");
+  const body = await readBody(request);
+  let record;
+  try {
+    record = creatorMarketingAssetRecord(body);
+    const mediaPath = await uploadCreatorMarketingFile(assetId, body.mediaData, body.mediaName, "media");
+    const thumbnailPath = await uploadCreatorMarketingFile(assetId, body.thumbnailData, body.thumbnailName, "thumbnail");
+    if (mediaPath) record.media_path = mediaPath;
+    if (thumbnailPath) record.thumbnail_path = thumbnailPath;
+  } catch (error) { return sendError(response, 400, error.message); }
+  const result = await fetch(`${SUPABASE_URL}/rest/v1/creator_marketing_assets?id=eq.${encodeURIComponent(assetId)}`, {
+    method: "PATCH",
+    headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "return=representation" }),
+    body: JSON.stringify(record)
+  });
+  const rows = await result.json().catch(() => []);
+  if (!result.ok || !rows[0]) return sendError(response, result.ok ? 404 : 503, result.ok ? "Marketing asset not found." : "The marketing asset could not be updated.");
+  sendJson(response, 200, { ok: true, asset: await creatorMarketingAssetView(rows[0]) });
+}
+
+async function deleteStoreOwnerMarketingAsset(request, response, assetId) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Sign in to Store Loader.");
+  if (!isPlatformAdmin(request)) return sendError(response, 403, "Marketing Library is reserved for CajaModa administration.");
+  const lookup = await fetch(`${SUPABASE_URL}/rest/v1/creator_marketing_assets?id=eq.${encodeURIComponent(assetId)}&select=media_path,thumbnail_path&limit=1`, { headers: livePresenceHeaders() });
+  const rows = lookup.ok ? await lookup.json().catch(() => []) : [];
+  const asset = Array.isArray(rows) ? rows[0] : null;
+  if (!asset) return sendError(response, 404, "Marketing asset not found.");
+  const removed = await fetch(`${SUPABASE_URL}/rest/v1/creator_marketing_assets?id=eq.${encodeURIComponent(assetId)}`, { method: "DELETE", headers: livePresenceHeaders({ Prefer: "return=minimal" }) });
+  if (!removed.ok) return sendError(response, 503, "The marketing asset could not be deleted.");
+  await Promise.all([asset.media_path, asset.thumbnail_path].filter(Boolean).map(path => fetch(`${SUPABASE_URL}/storage/v1/object/${CREATOR_MARKETING_BUCKET}/${creatorStorageObjectPath(path)}`, { method: "DELETE", headers: livePresenceHeaders() }).catch(() => null)));
+  sendJson(response, 200, { ok: true });
+}
+
+async function updateCreatorRewardState(request, response, applicationId) {
+  if (!isAuthorized(request)) return sendError(response, 401, "Sign in to Store Loader.");
+  if (!isPlatformAdmin(request)) return sendError(response, 403, "Creator rewards are reserved for CajaModa administration.");
+  const body = await readBody(request);
+  const status = safeText(body.unboxingStatus, 30).toLowerCase();
+  if (!["locked", "earned", "preparing", "sent"].includes(status)) return sendError(response, 400, "Choose a valid unboxing status.");
+  const profilesResponse = await fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?application_id=eq.${encodeURIComponent(applicationId)}&select=id&limit=1`, { headers: livePresenceHeaders() });
+  const profiles = profilesResponse.ok ? await profilesResponse.json().catch(() => []) : [];
+  const profile = Array.isArray(profiles) ? profiles[0] : null;
+  if (!profile) return sendError(response, 404, "Creator profile not found.");
+  const saved = await fetch(`${SUPABASE_URL}/rest/v1/creator_reward_state?on_conflict=creator_id`, {
+    method: "POST",
+    headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=representation" }),
+    body: JSON.stringify({ creator_id: profile.id, unboxing_status: status, updated_at: new Date().toISOString() })
+  });
+  const rows = await saved.json().catch(() => []);
+  if (!saved.ok) return sendError(response, 503, "The unboxing status could not be updated.");
+  sendJson(response, 200, { ok: true, reward: rows[0] || null });
+}
+
 async function getCreatorPortal(request, response) {
   const profile = await creatorProfileForSession(request);
   if (!profile) return sendError(response, 401, "Inicia sesión como creadora.");
@@ -7397,6 +7659,10 @@ async function getCreatorPortal(request, response) {
   const lifetimeCommissionBase = creatorValidCommissionBase(rows);
   const activeProfile = await syncCreatorTier(profile, lifetimeCommissionBase);
   const tierProgress = creatorTierProgress(lifetimeCommissionBase);
+  const [rewards, marketingAssets] = await Promise.all([
+    creatorRewardState(activeProfile, lifetimeCommissionBase, { notify: true }),
+    creatorEligibleMarketingAssets(activeProfile)
+  ]);
   const totals = rows.reduce((result, row) => {
     const amount = Number(row.commission_amount || 0);
     if (row.status !== "reversed") result.earned += amount;
@@ -7423,6 +7689,7 @@ async function getCreatorPortal(request, response) {
     creator: {
       firstName: profile.first_name,
       lastName: profile.last_name,
+      city: profile.city || null,
       slug: profile.slug,
       tier: activeProfile.tier,
       commissionRate: activeProfile.commission_rate,
@@ -7433,6 +7700,8 @@ async function getCreatorPortal(request, response) {
     },
     totals,
     tierProgress,
+    rewards,
+    marketingAssets,
     payoutBuckets,
     sales: rows.map(row => ({
       products: creatorVisibleProducts(row.products),
@@ -7681,7 +7950,7 @@ async function recordCreatorCommission({ orderId, paymentMethod, productSubtotal
     if (safeText(context?.source, 80).toLowerCase() === "creator") slug = creatorSlug(context?.campaign);
   }
   if (!slug) return null;
-  const profileResponse = await fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?slug=eq.${encodeURIComponent(slug)}&status=eq.active&select=id,application_id,tier,commission_rate&limit=1`, { headers: livePresenceHeaders() });
+  const profileResponse = await fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?slug=eq.${encodeURIComponent(slug)}&status=eq.active&select=id,application_id,first_name,last_name,email,city,tier,commission_rate&limit=1`, { headers: livePresenceHeaders() });
   const profiles = profileResponse.ok ? await profileResponse.json().catch(() => []) : [];
   const profile = Array.isArray(profiles) ? profiles[0] : null;
   if (!profile) return null;
@@ -7693,7 +7962,9 @@ async function recordCreatorCommission({ orderId, paymentMethod, productSubtotal
   const rows = Array.isArray(history) ? history : [];
   const existing = rows.find(row => String(row?.order_id || "") === String(orderId));
   if (existing) {
-    await syncCreatorTier(profile, creatorValidCommissionBase(rows));
+    const total = creatorValidCommissionBase(rows);
+    const synced = await syncCreatorTier(profile, total);
+    await creatorRewardState(synced, total, { notify: true });
     return Math.max(0, Number(existing.commission_amount || 0));
   }
   const lifetimeCommissionBase = creatorValidCommissionBase(rows);
@@ -7719,7 +7990,9 @@ async function recordCreatorCommission({ orderId, paymentMethod, productSubtotal
     console.error("[Creator commission] Could not record commission:", result.status, detail);
     return null;
   }
-  await syncCreatorTier(activeProfile, lifetimeCommissionBase + creatorCommissionBase(calculated.products));
+  const newLifetimeCommissionBase = lifetimeCommissionBase + creatorCommissionBase(calculated.products);
+  const syncedProfile = await syncCreatorTier(activeProfile, newLifetimeCommissionBase);
+  await creatorRewardState(syncedProfile, newLifetimeCommissionBase, { notify: true });
   return amount;
 }
 
@@ -9449,6 +9722,26 @@ const server =
           return;
         }
 
+        if(request.method === "GET" && url.pathname === "/api/store-owner/creator-marketing-assets"){
+          await getStoreOwnerMarketingAssets(request,response);
+          return;
+        }
+
+        if(request.method === "POST" && url.pathname === "/api/store-owner/creator-marketing-assets"){
+          await createStoreOwnerMarketingAsset(request,response);
+          return;
+        }
+
+        const creatorMarketingAssetMatch = url.pathname.match(/^\/api\/store-owner\/creator-marketing-assets\/([0-9a-f-]+)$/i);
+        if(request.method === "PATCH" && creatorMarketingAssetMatch){
+          await updateStoreOwnerMarketingAsset(request,response,creatorMarketingAssetMatch[1]);
+          return;
+        }
+        if(request.method === "DELETE" && creatorMarketingAssetMatch){
+          await deleteStoreOwnerMarketingAsset(request,response,creatorMarketingAssetMatch[1]);
+          return;
+        }
+
         const publicCreatorLinkMatch = url.pathname.match(/^\/api\/creator-links\/([a-z0-9]+(?:-[a-z0-9]+)*)$/i);
         if(request.method === "GET" && publicCreatorLinkMatch){
           await getPublicCreatorLink(request,response,publicCreatorLinkMatch[1]);
@@ -9468,6 +9761,12 @@ const server =
         const creatorSalesMatch = url.pathname.match(/^\/api\/store-owner\/creator-applications\/([0-9a-f-]+)\/sales$/i);
         if(request.method === "GET" && creatorSalesMatch){
           await getStoreOwnerCreatorSales(request,response,creatorSalesMatch[1]);
+          return;
+        }
+
+        const creatorRewardsMatch = url.pathname.match(/^\/api\/store-owner\/creator-applications\/([0-9a-f-]+)\/rewards$/i);
+        if(request.method === "PATCH" && creatorRewardsMatch){
+          await updateCreatorRewardState(request,response,creatorRewardsMatch[1]);
           return;
         }
 

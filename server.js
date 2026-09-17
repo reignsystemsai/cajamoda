@@ -6612,7 +6612,7 @@ async function getCreatorApplications() {
       `${SUPABASE_URL}/rest/v1/analytics_events?select=event_type,session_id,order_id,value,campaign,server_verified&source=eq.creator&campaign=not.is.null&limit=5000`,
       { headers }
     ),
-    fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?select=id,application_id,status,agreement_version,agreement_accepted_at`, { headers }),
+    fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?select=id,application_id,status,agreement_version,agreement_accepted_at,profile_photo_path`, { headers }),
     fetch(`${SUPABASE_URL}/rest/v1/creator_commissions?select=creator_id,commission_amount,products,status,earned_at,paid_at&limit=5000`, { headers }),
     fetch(`${SUPABASE_URL}/rest/v1/creator_reward_state?select=creator_id,unboxing_status`, { headers })
   ]);
@@ -6625,6 +6625,7 @@ async function getCreatorApplications() {
   const events = eventsResponse.ok ? await eventsResponse.json() : [];
   const profiles = profilesResponse.ok ? await profilesResponse.json() : [];
   const profileRows = Array.isArray(profiles) ? profiles : [];
+  const profilePhotoUrls = new Map(await Promise.all(profileRows.map(async profile => [profile.id, await creatorProfilePhotoUrl(profile.profile_photo_path)])));
   const profileByApplication = new Map(profileRows.map(profile => [profile.application_id, profile]));
   const profileIds = profileRows.map(profile => profile.id).filter(Boolean);
   let payoutByCreator = new Map();
@@ -6671,6 +6672,7 @@ async function getCreatorApplications() {
       onboarding_status: creatorProfile?.status || null,
       agreement_version: creatorProfile?.agreement_version || null,
       agreement_accepted_at: creatorProfile?.agreement_accepted_at || null,
+      profile_photo_url: profilePhotoUrls.get(creatorProfile?.id) || null,
       payout_account: payoutByCreator.get(creatorProfile?.id) || null,
       commission_due: commissionDue,
       next_payout_at: nextPayoutAt,

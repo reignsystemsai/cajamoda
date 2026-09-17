@@ -1,11 +1,13 @@
 import { readFileSync } from "node:fs";
 
 const server = readFileSync(new URL("../server.js", import.meta.url), "utf8");
-const portal = readFileSync(new URL("../creators/index.html", import.meta.url), "utf8");
+const portal = readFileSync(new URL("../creators/dashboard.html", import.meta.url), "utf8");
+const authPortal = readFileSync(new URL("../creators/index.html", import.meta.url), "utf8");
 const acceptance = readFileSync(new URL("../creators/accept/index.html", import.meta.url), "utf8");
 const terms = readFileSync(new URL("../creators/terms/index.html", import.meta.url), "utf8");
 const admin = readFileSync(new URL("../admin/index.html", import.meta.url), "utf8");
-const adminScript = readFileSync(new URL("../analytics/admin.js", import.meta.url), "utf8");
+const adminScript = readFileSync(new URL("../analytics/admin-core.js", import.meta.url), "utf8");
+const authLayer = readFileSync(new URL("../creator-auth-bootstrap.js", import.meta.url), "utf8");
 const migration = readFileSync(new URL("../supabase/migrations/202609130006_finalize_creator_agreements.sql", import.meta.url), "utf8");
 const growthMigration = readFileSync(new URL("../supabase/migrations/202609160200_creator_growth_system.sql", import.meta.url), "utf8");
 const publicEarningsExplanation = "CajaModa asigna a cada producto una base de ganancias después de considerar sus costos internos. Tus ganancias corresponden al porcentaje de tu nivel aplicado a esa base. Los costos y cálculos internos de CajaModa son confidenciales.";
@@ -49,7 +51,7 @@ const checks = [
   [server.includes("product?.unitCost !== null") && server.includes("product?.unitCost !== undefined") && server.includes("costKnown ? Math.round(totals.productCost) : null"), "Missing product cost cannot be mistaken for COP 0"],
   [adminScript.includes('"Cost unavailable"') && adminScript.includes("sale.costKnown===false"), "Owner ledger identifies unresolved costs instead of displaying false zeroes"],
   [server.includes('url.pathname === "/api/creators/agreement"') && server.includes("agreementRequired: profile.agreement_version !== CREATOR_AGREEMENT_VERSION"), "Existing creators can accept the current agreement"],
-  [portal.includes('lang="es"') && acceptance.includes('lang="es"'), "The complete creator experience is Spanish"],
+  [portal.includes('lang="es"') && authPortal.includes('lang="es"') && acceptance.includes('lang="es"'), "The complete creator experience is Spanish"],
   [server.includes("function creatorValidCommissionBase(rows)") && server.includes("creatorCommissionBase(row?.products)") && server.includes("eligibleCommissionBaseTotal") && !server.includes("lifetimeProductSales"), "Tier gates use only cumulative private-safe commission base"],
   [portal.includes('id="photoInput"') && server.includes('/api/creators/profile-photo') && server.includes("creatorProfilePhotoUrl") && adminScript.includes("creator.profilePhotoUrl"), "Creator profile photo upload appears in creator and owner views"],
   [portal.includes("TU PRÓXIMA META") && portal.includes('id="progressFill"') && portal.includes("NIVEL 3 DESBLOQUEADO") && portal.includes("CajaModa Unboxing Experience"), "Creator shows dynamic milestone progress and unlock states"],
@@ -58,7 +60,9 @@ const checks = [
   [growthMigration.includes("creator_marketing_assets") && growthMigration.includes("creator_reward_state") && growthMigration.includes("enable row level security") && growthMigration.includes("grant select, insert, update, delete") && !growthMigration.includes("grant select, insert, update, delete on table public.creator_marketing_assets to anon"), "Creator growth persistence is backend-only with RLS"],
   [server.includes("creatorEligibleMarketingAssets") && server.includes("minimum_tier") && server.includes("asset.start_at") && server.includes("asset.end_at") && server.includes("cityMatch"), "Marketing assets are filtered by level, city, dates, and active status"],
   [admin.includes("Marketing Library") && adminScript.includes("Create Asset") === false && adminScript.includes("renderMarketingAssets") && adminScript.includes("data-toggle-asset"), "Network Manager includes Marketing Library controls"],
-  [server.includes("cityCampaignEligible") && server.includes("leadershipEventEligible") && portal.includes("Elegible para consideración"), "Campaign and event benefits are presented as consideration, not guarantees"]
+  [server.includes("cityCampaignEligible") && server.includes("leadershipEventEligible") && portal.includes("Elegible para consideración"), "Campaign and event benefits are presented as consideration, not guarantees"],
+  [authPortal.includes("/api/creators/login") && authPortal.includes("PASSWORD_SETUP_REQUIRED") && authLayer.includes("/api/creators/password-reset/request") && authLayer.includes("/api/creators/email-recovery"), "Creator password login and recovery are wired"],
+  [authLayer.includes("SESSION_TTL_MS = 90") && authLayer.includes("reconcileCreatorPurchase") && authLayer.includes("/lifecycle"), "90-day sessions, automatic commission reconciliation, and creator lifecycle controls are wired"]
 ];
 
 let failed = false;

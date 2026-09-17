@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "verify:critical": "node scripts/verify-critical-checkout.mjs && node scripts/verify-creator-program.mjs",
     "verify:final": "node scripts/verify-final-storefront.mjs",
-    "start": "node server.js"
+    "start": "node --import ./creator-auth-bootstrap.js server.js"
   },
   "dependencies": {
     "@wix/categories_categories": "1.0.53",

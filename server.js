@@ -7391,7 +7391,7 @@ async function creatorMarketingAssetView(asset) {
 }
 
 async function creatorEligibleMarketingAssets(profile) {
-  const query = new URLSearchParams({ select: "*", status: "eq.active", minimum_tier: `lte.${Math.max(1, Number(profile?.tier || 1))}`, order: "created_at.desc", limit: "250" });
+  const query = new URLSearchParams({ select: "*", status: "eq.active", minimum_tier: `lte.${Math.max(1, Number(profile?.tier || 1))}`, order: "display_order.asc,created_at.desc", limit: "250" });
   const result = await fetch(`${SUPABASE_URL}/rest/v1/creator_marketing_assets?${query}`, { headers: livePresenceHeaders() });
   if (!result.ok) return [];
   const rows = await result.json().catch(() => []);
@@ -7539,6 +7539,7 @@ function creatorMarketingAssetRecord(body = {}) {
     start_at: body.startAt || body.start_at ? new Date(body.startAt || body.start_at).toISOString() : null,
     end_at: body.endAt || body.end_at ? new Date(body.endAt || body.end_at).toISOString() : null,
     status,
+    display_order: Math.max(0, Math.min(999, Math.round(Number(body.displayOrder ?? body.display_order ?? 0) || 0))),
     updated_at: new Date().toISOString()
   };
   if (value.start_at && value.end_at && new Date(value.end_at) < new Date(value.start_at)) throw new Error("End date must be after start date.");
@@ -7572,7 +7573,7 @@ async function uploadCreatorMarketingFile(assetId, value, name, label) {
 async function getStoreOwnerMarketingAssets(request, response) {
   if (!isAuthorized(request)) return sendError(response, 401, "Sign in to Store Loader.");
   if (!isPlatformAdmin(request)) return sendError(response, 403, "Marketing Library is reserved for CajaModa administration.");
-  const result = await fetch(`${SUPABASE_URL}/rest/v1/creator_marketing_assets?select=*&order=created_at.desc&limit=500`, { headers: livePresenceHeaders() });
+  const result = await fetch(`${SUPABASE_URL}/rest/v1/creator_marketing_assets?select=*&order=display_order.asc,created_at.desc&limit=500`, { headers: livePresenceHeaders() });
   if (!result.ok) return sendError(response, 503, "Marketing Library is temporarily unavailable.");
   const rows = await result.json().catch(() => []);
   sendJson(response, 200, { ok: true, assets: await Promise.all((Array.isArray(rows) ? rows : []).map(creatorMarketingAssetView)) });

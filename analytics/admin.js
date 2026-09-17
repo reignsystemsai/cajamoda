@@ -1,9 +1,8 @@
 (function(){
   "use strict";
-  const core=document.createElement("script");
-  core.src="/analytics/admin-core.js";
-  core.onload=installCreatorLifecycleControls;
-  document.head.appendChild(core);
+
+  document.write('<script src="/analytics/admin-core.js"><\/script>');
+  installCreatorLifecycleControls();
 
   function installCreatorLifecycleControls(){
     const TOKEN_KEY="cajamoda-store-loader-token";

@@ -199,7 +199,7 @@ async function handleAuth(req, res, url) {
     }
     if (path === "/api/creators/password-reset/request") {
       const email = normalizeEmail(body.email), profile = validEmail(email) ? await profileByEmail(email, true) : null;
-      if (profile && profile.password_hash) await issueRecovery(profile, "reset");
+      if (profile) await issueRecovery(profile, profile.password_hash ? "reset" : "setup");
       json(res, 200, { ok: true, message: "Si existe una cuenta activa con ese correo, recibirás un enlace para cambiar tu contraseña." }); return true;
     }
     if (path === "/api/creators/password/initialize") {

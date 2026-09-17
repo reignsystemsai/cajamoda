@@ -41,6 +41,7 @@ export default defineConfig({
         checkout: resolve(import.meta.dirname, "checkout/index.html"),
         creators: resolve(import.meta.dirname, "creadores/index.html"),
         creatorPortal: resolve(import.meta.dirname, "creators/index.html"),
+        creatorDashboard: resolve(import.meta.dirname, "creators/dashboard.html"),
         creatorAccept: resolve(import.meta.dirname, "creators/accept/index.html"),
         creatorTerms: resolve(import.meta.dirname, "creators/terms/index.html"),
         creatorLink: resolve(import.meta.dirname, "creator-link/index.html"),

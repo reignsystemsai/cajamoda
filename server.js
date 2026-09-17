@@ -140,6 +140,7 @@ const enviaWebhookProcessing = new Set();
 const processedEnviaWebhookIds = new Map();
 const enviaShipmentStatuses = new Map();
 const creatorApplicationAttempts = new Map();
+const creatorLoginAttempts = new Map();
 const CARTAGENA_PICKUP_ADDRESS = "Cl. 35 #10-22, piso 1, local 1, San Diego, Cartagena de Indias, Bolívar, Colombia";
 const STOREFRONT_URL = String(
   process.env.STOREFRONT_URL || "https://www.cajamoda.com"
@@ -6705,6 +6706,52 @@ function creatorTokenHash(value) {
   return crypto.createHash("sha256").update(String(value || "")).digest("hex");
 }
 
+function creatorPasswordValue(value) {
+  return String(value || "");
+}
+
+function validateCreatorPassword(value) {
+  const password = creatorPasswordValue(value);
+  if (password.length < 8 || password.length > 128) throw new Error("La contraseña debe tener entre 8 y 128 caracteres.");
+  return password;
+}
+
+function deriveCreatorPassword(password, salt) {
+  return new Promise((resolve, reject) => {
+    crypto.scrypt(password, salt, 64, { N: 16384, r: 8, p: 1 }, (error, derived) => error ? reject(error) : resolve(derived));
+  });
+}
+
+async function hashCreatorPassword(value) {
+  const password = validateCreatorPassword(value);
+  const salt = crypto.randomBytes(16).toString("hex");
+  const derived = await deriveCreatorPassword(password, salt);
+  return `scrypt-v1$${salt}$${derived.toString("hex")}`;
+}
+
+async function verifyCreatorPassword(value, encoded) {
+  const password = creatorPasswordValue(value);
+  const [version, salt, expectedHex] = String(encoded || "").split("$");
+  if (version !== "scrypt-v1" || !/^[a-f0-9]{32}$/.test(salt || "") || !/^[a-f0-9]{128}$/.test(expectedHex || "")) return false;
+  const received = await deriveCreatorPassword(password, salt);
+  const expected = Buffer.from(expectedHex, "hex");
+  return received.length === expected.length && crypto.timingSafeEqual(received, expected);
+}
+
+function enforceCreatorLoginRateLimit(request, email) {
+  const ip = creatorApplicationIp(request) || "unknown";
+  const key = `${ip}:${email}`;
+  const cutoff = now() - (15 * 60 * 1000);
+  const attempts = (creatorLoginAttempts.get(key) || []).filter(value => value > cutoff);
+  if (attempts.length >= 10) {
+    const error = new Error("Demasiados intentos. Espera 15 minutos e inténtalo nuevamente.");
+    error.statusCode = 429;
+    throw error;
+  }
+  attempts.push(now());
+  creatorLoginAttempts.set(key, attempts);
+}
+
 function creatorAccessUrl(path, token) {
   const url = new URL(path, `${STOREFRONT_URL}/`);
   url.searchParams.set("token", token);
@@ -6843,6 +6890,9 @@ async function completeCreatorOnboarding(request, response) {
   const profile = await creatorProfileForAccessToken(safeText(body?.token, 200));
   if (!profile || profile.status !== "invited") return sendError(response, 401, "La invitación venció o ya fue utilizada.");
   if (body?.agreementAccepted !== true) return sendError(response, 400, "Debes aceptar el acuerdo para continuar.");
+  let passwordHash;
+  try { passwordHash = await hashCreatorPassword(body?.password); }
+  catch (error) { return sendError(response, 400, error.message); }
   const method = safeText(body?.payoutMethod, 20).toLowerCase();
   if (!['nequi', 'paypal'].includes(method)) return sendError(response, 400, "Elige Nequi o PayPal.");
   let payout;
@@ -6895,6 +6945,8 @@ async function completeCreatorOnboarding(request, response) {
       agreement_accepted_at: activatedAt,
       activated_at: activatedAt,
       updated_at: activatedAt,
+      password_hash: passwordHash,
+      password_changed_at: activatedAt,
       access_token_hash: null,
       access_token_expires_at: null
     })
@@ -7020,8 +7072,32 @@ async function requestCreatorLogin(request, response) {
   if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) return sendError(response, 503, "El acceso de creadoras no está disponible.");
   const body = await readBody(request);
   const email = safeText(body?.email, 254).toLowerCase();
-  const generic = { ok: true, message: "Si tu cuenta está activa, recibirás un enlace de acceso." };
+  const password = creatorPasswordValue(body?.password);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !password) return sendError(response, 401, "Correo o contraseña incorrectos.");
+  try { enforceCreatorLoginRateLimit(request, email); }
+  catch (error) { return sendError(response, error.statusCode || 429, error.message); }
+  const query = new URLSearchParams({ select: "*", email: `eq.${email}`, status: "eq.active", limit: "1" });
+  const lookup = await fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?${query}`, { headers: livePresenceHeaders() });
+  const rows = lookup.ok ? await lookup.json().catch(() => []) : [];
+  const profile = Array.isArray(rows) ? rows[0] : null;
+  if (!profile) {
+    await deriveCreatorPassword(password, "00000000000000000000000000000000");
+    return sendError(response, 401, "Correo o contraseña incorrectos.");
+  }
+  if (!profile.password_hash) return sendError(response, 409, "Primero crea tu contraseña con el enlace debajo.");
+  if (!await verifyCreatorPassword(password, profile.password_hash)) return sendError(response, 401, "Correo o contraseña incorrectos.");
+  const sessionToken = await createCreatorSession(profile.id);
+  sendJson(response, 200, { ok: true, sessionToken });
+}
+
+async function requestCreatorPasswordLink(request, response) {
+  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) return sendError(response, 503, "El acceso de creadoras no está disponible.");
+  const body = await readBody(request);
+  const email = safeText(body?.email, 254).toLowerCase();
+  const generic = { ok: true, message: "Si tu cuenta está activa, recibirás un enlace para crear o cambiar tu contraseña." };
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return sendJson(response, 200, generic);
+  try { enforceCreatorLoginRateLimit(request, email); }
+  catch (error) { return sendError(response, error.statusCode || 429, error.message); }
   const query = new URLSearchParams({ select: "*", email: `eq.${email}`, status: "eq.active", limit: "1" });
   const lookup = await fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?${query}`, { headers: livePresenceHeaders() });
   const rows = lookup.ok ? await lookup.json().catch(() => []) : [];
@@ -7036,20 +7112,45 @@ async function requestCreatorLogin(request, response) {
     body: JSON.stringify({ access_token_hash: hash, access_token_expires_at: expiresAt, updated_at: new Date().toISOString() })
   });
   if (!saved.ok) return sendError(response, 503, "No pudimos preparar tu acceso.");
+  const passwordUrl = new URL(creatorAccessUrl("/creators/", token));
+  passwordUrl.searchParams.set("mode", "password");
   await sendCreatorTransactionalEmail({
     firstName: profile.first_name,
     lastName: profile.last_name,
     email: profile.email,
-    subject: "Tu acceso al portal de creadoras CajaModa",
+    subject: "Crea tu contraseña de CajaModa",
     banner: "ACCESO SEGURO ✦",
-    heading: "Tu portal está listo",
-    message: "Entra para ver tus productos vendidos, bases de ganancias, nivel, ganancias y próximos pagos.",
-    buttonLabel: "ENTRAR A MI PORTAL",
-    buttonUrl: creatorAccessUrl("/creators/", token),
-    note: "Este enlace personal vence en 48 horas.",
-    idempotencyKey: `creator-login-${profile.id}-${hash.slice(0, 16)}`
+    heading: "Crea o cambia tu contraseña",
+    message: "Usa este enlace para crear una contraseña y entrar directamente a tu portal de creadora.",
+    buttonLabel: "CREAR CONTRASEÑA",
+    buttonUrl: passwordUrl.toString(),
+    note: "Este enlace personal vence en 48 horas y solo puede utilizarse una vez.",
+    idempotencyKey: `creator-password-${profile.id}-${hash.slice(0, 16)}`
   });
   sendJson(response, 200, generic);
+}
+
+async function setCreatorPassword(request, response) {
+  const body = await readBody(request);
+  const profile = await creatorProfileForAccessToken(safeText(body?.token, 200));
+  if (!profile || profile.status !== "active") return sendError(response, 401, "El enlace venció o ya fue utilizado.");
+  let passwordHash;
+  try { passwordHash = await hashCreatorPassword(body?.password); }
+  catch (error) { return sendError(response, 400, error.message); }
+  const changedAt = new Date().toISOString();
+  const saved = await fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?id=eq.${encodeURIComponent(profile.id)}`, {
+    method: "PATCH",
+    headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+    body: JSON.stringify({ password_hash: passwordHash, password_changed_at: changedAt, access_token_hash: null, access_token_expires_at: null, updated_at: changedAt })
+  });
+  if (!saved.ok) return sendError(response, 503, "No pudimos guardar tu contraseña.");
+  await fetch(`${SUPABASE_URL}/rest/v1/creator_sessions?creator_id=eq.${encodeURIComponent(profile.id)}&revoked_at=is.null`, {
+    method: "PATCH",
+    headers: livePresenceHeaders({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+    body: JSON.stringify({ revoked_at: changedAt })
+  });
+  const sessionToken = await createCreatorSession(profile.id);
+  sendJson(response, 200, { ok: true, sessionToken });
 }
 
 async function consumeCreatorLogin(request, response) {
@@ -9689,6 +9790,16 @@ const server =
 
         if(request.method === "POST" && url.pathname === "/api/creators/login"){
           await requestCreatorLogin(request,response);
+          return;
+        }
+
+        if(request.method === "POST" && url.pathname === "/api/creators/password-link"){
+          await requestCreatorPasswordLink(request,response);
+          return;
+        }
+
+        if(request.method === "POST" && url.pathname === "/api/creators/password"){
+          await setCreatorPassword(request,response);
           return;
         }
 

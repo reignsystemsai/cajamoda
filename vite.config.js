@@ -1,5 +1,5 @@
 import { resolve } from "node:path";
-import { copyFileSync, mkdirSync } from "node:fs";
+import { copyFileSync, cpSync, mkdirSync } from "node:fs";
 import { defineConfig } from "vite";
 
 export default defineConfig({
@@ -10,6 +10,12 @@ export default defineConfig({
         const outputDirectory = resolve(import.meta.dirname, options.dir || "dist");
         mkdirSync(resolve(outputDirectory, "startup"), { recursive: true });
         mkdirSync(resolve(outputDirectory, "analytics"), { recursive: true });
+        mkdirSync(resolve(outputDirectory, "assets", "marketing-placeholders"), { recursive: true });
+        cpSync(
+          resolve(import.meta.dirname, "assets", "marketing-placeholders"),
+          resolve(outputDirectory, "assets", "marketing-placeholders"),
+          { recursive: true },
+        );
         copyFileSync(
           resolve(outputDirectory, "admin/index.html"),
           resolve(outputDirectory, "startup/index.html"),

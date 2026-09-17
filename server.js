@@ -6612,7 +6612,7 @@ async function getCreatorApplications() {
       `${SUPABASE_URL}/rest/v1/analytics_events?select=event_type,session_id,order_id,value,campaign,server_verified&source=eq.creator&campaign=not.is.null&limit=5000`,
       { headers }
     ),
-    fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?select=id,application_id,status,agreement_version,agreement_accepted_at`, { headers }),
+    fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?select=id,application_id,status,agreement_version,agreement_accepted_at,profile_photo_path`, { headers }),
     fetch(`${SUPABASE_URL}/rest/v1/creator_commissions?select=creator_id,commission_amount,products,status,earned_at,paid_at&limit=5000`, { headers }),
     fetch(`${SUPABASE_URL}/rest/v1/creator_reward_state?select=creator_id,unboxing_status`, { headers })
   ]);
@@ -6625,6 +6625,7 @@ async function getCreatorApplications() {
   const events = eventsResponse.ok ? await eventsResponse.json() : [];
   const profiles = profilesResponse.ok ? await profilesResponse.json() : [];
   const profileRows = Array.isArray(profiles) ? profiles : [];
+  const profilePhotoUrls = new Map(await Promise.all(profileRows.map(async profile => [profile.id, await creatorProfilePhotoUrl(profile.profile_photo_path)])));
   const profileByApplication = new Map(profileRows.map(profile => [profile.application_id, profile]));
   const profileIds = profileRows.map(profile => profile.id).filter(Boolean);
   let payoutByCreator = new Map();
@@ -6671,6 +6672,7 @@ async function getCreatorApplications() {
       onboarding_status: creatorProfile?.status || null,
       agreement_version: creatorProfile?.agreement_version || null,
       agreement_accepted_at: creatorProfile?.agreement_accepted_at || null,
+      profile_photo_url: profilePhotoUrls.get(creatorProfile?.id) || null,
       payout_account: payoutByCreator.get(creatorProfile?.id) || null,
       commission_due: commissionDue,
       next_payout_at: nextPayoutAt,
@@ -7377,7 +7379,7 @@ async function creatorMarketingSignedUrl(path) {
   if (!signed.ok) return null;
   const payload = await signed.json().catch(() => ({}));
   const signedPath = safeText(payload?.signedURL || payload?.signedUrl, 2000);
-  return signedPath ? new URL(signedPath, SUPABASE_URL).toString() : null;
+  return creatorStorageSignedUrl(signedPath);
 }
 
 async function creatorMarketingAssetView(asset) {
@@ -7440,6 +7442,14 @@ function creatorStorageObjectPath(path) {
   return safeText(path, 500).split("/").filter(Boolean).map(encodeURIComponent).join("/");
 }
 
+function creatorStorageSignedUrl(signedPath) {
+  const value = safeText(signedPath, 2000);
+  if (!value) return null;
+  if (/^https?:\/\//i.test(value)) return value;
+  const path = value.startsWith("/storage/v1/") ? value : `/storage/v1${value.startsWith("/") ? "" : "/"}${value}`;
+  return new URL(path, SUPABASE_URL).toString();
+}
+
 async function creatorProfilePhotoUrl(path) {
   const objectPath = creatorStorageObjectPath(path);
   if (!objectPath) return null;
@@ -7451,7 +7461,7 @@ async function creatorProfilePhotoUrl(path) {
   if (!signed.ok) return null;
   const payload = await signed.json().catch(() => ({}));
   const signedPath = safeText(payload?.signedURL || payload?.signedUrl, 2000);
-  return signedPath ? new URL(signedPath, SUPABASE_URL).toString() : null;
+  return creatorStorageSignedUrl(signedPath);
 }
 
 function creatorProfilePhotoData(value) {

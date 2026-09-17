@@ -7379,7 +7379,7 @@ async function creatorMarketingSignedUrl(path) {
   if (!signed.ok) return null;
   const payload = await signed.json().catch(() => ({}));
   const signedPath = safeText(payload?.signedURL || payload?.signedUrl, 2000);
-  return signedPath ? new URL(signedPath, SUPABASE_URL).toString() : null;
+  return creatorStorageSignedUrl(signedPath);
 }
 
 async function creatorMarketingAssetView(asset) {
@@ -7442,6 +7442,14 @@ function creatorStorageObjectPath(path) {
   return safeText(path, 500).split("/").filter(Boolean).map(encodeURIComponent).join("/");
 }
 
+function creatorStorageSignedUrl(signedPath) {
+  const value = safeText(signedPath, 2000);
+  if (!value) return null;
+  if (/^https?:\/\//i.test(value)) return value;
+  const path = value.startsWith("/storage/v1/") ? value : `/storage/v1${value.startsWith("/") ? "" : "/"}${value}`;
+  return new URL(path, SUPABASE_URL).toString();
+}
+
 async function creatorProfilePhotoUrl(path) {
   const objectPath = creatorStorageObjectPath(path);
   if (!objectPath) return null;
@@ -7453,7 +7461,7 @@ async function creatorProfilePhotoUrl(path) {
   if (!signed.ok) return null;
   const payload = await signed.json().catch(() => ({}));
   const signedPath = safeText(payload?.signedURL || payload?.signedUrl, 2000);
-  return signedPath ? new URL(signedPath, SUPABASE_URL).toString() : null;
+  return creatorStorageSignedUrl(signedPath);
 }
 
 function creatorProfilePhotoData(value) {

@@ -419,13 +419,15 @@
       const entry=selected[index],person=entry?.person,application=entry?.application,meta=card.querySelector(".creatorApprovedMeta");
       if(meta){const details=[
         ["Amount due",money(application?.commission_due||0)+(application?.next_payout_at?" · "+creatorSalesDate(application.next_payout_at):"")],
+        ["Creator Stage",number(person.tier)>=3?"Top Creator":number(person.tier)>=2?"Seller":"Creator"],
         ["Current Creator Tier","Tier "+number(person.tier)+" · "+number(person.commissionRate)+"%"],
         ["Qualified Creator Sales",money(person.qualifiedSales)],
         ["Next Milestone",person.nextMilestone?money(person.nextMilestone):"Top tier reached"],
         ["Amount Remaining",money(person.amountRemaining)],
         ["Creator Discount",person.creatorDiscount?person.creatorDiscount+"%":"Locked"],
         ["City Campaign Eligible",person.cityEligible?"Eligible for consideration":"Not yet eligible"],
-        ["Leadership Event Eligible",person.leadershipEligible?"Eligible for consideration":"Not yet eligible"]
+        ["Leadership Event Eligible",person.leadershipEligible?"Eligible for consideration":"Not yet eligible"],
+        ["Local Opportunity",person.cityEligible||person.leadershipEligible?"Eligible for consideration":"Not yet eligible"]
       ];details.forEach(([title,value])=>{const item=document.createElement("span"),label=document.createElement("b");label.textContent=title;item.append(label,document.createTextNode(value));meta.append(item)});const reward=document.createElement("span"),rewardLabel=document.createElement("b"),select=document.createElement("select");rewardLabel.textContent="Unboxing Status";select.dataset.creatorReward=person.id;["locked","earned","preparing","sent"].forEach(value=>{const option=document.createElement("option");option.value=value;option.textContent=value.charAt(0).toUpperCase()+value.slice(1);option.selected=value===person.unboxingStatus;select.append(option)});reward.append(rewardLabel,select);meta.append(reward)}
       if(person?.onboardingStatus!=="invited")return;
       const footer=card.querySelector(".creatorApprovedFooter"),button=document.createElement("button");button.className="creatorAction";button.type="button";button.dataset.creatorResendInvite=person.id;button.textContent="Resend invitation";footer?.prepend(button)

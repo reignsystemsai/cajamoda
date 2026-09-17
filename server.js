@@ -8060,20 +8060,29 @@ async function updateCreatorApplication(request, response, applicationId) {
 
   const now = new Date().toISOString();
   const updates = { status, reviewed_at: now };
-  if (status === "approved" && application.status !== "approved") {
-    try {
-      const profile = await approveCreatorAndSendInvite(application);
-      return sendJson(response, 200, { ok: true, application: {
-        ...application,
-        status: "approved",
-        creator_slug: profile?.slug,
-        tier: profile?.tier,
-        commission_rate: profile?.commission_rate,
-        onboarding_status: profile?.status
-      } });
-    } catch (error) {
-      console.error("[Creator applications] Approval failed:", error);
-      return sendError(response, 503, safeText(error?.message, 300) || "No pudimos aprobar la creadora.");
+  if (status === "approved") {
+    const profileLookup = await fetch(
+      `${SUPABASE_URL}/rest/v1/creator_profiles?application_id=eq.${encodeURIComponent(applicationId)}&select=status&limit=1`,
+      { headers }
+    );
+    const profiles = profileLookup.ok ? await profileLookup.json().catch(() => []) : [];
+    const existingProfile = Array.isArray(profiles) ? profiles[0] : null;
+    const invitationPending = application.status !== "approved" || existingProfile?.status === "invited";
+    if (invitationPending) {
+      try {
+        const profile = await approveCreatorAndSendInvite(application);
+        return sendJson(response, 200, { ok: true, invitationSent: true, application: {
+          ...application,
+          status: "approved",
+          creator_slug: profile?.slug,
+          tier: profile?.tier,
+          commission_rate: profile?.commission_rate,
+          onboarding_status: profile?.status
+        } });
+      } catch (error) {
+        console.error("[Creator applications] Approval invitation failed:", error);
+        return sendError(response, 503, safeText(error?.message, 300) || "No pudimos enviar la invitación de la creadora.");
+      }
     }
   }
   if (status === "approved") {

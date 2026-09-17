@@ -61,23 +61,15 @@ button, input, select { font: inherit; }
 .heroPanel {
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(340px, .92fr) minmax(330px, 1.08fr);
+  grid-template-columns: minmax(0, 1fr);
   grid-template-areas:
-    "copy model"
-    "benefits benefits";
-  gap: 20px 14px;
-  align-items: center;
+    "copy"
+    "benefits";
+  gap: 22px;
+  align-content: center;
 }
 
-.invite { grid-area: copy; padding: 20px 0 0 4px; }
-.modelVisual {
-  grid-area: model;
-  min-height: 500px;
-  border-radius: 34px;
-  background: url('/assets/creator/application-hero-mobile-v3.webp') 63% 25% / cover no-repeat;
-  -webkit-mask-image: radial-gradient(ellipse 93% 94% at 57% 48%, #000 66%, transparent 100%);
-  mask-image: radial-gradient(ellipse 93% 94% at 57% 48%, #000 66%, transparent 100%);
-}
+.invite { grid-area: copy; max-width: 760px; padding: 14px 4px 0; }
 
 .eyebrow { margin: 0 0 10px; color: var(--pink); font-size: clamp(10px, .76vw, 14px); font-weight: 900; letter-spacing: .26em; }
 h1 { margin: 0; font: 700 clamp(65px, 4.8vw, 88px)/.85 "Bodoni Moda", Didot, Georgia, serif; letter-spacing: -.06em; }
@@ -92,7 +84,7 @@ h1 { margin: 0; font: 700 clamp(65px, 4.8vw, 88px)/.85 "Bodoni Moda", Didot, Geo
 }
 
 .benefitItem {
-  min-height: 92px;
+  min-height: 82px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -205,7 +197,7 @@ footer { padding: 14px 16px 26px; color: rgba(27,18,23,.72); font-size: 8px; fon
 
 @media (max-width: 1180px) and (min-width: 901px) {
   .layout { grid-template-columns: 1fr; }
-  .heroPanel { grid-template-columns: minmax(340px, .9fr) minmax(360px, 1.1fr); }
+  .heroPanel { grid-template-columns: 1fr; }
   .card { width: min(720px, 100%); margin: 0 auto; }
   .unboxingSection { grid-template-columns: 1fr 1fr; }
 }
@@ -226,22 +218,15 @@ footer { padding: 14px 16px 26px; color: rgba(27,18,23,.72); font-size: 8px; fon
   .heroPanel {
     display: grid;
     grid-template-columns: 1fr;
-    grid-template-areas: "copy" "model" "benefits";
-    gap: 16px;
+    grid-template-areas: "copy" "benefits";
+    gap: 14px;
   }
 
-  .invite { padding: 25px 5px 0; }
+  .invite { padding: 20px 5px 0; }
   .eyebrow { margin-bottom: 7px; font-size: clamp(9px, 2.6vw, 12px); letter-spacing: .22em; }
   h1 { font-size: clamp(48px, 14vw, 66px); line-height: .86; }
   .tagline { max-width: 520px; margin-top: 11px; font-size: clamp(23px, 6.7vw, 31px); }
   .intro { max-width: 520px; font-size: 13px; }
-
-  .modelVisual {
-    min-height: clamp(360px, 112vw, 580px);
-    background-position: 62% 24%;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 8%, #000 88%, transparent 100%);
-    mask-image: linear-gradient(to bottom, transparent 0, #000 8%, #000 88%, transparent 100%);
-  }
 
   .benefitStrip { grid-template-columns: repeat(5, minmax(104px, 1fr)); gap: 7px; overflow-x: auto; padding: 0 2px 6px; scrollbar-width: none; }
   .benefitStrip::-webkit-scrollbar { display: none; }

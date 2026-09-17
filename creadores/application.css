@@ -1,465 +1,224 @@
 :root {
   color-scheme: light;
-  --pink: #e90067;
-  --deep-pink: #bd004f;
-  --ink: #090909;
-  --muted: #5f5960;
+  --pink: #eb0a67;
+  --deep-pink: #c60755;
+  --ink: #0c090b;
+  --muted: #625a60;
+  --glass: rgba(255, 255, 255, .68);
+  --glass-border: rgba(255, 255, 255, .72);
+  --shadow: 0 24px 70px rgba(102, 48, 72, .16);
 }
 
 * { box-sizing: border-box; }
-
-html { background: #f9dfe1; }
+html { background: #f8dfe5; }
 
 body {
   margin: 0;
   min-height: 100vh;
   color: var(--ink);
   font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: linear-gradient(90deg, #f7d9d5 0%, #fbe8e6 55%, #f8ced9 100%);
+  background: linear-gradient(135deg, #fff4f7 0%, #f7d8e0 100%);
 }
 
 button, input, select { font: inherit; }
 
 .shell {
   position: relative;
-  width: min(1673px, 100%);
-  min-height: 100vh;
-  aspect-ratio: 1673 / 940;
+  width: min(1900px, 100%);
+  min-height: clamp(820px, 56.25vw, 1069px);
   margin: 0 auto;
   overflow: hidden;
-  container-type: inline-size;
   background:
-    url('/assets/creator/application-page-background-v2.webp') center top / 100% auto no-repeat,
-    linear-gradient(90deg, #f7d9d5 0%, #fbe8e6 55%, #f8ced9 100%);
+    linear-gradient(90deg, rgba(255, 245, 248, .30), rgba(255, 245, 248, .02) 58%),
+    url('/assets/creator/application-page-background-v3.webp') center / cover no-repeat;
 }
 
-.header,
-.heroPanel,
-.unboxingSection,
-footer {
-  display: none;
-}
-
-.main,
-.layout {
+.header {
   position: absolute;
+  z-index: 5;
   top: 0;
   left: 0;
   width: 100%;
-  aspect-ratio: 1673 / 940;
+  height: 92px;
+  display: flex;
+  align-items: center;
+  padding: 12px 4.2%;
+  pointer-events: none;
 }
+
+.siteNav { display: none; }
+.brandLockup { width: 124px; display: flex; flex-direction: column; align-items: center; }
+.brandMonogram { position: relative; width: 86px; height: 46px; font-family: "Bodoni Moda", Didot, Georgia, serif; }
+.brandC { position: absolute; top: -12px; left: 5px; font-size: 63px; line-height: 1; letter-spacing: -8px; transform: scaleX(.88); }
+.brandM { position: absolute; top: 5px; left: 38px; font-size: 44px; line-height: 1; letter-spacing: -6px; transform: scaleX(.9); }
+.brandWord { padding-left: 5px; font: 500 10px/1 "Bodoni Moda", Didot, Georgia, serif; letter-spacing: 5px; }
+.brandCountryRow { width: 116px; margin-top: 6px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 6px; }
+.brandCountryLine { height: 1px; background: rgba(0, 0, 0, .36); }
+.brandCountry { padding-left: 2px; font-size: 5px; font-weight: 800; letter-spacing: 2.3px; }
+
+.main { min-height: inherit; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) clamp(430px, 30.5vw, 505px); gap: 30px; min-height: 680px; padding: 96px 4.2% 0; }
+.heroPanel { display: block; min-width: 0; }
+.invite { width: min(46%, 540px); min-width: 420px; padding-top: 24px; }
+
+.eyebrow { margin: 0 0 12px; color: var(--pink); font-size: clamp(11px, .78vw, 15px); font-weight: 900; letter-spacing: .28em; }
+h1 { margin: 0; font: 700 clamp(72px, 5.35vw, 102px)/.84 "Bodoni Moda", Didot, Georgia, serif; letter-spacing: -.06em; }
+.tagline { margin: 14px 0 0; font: 600 clamp(25px, 1.75vw, 34px)/1.02 "Bodoni Moda", Didot, Georgia, serif; letter-spacing: -.025em; }
+.intro { max-width: 470px; margin: 12px 0 0; color: #453d42; font-size: clamp(14px, .95vw, 18px); line-height: 1.42; }
+
+.benefitStrip { width: min(640px, 62vw); margin-top: 26px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 9px; }
+.benefitItem {
+  min-height: 94px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 7px;
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, .48);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.78), 0 13px 30px rgba(108,49,72,.08);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: #171216;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.13;
+  text-align: center;
+}
+.benefitIcon { width: 30px; height: 30px; display: block; color: var(--pink); }
+.benefitIcon svg, .selectionIcon svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.community { display: none; }
 
 .card {
-  position: absolute;
-  top: 9.55%;
-  left: 62.72%;
-  width: 29.05%;
-  height: 63.2%;
-  padding: 1.42cqw 1.85cqw;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+  align-self: start;
+  padding: 25px 25px 23px;
+  border: 1px solid var(--glass-border);
+  border-radius: 28px;
+  background: var(--glass);
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,.9);
+  backdrop-filter: blur(22px) saturate(118%);
+  -webkit-backdrop-filter: blur(22px) saturate(118%);
 }
-
-.card h2 {
-  margin: 0;
-  font: 700 2.5cqw/.95 "Bodoni Moda", Didot, Georgia, serif;
-  letter-spacing: -.03em;
-}
-
-.cardLead {
-  margin: .35cqw 0 1.05cqw;
-  color: var(--muted);
-  font-size: .72cqw;
-  line-height: 1.35;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: .62cqw .7cqw;
-}
-
-.field {
-  display: grid;
-  gap: .2cqw;
-}
-
+.card h2 { margin: 0; font: 700 clamp(34px, 2.25vw, 44px)/.96 "Bodoni Moda", Didot, Georgia, serif; letter-spacing: -.035em; }
+.cardLead { margin: 7px 0 17px; color: var(--muted); font-size: 13px; line-height: 1.35; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.field { display: grid; gap: 4px; }
 .field.full { grid-column: 1 / -1; }
+label { font-size: 11px; font-weight: 780; }
 
-label {
-  font-size: .62cqw;
-  font-weight: 750;
-}
-
-input,
-select {
+input, select {
   width: 100%;
-  height: 2.34cqw;
-  min-height: 0;
-  padding: 0 .72cqw;
-  border: .06cqw solid rgba(21, 16, 19, .15);
-  border-radius: .55cqw;
-  background: rgba(255, 255, 255, .96);
+  height: 40px;
+  padding: 0 11px;
+  border: 1px solid rgba(30, 20, 26, .13);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .82);
   color: var(--ink);
-  font-size: .7cqw;
+  font-size: 12px;
   outline: none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.85);
 }
-
-input:focus,
-select:focus {
-  border-color: var(--pink);
-  box-shadow: 0 0 0 .18cqw rgba(233, 0, 103, .1);
-}
-
-input::placeholder { color: #9b9599; }
-
-.phone {
-  display: grid;
-  grid-template-columns: 3.45cqw 1fr;
-  gap: .45cqw;
-}
-
-.prefix {
-  height: 2.34cqw;
-  display: grid;
-  place-items: center;
-  border: .06cqw solid rgba(21, 16, 19, .15);
-  border-radius: .55cqw;
-  background: rgba(255, 255, 255, .96);
-  font-size: .72cqw;
-  font-weight: 800;
-}
-
-.optional {
-  color: #9b9599;
-  font-weight: 500;
-}
-
+input:focus, select:focus { border-color: var(--pink); box-shadow: 0 0 0 3px rgba(235, 10, 103, .10); }
+input::placeholder { color: #9a9397; }
+.phone { display: grid; grid-template-columns: 60px 1fr; gap: 8px; }
+.prefix { height: 40px; display: grid; place-items: center; border: 1px solid rgba(30, 20, 26, .13); border-radius: 10px; background: rgba(255, 255, 255, .82); font-size: 12px; font-weight: 850; }
+.optional { color: #999096; font-weight: 500; }
 .locationHint { display: none; }
 
-.checks {
-  display: grid;
-  gap: .42cqw;
-  margin: .75cqw 0;
-}
-
-.check {
-  display: grid;
-  grid-template-columns: 1cqw 1fr;
-  gap: .48cqw;
-  align-items: start;
-  color: #595258;
-  font-size: .59cqw;
-  line-height: 1.35;
-}
-
-.check input {
-  width: 1cqw;
-  height: 1cqw;
-  margin: 0;
-  accent-color: var(--pink);
-}
-
-.submit {
-  width: 100%;
-  height: 2.7cqw;
-  min-height: 0;
-  border: 0;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--deep-pink), #f0006b);
-  color: #fff;
-  font-size: .66cqw;
-  font-weight: 850;
-  letter-spacing: .13em;
-  cursor: pointer;
-  box-shadow: 0 .8cqw 1.8cqw rgba(213, 0, 91, .22);
-}
-
+.checks { display: grid; gap: 7px; margin: 13px 0; }
+.check { display: grid; grid-template-columns: 17px 1fr; gap: 8px; align-items: start; color: #554d52; font-size: 10.5px; line-height: 1.35; }
+.check input { width: 17px; height: 17px; margin: 0; accent-color: var(--pink); }
+.submit { width: 100%; height: 45px; border: 0; border-radius: 999px; background: linear-gradient(90deg, var(--deep-pink), #f20a6f); color: #fff; font-size: 11px; font-weight: 900; letter-spacing: .16em; cursor: pointer; box-shadow: 0 14px 28px rgba(202, 7, 86, .22); }
 .submit:hover { transform: translateY(-1px); }
 .submit:disabled { opacity: .5; cursor: wait; transform: none; }
-
-.message {
-  display: none;
-  margin: .55cqw 0 0;
-  font-size: .64cqw;
-  line-height: 1.35;
-  text-align: center;
-}
-
-.message.error {
-  display: block;
-  color: #a42222;
-}
-
+.message { display: none; margin: 9px 0 0; font-size: 11px; line-height: 1.35; text-align: center; }
+.message.error { display: block; color: #a42222; }
 .form.hidden { display: none; }
-
-.success {
-  display: none;
-  padding: 5cqw 1cqw 0;
-  text-align: center;
-}
-
+.success { display: none; padding: 100px 18px 40px; text-align: center; }
 .success.visible { display: block; }
+.successIcon { width: 68px; height: 68px; margin: 0 auto 20px; display: grid; place-items: center; border-radius: 50%; background: var(--pink); color: #fff; font-size: 32px; }
+.success h2 { margin: 0; font: 700 38px/1 "Bodoni Moda", Didot, Georgia, serif; }
+.success p { margin: 15px auto 0; color: #555; font-size: 13px; line-height: 1.55; }
 
-.successIcon {
-  width: 4cqw;
-  height: 4cqw;
-  margin: 0 auto 1.2cqw;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--pink);
-  color: #fff;
-  font-size: 1.9cqw;
+.unboxingSection { position: absolute; right: 4.2%; bottom: 48px; width: min(46%, 760px); }
+.invitationVisual { display: none; }
+.selectionCopy {
+  padding: 19px 24px 21px;
+  border: 1px solid var(--glass-border);
+  border-radius: 25px;
+  background: rgba(255, 255, 255, .52);
+  box-shadow: 0 18px 50px rgba(101, 49, 72, .11), inset 0 1px 0 rgba(255,255,255,.88);
+  backdrop-filter: blur(18px) saturate(112%);
+  -webkit-backdrop-filter: blur(18px) saturate(112%);
 }
+.selectionCopy .eyebrow { margin-bottom: 6px; }
+.selectionCopy h2 { margin: 0; font: 700 clamp(29px, 2vw, 40px)/.98 "Bodoni Moda", Didot, Georgia, serif; letter-spacing: -.035em; }
+.selectionCopy > p:not(.eyebrow) { display: none; }
+.selectionBenefits { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 14px; }
+.selectionBenefit { min-height: 58px; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid rgba(255, 255, 255, .72); border-radius: 14px; background: rgba(255, 255, 255, .58); color: #211b20; font-size: 11px; font-weight: 720; line-height: 1.25; }
+.selectionIcon { flex: 0 0 27px; width: 27px; height: 27px; color: var(--pink); }
 
-.success h2 {
-  margin: 0;
-  font: 700 2.2cqw/1 "Bodoni Moda", Didot, Georgia, serif;
-}
+footer { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); color: rgba(27, 18, 23, .72); font-size: 8px; font-weight: 850; letter-spacing: .34em; white-space: nowrap; }
+.trap { position: absolute !important; left: -9999px !important; width: 1px !important; height: 1px !important; overflow: hidden !important; }
+.path, .levels, .support, .modelPhoto, .boxFrame, .benefits { display: none; }
 
-.success p {
-  margin: 1cqw auto 0;
-  color: #555;
-  font-size: .8cqw;
-  line-height: 1.55;
-}
-
-.trap {
-  position: absolute !important;
-  left: -9999px !important;
-  width: 1px !important;
-  height: 1px !important;
-  overflow: hidden !important;
-}
-
-.path,
-.levels,
-.support,
-.modelPhoto,
-.boxFrame,
-.benefits {
-  display: none;
-}
-
-.benefitIcon svg,
-.selectionIcon svg {
-  width: 100%;
-  height: 100%;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+@media (min-width: 901px) and (max-width: 1250px) {
+  .shell { min-height: 830px; }
+  .layout { grid-template-columns: minmax(0, 1fr) 410px; padding-right: 3%; padding-left: 3%; }
+  .invite { min-width: 370px; }
+  h1 { font-size: 67px; }
+  .tagline { font-size: 24px; }
+  .intro { max-width: 390px; font-size: 14px; }
+  .benefitStrip { width: 600px; transform: scale(.92); transform-origin: left top; }
+  .card { padding: 21px 20px; }
+  .card h2 { font-size: 34px; }
+  .unboxingSection { right: 3%; width: 49%; }
 }
 
 @media (max-width: 900px) {
-  html,
-  body {
-    background: #fff5f8;
-  }
-
-  .shell {
-    width: 100%;
-    min-height: 100vh;
-    aspect-ratio: auto;
-    overflow: hidden;
-    background: #fff5f8;
-  }
-
-  .header {
-    min-height: 74px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 16px;
-    background: rgba(255, 255, 255, .97);
-  }
-
-  .siteNav { display: none; }
-
-  .brandLockup {
-    width: 102px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    pointer-events: none;
-  }
-
-  .brandMonogram {
-    position: relative;
-    width: 74px;
-    height: 40px;
-    font-family: "Bodoni Moda", Didot, Georgia, serif;
-  }
-
-  .brandC {
-    position: absolute;
-    left: 4px;
-    top: -9px;
-    font-size: 53px;
-    line-height: 1;
-    letter-spacing: -7px;
-    transform: scaleX(.89);
-  }
-
-  .brandM {
-    position: absolute;
-    left: 31px;
-    top: 5px;
-    font-size: 38px;
-    line-height: 1;
-    letter-spacing: -5px;
-    transform: scaleX(.9);
-  }
-
-  .brandWord {
-    margin-top: 1px;
-    padding-left: 4px;
-    font: 500 8px/1 "Bodoni Moda", Didot, Georgia, serif;
-    letter-spacing: 4px;
-  }
-
-  .brandCountryRow {
-    width: 98px;
-    margin-top: 5px;
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-    gap: 5px;
-  }
-
-  .brandCountryLine { height: 1px; background: rgba(0, 0, 0, .35); }
-  .brandCountry { padding-left: 2px; font-size: 4px; font-weight: 750; letter-spacing: 2px; }
-
-  .main {
-    background: #fff5f8;
-  }
-
-  .main,
-  .layout {
-    position: static;
-    width: 100%;
-    aspect-ratio: auto;
-  }
-
-  .layout {
-    display: flex;
-    flex-direction: column;
-  }
+  html, body { background: #fff5f8; }
+  .shell { width: 100%; min-height: 100vh; overflow: hidden; background: #fff5f8; }
+  .header { position: relative; height: 76px; justify-content: center; padding: 8px 16px; background: rgba(255, 255, 255, .95); }
+  .brandLockup { width: 102px; }
+  .brandMonogram { width: 74px; height: 40px; }
+  .brandC { top: -9px; left: 4px; font-size: 53px; letter-spacing: -7px; }
+  .brandM { top: 5px; left: 31px; font-size: 38px; letter-spacing: -5px; }
+  .brandWord { margin-top: 1px; padding-left: 4px; font-size: 8px; letter-spacing: 4px; }
+  .brandCountryRow { width: 98px; margin-top: 5px; gap: 5px; }
+  .brandCountry { font-size: 4px; letter-spacing: 2px; }
+  .main { min-height: 0; }
+  .layout { display: flex; flex-direction: column; min-height: 0; padding: 0; }
 
   .heroPanel {
     position: relative;
     min-height: clamp(610px, 158vw, 760px);
-    display: block;
     overflow: hidden;
     background:
-      linear-gradient(90deg, rgba(255, 247, 250, .96) 0%, rgba(255, 247, 250, .68) 47%, rgba(255, 247, 250, .05) 73%),
-      url('/assets/creator/application-hero-mobile.webp') center top / cover no-repeat;
+      linear-gradient(90deg, rgba(255, 247, 250, .94) 0%, rgba(255, 247, 250, .62) 46%, rgba(255, 247, 250, .04) 74%),
+      url('/assets/creator/application-hero-mobile-v3.webp') center top / cover no-repeat;
   }
+  .invite { width: 100%; min-width: 0; min-height: inherit; padding: 26px 16px 20px; }
+  .eyebrow { margin-bottom: 7px; font-size: clamp(9px, 2.6vw, 12px); letter-spacing: .22em; }
+  h1 { width: 59%; font-size: clamp(42px, 12vw, 60px); line-height: .87; }
+  .tagline { width: 59%; margin-top: 10px; font-size: clamp(20px, 5.8vw, 27px); }
+  .intro { width: 57%; margin-top: 9px; font-size: clamp(11px, 3vw, 14px); line-height: 1.35; }
 
-  .invite {
-    position: relative;
-    min-height: inherit;
-    padding: 26px 16px 20px;
-  }
+  .benefitStrip { position: absolute; right: 12px; bottom: 22px; left: 12px; width: auto; margin: 0; display: grid; grid-template-columns: repeat(5, minmax(78px, 1fr)); gap: 6px; overflow-x: auto; scrollbar-width: none; }
+  .benefitStrip::-webkit-scrollbar { display: none; }
+  .benefitItem { min-height: 78px; padding: 8px 5px; border-radius: 17px; font-size: clamp(8px, 2.1vw, 10px); }
+  .benefitIcon { width: 27px; height: 27px; }
 
-  .eyebrow {
-    margin: 0 0 7px;
-    color: var(--pink);
-    font-size: clamp(9px, 2.6vw, 12px);
-    font-weight: 850;
-    letter-spacing: .22em;
-  }
-
-  h1 {
-    width: 62%;
-    margin: 0;
-    font: 700 clamp(42px, 12vw, 60px)/.87 "Bodoni Moda", Didot, Georgia, serif;
-    letter-spacing: -.055em;
-  }
-
-  .tagline {
-    width: 61%;
-    margin: 10px 0 0;
-    font: 600 clamp(20px, 5.8vw, 27px)/1.02 "Bodoni Moda", Didot, Georgia, serif;
-  }
-
-  .intro {
-    width: 59%;
-    margin: 9px 0 0;
-    color: #403a3e;
-    font-size: clamp(11px, 3vw, 14px);
-    line-height: 1.35;
-  }
-
-  .benefitStrip {
-    position: absolute;
-    right: 12px;
-    bottom: 96px;
-    left: 12px;
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 4px;
-  }
-
-  .benefitItem {
-    color: #171317;
-    text-align: center;
-    font-size: clamp(8px, 2.1vw, 10px);
-    font-weight: 720;
-    line-height: 1.15;
-  }
-
-  .benefitIcon {
-    width: 29px;
-    height: 29px;
-    margin: 0 auto 5px;
-    display: block;
-    color: var(--pink);
-  }
-
-  .community {
-    position: absolute;
-    bottom: 24px;
-    left: 18px;
-    margin: 0;
-    color: var(--pink);
-    font: italic clamp(28px, 8vw, 38px)/.92 "Brush Script MT", cursive;
-    transform: rotate(-4deg);
-  }
-
-  .card {
-    position: static;
-    z-index: 2;
-    width: calc(100% - 24px);
-    height: auto;
-    margin: -8px auto 24px;
-    padding: 26px 18px;
-    border-radius: 24px;
-    background: rgba(255, 255, 255, .97);
-    box-shadow: 0 20px 55px rgba(72, 35, 52, .16);
-  }
-
+  .card { position: relative; z-index: 2; width: calc(100% - 24px); margin: -6px auto 24px; padding: 26px 18px; border-radius: 24px; background: rgba(255, 255, 255, .83); box-shadow: 0 20px 55px rgba(72, 35, 52, .16); }
   .card h2 { font-size: clamp(34px, 9vw, 44px); text-align: center; }
   .cardLead { margin: 7px 0 18px; font-size: 13px; text-align: center; }
   .grid { gap: 11px 10px; }
   .field { gap: 4px; }
   label { font-size: 11px; }
-
-  input,
-  select {
-    height: 43px;
-    padding: 0 11px;
-    border-width: 1px;
-    border-radius: 9px;
-    font-size: 13px;
-  }
-
+  input, select { height: 43px; padding: 0 11px; border-radius: 9px; font-size: 13px; }
   .phone { grid-template-columns: 58px 1fr; gap: 8px; }
-  .prefix { height: 43px; border-width: 1px; border-radius: 9px; font-size: 13px; }
+  .prefix { height: 43px; border-radius: 9px; font-size: 13px; }
   .checks { gap: 8px; margin: 14px 0; }
   .check { grid-template-columns: 18px 1fr; gap: 9px; font-size: 11px; }
   .check input { width: 18px; height: 18px; }
@@ -470,51 +229,25 @@ input::placeholder { color: #9b9599; }
   .success h2 { font-size: 36px; }
   .success p { margin-top: 14px; font-size: 13px; }
 
-  .unboxingSection {
-    display: grid;
-    grid-template-columns: 1fr;
-    padding: 0 12px 28px;
-    background: #fff5f8;
-  }
+  .unboxingSection { position: static; width: auto; display: grid; grid-template-columns: 1fr; padding: 0 12px 28px; background: #fff5f8; }
+  .invitationVisual { min-height: clamp(245px, 72vw, 360px); display: block; border-radius: 24px 24px 0 0; background: url('/assets/creator/application-page-background-v3.webp') 8% bottom / auto 470px no-repeat; }
+  .selectionCopy { padding: 20px 12px 4px; border: 0; border-radius: 0; background: transparent; box-shadow: none; text-align: center; }
+  .selectionCopy h2 { font-size: clamp(34px, 9.5vw, 46px); }
+  .selectionBenefits { grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 18px; }
+  .selectionBenefit { min-height: 56px; padding: 10px; border-color: rgba(233, 0, 103, .08); background: rgba(255, 255, 255, .68); font-size: 11px; text-align: left; }
+  footer { position: static; transform: none; padding: 20px 12px 25px; text-align: center; white-space: normal; }
+}
 
-  .invitationVisual {
-    min-height: clamp(245px, 72vw, 360px);
-    border-radius: 24px 24px 0 0;
-    background: url('/assets/creator/application-page-background-v2.webp') 38% bottom / auto 430px no-repeat;
-  }
+@media (max-width: 430px) {
+  .heroPanel { min-height: 630px; }
+  h1 { font-size: 45px; }
+  .tagline { font-size: 21px; }
+  .intro { font-size: 11px; }
+  .grid { grid-template-columns: 1fr; }
+  .field.full { grid-column: auto; }
+  .selectionBenefits { grid-template-columns: 1fr; }
+}
 
-  .selectionCopy {
-    padding: 20px 12px 4px;
-    text-align: center;
-  }
-
-  .selectionCopy h2 {
-    margin: 0;
-    font: 700 clamp(34px, 9.5vw, 46px)/.98 "Bodoni Moda", Didot, Georgia, serif;
-    letter-spacing: -.035em;
-  }
-
-  .selectionCopy h2::first-line { color: var(--ink); }
-  .selectionCopy > p:not(.eyebrow) { display: none; }
-
-  .selectionBenefits {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 9px;
-    margin-top: 18px;
-  }
-
-  .selectionBenefit {
-    min-height: 56px;
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    padding: 10px;
-    border: 1px solid rgba(233, 0, 103, .08);
-    border-radius: 14px;
-    background: rgba(255, 255, 255, .62);
-    color: #211b20;
-    font-size: 11px;
-    font-weight: 650;
-    line-height: 1.25;
-    text-align: left;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}

@@ -2927,6 +2927,12 @@ function isPlatformAdmin(request) {
   return getAuthorizedSession(request)?.role === "admin";
 }
 
+function isKarolMarketingManager(request) {
+  const session = getAuthorizedSession(request);
+  const karolAccount = /^karol(?:ay)?\b/i.test(String(STORE_OWNER_NAME || "").trim());
+  return session?.role === "admin" || (session?.role === "owner" && karolAccount);
+}
+
 /* ============================================================
    IMAGE DATA
    ============================================================ */
@@ -4492,8 +4498,8 @@ async function handleLogin(
         ownerName: STORE_OWNER_NAME,
         commissionPercent: STORE_COMMISSION_PERCENT,
         permissions: role === "admin"
-          ? ["products", "inventory", "orders", "payments", "promotions", "platform"]
-          : ["products", "inventory", "orders", "commissions", "promotions"]
+          ? ["products", "inventory", "orders", "payments", "promotions", "platform", "marketing"]
+          : ["products", "inventory", "orders", "commissions", "promotions", ...(/^karol(?:ay)?\b/i.test(String(STORE_OWNER_NAME || "").trim()) ? ["marketing"] : [])]
       },
 
       expiresIn:
@@ -7572,7 +7578,7 @@ async function uploadCreatorMarketingFile(assetId, value, name, label) {
 
 async function getStoreOwnerMarketingAssets(request, response) {
   if (!isAuthorized(request)) return sendError(response, 401, "Sign in to Store Loader.");
-  if (!isPlatformAdmin(request)) return sendError(response, 403, "Marketing Library is reserved for CajaModa administration.");
+  if (!isKarolMarketingManager(request)) return sendError(response, 403, "Marketing Library is reserved for CajaModa administration.");
   const result = await fetch(`${SUPABASE_URL}/rest/v1/creator_marketing_assets?select=*&order=display_order.asc,created_at.desc&limit=500`, { headers: livePresenceHeaders() });
   if (!result.ok) return sendError(response, 503, "Marketing Library is temporarily unavailable.");
   const rows = await result.json().catch(() => []);
@@ -7581,7 +7587,7 @@ async function getStoreOwnerMarketingAssets(request, response) {
 
 async function createStoreOwnerMarketingAsset(request, response) {
   if (!isAuthorized(request)) return sendError(response, 401, "Sign in to Store Loader.");
-  if (!isPlatformAdmin(request)) return sendError(response, 403, "Marketing Library is reserved for CajaModa administration.");
+  if (!isKarolMarketingManager(request)) return sendError(response, 403, "Marketing Library is reserved for CajaModa administration.");
   const body = await readBody(request);
   let record;
   try { record = creatorMarketingAssetRecord(body); }
@@ -7604,7 +7610,7 @@ async function createStoreOwnerMarketingAsset(request, response) {
 
 async function updateStoreOwnerMarketingAsset(request, response, assetId) {
   if (!isAuthorized(request)) return sendError(response, 401, "Sign in to Store Loader.");
-  if (!isPlatformAdmin(request)) return sendError(response, 403, "Marketing Library is reserved for CajaModa administration.");
+  if (!isKarolMarketingManager(request)) return sendError(response, 403, "Marketing Library is reserved for CajaModa administration.");
   const body = await readBody(request);
   let record;
   try {
@@ -7626,7 +7632,7 @@ async function updateStoreOwnerMarketingAsset(request, response, assetId) {
 
 async function deleteStoreOwnerMarketingAsset(request, response, assetId) {
   if (!isAuthorized(request)) return sendError(response, 401, "Sign in to Store Loader.");
-  if (!isPlatformAdmin(request)) return sendError(response, 403, "Marketing Library is reserved for CajaModa administration.");
+  if (!isKarolMarketingManager(request)) return sendError(response, 403, "Marketing Library is reserved for CajaModa administration.");
   const lookup = await fetch(`${SUPABASE_URL}/rest/v1/creator_marketing_assets?id=eq.${encodeURIComponent(assetId)}&select=media_path,thumbnail_path&limit=1`, { headers: livePresenceHeaders() });
   const rows = lookup.ok ? await lookup.json().catch(() => []) : [];
   const asset = Array.isArray(rows) ? rows[0] : null;

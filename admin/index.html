@@ -3385,7 +3385,7 @@ body:has(#panel-creators.active),body:has(#panel-marketing.active),.loaderApp:ha
       Creator Network
     </button>
 
-    <button class="tabButton" data-tab="marketing" data-admin-only hidden>
+    <button class="tabButton" data-tab="marketing" data-marketing-manager hidden>
       <span class="navIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="m4 15 5-5 4 4 3-3 4 4"/><circle cx="15.5" cy="8.5" r="1.5"/></svg></span>
       Marketing Hub
     </button>
@@ -3629,7 +3629,7 @@ body:has(#panel-creators.active),body:has(#panel-marketing.active),.loaderApp:ha
 <!-- ==========================================================
      MARKETING HUB
      ========================================================== -->
-<section id="panel-marketing" class="panel" data-admin-only hidden>
+<section id="panel-marketing" class="panel" data-marketing-manager hidden>
 <div class="creatorNetworkShell">
 <header class="marketingAdminHeader"><div><div class="creatorNetworkEyebrow">CajaModa · Creator Network</div><h1>Marketing Hub</h1><p>Organize, upload and download ready-to-post content.</p></div><label class="marketingSearch"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg><input id="creatorMarketingSearch" type="search" placeholder="Search content, outfits or locations" aria-label="Search marketing content"></label><div class="marketingAdminActions"><button class="marketingTopButton primary" type="button" data-marketing-tab="create">Upload Content</button><button class="marketingTopButton" type="button" data-download-visible-marketing>Download</button><div class="marketingAdminAccess"><span class="marketingAdminAvatar">CM</span><span><strong>CajaModa Admin</strong>Team access</span></div></div></header>
 <div class="marketingCategoryStrip" aria-label="CajaModa content categories"><article class="marketingCategoryCard"><img src="/assets/marketing-placeholders/featured-reel.webp" alt="Baño del sol"><strong>Baño<br>del sol</strong></article><article class="marketingCategoryCard"><img src="/assets/marketing-placeholders/white-look.webp" alt="Rápido y fácil"><strong>Rápido<br>y fácil</strong></article><article class="marketingCategoryCard"><img src="/assets/marketing-placeholders/black-look.webp" alt="Noches largas"><strong>Noches<br>largas</strong></article><article class="marketingCategoryCard"><img src="/assets/marketing-placeholders/story.webp" alt="Días tranquilo"><strong>Días<br>tranquilo</strong></article></div>
@@ -4172,10 +4172,14 @@ body:has(#panel-creators.active),body:has(#panel-marketing.active),.loaderApp:ha
 
   function syncAnalyticsAccess(){
     const allowed = ownerProfile?.role === "admin";
+    const marketingAllowed = ownerProfile?.permissions?.includes("marketing");
     qsa("[data-admin-only]").forEach(element => {
       element.hidden = !allowed;
     });
-    if(!allowed && ($("panel-analytics")?.classList.contains("active") || $("panel-creators")?.classList.contains("active") || $("panel-marketing")?.classList.contains("active"))){
+    qsa("[data-marketing-manager]").forEach(element => {
+      element.hidden = !marketingAllowed;
+    });
+    if((!allowed && ($("panel-analytics")?.classList.contains("active") || $("panel-creators")?.classList.contains("active"))) || (!marketingAllowed && $("panel-marketing")?.classList.contains("active"))){
       showPanel("dashboard");
     }
   }

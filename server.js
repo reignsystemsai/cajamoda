@@ -144,11 +144,11 @@ const CARTAGENA_PICKUP_ADDRESS = "Cl. 35 #10-22, piso 1, local 1, San Diego, Car
 const STOREFRONT_URL = String(
   process.env.STOREFRONT_URL || "https://www.cajamoda.com"
 ).replace(/\/$/, "");
-const CREATOR_AGREEMENT_VERSION = "2026-09-15-earnings-es";
-const CREATOR_AGREEMENT_DISPLAY_VERSION = "15 de septiembre de 2026";
+const CREATOR_AGREEMENT_VERSION = "2026-09-17-creator-network-es";
+const CREATOR_AGREEMENT_DISPLAY_VERSION = "17 de septiembre de 2026";
 const CREATOR_AGREEMENT_CONSENT = "Declaro que he leído y acepto el Acuerdo del Programa de Creadoras de CajaModa, los Términos y Condiciones y la Política de Privacidad. Entiendo que al marcar esta casilla y seleccionar Aceptar y continuar realizo mi firma electrónica. Acepto recibir y conservar estos registros por medios electrónicos.";
 const CREATOR_COMMISSION_EXPLANATION = "CajaModa asigna a cada producto una base de ganancias después de considerar sus costos internos. Tus ganancias corresponden al porcentaje de tu nivel aplicado a esa base. Los costos y cálculos internos de CajaModa son confidenciales.";
-const CREATOR_AGREEMENT_TEXT = `Acuerdo del Programa de Creadoras CajaModa. La creadora participa como creadora independiente, no como empleada, propietaria de tienda, socia, agente, franquiciada ni representante legal de CajaModa. ${CREATOR_COMMISSION_EXPLANATION} 1. Ejemplo de Nivel 1: una base de ganancias de COP 5.585 multiplicada por 10% genera COP 559. 2. Ejemplo de Nivel 2: una base de ganancias de COP 16.800 multiplicada por 20% genera COP 3.360. 3. Ejemplo de Nivel 3: una base de ganancias de COP 16.800 multiplicada por 30% genera COP 5.040. Los pagos autorizados pero no capturados permanecen pendientes y no generan ganancias. Las ganancias obtenidas del día 1 al 15 se programan para pagarse alrededor del último día calendario de ese mes. Las ganancias obtenidas del día 16 al final del mes se programan para pagarse alrededor del día 15 del mes siguiente. La creadora es responsable de cumplir las leyes, divulgaciones, impuestos y regulaciones de su país. Cualquiera de las partes puede terminar la participación en cualquier momento. Se prohíben el fraude, robo, estafas, contracargos, manipulación y actividades ilegales; CajaModa puede retener o revertir las ganancias relacionadas, retirar participantes y tomar medidas legales para recuperar pérdidas. CajaModa es una empresa estadounidense y no ofrece reembolsos discrecionales, excepto cuando la ley aplicable los exija.`;
+const CREATOR_AGREEMENT_TEXT = `Acuerdo del Programa de Creadoras CajaModa. La creadora participa como creadora independiente, no como empleada, propietaria de tienda, socia, agente, franquiciada ni representante legal de CajaModa. En el nivel de entrada no necesita comprar ni mantener inventario. Los ingresos no están garantizados y dependen de las ventas elegibles y de los términos aplicables del programa. Las oportunidades ampliadas, incluidas posibles funciones locales de inventario, entrega, recogida o distribución, son discrecionales, dependen del desempeño y pueden requerir un acuerdo separado; no se otorgan automáticamente. ${CREATOR_COMMISSION_EXPLANATION} 1. Ejemplo de Nivel 1: una base de ganancias de COP 5.585 multiplicada por 10% genera COP 559. 2. Ejemplo de Nivel 2: una base de ganancias de COP 16.800 multiplicada por 20% genera COP 3.360. 3. Ejemplo de Nivel 3: una base de ganancias de COP 16.800 multiplicada por 30% genera COP 5.040. Los pagos autorizados pero no capturados permanecen pendientes y no generan ganancias. Las ganancias obtenidas del día 1 al 15 se programan para pagarse alrededor del último día calendario de ese mes. Las ganancias obtenidas del día 16 al final del mes se programan para pagarse alrededor del día 15 del mes siguiente. La creadora es responsable de cumplir las leyes, divulgaciones, impuestos y regulaciones de su país. Cualquiera de las partes puede terminar la participación en cualquier momento. Se prohíben el fraude, robo, estafas, contracargos, manipulación y actividades ilegales; CajaModa puede retener o revertir las ganancias relacionadas, retirar participantes y tomar medidas legales para recuperar pérdidas. CajaModa es una empresa estadounidense y no ofrece reembolsos discrecionales, excepto cuando la ley aplicable los exija.`;
 const CREATOR_AGREEMENT_SHA256 = crypto.createHash("sha256").update(CREATOR_AGREEMENT_TEXT).digest("hex");
 const CREATOR_ACCESS_TTL_MS = 48 * 60 * 60 * 1000;
 const CREATOR_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -6362,7 +6362,7 @@ function creatorApplicationEmailHtml(firstName) {
         <tr><td align="center" style="padding:34px 34px 18px">
           <div style="color:#d1005a;font-size:11px;font-weight:700;letter-spacing:4px">TU SOLICITUD YA ESTÁ BRILLANDO ✦</div>
           <h1 style="margin:14px 0 16px;font-family:Georgia,'Times New Roman',serif;font-size:34px;font-weight:400;line-height:1.15">Hola ${name},</h1>
-          <p style="margin:0;color:#393139;font-size:16px;line-height:1.65">Recibimos tu solicitud para formar parte del Programa de Creadoras CajaModa. Si eres seleccionada, tendrás tu propio enlace, un Centro de Marketing y recompensas que crecen con tus ventas, con el respaldo del marketing nacional de CajaModa.</p>
+          <p style="margin:0;color:#393139;font-size:16px;line-height:1.65">Recibimos tu solicitud para formar parte de la Red de Creadoras CajaModa. Si eres seleccionada, podrás activar tu tienda personal y vender sin comprar ni mantener inventario. CajaModa gestiona la marca, los productos, la tecnología, el pago, la entrega y el seguimiento.</p>
           <div style="display:inline-block;margin:22px 0 12px;padding:12px 24px;border-radius:999px;background:#111111;color:#ffffff;font-size:12px;font-weight:700;letter-spacing:2px">RESPUESTA EN 24 A 48 HORAS</div>
           <p style="margin:0;color:#6e6269;font-size:13px;line-height:1.5">Te enviaremos otro correo si has sido seleccionada.</p>
         </td></tr>
@@ -6378,7 +6378,7 @@ function creatorApplicationEmailHtml(firstName) {
         </td></tr>
         <tr><td align="center" style="padding:0 34px 32px">
           <div style="color:#d1005a;font-size:10px;font-weight:700;letter-spacing:3px">SI ERES SELECCIONADA, PODRÍAS</div>
-          <p style="margin:14px 0 0;color:#2c252a;font-size:14px;line-height:1.75">✦ Tener tu propio enlace personal<br>✦ Acceder al Centro de Marketing<br>✦ Ganar comisiones por tus ventas<br>✦ Desbloquear recompensas al crecer<br>✦ Recibir apoyo de campañas nacionales CajaModa</p>
+          <p style="margin:14px 0 0;color:#2c252a;font-size:14px;line-height:1.75">✦ Activar tu propia tienda CajaModa<br>✦ Acceder a contenido listo para vender<br>✦ Ganar comisiones por ventas elegibles<br>✦ Desbloquear mayores comisiones al crecer<br>✦ Recibir respaldo de CajaModa</p>
         </td></tr>
         <tr><td align="center" style="padding:28px 24px;background:#171217;color:#ffffff">
           <div style="font-family:Georgia,'Times New Roman',serif;font-size:18px;letter-spacing:3px">CAJAMODA COLOMBIA</div>
@@ -6771,11 +6771,11 @@ async function approveCreatorAndSendInvite(application) {
     firstName: application.first_name,
     lastName: application.last_name,
     email: application.email,
-    subject: "Fuiste seleccionada para ser creadora CajaModa",
+    subject: "Tu invitación para activar tu tienda CajaModa",
     banner: "ESTÁS INVITADA ✦",
-    heading: "¡Fuiste seleccionada!",
-    message: `Ya eres parte de la comunidad de Creadoras CajaModa. Tendrás tu enlace personal, un Centro de Marketing con contenido listo para compartir, comisiones que crecen por nivel y recompensas al alcanzar tus metas. CajaModa te respalda con campañas nacionales, promoción de productos y visibilidad de marca. Acepta la invitación para firmar tu acuerdo y activar tu cuenta.`,
-    buttonLabel: "ACEPTAR INVITACIÓN",
+    heading: "Tu camino como Creadora CajaModa comienza ahora",
+    message: `Fuiste seleccionada para formar parte de la Red de Creadoras CajaModa. Nosotros ponemos la marca, los productos, la tecnología, el marketing y la logística. Tú construyes tu comunidad, compartes tu tienda y ganas con tus ventas. Activa tu tienda para comenzar.`,
+    buttonLabel: "ACTIVAR MI TIENDA",
     buttonUrl: creatorAccessUrl("/creators/accept/", token),
     note: "Este enlace es personal y estará disponible durante 48 horas.",
     idempotencyKey: `creator-invite-${application.id}-${creatorTokenHash(token).slice(0, 16)}`
@@ -7342,8 +7342,8 @@ async function creatorRewardState(profile, commissionBase, { notify = false } = 
   }
   if (notify && profile?.email) {
     const milestones = [
-      { reached: commissionBase >= CREATOR_TIER_2_SALES_COP, column: "level2_notified_at", level: 2, subject: "¡Desbloqueaste el Nivel 2 de CajaModa!", heading: "¡DESBLOQUEADO!", message: "Alcanzaste COP 300.000 en base de ganancias. Tu CajaModa Unboxing Experience está ganada y ahora ganas 20%. Sigue usando tu Centro de Marketing para avanzar hacia el Nivel 3." },
-      { reached: commissionBase >= CREATOR_TIER_3_SALES_COP, column: "level3_notified_at", level: 3, subject: "¡Desbloqueaste el Nivel 3 de CajaModa!", heading: "NIVEL 3 DESBLOQUEADO", message: "Alcanzaste COP 1.000.000 en base de ganancias. Ahora ganas 30%, tienes 15% de Descuento Creadora y eres elegible para consideración en campañas de ciudad, eventos y oportunidades especiales." }
+      { reached: commissionBase >= CREATOR_TIER_2_SALES_COP, column: "level2_notified_at", level: 2, subject: "¡Avanzaste a Vendedora CajaModa!", heading: "VENDEDORA DESBLOQUEADA", message: "Alcanzaste COP 300.000 en base de ganancias. Tu CajaModa Unboxing Experience está ganada y ahora ganas 20%. Sigue usando tu Centro de Contenido para avanzar hacia Creadora Destacada." },
+      { reached: commissionBase >= CREATOR_TIER_3_SALES_COP, column: "level3_notified_at", level: 3, subject: "¡Avanzaste a Creadora Destacada!", heading: "CREADORA DESTACADA", message: "Alcanzaste COP 1.000.000 en base de ganancias. Ahora ganas 30%, tienes 15% de Descuento Creadora y eres elegible para consideración en campañas, eventos y posibles oportunidades locales. Estas oportunidades dependen del desempeño, no son automáticas y pueden requerir términos adicionales." }
     ];
     for (const milestone of milestones) {
       if (!milestone.reached || current?.[milestone.column]) continue;

@@ -2556,7 +2556,7 @@ function getNequiReference(order) {
 async function handleCreateNequiOrder(request, response) {
   if (!wix) return sendError(response, 503, "Wix no está configurado para recibir el pedido.");
   if (!NEQUI_PHONE) return sendError(response, 503, "El número Nequi todavía no está configurado.");
-  const body = await readBody(request);
+  const body = await checkoutOperationStage("REQUEST_BODY", () => readBody(request));
   const requestId = safeText(body?.requestId, 100);
   const reference = safeText(body?.reference, 100);
   const items = Array.isArray(body?.cart?.items) ? body.cart.items.slice(0, 50) : [];
@@ -2564,10 +2564,10 @@ async function handleCreateNequiOrder(request, response) {
   if (!reference) return sendError(response, 400, "Ingresa el número de referencia Nequi.");
 
   const externalOrderId = nequiExternalOrderId(requestId);
-  const existingResult = await wix.orders.searchOrders({
+  const existingResult = await checkoutOperationStage("WIX_ORDER_LOOKUP", () => wix.orders.searchOrders({
     filter: { "channelInfo.externalOrderId": externalOrderId },
     cursorPaging: { limit: 1 }
-  });
+  }));
   const existing = existingResult?.orders?.[0];
   if (existing) {
     await analytics.recordOrderContext({
@@ -2588,10 +2588,10 @@ async function handleCreateNequiOrder(request, response) {
     });
   }
 
-  const lines = await verifiedCheckoutLines(items);
+  const lines = await checkoutOperationStage("CATALOG_VERIFY", () => verifiedCheckoutLines(items));
   const subtotal = lines.reduce((sum, line) => sum + line.amount * line.quantity, 0);
   const customer = checkoutCustomer(body);
-  const delivery = await checkoutDelivery(body, lines);
+  const delivery = await checkoutOperationStage("DELIVERY_BUILD", () => checkoutDelivery(body, lines));
   const deliveryTitle = delivery.title;
   const title = `${deliveryTitle} · Ref ${reference}`;
   const address = {
@@ -2602,10 +2602,10 @@ async function handleCreateNequiOrder(request, response) {
     addressLine1: delivery.addressLine
   };
 
-  const imported = await wix.orders.importOrder({
+  const imported = await checkoutOperationStage("WIX_ORDER_IMPORT", () => wix.orders.importOrder({
     number: importedOrderNumber(externalOrderId),
     status: "APPROVED",
-    paymentStatus: "NOT_PAID",
+    paymentStatus: "PENDING_MERCHANT",
     fulfillmentStatus: "NOT_FULFILLED",
     channelInfo: { type: "OTHER_PLATFORM", externalOrderId },
     currency: "COP",
@@ -2633,7 +2633,7 @@ async function handleCreateNequiOrder(request, response) {
       discount: { amount: "0" },
       total: { amount: String(subtotal + delivery.fee) }
     }
-  });
+  }));
 
   const order = imported?.order || imported;
   await analytics.recordOrderContext({
@@ -2656,7 +2656,7 @@ async function handleCreateNequiOrder(request, response) {
     ok: true,
     orderId: order?._id || order?.id,
     orderNumber: order?.number,
-    paymentStatus: order?.paymentStatus || "NOT_PAID"
+    paymentStatus: order?.paymentStatus || "PENDING_MERCHANT"
   });
 }
 

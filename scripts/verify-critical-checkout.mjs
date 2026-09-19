@@ -41,7 +41,7 @@ const checks = [
   ["PaymentIntent does not contact Wix or recalculate delivery", !paymentHandler.includes("verifiedCheckoutCatalogItems") && !paymentHandler.includes("calculateDeliveryQuote(")],
   ["Libéralo never falls back to Rápido", server.includes('if (mode === "ship") return "Libéralo";') && server.includes('if (mode === "fast") return "Rápido Nacional";')],
   ["Authorized Stripe orders stay pending in Wix", server.includes('paymentStatus: intent.status === "requires_capture" ? "PENDING_MERCHANT" : "PAID"')],
-  ["Nequi orders are created as unpaid for manual confirmation", server.includes('paymentStatus: "NOT_PAID"')],
+  ["Nequi orders use the previously working pending-merchant status", server.includes('paymentStatus: order?.paymentStatus || "PENDING_MERCHANT"')],
   ["Captured Stripe orders are marked paid in Wix", server.includes("paymentCollectionMarkOrderAsPaid")],
   ["Stripe order emails are itemized and idempotent", server.includes("stripeOrderEmailHtml") && server.includes('idempotencyKey: `stripe-order-${intent.id}-${state}`')]
 ];

@@ -2605,7 +2605,7 @@ async function handleCreateNequiOrder(request, response) {
   const imported = await wix.orders.importOrder({
     number: importedOrderNumber(externalOrderId),
     status: "APPROVED",
-    paymentStatus: "PENDING_MERCHANT",
+    paymentStatus: "NOT_PAID",
     fulfillmentStatus: "NOT_FULFILLED",
     channelInfo: { type: "OTHER_PLATFORM", externalOrderId },
     currency: "COP",
@@ -2656,7 +2656,7 @@ async function handleCreateNequiOrder(request, response) {
     ok: true,
     orderId: order?._id || order?.id,
     orderNumber: order?.number,
-    paymentStatus: order?.paymentStatus || "PENDING_MERCHANT"
+    paymentStatus: order?.paymentStatus || "NOT_PAID"
   });
 }
 

@@ -3063,7 +3063,7 @@ img{
    OWNER EVENT ANALYTICS — CLEAR FROST
    ============================================================ */
 
-[data-admin-only][hidden]{display:none!important}
+[data-admin-only][hidden],[data-network-manager][hidden]{display:none!important}
 #panel-analytics{margin:-28px;padding:30px;min-height:calc(100vh - 42px);border-radius:28px;background:
   radial-gradient(circle at 12% 4%,rgba(94,118,255,.18),transparent 26%),
   radial-gradient(circle at 88% 18%,rgba(34,220,170,.11),transparent 22%),
@@ -3373,14 +3373,14 @@ body:has(#panel-creators.active),body:has(#panel-marketing.active),.loaderApp:ha
     <button
       class="tabButton"
       data-tab="analytics"
-      data-admin-only
+      data-network-manager
       hidden
     >
       <span class="navIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V9"/><path d="M10 19V5"/><path d="M16 19v-7"/><path d="M22 19H2"/></svg></span>
       Network Management
     </button>
 
-    <button class="tabButton" data-tab="creators" data-admin-only hidden>
+    <button class="tabButton" data-tab="creators" data-network-manager hidden>
       <span class="navIcon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M2.5 20c.5-4 2.4-6 5.5-6s5 2 5.5 6"/><path d="M13.5 15.5c1-.9 2.2-1.4 3.5-1.4 2.7 0 4.2 1.8 4.5 5.4"/></svg></span>
       Red de Creadoras
     </button>
@@ -3541,7 +3541,7 @@ body:has(#panel-creators.active),body:has(#panel-marketing.active),.loaderApp:ha
 <section
   id="panel-analytics"
   class="panel"
-  data-admin-only
+  data-network-manager
   hidden
 >
   <div class="analyticsShell">
@@ -3616,7 +3616,7 @@ body:has(#panel-creators.active),body:has(#panel-marketing.active),.loaderApp:ha
 <!-- ==========================================================
      CREATOR NETWORK
      ========================================================== -->
-<section id="panel-creators" class="panel" data-admin-only hidden>
+<section id="panel-creators" class="panel" data-network-manager hidden>
 <div class="creatorNetworkShell">
 <header class="creatorNetworkTop"><div><div class="creatorNetworkEyebrow">CajaModa · Red de Creadoras</div><h1 class="creatorNetworkTitle">Red de Creadoras</h1><p class="creatorNetworkSub">Gestiona el recorrido de las creadoras desde la solicitud y activación de su tienda hasta su desempeño en ventas y elegibilidad para oportunidades locales.</p></div><div class="creatorNetworkBadge">Panel en vivo</div></header>
 <div class="creatorSummaryGrid"><article class="creatorSummaryCard"><div class="creatorSummaryLabel">Nuevas solicitudes</div><div id="creatorIncomingCount" class="creatorSummaryValue">0</div></article><article class="creatorSummaryCard"><div class="creatorSummaryLabel">Creadoras aprobadas</div><div id="creatorSelectedCount" class="creatorSummaryValue">0</div></article><article class="creatorSummaryCard"><div class="creatorSummaryLabel">Clasificación activa</div><div id="creatorRankedCount" class="creatorSummaryValue">0</div></article></div>
@@ -4172,14 +4172,18 @@ body:has(#panel-creators.active),body:has(#panel-marketing.active),.loaderApp:ha
 
   function syncAnalyticsAccess(){
     const allowed = ownerProfile?.role === "admin";
+    const networkAllowed = ownerProfile?.permissions?.includes("network");
     const marketingAllowed = ownerProfile?.permissions?.includes("marketing");
     qsa("[data-admin-only]").forEach(element => {
       element.hidden = !allowed;
     });
+    qsa("[data-network-manager]").forEach(element => {
+      element.hidden = !networkAllowed;
+    });
     qsa("[data-marketing-manager]").forEach(element => {
       element.hidden = !marketingAllowed;
     });
-    if((!allowed && ($("panel-analytics")?.classList.contains("active") || $("panel-creators")?.classList.contains("active"))) || (!marketingAllowed && $("panel-marketing")?.classList.contains("active"))){
+    if((!networkAllowed && ($("panel-analytics")?.classList.contains("active") || $("panel-creators")?.classList.contains("active"))) || (!marketingAllowed && $("panel-marketing")?.classList.contains("active"))){
       showPanel("dashboard");
     }
   }

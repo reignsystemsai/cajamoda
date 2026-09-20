@@ -2923,6 +2923,14 @@ function isAuthorized(request) {
   return Boolean(getAuthorizedSession(request));
 }
 
+function storeOwnerPermissions(role) {
+  if (role === "admin") {
+    return ["products", "inventory", "orders", "payments", "promotions", "platform", "marketing", "network"];
+  }
+  const karolAccount = /^karol(?:ay)?\b/i.test(String(STORE_OWNER_NAME || "").trim());
+  return ["products", "inventory", "orders", "commissions", "promotions", ...(karolAccount ? ["marketing", "network"] : [])];
+}
+
 function isPlatformAdmin(request) {
   return getAuthorizedSession(request)?.role === "admin";
 }
@@ -4503,9 +4511,7 @@ async function handleLogin(
         storeName: STORE_NAME,
         ownerName: STORE_OWNER_NAME,
         commissionPercent: STORE_COMMISSION_PERCENT,
-        permissions: role === "admin"
-          ? ["products", "inventory", "orders", "payments", "promotions", "platform", "marketing", "network"]
-          : ["products", "inventory", "orders", "commissions", "promotions", ...(/^karol(?:ay)?\b/i.test(String(STORE_OWNER_NAME || "").trim()) ? ["marketing", "network"] : [])]
+        permissions: storeOwnerPermissions(role)
       },
 
       expiresIn:
@@ -8316,6 +8322,7 @@ async function handleStoreOwnerProfile(request, response) {
       storeName: STORE_NAME,
       ownerName: STORE_OWNER_NAME,
       commissionPercent: STORE_COMMISSION_PERCENT,
+      permissions: storeOwnerPermissions(session.role),
       entryPath: "/startup/"
     }
   });

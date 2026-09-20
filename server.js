@@ -2933,6 +2933,12 @@ function isKarolMarketingManager(request) {
   return session?.role === "admin" || (session?.role === "owner" && karolAccount);
 }
 
+function isKarolNetworkManager(request) {
+  const session = getAuthorizedSession(request);
+  const karolAccount = /^karol(?:ay)?\b/i.test(String(STORE_OWNER_NAME || "").trim());
+  return session?.role === "admin" || (session?.role === "owner" && karolAccount);
+}
+
 /* ============================================================
    IMAGE DATA
    ============================================================ */
@@ -4498,8 +4504,8 @@ async function handleLogin(
         ownerName: STORE_OWNER_NAME,
         commissionPercent: STORE_COMMISSION_PERCENT,
         permissions: role === "admin"
-          ? ["products", "inventory", "orders", "payments", "promotions", "platform", "marketing"]
-          : ["products", "inventory", "orders", "commissions", "promotions", ...(/^karol(?:ay)?\b/i.test(String(STORE_OWNER_NAME || "").trim()) ? ["marketing"] : [])]
+          ? ["products", "inventory", "orders", "payments", "promotions", "platform", "marketing", "network"]
+          : ["products", "inventory", "orders", "commissions", "promotions", ...(/^karol(?:ay)?\b/i.test(String(STORE_OWNER_NAME || "").trim()) ? ["marketing", "network"] : [])]
       },
 
       expiresIn:
@@ -6491,7 +6497,7 @@ async function deliverCreatorApplicationConfirmation(application) {
 
 async function resendCreatorApplicationConfirmation(request, response, applicationId) {
   if (!isAuthorized(request)) return sendError(response, 401, "Sign in to Store Loader.");
-  if (!isPlatformAdmin(request)) return sendError(response, 403, "Creator management is reserved for CajaModa administration.");
+  if (!isKarolNetworkManager(request)) return sendError(response, 403, "Creator management is reserved for CajaModa administration.");
   if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) return sendError(response, 503, "Creator management is not configured.");
   const application = await findCreatorApplicationById(applicationId);
   if (!application) return sendError(response, 404, "Creator application not found.");
@@ -7645,7 +7651,7 @@ async function deleteStoreOwnerMarketingAsset(request, response, assetId) {
 
 async function updateCreatorRewardState(request, response, applicationId) {
   if (!isAuthorized(request)) return sendError(response, 401, "Sign in to Store Loader.");
-  if (!isPlatformAdmin(request)) return sendError(response, 403, "Creator rewards are reserved for CajaModa administration.");
+  if (!isKarolNetworkManager(request)) return sendError(response, 403, "Creator rewards are reserved for CajaModa administration.");
   const body = await readBody(request);
   const status = safeText(body.unboxingStatus, 30).toLowerCase();
   if (!["locked", "earned", "preparing", "sent"].includes(status)) return sendError(response, 400, "Choose a valid unboxing status.");
@@ -7737,7 +7743,7 @@ async function getCreatorPortal(request, response) {
 
 async function markCreatorCommissionsPaid(request, response, applicationId) {
   if (!isAuthorized(request)) return sendError(response, 401, "Sign in to Store Loader.");
-  if (!isPlatformAdmin(request)) return sendError(response, 403, "Creator payouts are reserved for CajaModa administration.");
+  if (!isKarolNetworkManager(request)) return sendError(response, 403, "Creator payouts are reserved for CajaModa administration.");
   const profilesResponse = await fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?application_id=eq.${encodeURIComponent(applicationId)}&select=id,agreement_version&limit=1`, { headers: livePresenceHeaders() });
   const profiles = profilesResponse.ok ? await profilesResponse.json().catch(() => []) : [];
   const profile = Array.isArray(profiles) ? profiles[0] : null;
@@ -7760,7 +7766,7 @@ async function markCreatorCommissionsPaid(request, response, applicationId) {
 
 async function getStoreOwnerCreatorSales(request, response, applicationId) {
   if (!isAuthorized(request)) return sendError(response, 401, "Sign in to Store Loader.");
-  if (!isPlatformAdmin(request)) return sendError(response, 403, "Creator sales are reserved for CajaModa administration.");
+  if (!isKarolNetworkManager(request)) return sendError(response, 403, "Creator sales are reserved for CajaModa administration.");
   if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) return sendError(response, 503, "Creator sales are not configured.");
 
   const profileResponse = await fetch(
@@ -8052,7 +8058,7 @@ async function getPublicCreatorLink(request, response, requestedSlug) {
 
 async function updateCreatorApplication(request, response, applicationId) {
   if (!isAuthorized(request)) return sendError(response, 401, "Sign in to Store Loader.");
-  if (!isPlatformAdmin(request)) return sendError(response, 403, "Creator management is reserved for CajaModa administration.");
+  if (!isKarolNetworkManager(request)) return sendError(response, 403, "Creator management is reserved for CajaModa administration.");
   if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) return sendError(response, 503, "Creator management is not configured.");
 
   const body = await readBody(request);
@@ -8126,7 +8132,7 @@ async function updateCreatorApplication(request, response, applicationId) {
 
 async function resendCreatorInvitation(request, response, applicationId) {
   if (!isAuthorized(request)) return sendError(response, 401, "Sign in to Store Loader.");
-  if (!isPlatformAdmin(request)) return sendError(response, 403, "Creator management is reserved for CajaModa administration.");
+  if (!isKarolNetworkManager(request)) return sendError(response, 403, "Creator management is reserved for CajaModa administration.");
   const headers = livePresenceHeaders();
   const [applicationResponse, profileResponse] = await Promise.all([
     fetch(`${SUPABASE_URL}/rest/v1/creator_applications?id=eq.${encodeURIComponent(applicationId)}&status=eq.approved&select=*&limit=1`, { headers }),
@@ -8149,7 +8155,7 @@ async function resendCreatorInvitation(request, response, applicationId) {
 
 async function deleteCreatorApplication(request, response, applicationId) {
   if (!isAuthorized(request)) return sendError(response, 401, "Sign in to Store Loader.");
-  if (!isPlatformAdmin(request)) return sendError(response, 403, "Creator management is reserved for CajaModa administration.");
+  if (!isKarolNetworkManager(request)) return sendError(response, 403, "Creator management is reserved for CajaModa administration.");
   if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) return sendError(response, 503, "Creator management is not configured.");
 
   const headers = {
@@ -8242,7 +8248,7 @@ async function handleStoreOwnerAnalytics(request, response, url) {
   if (!isAuthorized(request)) {
     return sendError(response, 401, "Sign in to Store Loader.");
   }
-  if (!isPlatformAdmin(request)) {
+  if (!isKarolNetworkManager(request)) {
     return sendError(response, 403, "Analytics is reserved for CajaModa administration.");
   }
 
@@ -8281,7 +8287,7 @@ async function handleStoreOwnerAnalyticsSettings(request, response) {
   if (!isAuthorized(request)) {
     return sendError(response, 401, "Sign in to Store Loader.");
   }
-  if (!isPlatformAdmin(request)) {
+  if (!isKarolNetworkManager(request)) {
     return sendError(response, 403, "Analytics settings are reserved for CajaModa administration.");
   }
 

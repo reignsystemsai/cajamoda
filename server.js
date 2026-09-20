@@ -7289,6 +7289,8 @@ function creatorTierProgress(commissionBase) {
 }
 
 async function syncCreatorTier(profile, commissionBase) {
+  const assignedTier = Math.round(Number(profile?.tier || 0));
+  if ([4, 5].includes(assignedTier) && Number(profile?.commission_rate) === assignedTier * 10) return profile;
   const tier = creatorTierForCommissionBase(commissionBase);
   if (Number(profile?.tier) === tier.number && Number(profile?.commission_rate) === tier.rate) return profile;
   const updatedAt = new Date().toISOString();
@@ -7736,7 +7738,7 @@ async function getCreatorPortal(request, response) {
       products: creatorVisibleProducts(row.products),
       commission_base: creatorCommissionBase(row.products),
       tier: {
-        number: Math.max(1, Math.min(3, Math.round(Number(row.commission_rate || 10) / 10))),
+        number: Math.max(1, Math.min(5, Math.round(Number(row.commission_rate || 10) / 10))),
         rate: Number(row.commission_rate || 0)
       },
       commission_amount: row.commission_amount,
@@ -8106,7 +8108,7 @@ async function updateCreatorApplication(request, response, applicationId) {
     }
   }
   if (status === "approved") {
-    const tier = [1, 2, 3].includes(Number(body?.tier)) ? Number(body.tier) : 1;
+    const tier = [1, 2, 3, 4, 5].includes(Number(body?.tier)) ? Number(body.tier) : 1;
     updates.tier = tier;
     updates.commission_rate = tier * 10;
     updates.approved_at = application.approved_at || now;

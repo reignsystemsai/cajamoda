@@ -3533,6 +3533,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
   function validatePaymentDetails() {
     const cart = readCart();
     const profile = checkoutFulfillmentProfile(cart);
+    const pickupOnly = profile.hasPronto && !profile.hasNational && selectedDelivery === "pickup";
     if(!deliveryPlanSelectionsComplete(cart)){
       goToStep("bag");
       showToast(profile.hasPronto&&!["pickup","moto"].includes(selectedDelivery)?"Elige recoger en punto o moto para tu pedido Pronto.":"Selecciona la entrega de cada producto.");
@@ -3558,7 +3559,7 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;background:rgba(255,255
       showToast("Ingresa tu número de teléfono.");
       return false;
     }
-    if (!$("deliveryCity")?.value.trim()) {
+    if (!pickupOnly && !$("deliveryCity")?.value.trim()) {
       $("deliveryCity")?.focus();
       showToast("Ingresa la ciudad de entrega.");
       return false;

@@ -2603,7 +2603,7 @@ async function handleCreateNequiOrder(request, response) {
   };
 
   const imported = await checkoutOperationStage("WIX_ORDER_IMPORT", () => wix.orders.importOrder({
-    number: importedOrderNumber(externalOrderId),
+    number: stripeImportedOrderNumber(externalOrderId),
     status: "APPROVED",
     paymentStatus: "PENDING_MERCHANT",
     fulfillmentStatus: "NOT_FULFILLED",

@@ -44,6 +44,7 @@ const checks = [
   ["Nequi orders use the previously working pending-merchant status", server.includes('paymentStatus: order?.paymentStatus || "PENDING_MERCHANT"')],
   ["Nequi orders use the defined Wix order-number helper", server.includes("number: stripeImportedOrderNumber(externalOrderId)") && !server.includes("number: importedOrderNumber(externalOrderId)")],
   ["Pickup-only checkout does not require a delivery city", checkout.includes('const pickupOnly = profile.hasPronto && !profile.hasNational && selectedDelivery === "pickup";') && checkout.includes('if (!pickupOnly && !$("deliveryCity")?.value.trim())')],
+  ["Nequi pickup imports use the complete fixed Wix address", server.includes('const address = delivery.method === "pickup"') && server.includes('city: "Cartagena"') && server.includes('subdivision: "BL"') && server.includes('postalCode: "130001"') && server.includes("addressLine1: CARTAGENA_PICKUP_ADDRESS")],
   ["Captured Stripe orders are marked paid in Wix", server.includes("paymentCollectionMarkOrderAsPaid")],
   ["Stripe order emails are itemized and idempotent", server.includes("stripeOrderEmailHtml") && server.includes('idempotencyKey: `stripe-order-${intent.id}-${state}`')]
 ];

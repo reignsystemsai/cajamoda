@@ -2594,13 +2594,21 @@ async function handleCreateNequiOrder(request, response) {
   const delivery = await checkoutOperationStage("DELIVERY_BUILD", () => checkoutDelivery(body, lines));
   const deliveryTitle = delivery.title;
   const title = `${deliveryTitle} · Ref ${reference}`;
-  const address = {
-    country: "CO",
-    city: delivery.city,
-    subdivision: delivery.state,
-    postalCode: delivery.postalCode,
-    addressLine1: delivery.addressLine
-  };
+  const address = delivery.method === "pickup"
+    ? {
+        country: "CO",
+        city: "Cartagena",
+        subdivision: "BL",
+        postalCode: "130001",
+        addressLine1: CARTAGENA_PICKUP_ADDRESS
+      }
+    : {
+        country: "CO",
+        city: delivery.city,
+        subdivision: delivery.state,
+        postalCode: delivery.postalCode,
+        addressLine1: delivery.addressLine
+      };
 
   const imported = await checkoutOperationStage("WIX_ORDER_IMPORT", () => wix.orders.importOrder({
     number: stripeImportedOrderNumber(externalOrderId),

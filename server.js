@@ -6623,21 +6623,40 @@ async function getCreatorApplications() {
   if (SUPABASE_SECRET_KEY.startsWith("eyJ")) {
     headers.Authorization = `Bearer ${SUPABASE_SECRET_KEY}`;
   }
+  async function getAllCreatorAnalyticsEvents() {
+    const pageSize = 5000;
+    const events = [];
+    let offset = 0;
+    while (true) {
+      const query = new URLSearchParams({
+        select: "event_type,session_id,order_id,value,campaign,server_verified",
+        source: "eq.creator",
+        campaign: "not.is.null",
+        order: "occurred_at.asc,event_id.asc",
+        limit: String(pageSize),
+        offset: String(offset)
+      });
+      const result = await fetch(`${SUPABASE_URL}/rest/v1/analytics_events?${query}`, { headers });
+      if (!result.ok) return [];
+      const page = await result.json();
+      if (!Array.isArray(page) || page.length === 0) break;
+      events.push(...page);
+      offset += page.length;
+    }
+    return events;
+  }
   const fields = [
     "id", "created_at", "first_name", "last_name", "phone", "email",
     "instagram_username", "tiktok_username", "department", "city", "heard_about", "status",
     "creator_slug", "tier", "commission_rate", "approved_at", "reviewed_at",
     "confirmation_email_status"
   ].join(",");
-  const [applicationsResponse, eventsResponse, profilesResponse, commissionsResponse, rewardsResponse] = await Promise.all([
+  const [applicationsResponse, events, profilesResponse, commissionsResponse, rewardsResponse] = await Promise.all([
     fetch(
       `${SUPABASE_URL}/rest/v1/creator_applications?select=${fields}&order=created_at.desc&limit=100`,
       { headers }
     ),
-    fetch(
-      `${SUPABASE_URL}/rest/v1/analytics_events?select=event_type,session_id,order_id,value,campaign,server_verified&source=eq.creator&campaign=not.is.null&limit=5000`,
-      { headers }
-    ),
+    getAllCreatorAnalyticsEvents(),
     fetch(`${SUPABASE_URL}/rest/v1/creator_profiles?select=id,application_id,status,agreement_version,agreement_accepted_at,profile_photo_path`, { headers }),
     fetch(`${SUPABASE_URL}/rest/v1/creator_commissions?select=creator_id,commission_amount,products,status,earned_at,paid_at&limit=5000`, { headers }),
     fetch(`${SUPABASE_URL}/rest/v1/creator_reward_state?select=creator_id,unboxing_status`, { headers })
@@ -6648,7 +6667,6 @@ async function getCreatorApplications() {
     throw new Error("Creator applications are temporarily unavailable.");
   }
   const rows = await applicationsResponse.json();
-  const events = eventsResponse.ok ? await eventsResponse.json() : [];
   const profiles = profilesResponse.ok ? await profilesResponse.json() : [];
   const profileRows = Array.isArray(profiles) ? profiles : [];
   const profilePhotoUrls = new Map(await Promise.all(profileRows.map(async profile => [profile.id, await creatorProfilePhotoUrl(profile.profile_photo_path)])));

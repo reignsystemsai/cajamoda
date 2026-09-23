@@ -65,7 +65,8 @@ const checks = [
   [server.includes('function isKarolNetworkManager(request)') && server.includes('function storeOwnerPermissions(role)') && server.includes('permissions: storeOwnerPermissions(role)') && server.includes('permissions: storeOwnerPermissions(session.role)') && server.includes('? ["marketing", "network"] : []') && admin.includes('data-network-manager') && admin.includes('permissions?.includes("network")'), "Karolay owner access includes Network Management and Red de Creadoras across login and reload"],
   [server.includes("cityCampaignEligible") && server.includes("leadershipEventEligible") && portal.includes("Elegible para consideración"), "Campaign and event benefits are presented as consideration, not guarantees"],
   [authPortal.includes("/api/creators/login") && authPortal.includes("PASSWORD_SETUP_REQUIRED") && authLayer.includes("/api/creators/password-reset/request") && authLayer.includes("/api/creators/email-recovery"), "Creator password login and recovery are wired"],
-  [authLayer.includes("SESSION_TTL_MS = 90") && authLayer.includes("reconcileCreatorPurchase") && authLayer.includes("/lifecycle"), "90-day sessions, automatic commission reconciliation, and creator lifecycle controls are wired"]
+  [authLayer.includes("SESSION_TTL_MS = 90") && authLayer.includes("reconcileCreatorPurchase") && authLayer.includes("/lifecycle"), "90-day sessions, automatic commission reconciliation, and creator lifecycle controls are wired"],
+  [server.includes("getAllCreatorAnalyticsEvents") && server.includes('order: "occurred_at.asc,event_id.asc"') && server.includes("offset += page.length") && !server.includes("campaign=not.is.null&limit=5000"), "Network Manager reads all creator analytics pages without a 5,000-event ceiling"]
 ];
 
 let failed = false;

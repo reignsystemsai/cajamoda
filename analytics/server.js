@@ -123,6 +123,9 @@ function cleanAnalyticsContext(input = {}) {
   return {
     sessionId: safeText(input?.sessionId, 100),
     visitorId: safeText(input?.visitorId, 100),
+    creatorSlug: /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(safeText(input?.creatorSlug, 120).toLowerCase())
+      ? safeText(input?.creatorSlug, 120).toLowerCase()
+      : "",
     firstTouch,
     lastTouch,
     location
@@ -137,6 +140,7 @@ function stripeMetadataFromContext(input = {}) {
   return {
     analyticsSessionId: safeText(context.sessionId, 100),
     analyticsVisitorId: safeText(context.visitorId, 100),
+    analyticsCreatorSlug: safeText(context.creatorSlug, 120),
     analyticsChannel: safeText(last.channel, 80),
     analyticsSource: safeText(last.source, 120),
     analyticsMedium: safeText(last.medium, 120),
@@ -155,6 +159,7 @@ function contextFromStripeMetadata(metadata = {}) {
   return cleanAnalyticsContext({
     sessionId: metadata.analyticsSessionId,
     visitorId: metadata.analyticsVisitorId,
+    creatorSlug: metadata.analyticsCreatorSlug,
     firstTouch: {
       channel: metadata.analyticsFirstChannel,
       source: metadata.analyticsFirstSource
@@ -316,6 +321,8 @@ export function createAnalyticsService({ wix, getOrders, getProducts, eventStore
     const location = compactValue(event?.location || {});
     const eventId = safeText(event?.eventId, 100) || crypto.randomUUID();
     const sessionId = safeText(event?.sessionId, 100);
+    const creatorSlug = safeText(event?.creatorSlug, 120).toLowerCase();
+    const creatorAttributed = /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(creatorSlug);
     const digest = crypto
       .createHash("sha256")
       .update(sessionId + "|" + eventId)
@@ -338,11 +345,11 @@ export function createAnalyticsService({ wix, getOrders, getProducts, eventStore
       quantity: boundedNumber(event?.quantity, 0, 100000, 0),
       value: boundedNumber(event?.value, 0, 1000000000000, 0),
       currency: safeText(event?.currency || "COP", 10),
-      channel: channelName(last.channel || last.source),
-      source: safeText(last.source, 120),
-      medium: safeText(last.medium, 120),
-      campaign: safeText(last.campaign, 180),
-      content: safeText(last.content, 180),
+      channel: creatorAttributed ? "creator" : channelName(last.channel || last.source),
+      source: creatorAttributed ? "creator" : safeText(last.source, 120),
+      medium: creatorAttributed ? "creator" : safeText(last.medium, 120),
+      campaign: creatorAttributed ? creatorSlug : safeText(last.campaign, 180),
+      content: creatorAttributed ? "creator-link" : safeText(last.content, 180),
       term: safeText(last.term, 180),
       clickId: safeText(last.clickId, 300),
       firstChannel: channelName(first.channel || first.source),

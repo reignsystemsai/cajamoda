@@ -2,6 +2,10 @@ import { readFile } from "node:fs/promises";
 
 const checkout = await readFile(new URL("../checkout/index.html", import.meta.url), "utf8");
 const server = await readFile(new URL("../server.js", import.meta.url), "utf8");
+const product = await readFile(new URL("../product/index.html", import.meta.url), "utf8");
+const creatorLink = await readFile(new URL("../creator-link/index.html", import.meta.url), "utf8");
+const storefront = await readFile(new URL("../storefront.js", import.meta.url), "utf8");
+const analyticsServer = await readFile(new URL("../analytics/server.js", import.meta.url), "utf8");
 const initializeStart = checkout.indexOf("async function initializeStripePaymentElement()");
 const mountAt = checkout.indexOf('paymentElement.mount("#paymentElement")', initializeStart);
 const initializeEnd = checkout.indexOf("async function finalizeStripePayment()", initializeStart);
@@ -45,6 +49,10 @@ const checks = [
   ["Nequi orders use the defined Wix order-number helper", server.includes("number: stripeImportedOrderNumber(externalOrderId)") && !server.includes("number: importedOrderNumber(externalOrderId)")],
   ["Pickup-only checkout does not require a delivery city", checkout.includes('const pickupOnly = profile.hasPronto && !profile.hasNational && selectedDelivery === "pickup";') && checkout.includes('if (!pickupOnly && !$("deliveryCity")?.value.trim())')],
   ["Nequi pickup imports use the complete fixed Wix address", server.includes('const address = delivery.method === "pickup"') && server.includes('city: "Cartagena"') && server.includes('subdivision: "BL"') && server.includes('postalCode: "130001"') && server.includes("addressLine1: CARTAGENA_PICKUP_ADDRESS")],
+  ["Product cart preserves every variant delivery mode", product.includes("line.allowedDeliveryModes =") && product.includes("deliveryModes:") && product.includes("selectedDeliveryMode,")],
+  ["Creator link persists explicit attribution", creatorLink.includes("cajamoda-creator-attribution") && creatorLink.includes("creatorSlug:slug")],
+  ["Storefront carries creator attribution into checkout", storefront.includes("CREATOR_ATTRIBUTION_KEY") && storefront.includes("creatorSlug: attribution.creatorSlug")],
+  ["Server normalizes explicit creator attribution", analyticsServer.includes("analyticsCreatorSlug") && analyticsServer.includes('creatorAttributed ? "creator"')],
   ["Captured Stripe orders are marked paid in Wix", server.includes("paymentCollectionMarkOrderAsPaid")],
   ["Stripe order emails are itemized and idempotent", server.includes("stripeOrderEmailHtml") && server.includes('idempotencyKey: `stripe-order-${intent.id}-${state}`')]
 ];

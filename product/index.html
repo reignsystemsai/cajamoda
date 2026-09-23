@@ -5514,9 +5514,23 @@ const selectedVariant =
 const variantId =
   selectedVariant?.id ||
   null;
+const allowedDeliveryModes =
+  [...new Set((
+    Array.isArray(selectedVariant?.deliveryModes) && selectedVariant.deliveryModes.length
+      ? selectedVariant.deliveryModes
+      : Array.isArray(state.product?.deliveryModes) && state.product.deliveryModes.length
+        ? state.product.deliveryModes
+        : [selectedVariant?.deliveryMode || state.product.deliveryMode || "fast"]
+  )
+    .map(mode => String(mode || "").trim().toLowerCase())
+    .filter(mode => fulfillmentMethods[mode]))];
 const selectedDeliveryMode =
-  selectedVariant?.deliveryMode ||
-  state.product.deliveryMode ||
+  allowedDeliveryModes.length === 1
+    ? allowedDeliveryModes[0]
+    : "";
+const fallbackDeliveryMode =
+  selectedDeliveryMode ||
+  allowedDeliveryModes[0] ||
   "fast";
 
 const desiredKey =
@@ -5595,7 +5609,18 @@ const desiredKey =
   variantId;
 
       line.deliveryMode =
-        selectedDeliveryMode;
+        fallbackDeliveryMode;
+
+      line.deliveryModes =
+        allowedDeliveryModes;
+
+      line.allowedDeliveryModes =
+        allowedDeliveryModes;
+
+      line.selectedDeliveryMode =
+        allowedDeliveryModes.includes(line.selectedDeliveryMode)
+          ? line.selectedDeliveryMode
+          : selectedDeliveryMode;
 
 line.unitPrice =
   normalizePrice(
@@ -5635,7 +5660,14 @@ line.quantity =
           state.selectedColor,
 
         deliveryMode:
-          selectedDeliveryMode,
+          fallbackDeliveryMode,
+
+        deliveryModes:
+          allowedDeliveryModes,
+
+        allowedDeliveryModes,
+
+        selectedDeliveryMode,
 
         quantity:
           Math.max(1,Number(state.selectedQuantity||1)),

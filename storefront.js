@@ -10,6 +10,8 @@
   const FIRST_TOUCH_KEY = "cajamoda-analytics-first-touch";
   const LAST_TOUCH_KEY = "cajamoda-analytics-last-touch";
   const LOCATION_KEY = "cajamoda-analytics-location";
+  const CREATOR_ATTRIBUTION_KEY = "cajamoda-creator-attribution";
+  const CREATOR_ATTRIBUTION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
   const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
   const HEARTBEAT_MS = 10 * 1000;
   const queue = [];
@@ -80,6 +82,29 @@
   function captureAttribution() {
     const params = new URLSearchParams(location.search);
     const referrer = safeText(document.referrer, 1000);
+    const urlCreatorSlug =
+      safeText(params.get("utm_source"), 120).toLowerCase() === "creator" &&
+      /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(safeText(params.get("utm_campaign"), 120).toLowerCase())
+        ? safeText(params.get("utm_campaign"), 120).toLowerCase()
+        : "";
+    if (urlCreatorSlug) {
+      writeJson(CREATOR_ATTRIBUTION_KEY, {
+        creatorSlug: urlCreatorSlug,
+        capturedAt: new Date().toISOString()
+      });
+    }
+    const storedCreator = readJson(CREATOR_ATTRIBUTION_KEY, null);
+    const storedCreatorSlug = safeText(storedCreator?.creatorSlug, 120).toLowerCase();
+    const storedCreatorAt = Date.parse(storedCreator?.capturedAt || "");
+    const creatorSlug =
+      /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(storedCreatorSlug) &&
+      Number.isFinite(storedCreatorAt) &&
+      Date.now() - storedCreatorAt <= CREATOR_ATTRIBUTION_TTL_MS
+        ? storedCreatorSlug
+        : "";
+    if (storedCreatorSlug && !creatorSlug) {
+      try { localStorage.removeItem(CREATOR_ATTRIBUTION_KEY); } catch {}
+    }
     const referrerHost = (() => {
       try {
         return new URL(referrer).hostname;
@@ -88,6 +113,7 @@
       }
     })();
     const source = safeText(
+      creatorSlug ||
       params.get("utm_source") ||
       params.get("source") ||
       (params.get("ttclid") ? "tiktok" : "") ||
@@ -95,16 +121,16 @@
       referrerHost,
       120
     );
-    const hasCampaignSignal = [
+    const hasCampaignSignal = Boolean(creatorSlug) || [
       "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term",
       "fbclid", "ttclid", "wbraid", "gbraid"
     ].some(key => params.has(key));
     const touch = {
-      channel: channelFrom(source),
-      source: source || "direct",
-      medium: safeText(params.get("utm_medium") || (hasCampaignSignal ? "paid_social" : "none"), 120),
-      campaign: safeText(params.get("utm_campaign"), 180),
-      content: safeText(params.get("utm_content"), 180),
+      channel: creatorSlug ? "creator" : channelFrom(source),
+      source: creatorSlug ? "creator" : source || "direct",
+      medium: creatorSlug ? "creator" : safeText(params.get("utm_medium") || (hasCampaignSignal ? "paid_social" : "none"), 120),
+      campaign: creatorSlug || safeText(params.get("utm_campaign"), 180),
+      content: creatorSlug ? "creator-link" : safeText(params.get("utm_content"), 180),
       term: safeText(params.get("utm_term"), 180),
       clickId: safeText(
         params.get("ttclid") ||
@@ -124,6 +150,7 @@
       writeJson(LAST_TOUCH_KEY, touch);
     }
     return {
+      creatorSlug,
       firstTouch: readJson(FIRST_TOUCH_KEY, touch),
       lastTouch: readJson(LAST_TOUCH_KEY, touch)
     };
@@ -188,6 +215,7 @@
       occurredAt: safeText(properties.occurredAt || new Date().toISOString(), 40),
       sessionId: currentSession.id,
       visitorId: visitorId(),
+      creatorSlug: attribution.creatorSlug,
       page: safeText(properties.page || eventPage(), 80),
       path: safeText(location.pathname + location.search, 1000),
       productId,
@@ -296,6 +324,7 @@
     return {
       sessionId: currentSession.id,
       visitorId: visitorId(),
+      creatorSlug: attribution.creatorSlug,
       firstTouch: attribution.firstTouch,
       lastTouch: attribution.lastTouch,
       location: currentLocation()
@@ -307,7 +336,7 @@
     flush,
     context,
     setLocation,
-    version: "build-241"
+    version: "build-242"
   };
 
   track("PAGE_VIEW", {

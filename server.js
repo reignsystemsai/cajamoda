@@ -2678,33 +2678,22 @@ async function handleConfirmNequiOrder(request, response, orderId) {
   }
 
   const confirmation = (async () => {
-    const order = await wix.orders.getOrder(orderId);
+    let order = await wix.orders.getOrder(orderId);
     if (!isNequiOrder(order)) throw new Error("Este no es un pedido Nequi.");
-    if (String(order.paymentStatus).toUpperCase() === "PAID") {
-      await sendOrderConfirmationEmail(order);
-      return order;
+    let inventoryLines = [];
+    if (String(order.paymentStatus).toUpperCase() !== "PAID") {
+      inventoryLines = (Array.isArray(order?.lineItems) ? order.lineItems : [])
+        .map(line => ({
+          productId: safeText(line?.catalogReference?.catalogItemId, 80),
+          variantId: safeText(line?.catalogReference?.options?.variantId, 80),
+          quantity: Math.max(1, Math.floor(Number(line?.quantity || 1)))
+        }))
+        .filter(line => line.productId && line.variantId);
+      if (!inventoryLines.length) throw new Error("El pedido Nequi no tiene inventario verificable.");
+      const updated = await wix.orders.importOrder({ ...order, paymentStatus: "PAID" });
+      order = updated?.order || updated;
     }
-
-    const lines = (Array.isArray(order?.lineItems) ? order.lineItems : [])
-      .map(line => ({
-        productId: safeText(line?.catalogReference?.catalogItemId, 80),
-        variantId: safeText(line?.catalogReference?.options?.variantId, 80),
-        quantity: Math.max(1, Math.floor(Number(line?.quantity || 1)))
-      }))
-      .filter(line => line.productId && line.variantId);
-    if (!lines.length) throw new Error("El pedido Nequi no tiene inventario verificable.");
-
-    const updated = await wix.orders.importOrder({ ...order, paymentStatus: "PAID" });
-    await decrementStripeInventory(lines);
-    const confirmed = updated?.order || updated;
-    await sendOrderConfirmationEmail(confirmed);
-    return confirmed;
-  })();
-
-  nequiConfirmationLocks.set(orderId, confirmation);
-  try {
-    const confirmed = await confirmation;
-    const commissionItems = (Array.isArray(confirmed?.lineItems) ? confirmed.lineItems : [])
+    const commissionItems = (Array.isArray(order?.lineItems) ? order.lineItems : [])
       .map(item => {
         const line = normalizeWixOrderLineItem(item);
         return {
@@ -2716,19 +2705,31 @@ async function handleConfirmNequiOrder(request, response, orderId) {
       });
     await analytics.recordPurchase({
       externalId: "nequi-" + orderId,
-      order: confirmed,
+      order,
       items: commissionItems,
-      value: getOrderTotal(confirmed),
+      value: getOrderTotal(order),
       paymentMethod: "nequi"
-    }).catch(error => {
-      console.error("[Analytics] Nequi purchase recording failed:", error);
     });
     await recordCreatorCommission({
       orderId,
       paymentMethod: "nequi",
-      productSubtotal: Number(confirmed?.priceSummary?.subtotal?.amount || 0),
+      productSubtotal: Number(order?.priceSummary?.subtotal?.amount || 0),
       items: commissionItems
     });
+    if (inventoryLines.length) {
+      await decrementStripeInventory(inventoryLines).catch(error => {
+        console.error("[Inventory] Nequi decrement failed:", error);
+      });
+    }
+    await sendOrderConfirmationEmail(order).catch(error => {
+      console.error("[Email] Nequi confirmation failed:", error);
+    });
+    return order;
+  })();
+
+  nequiConfirmationLocks.set(orderId, confirmation);
+  try {
+    const confirmed = await confirmation;
     sendJson(response, 200, { ok: true, order: normalizeWixOrder(confirmed) });
   } finally {
     nequiConfirmationLocks.delete(orderId);

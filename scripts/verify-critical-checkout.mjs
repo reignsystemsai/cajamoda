@@ -25,6 +25,12 @@ const paymentHandler = paymentHandlerStart >= 0 && paymentHandlerEnd > paymentHa
   ? server.slice(paymentHandlerStart, paymentHandlerEnd)
   : "";
 
+const nequiConfirmationStart = server.indexOf("async function handleConfirmNequiOrder(");
+const nequiConfirmationEnd = server.indexOf("/* ============================================================\n   PUBLIC WIX PRODUCT REVIEWS", nequiConfirmationStart);
+const nequiConfirmation = nequiConfirmationStart >= 0 && nequiConfirmationEnd > nequiConfirmationStart
+  ? server.slice(nequiConfirmationStart, nequiConfirmationEnd)
+  : "";
+
 const checks = [
   ["Stripe.js is loaded", checkout.includes('src="https://js.stripe.com/dahlia/stripe.js"')],
   ["Stripe initializes in deferred payment mode", initializeStripe.includes("stripeClient.elements({")],
@@ -49,6 +55,7 @@ const checks = [
   ["Nequi orders use the defined Wix order-number helper", server.includes("number: stripeImportedOrderNumber(externalOrderId)") && !server.includes("number: importedOrderNumber(externalOrderId)")],
   ["Pickup-only checkout does not require a delivery city", checkout.includes('const pickupOnly = profile.hasPronto && !profile.hasNational && selectedDelivery === "pickup";') && checkout.includes('if (!pickupOnly && !$("deliveryCity")?.value.trim())')],
   ["Nequi pickup imports use the complete fixed Wix address", server.includes('const address = delivery.method === "pickup"') && server.includes('city: "Cartagena"') && server.includes('subdivision: "BL"') && server.includes('postalCode: "130001"') && server.includes("addressLine1: CARTAGENA_PICKUP_ADDRESS")],
+  ["Confirmed Nequi creator credit precedes nonblocking inventory and email work", nequiConfirmation.indexOf("await analytics.recordPurchase") >= 0 && nequiConfirmation.indexOf("await analytics.recordPurchase") < nequiConfirmation.indexOf("await decrementStripeInventory") && nequiConfirmation.indexOf("await recordCreatorCommission") < nequiConfirmation.indexOf("await sendOrderConfirmationEmail") && nequiConfirmation.includes('[Inventory] Nequi decrement failed:') && nequiConfirmation.includes('[Email] Nequi confirmation failed:')],
   ["Product cart preserves every variant delivery mode", product.includes("line.allowedDeliveryModes =") && product.includes("deliveryModes:") && product.includes("selectedDeliveryMode,")],
   ["Creator link persists explicit attribution", creatorLink.includes("cajamoda-creator-attribution") && creatorLink.includes("creatorSlug:slug")],
   ["Storefront carries creator attribution into checkout", storefront.includes("CREATOR_ATTRIBUTION_KEY") && storefront.includes("creatorSlug: attribution.creatorSlug")],
